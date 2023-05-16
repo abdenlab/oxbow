@@ -8,7 +8,7 @@ ease of high-performance analytics.
 
 Data I/O is handled in Rust with features exposed to Python and R via Apache Arrow.
 
-To learn more, read our introductory [blog post](TODO).
+Learn more in our recent [blog post](https://open.substack.com/pub/lifeinbytes/p/breaking-out-of-bioinformatic-data-silos?r=jue12&utm_campaign=post&utm_medium=web).
 
 ## Contributing
 
