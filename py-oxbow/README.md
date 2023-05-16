@@ -39,6 +39,9 @@ hatch shell
 
 # compile a development version of the package
 maturin develop --release
+
+# open the jupyter notebooks/
+jupyterlab
 ```
 
 A local build of `oxbow` will be added to your virtual environment.

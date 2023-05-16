@@ -15,14 +15,16 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 
-
 [tool.maturin]
 features = ["pyo3/extension-module"]
 
 [tool.hatch.envs.default]
 dependencies = [
+    "jupyterlab",
     "pandas",
     "polars",
+    "pyarrow",
+    "pysam",
 ]
 
 [tool.ruff.isort]
