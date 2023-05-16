@@ -1,0 +1,29 @@
+[build-system]
+requires = ["maturin>=0.14,<0.15"]
+build-backend = "maturin"
+
+[project]
+name = "oxbow"
+authors = [
+    { name = "Oxbow Developers", email = "nabdennur@gmail.com" }
+]
+license = { text = "MIT OR Apache-2.0" }
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pandas",
+    "polars",
+]
+
+[tool.ruff.isort]
+known-first-party = ["oxbow"]

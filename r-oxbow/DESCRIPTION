@@ -1,0 +1,15 @@
+Package: oxbow
+Title: Read specialized bioinformatic file formats into dataframes
+Version: 0.0.0.9000
+Authors@R:
+  c(person("Oxbow Developers", role = "aut"),
+    person("Nezar", "Abdennur", email = "nabdennur@gmail.com", role = c("aut", "cre")))
+Description:
+  An R interface to oxbow. Data I/O is handled in Rust, with features
+  exposed to the R API via Apache Arrow. The R API contains functions
+  to read specialized bioinformatic file formats directly into dataframes.
+License: MIT OR Apache-2.0
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Config/rextendr/version: 0.2.0.9000
