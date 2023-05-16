@@ -4,6 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "oxbow"
+description = "Read specialized bioinformatic file formats into dataframes."
 authors = [
     { name = "Oxbow Developers", email = "nabdennur@gmail.com" }
 ]
@@ -14,6 +15,9 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
+
+[project.urls]
+homepage = "https://github.com/abdenlab/oxbow"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
