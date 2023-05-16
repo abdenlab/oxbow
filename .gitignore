@@ -73,3 +73,5 @@ docs/_build/
 
 data
 .Rbuildignore
+py-oxbow/notebooks/*.bam*
+.ipynb_checkpoints
