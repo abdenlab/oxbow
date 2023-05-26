@@ -16,21 +16,10 @@ rustup target add x86_64-pc-windows-gnu
 rustup target add i686-pc-windows-gnu
 ```
 
-Once Rust is working, you can install this package via:
+Once Rust is working, you can install this package via `devtools.install_github` or `remotes.install_github`:
 
 ```R
 remotes::install_github("abdenlab/oxbow", subdir="r-oxbow")
-```
-
-> **Warning**: Using `remotes::install_github` or `devtools::install` is currently
-> broken due to an [upstream issue](https://github.com/abdenlab/oxbow/issues/8).
-> To try r-oxbow in the meantime, please clone the repository and run the following:
-
-```r
-rextendr::document()
-devtools::load_all(".")
-
-library(oxbow)
 ```
 
 ## Usage
