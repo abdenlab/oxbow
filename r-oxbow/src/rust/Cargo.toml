@@ -9,4 +9,4 @@ name = 'oxbow'
 
 [dependencies]
 extendr-api = '*'
-oxbow = { path = "../../../oxbow" }
+oxbow = { path = "oxbow" }
