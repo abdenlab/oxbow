@@ -25,3 +25,4 @@
 
 pub mod bam;
 mod batch_builder;
+pub mod vcf;

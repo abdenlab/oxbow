@@ -2,26 +2,15 @@ use arrow::array::{
     ArrayRef, GenericStringBuilder, Int32Array, Int32Builder, StringArray, StringDictionaryBuilder,
     UInt16Array, UInt16Builder, UInt8Array, UInt8Builder,
 };
+
 use arrow::{
-    datatypes::Int32Type, error::ArrowError, ipc::writer::FileWriter, record_batch::RecordBatch,
+    datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch,
 };
 use noodles::core::Region;
 use noodles::{bam, bgzf, sam};
 use std::sync::Arc;
 
-use crate::batch_builder::BatchBuilder;
-
-fn write_ipc<T>(
-    records: impl Iterator<Item = T>,
-    mut batch_builder: impl BatchBuilder<Record = T>,
-) -> Result<Vec<u8>, ArrowError> {
-    records.for_each(|record| batch_builder.push(&record));
-    let batch = batch_builder.finish()?;
-    let mut writer = FileWriter::try_new(Vec::new(), &batch.schema())?;
-    writer.write(&batch)?;
-    writer.finish()?;
-    writer.into_inner()
-}
+use crate::batch_builder::{write_ipc, BatchBuilder};
 
 type BufferedReader = std::io::BufReader<std::fs::File>;
 
@@ -32,7 +21,6 @@ pub struct BamReader {
 }
 
 impl BamReader {
-
     /// Creates a BAM reader.
     pub fn new(path: &str) -> std::io::Result<Self> {
         let index = bam::bai::read(format!("{}.bai", path))?;
@@ -174,12 +162,11 @@ impl<'a> BatchBuilder for BamBatchBuilder<'a> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use arrow::record_batch::RecordBatch;
     use arrow::ipc::reader::FileReader;
+    use arrow::record_batch::RecordBatch;
 
     fn read_record_batch(region: Option<&str>) -> RecordBatch {
         let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
