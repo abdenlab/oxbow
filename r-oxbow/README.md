@@ -16,7 +16,7 @@ rustup target add x86_64-pc-windows-gnu
 rustup target add i686-pc-windows-gnu
 ```
 
-Once Rust is working, you can install this package via `devtools.install_github` or `remotes.install_github`:
+Once Rust is working, you can install this package via `devtools::install_github` or `remotes::install_github`:
 
 ```R
 remotes::install_github("abdenlab/oxbow", subdir="r-oxbow")
@@ -25,6 +25,8 @@ remotes::install_github("abdenlab/oxbow", subdir="r-oxbow")
 ## Usage
 
 ```R
+library(oxbow)
+
 arrow_ipc <- oxbow::read_bam("./data.bam", region="chr1:1-10000")
 df <- arrow::read_arrow_ipc(arrow_ipc)
 head(df)
