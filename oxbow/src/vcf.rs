@@ -3,7 +3,7 @@ use arrow::array::{
     StringArray, StringDictionaryBuilder,
 };
 use arrow::{
-    datatypes::Int32Type, error::ArrowError, ipc::writer::FileWriter, record_batch::RecordBatch,
+    datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch,
 };
 use noodles::core::Region;
 use noodles::{tabix, vcf};
