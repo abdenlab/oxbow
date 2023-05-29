@@ -2,7 +2,6 @@ use arrow::array::{
     ArrayRef, GenericStringBuilder, Int32Array, Int32Builder, StringArray, StringDictionaryBuilder,
     UInt16Array, UInt16Builder, UInt8Array, UInt8Builder,
 };
-
 use arrow::{
     datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch,
 };
