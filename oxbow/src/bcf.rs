@@ -5,15 +5,73 @@ use arrow::array::{
 use arrow::{
     datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch,
 };
+use byteorder::{LittleEndian, ReadBytesExt};
 use noodles::core::Region;
 use noodles::bcf::header::StringMaps;
 use noodles::{bcf, bgzf, csi, vcf};
 use std::sync::Arc;
+use std::{ffi::CStr, io};
+use std::io::{Read};
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
 
-
 type BufferedReader = std::io::BufReader<std::fs::File>;
+
+
+fn read_u8<R>(reader: &mut R) -> io::Result<u8>
+where
+    R: Read,
+{
+    let mut buf = [0; 1];
+    reader.read_exact(&mut buf)?;
+    Ok(buf[0])
+}
+
+fn read_raw_header<R>(reader: &mut R) -> io::Result<String>
+where
+    R: Read,
+{
+    let l_text = reader.read_u32::<LittleEndian>().and_then(|n| {
+        usize::try_from(n).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+    })?;
+
+    let mut buf = vec![0; l_text];
+    reader.read_exact(&mut buf)?;
+
+    CStr::from_bytes_with_nul(&buf)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        .and_then(|c_header| {
+            c_header
+                .to_str()
+                .map(|s| s.into())
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        })
+}
+
+fn read_bcf_header<R>(reader: &mut R) -> io::Result<(vcf::Header, bcf::header::StringMaps)>
+where
+    R: Read,
+{
+    // read the MAGIC number
+    let mut buf = [0; 3];
+    reader.read_exact(&mut buf)?;
+
+    let mut reader = reader;
+
+    // read the version
+    read_u8(&mut reader)?;
+    read_u8(&mut reader)?;
+
+    // read the raw header as a string
+    let s = read_raw_header(&mut reader)?;
+
+    // parse the VCF header and the string maps
+    let header: vcf::Header = s.parse().map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    let string_maps: bcf::header::StringMaps = s.parse().map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+    Ok((header, string_maps))
+}
+
 
 /// A BCF reader.
 pub struct BcfReader {
@@ -26,16 +84,14 @@ pub struct BcfReader {
 impl BcfReader {
     /// Creates a BCF Reader.
     pub fn new(path: &str) -> std::io::Result<Self> {
-        let index = csi::read(format!("{}.csi", path))?;
         let file = std::fs::File::open(path)?;
+        let index = csi::read(format!("{}.csi", path))?;
         let bufreader = std::io::BufReader::with_capacity(1024 * 1024, file);
-        let mut reader = bcf::Reader::new(bufreader);
-        let raw_header = reader.read_header()?;
-        let header = vcf::header::Parser::default()
-            .parse(&raw_header)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
-        let string_maps = StringMaps::try_from(&header)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let reader = bcf::Reader::new(bufreader);
+
+        let mut bgzf_reader = std::fs::File::open(path).map(bgzf::Reader::new)?;
+        let (header, string_maps) = read_bcf_header(&mut bgzf_reader)?;
+
         Ok(Self { reader, header, string_maps, index })
     }
 
@@ -52,7 +108,8 @@ impl BcfReader {
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
     pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
-        let batch_builder = BcfBatchBuilder::new(1024, &self.header, &self.string_maps)?;
+        let s = self.string_maps.clone();
+        let batch_builder = BcfBatchBuilder::new(1024, &self.header, &s)?;
         let string_maps = StringMaps::from(&self.header);
         if let Some(region) = region {
             let region: Region = region.parse().unwrap();
