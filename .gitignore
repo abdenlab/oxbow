@@ -75,3 +75,4 @@ data
 .Rbuildignore
 py-oxbow/notebooks/*.bam*
 .ipynb_checkpoints
+_scratch
