@@ -15,5 +15,13 @@ NULL
 #' @export
 read_bam <- function(path, region) .Call(wrap__read_bam, path, region)
 
+#' Return Arrow IPC format from a VCF file.
+#' @export
+read_vcf <- function(path, region) .Call(wrap__read_vcf, path, region)
+
+#' Return Arrow IPC format from a BCF file.
+#' @export
+read_bcf <- function(path, region) .Call(wrap__read_bcf, path, region)
+
 
 # nolint end
