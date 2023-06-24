@@ -665,6 +665,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bc3e1a97106b94104db416d3886594b2f4d7c49cdf90603b68ea4d71833b2b5"
 dependencies = [
  "noodles-bam",
+ "noodles-bcf",
  "noodles-bgzf",
  "noodles-core",
  "noodles-csi",
@@ -687,6 +688,20 @@ dependencies = [
  "noodles-csi",
  "noodles-fasta",
  "noodles-sam",
+]
+
+[[package]]
+name = "noodles-bcf"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4238d1e714389fc4121efa3f5422e4810de051498733573fefc02ea8ad33231"
+dependencies = [
+ "byteorder",
+ "indexmap",
+ "noodles-bgzf",
+ "noodles-core",
+ "noodles-csi",
+ "noodles-vcf",
 ]
 
 [[package]]
@@ -865,6 +880,7 @@ name = "oxbow"
 version = "0.1.0"
 dependencies = [
  "arrow",
+ "byteorder",
  "noodles",
 ]
 
