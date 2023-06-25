@@ -2,12 +2,20 @@ use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
 use oxbow::bam::BamReader;
+use oxbow::cram::CramReader;
 use oxbow::vcf::VcfReader;
 use oxbow::bcf::BcfReader;
 
 #[pyfunction]
 fn read_bam(path: &str, region: Option<&str>) -> PyObject {
     let mut reader = BamReader::new(path).unwrap();
+    let ipc = reader.records_to_ipc(region).unwrap();
+    Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+}
+
+#[pyfunction]
+fn read_cram(path: &str, fasta_path: &str, region: Option<&str>) -> PyObject {
+    let mut reader = CramReader::new(path, fasta_path).unwrap();
     let ipc = reader.records_to_ipc(region).unwrap();
     Python::with_gil(|py| PyBytes::new(py, &ipc).into())
 }
@@ -30,6 +38,7 @@ fn read_bcf(path: &str, region: Option<&str>) -> PyObject {
 #[pyo3(name = "oxbow")]
 fn py_oxbow(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_bam, m)?)?;
+    m.add_function(wrap_pyfunction!(read_cram, m)?)?;
     m.add_function(wrap_pyfunction!(read_vcf, m)?)?;
     m.add_function(wrap_pyfunction!(read_bcf, m)?)?;
     Ok(())

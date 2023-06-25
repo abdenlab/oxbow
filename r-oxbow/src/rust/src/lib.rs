@@ -1,5 +1,6 @@
 use extendr_api::prelude::*;
 use oxbow::bam::BamReader;
+use oxbow::cram::CramReader;
 use oxbow::vcf::VcfReader;
 use oxbow::bcf::BcfReader;
 
@@ -8,6 +9,14 @@ use oxbow::bcf::BcfReader;
 #[extendr]
 fn read_bam(path: &str, region: Option<&str>) -> Vec<u8> {
     let mut reader = BamReader::new(path).unwrap();
+    reader.records_to_ipc(region).unwrap()
+}
+
+/// Return Arrow IPC format from a CRAM file.
+/// @export
+#[extendr]
+fn read_cram(path: &str, fasta_path: &str, region: Option<&str>) -> Vec<u8> {
+    let mut reader = CramReader::new(path, fasta_path).unwrap();
     reader.records_to_ipc(region).unwrap()
 }
 
@@ -33,6 +42,7 @@ fn read_bcf(path: &str, region: Option<&str>) -> Vec<u8> {
 extendr_module! {
     mod oxbow;
     fn read_bam;
+    fn read_cram;
     fn read_vcf;
     fn read_bcf;
 }
