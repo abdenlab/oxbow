@@ -43,7 +43,7 @@ impl FastqReader {
     /// use oxbow::fastq::FastqReader;
     ///
     /// let mut reader = FastqReader::new("sample.fastq.gz").unwrap();
-    /// let ipc = reader.records_to_ipc(Some("sq0")).unwrap();
+    /// let ipc = reader.records_to_ipc().unwrap();
     /// ```
     pub fn records_to_ipc(&mut self) -> Result<Vec<u8>, ArrowError> {
         let batch_builder = FastqBatchBuilder::new(1024)?;
