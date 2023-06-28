@@ -7,12 +7,12 @@ use noodles::core::Position;
 // http://www.htslib.org/doc/bgzip.html
 const ESTIMATED_BLOCK_SIZE: usize = 64 * 1024; // 64 KB
 
-pub struct IndexOptimizer {
-    index: csi::Index,
+pub struct IndexOptimizer<'a> {
+    index: &'a csi::Index,
     max_block_size: usize,
 }
 
-impl IndexOptimizer {
+impl IndexOptimizer<'_> {
 
     /// Convert a query interval to a sequence of index chunks.
     ///
@@ -50,7 +50,9 @@ impl IndexOptimizer {
         let min_offset =
             reference_sequence.min_offset(self.index.min_shift(), self.index.depth(), start);
 
-        Ok(optimize_chunks(&chunks, min_offset, self.max_block_size))
+        Ok(chunks)
+
+        // Ok(optimize_chunks(&chunks, min_offset, self.max_block_size))
     }
 
     pub fn query_all(&self) -> std::io::Result<Vec<Chunk>> {
@@ -67,8 +69,8 @@ impl IndexOptimizer {
     }
 }
 
-impl From<csi::Index> for IndexOptimizer {
-    fn from(index: csi::Index) -> Self {
+impl <'a> IndexOptimizer<'a> {
+    fn new(index: &'a csi::Index) -> Self {
         Self {
             index,
             max_block_size: 1024 * 1024 * 100, // 100 MB
@@ -121,47 +123,77 @@ pub fn optimize_chunks(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use noodles::{bam,sam};
-    // use noodles::core::Region;
-    use std::io::{Read, Seek};
+    use std::io::{self, Read, Seek};
+    use std::fs;
+    use noodles::{bam, sam};
 
-    type BamReader = bam::Reader<bgzf::Reader<std::io::Cursor<Vec<u8>>>>;
+    const REGION: &str = "chr1:100000-8000000";
 
-    fn get_reader() -> std::io::Result<(sam::Header, BamReader)> {
-        let mut path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("fixtures/sample.bam");
+    fn indexed_reader() -> io::Result<bam::IndexedReader<bgzf::Reader<fs::File>>> {
+        let path: std::path::PathBuf = [env!("CARGO_MANIFEST_DIR"), "fixtures/sample.bam"].iter().collect();
+        noodles::bam::indexed_reader::Builder::default().build_from_path(path)
+    }
 
-        let header = std::fs::File::open(path.clone())
-            .map(bam::Reader::new)?
-            .read_header()?;
-
-        let index = bam::bai::read(path.with_extension("bam.bai"))?;
-        let chunks = IndexOptimizer::from(index).query_all()?;
-        let chunk = chunks.first().unwrap();
-
+    fn read_range<R: Read + Seek>(target: &mut R, chunk: &Chunk) -> io::Result<Vec<u8>> {
         let mut buf: Vec<u8> = Vec::new();
-        let mut file = std::fs::File::open(path)?;
-        let (cstart, _upos) = chunk.start().into();
-        let (cend, _uend) = chunk.end().into();
-        file.seek(std::io::SeekFrom::Start(cstart))?;
-        buf.resize((cend - cstart) as usize, 0);
-        file.read_exact(&mut buf)?;
-
-        Ok((header, bam::Reader::new(std::io::Cursor::new(buf))))
+        println!("reading range {:#?}", chunk);
+        target.seek(std::io::SeekFrom::Start(chunk.start().compressed()))?;
+        buf.resize((chunk.end().compressed() - chunk.start().compressed()) as usize, 0);
+        target.read_exact(&mut buf)?;
+        Ok(buf)
     }
 
     #[test]
     fn it_works() {
-        let (header, mut reader) = get_reader().unwrap();
-        let mut record = noodles::sam::alignment::Record::default();
-        let size = reader.read_record(&header, &mut record).unwrap();
-        println!("{:?}, size: {}", record, size);
-        let size = reader.read_record(&header, &mut record).unwrap();
-        println!("{:?}, size: {}", record, size);
-        let size = reader.read_record(&header, &mut record).unwrap();
-        println!("{:?}, size: {}", record, size);
+        let mut indexed_reader = indexed_reader().unwrap();
+        let header = indexed_reader.read_header().unwrap();
 
-        assert!(noodles::sam::alignment::Record::default() != record);
+        let region: noodles::core::Region = REGION.parse().unwrap();
+
+        let chunks = IndexOptimizer::new(indexed_reader.index())
+            .query(
+                header.reference_sequences().get_index_of(region.name()).unwrap(),
+                region.interval(),
+            )
+            .unwrap();
+
+        chunks
+            .iter()
+            .for_each(|c| {
+                println!(
+                    "start: {:?}, end: {:?}",
+                    (c.start().compressed(), c.start().uncompressed()),
+                    (c.end().compressed(), c.end().uncompressed()),
+                )
+            });
+
+        let chunk = chunks.first().unwrap();
+        let buf = read_range(indexed_reader.get_mut().get_mut(), chunk).unwrap();
+
+        let (_cpos, upos) = chunk.start().into();
+
+        {
+            let mut reader = bam::Reader::new(io::Cursor::new(buf));
+            reader.seek(bgzf::VirtualPosition::try_from((0, upos)).unwrap()).unwrap();
+
+            let mut record = sam::alignment::Record::default();
+            let size = reader.read_record(&header, &mut record).unwrap();
+            println!("{:?}, size: {}", record, size);
+            let size = reader.read_record(&header, &mut record).unwrap();
+            println!("{:?}, size: {}", record, size);
+            let size = reader.read_record(&header, &mut record).unwrap();
+            println!("{:?}, size: {}", record, size);
+        }
+
+        assert!(false);
+    }
+
+    #[test]
+    fn test2() {
+        let mut indexed_reader = indexed_reader().unwrap();
+        let header = indexed_reader.read_header().unwrap();
+        let query = indexed_reader.query(&header, &REGION.parse().unwrap()).unwrap();
+        assert_eq!(query.count(), 2);
     }
 
 }
