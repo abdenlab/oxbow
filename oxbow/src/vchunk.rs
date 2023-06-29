@@ -173,7 +173,7 @@ mod tests {
     use std::{fs, path};
     use noodles::bam;
 
-    const REGION: &str = "chr3";
+    const REGION: &str = "chr2:100000-2000000";
 
     fn indexed_reader() -> io::Result<bam::IndexedReader<bgzf::Reader<fs::File>>> {
         let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
