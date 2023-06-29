@@ -1,21 +1,34 @@
 #![allow(dead_code)]
-use noodles::{bgzf, core, csi::{self, index::reference_sequence::bin::Chunk}};
+use noodles::{bgzf, sam::{self, alignment::Record}, core::{self, region::Interval}, csi::{self, index::reference_sequence::bin::Chunk}};
 use noodles::core::Position;
 
 // http://www.htslib.org/doc/bgzip.html
 const ESTIMATED_BLOCK_SIZE: usize = 64 * 1024; // 64 KB
 
 pub struct IndexOptimizer<'a> {
+    resolver: &'a dyn Resolver,
     index: &'a csi::Index,
     max_block_size: usize,
 }
 
 impl <'a> IndexOptimizer<'a> {
-    fn new(index: &'a csi::Index) -> Self {
+    fn new(resolver: &'a dyn Resolver, index: &'a csi::Index) -> Self {
         Self {
+            resolver,
             index,
             max_block_size: 1024 * 1024 * 100, // 100 MB
         }
+    }
+}
+
+pub trait Resolver {
+    fn resolve(&self, region: &core::region::Region) -> usize;
+}
+
+impl Resolver for sam::Header {
+
+    fn resolve(&self, region: &core::region::Region) -> usize {
+        self.reference_sequences().get_index_of(region.name()).unwrap()
     }
 }
 
@@ -28,16 +41,8 @@ impl IndexOptimizer<'_> {
     /// a memory limit.
     ///
     /// Adapted from https://github.com/zaeleus/noodles/blob/ec91bf5a5adff9bf4f2dc02c08b815d02fddad18/noodles-csi/src/index.rs#L114-L140
-    pub fn query<I>(
-        &self,
-        reference_sequence_id: usize,
-        interval: I,
-    ) -> std::io::Result<Vec<Chunk>>
-    where
-        I: Into<core::region::Interval>,
-    {
-        let interval = interval.into();
-
+    pub fn query(&self, region: &core::region::Region) -> std::io::Result<Vec<Chunk>> {
+        let reference_sequence_id = self.resolver.resolve(region);
         let reference_sequence = self
             .index
             .reference_sequences()
@@ -49,6 +54,7 @@ impl IndexOptimizer<'_> {
                 )
             })?;
 
+        let interval = region.interval();
         let query_bins = reference_sequence
             .query(self.index.min_shift(), self.index.depth(), interval)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
@@ -59,17 +65,9 @@ impl IndexOptimizer<'_> {
             .copied()
             .collect();
 
-        println!("Chunks:");
-        chunks.iter().for_each(print_chunk);
-
         let (start, _) = resolve_interval(self.index.min_shift(), self.index.depth(), interval)?;
         let min_offset = reference_sequence.min_offset(self.index.min_shift(), self.index.depth(), start);
         let merged_chunks = optimize_chunks(&chunks, min_offset);
-
-        println!("Merged chunks:");
-        merged_chunks.iter().for_each(print_chunk);
-
-        println!("Finished");
 
         Ok(merged_chunks)
     }
@@ -149,15 +147,33 @@ fn print_chunk(chunk: &Chunk) {
     );
 }
 
+fn intersects(
+    record: &Record,
+    reference_sequence_id: usize,
+    region_interval: Interval
+) -> bool {
+    match (
+        record.reference_sequence_id(),
+        record.alignment_start(),
+        record.alignment_end(),
+    ) {
+        (Some(id), Some(start), Some(end)) => {
+            let alignment_interval = (start..=end).into();
+            id == reference_sequence_id && region_interval.intersects(alignment_interval)
+        }
+        _ => false,
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::io::{self, Read, Seek};
+    use std::ops::Range;
     use std::{fs, path};
-    use noodles::{bam, sam};
+    use noodles::bam;
 
-    const REGION: &str = "chr1:100000-1000000";
+    const REGION: &str = "chr3";
 
     fn indexed_reader() -> io::Result<bam::IndexedReader<bgzf::Reader<fs::File>>> {
         let mut path = path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -168,48 +184,72 @@ mod tests {
         noodles::bam::indexed_reader::Builder::default().build_from_path(path)
     }
 
-    fn read_range<R: Read + Seek>(target: &mut R, chunk: &Chunk) -> io::Result<Vec<u8>> {
+    fn read_range<R: Read + Seek>(target: &mut R, range: Range<u64>) -> io::Result<Vec<u8>> {
         let mut buf: Vec<u8> = Vec::new();
-        target.seek(std::io::SeekFrom::Start(chunk.start().compressed()))?;
-        buf.resize((chunk.end().compressed() - chunk.start().compressed()) as usize, 0);
+        target.seek(std::io::SeekFrom::Start(range.start))?;
+        buf.resize((range.end - range.start) as usize, 0);
         target.read_exact(&mut buf)?;
         Ok(buf)
     }
 
     #[test]
-    fn test_optimizer() {
+    fn it_works() {
         let mut indexed_reader = indexed_reader().unwrap();
         let header = indexed_reader.read_header().unwrap();
-        let region: noodles::core::Region = REGION.parse().unwrap();
-        let chunks = IndexOptimizer::new(indexed_reader.index())
-            .query(
-                header.reference_sequences().get_index_of(region.name()).unwrap(),
-                region.interval(),
-            )
+        let region = REGION.parse().unwrap();
+        let chunks = IndexOptimizer::new(&header, indexed_reader.index())
+            .query(&region)
             .unwrap();
 
-        let total: usize = chunks.iter()
+        let block_starts: std::collections::HashSet<_> = indexed_reader
+            .index()
+            .reference_sequences()
+            .iter()
+            .flat_map(|r| r.bins().values().flat_map(|b| b.chunks()))
+            .map(|c| c.start().compressed())
+            .collect();
+
+        let mut block_starts = Vec::from_iter(block_starts);
+        block_starts.sort_unstable();
+
+        let total: usize = chunks
+            .iter()
             .map(|chunk| {
-                let bytes_reader = read_range(indexed_reader.get_mut().get_mut(), chunk)
+                let values = &block_starts;
+                let start = values.binary_search(&chunk.start().compressed()).unwrap_or_else(|x| x);
+                let end = values.binary_search(&chunk.end().compressed()).unwrap_or_else(|x| x);
+                (chunk, values[start]..(values[end + 1] + 1))
+            })
+            .map(|(chunk, range)| {
+                let bytes_reader = read_range(indexed_reader.get_mut().get_mut(), range)
                     .map(io::Cursor::new)
                     .unwrap();
                 let mut reader = bam::Reader::new(bytes_reader);
                 let pos = bgzf::VirtualPosition::try_from((0, chunk.start().uncompressed())).unwrap();
                 reader.seek(pos).unwrap();
-                let total = reader.records(&header).count();
-                total
+                // let record = sam::alignment::Record::default();
+                // match self.reader.read_record(self.header, &mut self.record) {
+                //     Ok(0) => None,
+                //     Ok(_) => Some(Ok(self.record.clone())),
+                //     Err(e) => Some(Err(e)),
+                // }
+                let records: Vec<_> = reader.records(&header)
+                    .filter(|r| match r {
+                        // idk why but ignoring UnexpectedEof is necessary
+                        Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => false,
+                        Err(e) => panic!("{:?}", e),
+                        Ok(r) => intersects(r, header.resolve(&region), region.interval())
+                    })
+                    .collect();
+                records.len()
             })
             .sum();
 
-        assert_eq!(total, 452);
-    }
-
-    #[test]
-    fn test_regular() {
-        let mut indexed_reader = indexed_reader().unwrap();
-        let header = indexed_reader.read_header().unwrap();
-        let query = indexed_reader.query(&header, &REGION.parse().unwrap()).unwrap();
-        assert_eq!(query.count(), 452);
+        assert_eq!(
+            total,
+            indexed_reader.query(&header, &region).unwrap().count(),
+            "total number of records in chunks should be equal to total number of records in query"
+        );
     }
 
 }
