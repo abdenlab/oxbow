@@ -24,8 +24,9 @@
 //!
 
 mod batch_builder;
+pub mod fasta;
+pub mod fastq;
 pub mod bam;
 pub mod cram;
 pub mod vcf;
 pub mod bcf;
-
