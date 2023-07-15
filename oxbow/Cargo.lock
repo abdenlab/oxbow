@@ -712,6 +712,7 @@ dependencies = [
  "noodles-cram",
  "noodles-csi",
  "noodles-fasta",
+ "noodles-fastq",
  "noodles-sam",
  "noodles-tabix",
  "noodles-vcf",
@@ -808,6 +809,12 @@ dependencies = [
  "noodles-bgzf",
  "noodles-core",
 ]
+
+[[package]]
+name = "noodles-fastq"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27c7d065ab7c0814ea9df05624a1be1410d2039b091213ac1cb5281866c3fdfb"
 
 [[package]]
 name = "noodles-sam"

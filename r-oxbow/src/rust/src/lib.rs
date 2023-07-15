@@ -1,8 +1,26 @@
 use extendr_api::prelude::*;
+use oxbow::fasta::FastaReader;
+use oxbow::fastq::FastqReader;
 use oxbow::bam::BamReader;
 use oxbow::cram::CramReader;
 use oxbow::vcf::VcfReader;
 use oxbow::bcf::BcfReader;
+
+/// Return Arrow IPC format from a FASTA file.
+/// @export
+#[extendr]
+fn read_fasta(path: &str, region: Option<&str>) -> Vec<u8> {
+    let mut reader = FastaReader::new(path).unwrap();
+    reader.records_to_ipc(region).unwrap()
+}
+
+/// Return Arrow IPC format from a FASTQ file.
+/// @export
+#[extendr]
+fn read_fastq(path: &str) -> Vec<u8> {
+    let mut reader = FastqReader::new(path).unwrap();
+    reader.records_to_ipc().unwrap()
+}
 
 /// Return Arrow IPC format from a BAM file.
 /// @export
@@ -41,6 +59,8 @@ fn read_bcf(path: &str, region: Option<&str>) -> Vec<u8> {
 // See corresponding C code in `entrypoint.c`.
 extendr_module! {
     mod oxbow;
+    fn read_fasta;
+    fn read_fastq;
     fn read_bam;
     fn read_cram;
     fn read_vcf;
