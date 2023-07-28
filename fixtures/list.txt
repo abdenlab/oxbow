@@ -1,0 +1,6 @@
+https://oxbow-ngs.s3.us-east-2.amazonaws.com/example.bam
+https://oxbow-ngs.s3.us-east-2.amazonaws.com/example.bam.bai
+https://oxbow-ngs.s3.us-east-2.amazonaws.com/ALL.chrY.phase3_integrated_v1a.20130502.genotypes.vcf.gz
+https://oxbow-ngs.s3.us-east-2.amazonaws.com/ALL.chrY.phase3_integrated_v1a.20130502.genotypes.vcf.gz.tbi
+https://oxbow-ngs.s3.us-east-2.amazonaws.com/ALL.chrY.phase3_shapeit2_mvncall_integrated.20130502.genotypes.bcf
+https://oxbow-ngs.s3.us-east-2.amazonaws.com/ALL.chrY.phase3_shapeit2_mvncall_integrated.20130502.genotypes.bcf.csi
