@@ -169,7 +169,7 @@ mod tests {
 
     fn read_record_batch(region: Option<&str>) -> RecordBatch {
         let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        dir.push("fixtures/sample.bam");
+        dir.push("../fixtures/sample.bam");
         let mut reader = BamReader::new(dir.to_str().unwrap()).unwrap();
         let ipc = reader.records_to_ipc(region).unwrap();
         let cursor = std::io::Cursor::new(ipc);
