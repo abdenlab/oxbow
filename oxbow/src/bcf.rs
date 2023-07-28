@@ -18,6 +18,7 @@ type BufferedReader = std::io::BufReader<std::fs::File>;
 /// A BCF reader.
 pub struct BcfReader {
     reader: bcf::Reader<bgzf::Reader<BufferedReader>>,
+    reader2: bcf::Reader<bgzf::Reader<std::fs::File>>,
     header: vcf::Header,
     index: csi::Index,
 }
