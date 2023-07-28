@@ -14,6 +14,7 @@ use std::{ffi::CStr, io};
 use std::io::{Read};
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
+use crate::vpos;
 
 type BufferedReader = std::io::BufReader<std::fs::File>;
 
@@ -76,6 +77,7 @@ where
 /// A BCF reader.
 pub struct BcfReader {
     reader: bcf::Reader<bgzf::Reader<BufferedReader>>,
+    reader2: bcf::Reader<bgzf::Reader<std::fs::File>>,
     header: vcf::Header,
     string_maps: StringMaps,
     index: csi::Index,
@@ -92,7 +94,10 @@ impl BcfReader {
         let mut bgzf_reader = std::fs::File::open(path).map(bgzf::Reader::new)?;
         let (header, string_maps) = read_bcf_header(&mut bgzf_reader)?;
 
-        Ok(Self { reader, header, string_maps, index })
+        let mut reader2 = std::fs::File::open(path).map(bcf::Reader::new).unwrap();
+        let header = reader2.read_header().unwrap();
+
+        Ok(Self { reader, reader2, header, string_maps, index })
     }
 
     /// Returns the records in the given region as Apache Arrow IPC.
@@ -108,19 +113,26 @@ impl BcfReader {
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
     pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
-        let s = self.string_maps.clone();
-        let batch_builder = BcfBatchBuilder::new(1024, &self.header, &s)?;
-        let string_maps = StringMaps::from(&self.header);
+        let batch_builder = BcfBatchBuilder::new(1024, &self.header)?;
+        // let string_maps = StringMaps::try_from(&self.header).unwrap();
         if let Some(region) = region {
             let region: Region = region.parse().unwrap();
             let query = self
                 .reader
-                .query(string_maps.contigs(), &self.index, &region)
+                .query(&self.header, &self.index, &region)
                 .unwrap()
                 .map(|r| r.unwrap());
             return write_ipc(query, batch_builder);
         }
-        let records = self.reader.records().map(|r| r.unwrap());
+        let records = self.reader.records(&self.header).map(|r| r.unwrap());
+        write_ipc(records, batch_builder)
+    }
+
+    pub fn records_to_ipc_from_vpos(&mut self, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> Result<Vec<u8>, ArrowError> {
+        let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo).unwrap();
+        let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi).unwrap();
+        let batch_builder = BcfBatchBuilder::new(1024, &self.header)?;
+        let records = vpos::BcfRecords::new(&mut self.reader2, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
         write_ipc(records, batch_builder)
     }
 }
@@ -136,11 +148,10 @@ struct BcfBatchBuilder {
     info: GenericStringBuilder<i32>,
     format: GenericStringBuilder<i32>,
     header: vcf::Header,
-    string_maps: StringMaps,
 }
 
 impl BcfBatchBuilder {
-    pub fn new(capacity: usize, header: &vcf::Header, string_maps: &StringMaps) -> Result<Self, ArrowError> {
+    pub fn new(capacity: usize, header: &vcf::Header) -> Result<Self, ArrowError> {
         let categories = StringArray::from(
             header
                 .contigs()
@@ -162,31 +173,25 @@ impl BcfBatchBuilder {
             info: GenericStringBuilder::<i32>::new(),
             format: GenericStringBuilder::<i32>::new(),
             header: header.clone(),
-            string_maps: string_maps.clone(),
         })
     }
 }
 
 impl BatchBuilder for BcfBatchBuilder {
-    type Record = bcf::record::Record;
+    type Record = vcf::Record;
 
     fn push(&mut self, record: &Self::Record) {
-
-        let vcf_record = record.try_into_vcf_record(
-            &self.header, &self.string_maps
-        ).unwrap();
-
-        self.chrom.append_value(vcf_record.chromosome().to_string());
-        self.pos.append_value(usize::from(vcf_record.position()) as i32);
-        self.id.append_value(vcf_record.ids().to_string());
-        self.ref_.append_value(vcf_record.reference_bases().to_string());
-        self.alt.append_value(vcf_record.alternate_bases().to_string());
+        self.chrom.append_value(record.chromosome().to_string());
+        self.pos.append_value(usize::from(record.position()) as i32);
+        self.id.append_value(record.ids().to_string());
+        self.ref_.append_value(record.reference_bases().to_string());
+        self.alt.append_value(record.alternate_bases().to_string());
         self.qual
-            .append_option(vcf_record.quality_score().map(f32::from));
+            .append_option(record.quality_score().map(f32::from));
         self.filter
-            .append_option(vcf_record.filters().map(|f| f.to_string()));
-        self.info.append_value(vcf_record.info().to_string());
-        self.format.append_value(vcf_record.format().to_string());
+            .append_option(record.filters().map(|f| f.to_string()));
+        self.info.append_value(record.info().to_string());
+        self.format.append_value(record.format().to_string());
     }
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
