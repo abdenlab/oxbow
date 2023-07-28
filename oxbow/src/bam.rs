@@ -10,12 +10,15 @@ use noodles::{bam, bgzf, sam};
 use std::sync::Arc;
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
+use crate::vpos;
 
 type BufferedReader = std::io::BufReader<std::fs::File>;
+
 
 /// A BAM reader.
 pub struct BamReader {
     reader: bam::IndexedReader<bgzf::Reader<BufferedReader>>,
+    unindexed_reader: bam::Reader<bgzf::Reader<std::fs::File>>,
     header: sam::Header,
 }
 
@@ -29,7 +32,8 @@ impl BamReader {
             .set_index(index)
             .build_from_reader(bufreader)?;
         let header = reader.read_header()?;
-        Ok(Self { reader, header })
+        let unindexed_reader = bam::reader::Builder::default().build_from_path(path).unwrap();
+        Ok(Self { reader, unindexed_reader, header })
     }
 
     /// Returns the records in the given region as Apache Arrow IPC.
@@ -56,6 +60,14 @@ impl BamReader {
             return write_ipc(query, batch_builder);
         }
         let records = self.reader.records(&self.header).map(|r| r.unwrap());
+        write_ipc(records, batch_builder)
+    }
+
+    pub fn records_to_ipc_from_vpos(&mut self, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> Result<Vec<u8>, ArrowError> {
+        let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo).unwrap();
+        let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi).unwrap();
+        let batch_builder = BamBatchBuilder::new(1024, &self.header)?;
+        let records = vpos::BamRecords::new(&mut self.unindexed_reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
         write_ipc(records, batch_builder)
     }
 }

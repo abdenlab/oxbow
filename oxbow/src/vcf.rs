@@ -6,16 +6,18 @@ use arrow::{
     datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch,
 };
 use noodles::core::Region;
-use noodles::{tabix, vcf};
+use noodles::{tabix, bgzf, vcf};
 use std::sync::Arc;
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
+use crate::vpos;
 
 type BufferedReader = std::io::BufReader<std::fs::File>;
 
 /// A VCF reader.
 pub struct VcfReader {
     reader: vcf::IndexedReader<BufferedReader>,
+    unindexed_reader: vcf::Reader<bgzf::Reader<BufferedReader>>,
     header: vcf::Header,
 }
 
@@ -29,7 +31,12 @@ impl VcfReader {
             .set_index(index)
             .build_from_reader(bufreader)?;
         let header = reader.read_header()?;
-        Ok(Self { reader, header })
+
+        let file2 = std::fs::File::open(path)?;
+        let bufreader2 = std::io::BufReader::with_capacity(1024 * 1024, file2);
+        let unindexed_reader = vcf::Reader::new(bgzf::Reader::new(bufreader2));
+        
+        Ok(Self { reader, unindexed_reader, header })
     }
 
     /// Returns the records in the given region as Apache Arrow IPC.
@@ -56,6 +63,14 @@ impl VcfReader {
             return write_ipc(query, batch_builder);
         }
         let records = self.reader.records(&self.header).map(|r| r.unwrap());
+        write_ipc(records, batch_builder)
+    }
+
+    pub fn records_to_ipc_from_vpos(&mut self, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> Result<Vec<u8>, ArrowError> {
+        let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo).unwrap();
+        let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi).unwrap();
+        let batch_builder = VcfBatchBuilder::new(1024, &self.header)?;
+        let records = vpos::VcfRecords::new(&mut self.unindexed_reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
         write_ipc(records, batch_builder)
     }
 }

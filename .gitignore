@@ -71,7 +71,7 @@ docs/_build/
 # Pyenv
 .python-version
 
-data
+fixtures
 .Rbuildignore
 py-oxbow/notebooks/*.bam*
 .ipynb_checkpoints
