@@ -6,7 +6,8 @@ use arrow::{
     datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch,
 };
 use noodles::core::Region;
-use noodles::{bam, bgzf, sam};
+use noodles::{bam, bgzf, csi, sam};
+use std::path::Path;
 use std::sync::Arc;
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
@@ -17,23 +18,29 @@ type BufferedReader = std::io::BufReader<std::fs::File>;
 
 /// A BAM reader.
 pub struct BamReader {
-    reader: bam::IndexedReader<bgzf::Reader<BufferedReader>>,
-    unindexed_reader: bam::Reader<bgzf::Reader<std::fs::File>>,
+    reader: bam::Reader<bgzf::Reader<BufferedReader>>,
     header: sam::Header,
+    index: csi::Index,
 }
 
 impl BamReader {
     /// Creates a BAM reader.
     pub fn new(path: &str) -> std::io::Result<Self> {
-        let index = bam::bai::read(format!("{}.bai", path))?;
+        let bai_path = format!("{}.bai", path);
+        let csi_path = format!("{}.csi", path);
+        let index = if Path::new(&bai_path).exists() {
+            bam::bai::read(bai_path)?
+        } else if Path::new(&csi_path).exists() {
+            csi::read(csi_path)?
+        } else {
+            panic!("Could not find a .bai or .csi index file for the given BAM file.");
+        };
+
         let file = std::fs::File::open(path)?;
-        let bufreader = std::io::BufReader::with_capacity(1024 * 1024, file);
-        let mut reader = bam::indexed_reader::Builder::default()
-            .set_index(index)
-            .build_from_reader(bufreader)?;
+        let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
+        let mut reader = bam::Reader::new(buf_file);
         let header = reader.read_header()?;
-        let unindexed_reader = bam::reader::Builder::default().build_from_path(path).unwrap();
-        Ok(Self { reader, unindexed_reader, header })
+        Ok(Self { reader, header, index })
     }
 
     /// Returns the records in the given region as Apache Arrow IPC.
@@ -54,7 +61,7 @@ impl BamReader {
             let region: Region = region.parse().unwrap();
             let query = self
                 .reader
-                .query(&self.header, &region)
+                .query(&self.header, &self.index, &region)
                 .unwrap()
                 .map(|r| r.unwrap());
             return write_ipc(query, batch_builder);
@@ -67,7 +74,7 @@ impl BamReader {
         let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo).unwrap();
         let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi).unwrap();
         let batch_builder = BamBatchBuilder::new(1024, &self.header)?;
-        let records = vpos::BamRecords::new(&mut self.unindexed_reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
+        let records = vpos::BamRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
         write_ipc(records, batch_builder)
     }
 }
