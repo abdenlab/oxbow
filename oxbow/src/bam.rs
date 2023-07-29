@@ -1,3 +1,8 @@
+use std::fs::File;
+use std::io::{self, Read, Seek};
+use std::path::Path;
+use std::sync::Arc;
+
 use arrow::array::{
     ArrayRef, GenericStringBuilder, Int32Array, Int32Builder, StringArray, StringDictionaryBuilder,
     UInt16Array, UInt16Builder, UInt8Array, UInt8Builder,
@@ -7,13 +12,10 @@ use arrow::{
 };
 use noodles::core::Region;
 use noodles::{bam, bgzf, csi, sam};
-use std::path::Path;
-use std::sync::Arc;
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
-use crate::vpos;
 
-type BufferedReader = std::io::BufReader<std::fs::File>;
+type BufferedReader = io::BufReader<File>;
 
 
 /// A BAM reader.
@@ -74,7 +76,7 @@ impl BamReader {
         let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo).unwrap();
         let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi).unwrap();
         let batch_builder = BamBatchBuilder::new(1024, &self.header)?;
-        let records = vpos::BamRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
+        let records = BamRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
         write_ipc(records, batch_builder)
     }
 }
@@ -179,6 +181,64 @@ impl<'a> BatchBuilder for BamBatchBuilder<'a> {
         ])
     }
 }
+
+
+// Reads SAM records from a virtualposition range in a BAM file
+pub struct BamRecords<'a, R>
+where
+    R: Read + Seek,
+{
+    reader: &'a mut bam::Reader<bgzf::reader::Reader<R>>,
+    header: &'a sam::Header,
+    record: sam::alignment::Record,
+    vpos_lo: bgzf::VirtualPosition,
+    vpos_hi: bgzf::VirtualPosition,
+}
+
+impl<'a, R> BamRecords<'a, R>
+where
+    R: Read + Seek,
+{
+    pub fn new(
+        reader: &'a mut bam::Reader<bgzf::reader::Reader<R>>,
+        header: &'a sam::Header, 
+        vpos_lo: bgzf::VirtualPosition, 
+        vpos_hi: bgzf::VirtualPosition
+    ) -> Self {
+        let _ = reader.seek(vpos_lo);
+        Self {
+            reader,
+            header,
+            record: sam::alignment::Record::default(),
+            vpos_lo,
+            vpos_hi,
+        }
+    }
+
+    pub fn reset(&mut self) -> Option<bgzf::VirtualPosition> {
+        self.reader.seek(self.vpos_lo).ok()
+    }
+}
+
+impl<'a, R> Iterator for BamRecords<'a, R>
+where
+    R: Read + Seek,
+{
+    type Item = io::Result<sam::alignment::Record>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.reader.virtual_position() >= self.vpos_hi {
+            return None;
+        }
+
+        match self.reader.read_record(self.header, &mut self.record) {
+            Ok(0) => None,
+            Ok(_) => Some(Ok(self.record.clone())),
+            Err(e) => Some(Err(e)),
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

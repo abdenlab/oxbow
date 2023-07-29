@@ -6,7 +6,7 @@ use arrow::{
 };
 // use noodles::core::Region;
 use noodles::fastq;
-use noodles::fastq::fai;
+// use noodles::fastq::fai;
 use std::sync::Arc;
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
@@ -60,7 +60,7 @@ struct FastqBatchBuilder {
 }
 
 impl FastqBatchBuilder {
-    pub fn new(capacity: usize) -> Result<Self, ArrowError> {
+    pub fn new(_capacity: usize) -> Result<Self, ArrowError> {
         Ok(Self {
             name: GenericStringBuilder::<i32>::new(),
             description: GenericStringBuilder::<i32>::new(),

@@ -1,3 +1,8 @@
+use std::fs::File;
+use std::io::{self, Read, Seek};
+use std::path::Path;
+use std::sync::Arc;
+
 use arrow::array::{
     ArrayRef, Float32Builder, GenericStringBuilder, Int32Builder,
     StringArray, StringDictionaryBuilder,
@@ -7,13 +12,11 @@ use arrow::{
 };
 use noodles::core::Region;
 use noodles::{bgzf, csi, tabix, vcf};
-use std::sync::Arc;
-use std::path::Path;
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
-use crate::vpos;
 
-type BufferedReader = std::io::BufReader<std::fs::File>;
+type BufferedReader = io::BufReader<File>;
+
 
 /// A VCF reader.
 pub struct VcfReader {
@@ -73,7 +76,7 @@ impl VcfReader {
         let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo).unwrap();
         let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi).unwrap();
         let batch_builder = VcfBatchBuilder::new(1024, &self.header)?;
-        let records = vpos::VcfRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
+        let records = VcfRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
         write_ipc(records, batch_builder)
     }
 }
@@ -146,5 +149,59 @@ impl BatchBuilder for VcfBatchBuilder {
             ("info", Arc::new(self.info.finish()) as ArrayRef),
             ("format", Arc::new(self.format.finish()) as ArrayRef),
         ])
+    }
+}
+
+
+// Reads VCF Records from a virtualposition range in a VCF file
+pub struct VcfRecords<'a, R> {
+    reader: &'a mut vcf::Reader<bgzf::reader::Reader<R>>,
+    header: &'a vcf::Header,
+    record: vcf::record::Record,
+    vpos_lo: bgzf::VirtualPosition,
+    vpos_hi: bgzf::VirtualPosition,
+}
+
+impl<'a, R> VcfRecords<'a, R>
+where
+    R: Read + Seek,
+{
+    pub(crate) fn new(
+        reader: &'a mut vcf::Reader<bgzf::reader::Reader<R>>, 
+        header: &'a vcf::Header,
+        vpos_lo: bgzf::VirtualPosition,
+        vpos_hi: bgzf::VirtualPosition,
+    ) -> Self {
+        let _ = reader.seek(vpos_lo);
+        Self {
+            reader,
+            header,
+            record: vcf::Record::default(),
+            vpos_lo,
+            vpos_hi,
+        }
+    }
+
+    pub fn reset(&mut self) -> Option<bgzf::VirtualPosition> {
+        self.reader.seek(self.vpos_lo).ok()
+    }
+}
+
+impl<'a, R> Iterator for VcfRecords<'a, R>
+where
+    R: Read + Seek,
+{
+    type Item = io::Result<vcf::Record>;
+    
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.reader.virtual_position() >= self.vpos_hi {
+            return None;
+        }    
+
+        match self.reader.read_record(self.header, &mut self.record) {
+            Ok(0) => None,
+            Ok(_) => Some(Ok(self.record.clone())),
+            Err(e) => Some(Err(e)),
+        }
     }
 }
