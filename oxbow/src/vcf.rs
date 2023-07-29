@@ -6,8 +6,9 @@ use arrow::{
     datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch,
 };
 use noodles::core::Region;
-use noodles::{tabix, bgzf, vcf};
+use noodles::{bgzf, csi, tabix, vcf};
 use std::sync::Arc;
+use std::path::Path;
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
 use crate::vpos;
@@ -16,27 +17,29 @@ type BufferedReader = std::io::BufReader<std::fs::File>;
 
 /// A VCF reader.
 pub struct VcfReader {
-    reader: vcf::IndexedReader<BufferedReader>,
-    unindexed_reader: vcf::Reader<bgzf::Reader<BufferedReader>>,
+    reader: vcf::Reader<bgzf::Reader<BufferedReader>>,
     header: vcf::Header,
+    index: csi::Index,
 }
 
 impl VcfReader {
     /// Creates a VCF Reader.
     pub fn new(path: &str) -> std::io::Result<Self> {
-        let index = tabix::read(format!("{}.tbi", path))?;
-        let file = std::fs::File::open(path)?;
-        let bufreader = std::io::BufReader::with_capacity(1024 * 1024, file);
-        let mut reader = vcf::indexed_reader::Builder::default()
-            .set_index(index)
-            .build_from_reader(bufreader)?;
-        let header = reader.read_header()?;
+        let tbi_path = format!("{}.tbi", path);
+        let csi_path = format!("{}.csi", path);
+        let index = if Path::new(&tbi_path).exists() {
+            tabix::read(tbi_path)?
+        } else if Path::new(&csi_path).exists() {
+            csi::read(csi_path)?
+        } else {
+            panic!("Could not find a .tbi or .csi index file for the given VCF file.");
+        };
 
-        let file2 = std::fs::File::open(path)?;
-        let bufreader2 = std::io::BufReader::with_capacity(1024 * 1024, file2);
-        let unindexed_reader = vcf::Reader::new(bgzf::Reader::new(bufreader2));
-        
-        Ok(Self { reader, unindexed_reader, header })
+        let file = std::fs::File::open(path)?;
+        let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
+        let mut reader = vcf::Reader::new(bgzf::Reader::new(buf_file));
+        let header = reader.read_header()?;
+        Ok(Self { reader, header, index })
     }
 
     /// Returns the records in the given region as Apache Arrow IPC.
@@ -57,7 +60,7 @@ impl VcfReader {
             let region: Region = region.parse().unwrap();
             let query = self
                 .reader
-                .query(&self.header, &region)
+                .query(&self.header, &self.index, &region)
                 .unwrap()
                 .map(|r| r.unwrap());
             return write_ipc(query, batch_builder);
@@ -70,7 +73,7 @@ impl VcfReader {
         let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo).unwrap();
         let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi).unwrap();
         let batch_builder = VcfBatchBuilder::new(1024, &self.header)?;
-        let records = vpos::VcfRecords::new(&mut self.unindexed_reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
+        let records = vpos::VcfRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
         write_ipc(records, batch_builder)
     }
 }
