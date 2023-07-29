@@ -5,6 +5,7 @@ use pyo3::types::PyList;
 use oxbow::fasta::FastaReader;
 use oxbow::fastq::FastqReader;
 use oxbow::bam::BamReader;
+use oxbow::bigwig::BigWigReader;
 // use oxbow::cram::CramReader;
 use oxbow::vcf::VcfReader;
 use oxbow::bcf::BcfReader;
@@ -81,6 +82,13 @@ fn read_bcf_vpos(path: &str, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> PyObject
     Python::with_gil(|py| PyBytes::new(py, &ipc).into())
 }
 
+#[pyfunction]
+fn read_bigwig(path: &str, region: Option<&str>) -> PyObject {
+    let mut reader = BigWigReader::new(path).unwrap();
+    let ipc = reader.records_to_ipc(region).unwrap();
+    Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+}
+
 #[pymodule]
 #[pyo3(name = "oxbow")]
 fn py_oxbow(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -95,5 +103,6 @@ fn py_oxbow(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_vcf_vpos, m)?)?;
     m.add_function(wrap_pyfunction!(read_bcf, m)?)?;
     m.add_function(wrap_pyfunction!(read_bcf_vpos, m)?)?;
+    m.add_function(wrap_pyfunction!(read_bigwig, m)?)?;
     Ok(())
 }
