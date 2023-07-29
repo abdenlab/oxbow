@@ -90,6 +90,7 @@ fn py_oxbow(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_bam, m)?)?;
     m.add_function(wrap_pyfunction!(read_bam_vpos, m)?)?;
     // m.add_function(wrap_pyfunction!(read_cram, m)?)?;
+    // m.add_function(wrap_pyfunction!(read_cram_vpos, m)?)?;
     m.add_function(wrap_pyfunction!(read_vcf, m)?)?;
     m.add_function(wrap_pyfunction!(read_vcf_vpos, m)?)?;
     m.add_function(wrap_pyfunction!(read_bcf, m)?)?;

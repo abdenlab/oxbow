@@ -69,7 +69,7 @@ struct FastaBatchBuilder {
 }
 
 impl FastaBatchBuilder {
-    pub fn new(capacity: usize) -> Result<Self, ArrowError> {
+    pub fn new(_capacity: usize) -> Result<Self, ArrowError> {
         Ok(Self {
             name: GenericStringBuilder::<i32>::new(),
             sequence: GenericStringBuilder::<i32>::new(),
