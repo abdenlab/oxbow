@@ -1,4 +1,4 @@
-use std::io::{self, Read, Seek, BufRead};
+use std::io::{self, Read, Seek};
 use std::fs::File;
 use std::collections::HashSet;
 
@@ -12,8 +12,6 @@ use noodles::bam;
 use noodles::bcf;
 use noodles::sam;
 use noodles::vcf;
-
-const COMPRESSED_POSITION_SHIFT: u64 = 16;
 
 
 // Reads SAM records from a BAM file
@@ -170,7 +168,7 @@ where
 
 
 fn get_ref_last_position(rseq: &ReferenceSequence) -> bgzf::VirtualPosition {
-    let mut rend = rseq
+    let rend = rseq
         .bins()
         .values()
         .map(|bin| {
@@ -188,7 +186,7 @@ fn get_ref_last_position(rseq: &ReferenceSequence) -> bgzf::VirtualPosition {
 
 fn get_offsets_from_linear_index(rseq: &ReferenceSequence) -> Vec<(u64, u16)>{
     let mut offsets: Vec<(u64, u16)> = Vec::new();
-    let mut rend = get_ref_last_position(&rseq);
+    let rend = get_ref_last_position(&rseq);
     for offset in rseq.linear_index() {
         let a = offset.compressed();
         let b = offset.uncompressed();
@@ -202,7 +200,7 @@ fn get_offsets_from_linear_index(rseq: &ReferenceSequence) -> Vec<(u64, u16)>{
     );
 
     // Remove duplicates and sort by compressed, then uncompressed
-    let mut offsets_uniq: HashSet<(u64, u16)> = offsets.drain(..).collect();
+    let offsets_uniq: HashSet<(u64, u16)> = offsets.drain(..).collect();
     let mut offsets_uniq: Vec<(u64, u16)> = offsets_uniq.into_iter().collect();
     offsets_uniq.sort_by_key(|&(a, b)| (a, b));
     offsets_uniq
@@ -211,7 +209,7 @@ fn get_offsets_from_linear_index(rseq: &ReferenceSequence) -> Vec<(u64, u16)>{
 
 fn get_offsets_from_binning_index(rseq: &ReferenceSequence) -> Vec<(u64, u16)> {
     let mut offsets: Vec<(u64, u16)> = Vec::new();
-    let mut rend = get_ref_last_position(&rseq);
+    let rend = get_ref_last_position(&rseq);
     for bin in rseq.bins().values() {
         for chunk in bin.chunks() {
             offsets.push(
@@ -227,7 +225,7 @@ fn get_offsets_from_binning_index(rseq: &ReferenceSequence) -> Vec<(u64, u16)> {
     );
 
     // Remove duplicates and sort by compressed, then uncompressed
-    let mut offsets_uniq: HashSet<(u64, u16)> = offsets.drain(..).collect();
+    let offsets_uniq: HashSet<(u64, u16)> = offsets.drain(..).collect();
     let mut offsets_uniq: Vec<(u64, u16)> = offsets_uniq.into_iter().collect();
     offsets_uniq.sort_by_key(|&(a, b)| (a, b));
     offsets_uniq
@@ -268,7 +266,7 @@ fn partition_from_index(index: &csi::Index, chunksize: u64) -> Vec<(u64, u16)> {
     }
 
     // Remove duplicates and sort by compressed, then uncompressed
-    let mut partition: HashSet<(u64, u16)> = partition.drain(..).collect();
+    let partition: HashSet<(u64, u16)> = partition.drain(..).collect();
     let mut partition: Vec<(u64, u16)> = partition.into_iter().collect();
     partition.sort_by_key(|&(a, b)| (a, b));
     partition
