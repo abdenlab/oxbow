@@ -10,7 +10,6 @@ use oxbow::vcf::VcfReader;
 use oxbow::bcf::BcfReader;
 
 use oxbow::vpos;
-use oxbow::vpos::{BamRecords, VcfRecords, BcfRecords};
 
 
 #[pyfunction]
