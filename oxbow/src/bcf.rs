@@ -21,7 +21,6 @@ type BufferedReader = io::BufReader<File>;
 /// A BCF reader.
 pub struct BcfReader {
     reader: bcf::Reader<bgzf::Reader<BufferedReader>>,
-    reader2: bcf::Reader<bgzf::Reader<std::fs::File>>,
     header: vcf::Header,
     index: csi::Index,
 }
@@ -146,21 +145,21 @@ impl BatchBuilder for BcfBatchBuilder {
 
 
 // Reads VCF Records from virtualposition range in a BCF file
-pub struct BcfRecords<'r, 'h, R> {
-    reader: &'r mut bcf::Reader<bgzf::reader::Reader<R>>,
-    header: &'h vcf::Header,
+pub struct BcfRecords<'a, R> {
+    reader: &'a mut bcf::Reader<bgzf::reader::Reader<R>>,
+    header: &'a vcf::Header,
     record: vcf::Record,
     vpos_lo: bgzf::VirtualPosition,
     vpos_hi: bgzf::VirtualPosition,
 }
 
-impl<'r, 'h, R> BcfRecords<'r, 'h, R>
+impl<'a, R> BcfRecords<'a, R>
 where
     R: Read + Seek,
 {
     pub(crate) fn new(
-        reader: &'r mut bcf::Reader<bgzf::reader::Reader<R>>, 
-        header: &'h vcf::Header,
+        reader: &'a mut bcf::Reader<bgzf::reader::Reader<R>>, 
+        header: &'a vcf::Header,
         vpos_lo: bgzf::VirtualPosition,
         vpos_hi: bgzf::VirtualPosition,
     ) -> Self {
@@ -179,7 +178,7 @@ where
     }
 }
 
-impl<'r, 'h, R> Iterator for BcfRecords<'r, 'h, R>
+impl<'a, R> Iterator for BcfRecords<'a, R>
 where
     R: Read + Seek,
 {
