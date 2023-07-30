@@ -33,9 +33,9 @@ fn read_bam(path: &str, region: Option<&str>) -> Vec<u8> {
 /// Return Arrow IPC format from a BAM file.
 /// @export
 #[extendr]
-fn read_bam_vpos(path: &str, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> Vec<u8> {
+fn read_bam_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
     let mut reader = BamReader::new(path).unwrap();
-    reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
+    reader.records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi)).unwrap()
 }
 
 /// Return Arrow IPC format from a VCF file.
@@ -49,9 +49,9 @@ fn read_vcf(path: &str, region: Option<&str>) -> Vec<u8> {
 /// Return Arrow IPC format from a VCF file.
 /// @export
 #[extendr]
-fn read_vcf_vpos(path: &str, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> Vec<u8> {
+fn read_vcf_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
     let mut reader = VcfReader::new(path).unwrap();
-    reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
+    reader.records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi)).unwrap()
 }
 
 /// Return Arrow IPC format from a BCF file.
@@ -65,9 +65,9 @@ fn read_bcf(path: &str, region: Option<&str>) -> Vec<u8> {
 /// Return Arrow IPC format from a BCF file.
 /// @export
 #[extendr]
-fn read_bcf_vpos(path: &str, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> Vec<u8> {
+fn read_bcf_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
     let mut reader = BcfReader::new(path).unwrap();
-    reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
+    reader.records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi)).unwrap()
 }
 
 // Macro to generate exports.
