@@ -10,6 +10,10 @@ Data I/O is handled in Rust with features exposed to Python and R via Apache Arr
 
 Learn more in our recent [blog post](https://open.substack.com/pub/lifeinbytes/p/breaking-out-of-bioinformatic-data-silos?r=jue12&utm_campaign=post&utm_medium=web).
 
+## Docs
+
+Read the [latest API documentation](https://docs.rs/oxbow/latest/oxbow/).
+
 ## Contributing
 
 Want to contribute? [Join us](https://oxbow.zulipchat.com)!
