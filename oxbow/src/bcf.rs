@@ -42,7 +42,7 @@ impl BcfReader {
     ///
     /// # Examples
     ///
-    /// ``no_run
+    /// ```no_run
     /// use oxbow::bcf::BcfReader;
     ///
     /// let mut reader = BcfReader::new("sample.bcf").unwrap();
