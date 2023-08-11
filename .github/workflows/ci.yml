@@ -14,7 +14,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Download fixtures
+        run: cd fixtures && wget -i list.txt
+
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
