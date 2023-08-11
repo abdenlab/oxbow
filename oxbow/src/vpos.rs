@@ -96,12 +96,11 @@ fn partition_from_index(index: &csi::Index, chunksize: u64) -> Vec<(u64, u16)> {
         if rseq.bins().is_empty() {
             continue;
         }
-        let offsets;
-        if rseq.linear_index().is_empty() {
-            offsets = get_offsets_from_binning_index(&rseq);
+        let offsets = if rseq.linear_index().is_empty() {
+            get_offsets_from_binning_index(&rseq)
         } else {
-            offsets = get_offsets_from_linear_index(&rseq);
-        }
+            get_offsets_from_linear_index(&rseq)
+        };
         let consolidated = consolidate_chunks(&offsets, chunksize);
         partition.extend(consolidated);
     }
@@ -117,14 +116,14 @@ fn partition_from_index(index: &csi::Index, chunksize: u64) -> Vec<(u64, u16)> {
 fn parse_index_file(path: &str) -> io::Result<csi::Index> {
     if path.ends_with(".csi") {
         let mut reader = File::open(path).map(csi::Reader::new)?;
-        return reader.read_index();
+        reader.read_index()
     } else if path.ends_with(".tbi") {
         let mut reader = File::open(path).map(tabix::Reader::new)?;
-        return reader.read_index();
+        reader.read_index()
     } else if path.ends_with(".bai") {
         let mut reader = File::open(path).map(bai::Reader::new)?;
         reader.read_header()?;
-        return reader.read_index();
+        reader.read_index()
     // } else if path.ends_with(".crai") {
     //     let mut reader = File::open(path).map(crai::Reader::new)?;
     //     reader.read_header()?;
