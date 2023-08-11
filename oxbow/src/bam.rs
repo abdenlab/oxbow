@@ -131,9 +131,9 @@ impl<'a> BamBatchBuilder<'a> {
 }
 
 impl<'a> BatchBuilder for BamBatchBuilder<'a> {
-    type Record = sam::alignment::Record;
+    type Record<'x> = &'x sam::alignment::Record;
 
-    fn push(&mut self, record: &Self::Record) {
+    fn push(&mut self, record: Self::Record<'_>) {
         self.qname.append_option(record.read_name());
         self.flag.append_value(record.flags().bits());
         let rname = match record.reference_sequence(self.header) {
