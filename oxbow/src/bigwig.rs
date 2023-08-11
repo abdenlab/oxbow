@@ -12,7 +12,7 @@ use bigtools::utils::reopen::ReopenableFile;
 use noodles::core::Region;
 use std::sync::Arc;
 
-use crate::batch_builder::{write_ipc, BatchBuilder};
+use crate::batch_builder::BatchBuilder;
 
 /// A BigWig reader.
 pub struct BigWigReader {
