@@ -20,8 +20,8 @@ pub struct BigWigReader {
     chroms: StringArray,
 }
 
-pub struct BigWigRecord {
-    pub chrom: String,
+pub struct BigWigRecord<'a> {
+    pub chrom: &'a str,
     pub start: u32,
     pub end: u32,
     pub value: f32,
@@ -79,15 +79,21 @@ impl BigWigReader {
                     }
                 };
                 let values = match self.read.get_interval(&chrom_name, start, end) {
-                    Ok(v) => v.map(|v| {
-                        let v = v.unwrap();
-                        BigWigRecord { chrom: chrom_name.clone(), start: v.start, end: v.end, value: v.value }
-                    }),
+                    Ok(v) => v,
                     Err(e) => {
                         return Err(ArrowError::ExternalError(Box::new(e)));
                     }
                 };
-                write_ipc(values, batch_builder)
+                for value in values {
+                    let v = value.unwrap();
+                    let record = BigWigRecord { chrom: &chrom_name, start: v.start, end: v.end, value: v.value };
+                    batch_builder.push(record);
+                }
+                let batch = batch_builder.finish()?;
+                let mut writer = FileWriter::try_new(Vec::new(), &batch.schema())?;
+                writer.write(&batch)?;
+                writer.finish()?;
+                writer.into_inner()
             }
             None => {
                 // Can't use write_ipc, because we have separate iterators for each chrom
@@ -96,11 +102,11 @@ impl BigWigReader {
                     let start = 0;
                     let end = chrom.length;
                     let values = self.read.get_interval(&chrom.name, start, end).unwrap();
-                    let records = values.map(|v| {
-                        let v = v.unwrap(); 
-                        BigWigRecord { chrom: chrom.name.clone(), start: v.start, end: v.end, value: v.value }
-                    });
-                    records.for_each(|record| batch_builder.push(&record));
+                    for value in values {
+                        let v = value.unwrap();
+                        let record = BigWigRecord { chrom: &chrom.name, start: v.start, end: v.end, value: v.value };
+                        batch_builder.push(record);
+                    }
                 }
                 let batch = batch_builder.finish()?;
                 let mut writer = FileWriter::try_new(Vec::new(), &batch.schema())?;
@@ -133,11 +139,11 @@ impl BigWigBatchBuilder {
     }
 }
 
-impl<'a> BatchBuilder for BigWigBatchBuilder {
-    type Record = BigWigRecord;
+impl BatchBuilder for BigWigBatchBuilder {
+    type Record<'a> = BigWigRecord<'a>;
 
-    fn push(&mut self, record: &Self::Record) {
-        self.chrom.append_value(record.chrom.clone());
+    fn push(&mut self, record: Self::Record<'_>) {
+        self.chrom.append_value(record.chrom);
         self.start.append_value(record.start);
         self.end.append_value(record.end);
         self.value.append_value(record.value);

@@ -71,9 +71,9 @@ impl FastqBatchBuilder {
 }
 
 impl BatchBuilder for FastqBatchBuilder {
-    type Record = fastq::Record;
+    type Record<'a> = &'a fastq::Record;
     
-    fn push(&mut self, record: &Self::Record) {
+    fn push(&mut self, record: Self::Record<'_>) {
         self.name.append_value(std::str::from_utf8(record.name()).unwrap());
         self.description.append_value(std::str::from_utf8(record.description()).unwrap());
         self.sequence.append_value(std::str::from_utf8(record.sequence()).unwrap());

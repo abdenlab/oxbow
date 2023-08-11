@@ -78,10 +78,10 @@ impl FastaBatchBuilder {
 }
 
 impl BatchBuilder for FastaBatchBuilder {
-    type Record = fasta::record::Record;
+    type Record<'a> = &'a fasta::record::Record;
     
 
-    fn push(&mut self, record: &Self::Record) {
+    fn push(&mut self, record: Self::Record<'_>) {
         let seq = record.sequence().as_ref();
         
         self.name.append_value(record.name());

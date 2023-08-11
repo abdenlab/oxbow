@@ -111,9 +111,9 @@ impl BcfBatchBuilder {
 }
 
 impl BatchBuilder for BcfBatchBuilder {
-    type Record = vcf::Record;
+    type Record<'a> = &'a vcf::Record;
 
-    fn push(&mut self, record: &Self::Record) {
+    fn push(&mut self, record: Self::Record<'_>) {
         self.chrom.append_value(record.chromosome().to_string());
         self.pos.append_value(usize::from(record.position()) as i32);
         self.id.append_value(record.ids().to_string());

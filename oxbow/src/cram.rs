@@ -129,9 +129,9 @@ impl<'a> CramBatchBuilder<'a> {
 }
 
 impl<'a> BatchBuilder for CramBatchBuilder<'a> {
-    type Record = cram::Record;
+    type Record<'x> = &'a cram::Record;
 
-    fn push(&mut self, record: &Self::Record) {
+    fn push(&mut self, record: Self::Record<'_>) {
         // let record = record.try_into_alignment_record(&self.header).unwrap();
         let reference_sequences = self.header.reference_sequences();
 
