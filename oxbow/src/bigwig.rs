@@ -1,11 +1,13 @@
 use arrow::array::{
-    ArrayRef, UInt32Builder, Float32Builder, UInt32Array, Float32Array,
+    ArrayRef, UInt32Builder, Float32Builder, UInt32Array, Float32Array, StringDictionaryBuilder,
 };
+use arrow::datatypes::Int32Type;
+use arrow::array::StringArray;
 use arrow::ipc::writer::FileWriter;
 use arrow::{
     error::ArrowError, record_batch::RecordBatch,
 };
-use bigtools::{BigWigRead, Value, BBIRead};
+use bigtools::{BigWigRead, BBIRead};
 use bigtools::utils::reopen::ReopenableFile;
 use noodles::core::Region;
 use std::sync::Arc;
@@ -15,13 +17,23 @@ use crate::batch_builder::{write_ipc, BatchBuilder};
 /// A BigWig reader.
 pub struct BigWigReader {
     read: BigWigRead<ReopenableFile>,
+    chroms: StringArray,
+}
+
+pub struct BigWigRecord {
+    pub chrom: String,
+    pub start: u32,
+    pub end: u32,
+    pub value: f32,
 }
 
 impl BigWigReader {
     /// Creates a BigWig reader.
     pub fn new(path: &str) -> std::io::Result<Self> {
         let read = BigWigRead::open_file(path).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-        Ok(Self { read })
+        let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
+        let chroms: StringArray = StringArray::from(chroms);
+        Ok(Self { read, chroms })
     }
 
     /// Returns the records in the given region as Apache Arrow IPC.
@@ -37,7 +49,7 @@ impl BigWigReader {
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
     pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
-        let mut batch_builder = BigWigBatchBuilder::new(1024)?;
+        let mut batch_builder = BigWigBatchBuilder::new(1024, &self.chroms)?;
         match region {
             Some(region) => {
                 let region: Region = region.parse().unwrap();
@@ -67,7 +79,10 @@ impl BigWigReader {
                     }
                 };
                 let values = match self.read.get_interval(&chrom_name, start, end) {
-                    Ok(v) => v.map(|v| v.unwrap()),
+                    Ok(v) => v.map(|v| {
+                        let v = v.unwrap();
+                        BigWigRecord { chrom: chrom_name.clone(), start: v.start, end: v.end, value: v.value }
+                    }),
                     Err(e) => {
                         return Err(ArrowError::ExternalError(Box::new(e)));
                     }
@@ -81,7 +96,11 @@ impl BigWigReader {
                     let start = 0;
                     let end = chrom.length;
                     let values = self.read.get_interval(&chrom.name, start, end).unwrap();
-                    values.for_each(|record| batch_builder.push(&record.unwrap()));
+                    let records = values.map(|v| {
+                        let v = v.unwrap(); 
+                        BigWigRecord { chrom: chrom.name.clone(), start: v.start, end: v.end, value: v.value }
+                    });
+                    records.for_each(|record| batch_builder.push(&record));
                 }
                 let batch = batch_builder.finish()?;
                 let mut writer = FileWriter::try_new(Vec::new(), &batch.schema())?;
@@ -94,14 +113,19 @@ impl BigWigReader {
 }
 
 struct BigWigBatchBuilder {
+    chrom: StringDictionaryBuilder<Int32Type>,
     start: UInt32Builder,
     end: UInt32Builder,
     value: Float32Builder,
 }
 
 impl BigWigBatchBuilder {
-    pub fn new(capacity: usize) -> Result<Self, ArrowError> {
+    pub fn new(capacity: usize, chroms: &StringArray) -> Result<Self, ArrowError> {
         Ok(Self {
+            chrom: StringDictionaryBuilder::<Int32Type>::new_with_dictionary(
+                capacity, 
+                chroms
+            )?,
             start: UInt32Array::builder(capacity),
             end: UInt32Array::builder(capacity),
             value: Float32Array::builder(capacity),
@@ -110,9 +134,10 @@ impl BigWigBatchBuilder {
 }
 
 impl<'a> BatchBuilder for BigWigBatchBuilder {
-    type Record = Value;
+    type Record = BigWigRecord;
 
     fn push(&mut self, record: &Self::Record) {
+        self.chrom.append_value(record.chrom.clone());
         self.start.append_value(record.start);
         self.end.append_value(record.end);
         self.value.append_value(record.value);
@@ -120,6 +145,7 @@ impl<'a> BatchBuilder for BigWigBatchBuilder {
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
         RecordBatch::try_from_iter(vec![
+            ("chrom", Arc::new(self.chrom.finish()) as ArrayRef),
             ("start", Arc::new(self.start.finish()) as ArrayRef),
             ("end", Arc::new(self.end.finish()) as ArrayRef),
             ("value", Arc::new(self.value.finish()) as ArrayRef),
