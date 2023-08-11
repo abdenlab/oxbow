@@ -3,7 +3,6 @@ use arrow::array::{
 };
 use arrow::datatypes::Int32Type;
 use arrow::array::StringArray;
-use arrow::ipc::writer::FileWriter;
 use arrow::{
     error::ArrowError, record_batch::RecordBatch,
 };
@@ -12,7 +11,7 @@ use bigtools::utils::reopen::ReopenableFile;
 use noodles::core::Region;
 use std::sync::Arc;
 
-use crate::batch_builder::BatchBuilder;
+use crate::batch_builder::{finish_batch, BatchBuilder};
 
 /// A BigWig reader.
 pub struct BigWigReader {
@@ -89,11 +88,7 @@ impl BigWigReader {
                     let record = BigWigRecord { chrom: &chrom_name, start: v.start, end: v.end, value: v.value };
                     batch_builder.push(record);
                 }
-                let batch = batch_builder.finish()?;
-                let mut writer = FileWriter::try_new(Vec::new(), &batch.schema())?;
-                writer.write(&batch)?;
-                writer.finish()?;
-                writer.into_inner()
+                finish_batch(batch_builder)
             }
             None => {
                 // Can't use write_ipc, because we have separate iterators for each chrom
@@ -108,11 +103,7 @@ impl BigWigReader {
                         batch_builder.push(record);
                     }
                 }
-                let batch = batch_builder.finish()?;
-                let mut writer = FileWriter::try_new(Vec::new(), &batch.schema())?;
-                writer.write(&batch)?;
-                writer.finish()?;
-                writer.into_inner()
+                finish_batch(batch_builder)
             }
         }
     }

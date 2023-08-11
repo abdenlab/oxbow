@@ -13,7 +13,7 @@ use arrow::{
 use noodles::core::Region;
 use noodles::{bam, bgzf, csi, sam};
 
-use crate::batch_builder::{write_ipc, BatchBuilder};
+use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
 type BufferedReader = io::BufReader<File>;
 
@@ -64,20 +64,21 @@ impl BamReader {
             let query = self
                 .reader
                 .query(&self.header, &self.index, &region)
-                .unwrap()
-                .map(|r| r.unwrap());
-            return write_ipc(query, batch_builder);
+                .map_err(|e| ArrowError::ExternalError(e.into()))?
+                .map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
+                
+            return write_ipc_err(query, batch_builder);
         }
-        let records = self.reader.records(&self.header).map(|r| r.unwrap());
-        write_ipc(records, batch_builder)
+        let records = self.reader.records(&self.header).map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
+        write_ipc_err(records, batch_builder)
     }
 
     pub fn records_to_ipc_from_vpos(&mut self, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> Result<Vec<u8>, ArrowError> {
-        let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo).unwrap();
-        let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi).unwrap();
+        let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo).map_err(|e| ArrowError::ExternalError(e.into()))?;
+        let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi).map_err(|e| ArrowError::ExternalError(e.into()))?;
         let batch_builder = BamBatchBuilder::new(1024, &self.header)?;
-        let records = BamRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
-        write_ipc(records, batch_builder)
+        let records = BamRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi).map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
+        write_ipc_err(records, batch_builder)
     }
 }
 
