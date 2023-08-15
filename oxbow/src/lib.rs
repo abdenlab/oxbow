@@ -30,5 +30,6 @@ pub mod fastq;
 pub mod vpos;
 // pub mod cram;
 pub mod bcf;
+pub mod bigbed;
 pub mod bigwig;
 pub mod vcf;
