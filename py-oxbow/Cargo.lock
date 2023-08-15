@@ -255,9 +255,9 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "bigtools"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f127be41088f1467466ebabc7b50d384857c7d9ed55b05eb2a6c6cccedf4d2d"
+checksum = "b3ea6710fba1f5b88001f8cdcde6fc0eff0d613afd123f4c5140328bf787aad9"
 dependencies = [
  "byteorder",
  "byteordered",

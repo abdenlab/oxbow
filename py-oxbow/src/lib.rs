@@ -6,6 +6,7 @@ use oxbow::fasta::FastaReader;
 use oxbow::fastq::FastqReader;
 use oxbow::bam::BamReader;
 use oxbow::bigwig::BigWigReader;
+use oxbow::bigbed::BigBedReader;
 // use oxbow::cram::CramReader;
 use oxbow::vcf::VcfReader;
 use oxbow::bcf::BcfReader;
@@ -89,6 +90,13 @@ fn read_bigwig(path: &str, region: Option<&str>) -> PyObject {
     Python::with_gil(|py| PyBytes::new(py, &ipc).into())
 }
 
+#[pyfunction]
+fn read_bigbed(path: &str, region: Option<&str>) -> PyObject {
+    let mut reader = BigBedReader::new(path).unwrap();
+    let ipc = reader.records_to_ipc(region).unwrap();
+    Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+}
+
 #[pymodule]
 #[pyo3(name = "oxbow")]
 fn py_oxbow(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -104,5 +112,6 @@ fn py_oxbow(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_bcf, m)?)?;
     m.add_function(wrap_pyfunction!(read_bcf_vpos, m)?)?;
     m.add_function(wrap_pyfunction!(read_bigwig, m)?)?;
+    m.add_function(wrap_pyfunction!(read_bigbed, m)?)?;
     Ok(())
 }
