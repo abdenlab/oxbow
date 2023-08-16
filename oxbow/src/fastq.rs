@@ -1,9 +1,5 @@
-use arrow::array::{
-    ArrayRef, GenericStringBuilder
-};
-use arrow::{
-    error::ArrowError, record_batch::RecordBatch,
-};
+use arrow::array::{ArrayRef, GenericStringBuilder};
+use arrow::{error::ArrowError, record_batch::RecordBatch};
 // use noodles::core::Region;
 use noodles::fastq;
 // use noodles::fastq::fai;
@@ -72,20 +68,30 @@ impl FastqBatchBuilder {
 
 impl BatchBuilder for FastqBatchBuilder {
     type Record<'a> = &'a fastq::Record;
-    
+
     fn push(&mut self, record: Self::Record<'_>) {
-        self.name.append_value(std::str::from_utf8(record.name()).unwrap());
-        self.description.append_value(std::str::from_utf8(record.description()).unwrap());
-        self.sequence.append_value(std::str::from_utf8(record.sequence()).unwrap());
-        self.quality_scores.append_value(std::str::from_utf8(record.quality_scores()).unwrap());
+        self.name
+            .append_value(std::str::from_utf8(record.name()).unwrap());
+        self.description
+            .append_value(std::str::from_utf8(record.description()).unwrap());
+        self.sequence
+            .append_value(std::str::from_utf8(record.sequence()).unwrap());
+        self.quality_scores
+            .append_value(std::str::from_utf8(record.quality_scores()).unwrap());
     }
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
         RecordBatch::try_from_iter(vec![
             ("name", Arc::new(self.name.finish()) as ArrayRef),
-            ("description", Arc::new(self.description.finish()) as ArrayRef),
+            (
+                "description",
+                Arc::new(self.description.finish()) as ArrayRef,
+            ),
             ("sequence", Arc::new(self.sequence.finish()) as ArrayRef),
-            ("quality_scores", Arc::new(self.quality_scores.finish()) as ArrayRef),
+            (
+                "quality_scores",
+                Arc::new(self.quality_scores.finish()) as ArrayRef,
+            ),
         ])
     }
 }

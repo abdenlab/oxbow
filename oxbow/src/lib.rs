@@ -23,12 +23,12 @@
 //! ```
 //!
 
+pub mod bam;
 mod batch_builder;
 pub mod fasta;
 pub mod fastq;
 pub mod vpos;
-pub mod bam;
 // pub mod cram;
-pub mod vcf;
 pub mod bcf;
 pub mod bigwig;
+pub mod vcf;

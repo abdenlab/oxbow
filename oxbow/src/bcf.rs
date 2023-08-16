@@ -4,19 +4,16 @@ use std::io::{self, Read, Seek};
 use std::sync::Arc;
 
 use arrow::array::{
-    ArrayRef, Float32Builder, GenericStringBuilder, Int32Builder,
-    StringArray, StringDictionaryBuilder,
+    ArrayRef, Float32Builder, GenericStringBuilder, Int32Builder, StringArray,
+    StringDictionaryBuilder,
 };
-use arrow::{
-    datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch,
-};
+use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
 use noodles::{bcf, bgzf, csi, vcf};
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
 
 type BufferedReader = io::BufReader<File>;
-
 
 /// A BCF reader.
 pub struct BcfReader {
@@ -33,7 +30,11 @@ impl BcfReader {
         let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
         let mut reader = bcf::Reader::new(buf_file);
         let header = reader.read_header()?;
-        Ok(Self { reader, header, index })
+        Ok(Self {
+            reader,
+            header,
+            index,
+        })
     }
 
     /// Returns the records in the given region as Apache Arrow IPC.
@@ -63,11 +64,16 @@ impl BcfReader {
         write_ipc(records, batch_builder)
     }
 
-    pub fn records_to_ipc_from_vpos(&mut self, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> Result<Vec<u8>, ArrowError> {
+    pub fn records_to_ipc_from_vpos(
+        &mut self,
+        pos_lo: (u64, u16),
+        pos_hi: (u64, u16),
+    ) -> Result<Vec<u8>, ArrowError> {
         let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo).unwrap();
         let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi).unwrap();
         let batch_builder = BcfBatchBuilder::new(1024, &self.header)?;
-        let records = BcfRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
+        let records =
+            BcfRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi).map(|r| r.unwrap());
         write_ipc(records, batch_builder)
     }
 }
@@ -143,7 +149,6 @@ impl BatchBuilder for BcfBatchBuilder {
     }
 }
 
-
 // Reads VCF Records from virtualposition range in a BCF file
 pub struct BcfRecords<'a, R> {
     reader: &'a mut bcf::Reader<bgzf::reader::Reader<R>>,
@@ -158,7 +163,7 @@ where
     R: Read + Seek,
 {
     pub(crate) fn new(
-        reader: &'a mut bcf::Reader<bgzf::reader::Reader<R>>, 
+        reader: &'a mut bcf::Reader<bgzf::reader::Reader<R>>,
         header: &'a vcf::Header,
         vpos_lo: bgzf::VirtualPosition,
         vpos_hi: bgzf::VirtualPosition,

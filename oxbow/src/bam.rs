@@ -7,16 +7,13 @@ use arrow::array::{
     ArrayRef, GenericStringBuilder, Int32Array, Int32Builder, StringArray, StringDictionaryBuilder,
     UInt16Array, UInt16Builder, UInt8Array, UInt8Builder,
 };
-use arrow::{
-    datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch,
-};
+use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
 use noodles::{bam, bgzf, csi, sam};
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
 type BufferedReader = io::BufReader<File>;
-
 
 /// A BAM reader.
 pub struct BamReader {
@@ -42,7 +39,11 @@ impl BamReader {
         let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
         let mut reader = bam::Reader::new(buf_file);
         let header = reader.read_header()?;
-        Ok(Self { reader, header, index })
+        Ok(Self {
+            reader,
+            header,
+            index,
+        })
     }
 
     /// Returns the records in the given region as Apache Arrow IPC.
@@ -66,18 +67,28 @@ impl BamReader {
                 .query(&self.header, &self.index, &region)
                 .map_err(|e| ArrowError::ExternalError(e.into()))?
                 .map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
-                
+
             return write_ipc_err(query, batch_builder);
         }
-        let records = self.reader.records(&self.header).map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
+        let records = self
+            .reader
+            .records(&self.header)
+            .map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
         write_ipc_err(records, batch_builder)
     }
 
-    pub fn records_to_ipc_from_vpos(&mut self, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> Result<Vec<u8>, ArrowError> {
-        let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo).map_err(|e| ArrowError::ExternalError(e.into()))?;
-        let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi).map_err(|e| ArrowError::ExternalError(e.into()))?;
+    pub fn records_to_ipc_from_vpos(
+        &mut self,
+        pos_lo: (u64, u16),
+        pos_hi: (u64, u16),
+    ) -> Result<Vec<u8>, ArrowError> {
+        let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo)
+            .map_err(|e| ArrowError::ExternalError(e.into()))?;
+        let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi)
+            .map_err(|e| ArrowError::ExternalError(e.into()))?;
         let batch_builder = BamBatchBuilder::new(1024, &self.header)?;
-        let records = BamRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi).map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
+        let records = BamRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi)
+            .map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
         write_ipc_err(records, batch_builder)
     }
 }
@@ -183,7 +194,6 @@ impl<'a> BatchBuilder for BamBatchBuilder<'a> {
     }
 }
 
-
 // Reads SAM records from a virtualposition range in a BAM file
 pub struct BamRecords<'a, R>
 where
@@ -202,9 +212,9 @@ where
 {
     pub fn new(
         reader: &'a mut bam::Reader<bgzf::reader::Reader<R>>,
-        header: &'a sam::Header, 
-        vpos_lo: bgzf::VirtualPosition, 
-        vpos_hi: bgzf::VirtualPosition
+        header: &'a sam::Header,
+        vpos_lo: bgzf::VirtualPosition,
+        vpos_hi: bgzf::VirtualPosition,
     ) -> Self {
         let _ = reader.seek(vpos_lo);
         Self {
@@ -239,7 +249,6 @@ where
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

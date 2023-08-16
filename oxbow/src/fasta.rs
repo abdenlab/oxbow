@@ -1,9 +1,5 @@
-use arrow::array::{
-    ArrayRef, GenericStringBuilder
-};
-use arrow::{
-    error::ArrowError, record_batch::RecordBatch,
-};
+use arrow::array::{ArrayRef, GenericStringBuilder};
+use arrow::{error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
 use noodles::fasta;
 use noodles::fasta::fai;
@@ -28,9 +24,11 @@ impl FastaReader {
         let reader = fasta::indexed_reader::Builder::default()
             .set_index(index)
             .build_from_reader(bufreader)?;
-        let stream_reader = fasta::reader::Builder::default()
-            .build_from_path(path)?;
-        Ok(Self { reader, stream_reader })
+        let stream_reader = fasta::reader::Builder::default().build_from_path(path)?;
+        Ok(Self {
+            reader,
+            stream_reader,
+        })
     }
 
     /// Returns the records in the given region as Apache Arrow IPC.
@@ -50,10 +48,7 @@ impl FastaReader {
 
         if let Some(region) = region {
             let region: Region = region.parse().unwrap();
-            let query = self
-                .reader
-                .query(&region)
-                .unwrap();
+            let query = self.reader.query(&region).unwrap();
             let iter = std::iter::once(query);
             return write_ipc(iter, batch_builder);
         }
@@ -79,13 +74,13 @@ impl FastaBatchBuilder {
 
 impl BatchBuilder for FastaBatchBuilder {
     type Record<'a> = &'a fasta::record::Record;
-    
 
     fn push(&mut self, record: Self::Record<'_>) {
         let seq = record.sequence().as_ref();
-        
+
         self.name.append_value(record.name());
-        self.sequence.append_value(std::str::from_utf8(seq).unwrap());
+        self.sequence
+            .append_value(std::str::from_utf8(seq).unwrap());
     }
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
