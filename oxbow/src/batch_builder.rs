@@ -1,6 +1,6 @@
 use arrow::error::ArrowError;
-use arrow::record_batch::RecordBatch;
 use arrow::ipc::writer::FileWriter;
+use arrow::record_batch::RecordBatch;
 
 pub trait BatchBuilder {
     type Record<'a>;
@@ -30,9 +30,7 @@ pub fn write_ipc<T>(
     finish_batch(batch_builder)
 }
 
-pub fn finish_batch(
-    batch_builder: impl BatchBuilder,
-) -> Result<Vec<u8>, ArrowError> {
+pub fn finish_batch(batch_builder: impl BatchBuilder) -> Result<Vec<u8>, ArrowError> {
     let batch = batch_builder.finish()?;
     let mut writer = FileWriter::try_new(Vec::new(), &batch.schema())?;
     writer.write(&batch)?;

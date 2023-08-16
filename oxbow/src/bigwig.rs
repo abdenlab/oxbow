@@ -1,13 +1,11 @@
+use arrow::array::StringArray;
 use arrow::array::{
-    ArrayRef, UInt32Builder, Float32Builder, UInt32Array, Float32Array, StringDictionaryBuilder,
+    ArrayRef, Float32Array, Float32Builder, StringDictionaryBuilder, UInt32Array, UInt32Builder,
 };
 use arrow::datatypes::Int32Type;
-use arrow::array::StringArray;
-use arrow::{
-    error::ArrowError, record_batch::RecordBatch,
-};
-use bigtools::{BigWigRead, BBIRead};
+use arrow::{error::ArrowError, record_batch::RecordBatch};
 use bigtools::utils::reopen::ReopenableFile;
+use bigtools::{BBIRead, BigWigRead};
 use noodles::core::Region;
 use std::sync::Arc;
 
@@ -29,7 +27,8 @@ pub struct BigWigRecord<'a> {
 impl BigWigReader {
     /// Creates a BigWig reader.
     pub fn new(path: &str) -> std::io::Result<Self> {
-        let read = BigWigRead::open_file(path).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        let read = BigWigRead::open_file(path)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
         let chroms: StringArray = StringArray::from(chroms);
         Ok(Self { read, chroms })
@@ -61,8 +60,15 @@ impl BigWigReader {
                     }
                     (Some(start), None) => {
                         let start = start.get() as u32 - 1; // 1-based to 0-based
-                        let end = self.read.get_chroms().iter().find(|c| c.name == chrom_name).map(|c| c.length);
-                        let end = end.ok_or_else(|| ArrowError::InvalidArgumentError("Invalid chromosome".to_string()))?;
+                        let end = self
+                            .read
+                            .get_chroms()
+                            .iter()
+                            .find(|c| c.name == chrom_name)
+                            .map(|c| c.length);
+                        let end = end.ok_or_else(|| {
+                            ArrowError::InvalidArgumentError("Invalid chromosome".to_string())
+                        })?;
                         (start, end)
                     }
                     (None, Some(end)) => {
@@ -72,8 +78,15 @@ impl BigWigReader {
                     }
                     (None, None) => {
                         let start = 0;
-                        let end = self.read.get_chroms().iter().find(|c| c.name == chrom_name).map(|c| c.length);
-                        let end = end.ok_or_else(|| ArrowError::InvalidArgumentError("Invalid chromosome".to_string()))?;
+                        let end = self
+                            .read
+                            .get_chroms()
+                            .iter()
+                            .find(|c| c.name == chrom_name)
+                            .map(|c| c.length);
+                        let end = end.ok_or_else(|| {
+                            ArrowError::InvalidArgumentError("Invalid chromosome".to_string())
+                        })?;
                         (start, end)
                     }
                 };
@@ -85,7 +98,12 @@ impl BigWigReader {
                 };
                 for value in values {
                     let v = value.unwrap();
-                    let record = BigWigRecord { chrom: &chrom_name, start: v.start, end: v.end, value: v.value };
+                    let record = BigWigRecord {
+                        chrom: &chrom_name,
+                        start: v.start,
+                        end: v.end,
+                        value: v.value,
+                    };
                     batch_builder.push(record);
                 }
                 finish_batch(batch_builder)
@@ -99,7 +117,12 @@ impl BigWigReader {
                     let values = self.read.get_interval(&chrom.name, start, end).unwrap();
                     for value in values {
                         let v = value.unwrap();
-                        let record = BigWigRecord { chrom: &chrom.name, start: v.start, end: v.end, value: v.value };
+                        let record = BigWigRecord {
+                            chrom: &chrom.name,
+                            start: v.start,
+                            end: v.end,
+                            value: v.value,
+                        };
                         batch_builder.push(record);
                     }
                 }
@@ -119,10 +142,7 @@ struct BigWigBatchBuilder {
 impl BigWigBatchBuilder {
     pub fn new(capacity: usize, chroms: &StringArray) -> Result<Self, ArrowError> {
         Ok(Self {
-            chrom: StringDictionaryBuilder::<Int32Type>::new_with_dictionary(
-                capacity, 
-                chroms
-            )?,
+            chrom: StringDictionaryBuilder::<Int32Type>::new_with_dictionary(capacity, chroms)?,
             start: UInt32Array::builder(capacity),
             end: UInt32Array::builder(capacity),
             value: Float32Array::builder(capacity),
