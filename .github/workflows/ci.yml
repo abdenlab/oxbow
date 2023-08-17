@@ -9,13 +9,15 @@ on:
 name: Test
 
 jobs:
-
   Test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
+
+      - name: Check formatting
+        run: cargo fmt --all --manifest-path ./oxbow/Cargo.toml -- --check
 
       - name: Download fixtures
         run: cd fixtures && wget -i list.txt
