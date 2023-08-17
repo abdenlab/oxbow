@@ -215,3 +215,40 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arrow::ipc::reader::FileReader;
+    use arrow::record_batch::RecordBatch;
+
+    fn read_record_batch(region: Option<&str>) -> RecordBatch {
+        let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        dir.push("../fixtures/ALL.chrY.phase3_integrated_v1a.20130502.genotypes.vcf.gz");
+        let mut reader = VcfReader::new(dir.to_str().unwrap()).unwrap();
+        let ipc = reader.records_to_ipc(region).unwrap();
+        let cursor = std::io::Cursor::new(ipc);
+        let mut arrow_reader = FileReader::try_new(cursor, None).unwrap();
+        // make sure we have one batch
+        assert_eq!(arrow_reader.num_batches(), 1);
+        arrow_reader.next().unwrap().unwrap()
+    }
+
+    #[test]
+    fn test_read_all() {
+        let record_batch = read_record_batch(None);
+        assert_eq!(record_batch.num_rows(), 62042);
+    }
+
+    #[test]
+    fn test_region_full() {
+        let record_batch = read_record_batch(Some("Y"));
+        assert_eq!(record_batch.num_rows(), 62042);
+    }
+
+    #[test]
+    fn rest_region_partial() {
+        let record_batch = read_record_batch(Some("Y:8028497-17629059"));
+        assert_eq!(record_batch.num_rows(), 27947);
+    }
+}
