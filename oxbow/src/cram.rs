@@ -10,7 +10,7 @@ use noodles::fasta::repository::adapters::IndexedReader;
 use noodles::{cram, sam, fasta};
 use std::sync::Arc;
 
-use crate::batch_builder::{write_ipc, BatchBuilder};
+use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
 type BufferedReader = std::io::BufReader<std::fs::File>;
 
@@ -65,15 +65,13 @@ impl CramReader {
             let query = self
                 .reader
                 .query(&self.repository, &self.header, &region)
-                .unwrap()
-                .map(|r| r.unwrap());
-            return write_ipc(query, batch_builder);
+                .map_err(|e| ArrowError::ExternalError(e.into()))?
+                .map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
+            return write_ipc_err(query, batch_builder);
         }
         
-        let records = self.reader
-            .records(&self.repository, &self.header)
-            .map(|r| r.unwrap());
-        write_ipc(records, batch_builder)
+        let records = self.reader.records(&self.repository, &self.header).map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
+        write_ipc_err(records, batch_builder)
     }
 }
 
