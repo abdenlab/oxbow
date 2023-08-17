@@ -1,4 +1,4 @@
-# oxbow <a href="https://github.com/abdenlab/oxbow"><img align="right" src="./logo.svg" height="38"></img></a>
+# oxbow <a href="https://github.com/abdenlab/oxbow"><img align="right" src="./assets/logo.svg" height="38"></img></a>
 
 Read specialized bioinformatic file formats as data frames in R, Python, and more.
 
