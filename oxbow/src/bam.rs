@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{self, Read, Seek, BufReader};
+use std::io::{self, BufReader, Read, Seek};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -13,14 +13,12 @@ use noodles::{bam, bgzf, csi, sam};
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
-
 /// A BAM reader.
 pub struct BamReader<R> {
     reader: bam::Reader<bgzf::Reader<R>>,
     header: sam::Header,
     index: csi::Index,
 }
-
 
 pub fn from_path(path: &str) -> std::io::Result<BamReader<BufReader<File>>> {
     let bai_path = format!("{}.bai", path);
@@ -37,23 +35,23 @@ pub fn from_path(path: &str) -> std::io::Result<BamReader<BufReader<File>>> {
     let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
     let mut reader = bam::Reader::new(buf_file);
     let header = reader.read_header()?;
-    Ok( BamReader {
+    Ok(BamReader {
         reader,
         header,
         index,
     })
 }
 
-
 pub fn index_from_reader<R>(read: R) -> io::Result<csi::Index>
-where R : Read + Seek {
+where
+    R: Read + Seek,
+{
     let mut bai_reader = bam::bai::Reader::new(read);
     bai_reader.read_header()?;
     bai_reader.read_index()
 }
 
-
-impl <R: Read + Seek> BamReader<R> {
+impl<R: Read + Seek> BamReader<R> {
     /// Creates a BAM reader.
     pub fn new(read: R, index: csi::Index) -> std::io::Result<Self> {
         let mut reader = bam::Reader::new(read);

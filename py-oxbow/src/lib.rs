@@ -40,7 +40,12 @@ fn read_fastq(path: &str) -> PyObject {
 }
 
 #[pyfunction]
-fn read_bam(py: Python, path_or_file_like: PyObject, index: Option<PyObject>, region: Option<&str>) -> PyObject {
+fn read_bam(
+    py: Python,
+    path_or_file_like: PyObject,
+    index: Option<PyObject>,
+    region: Option<&str>,
+) -> PyObject {
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = bam::from_path(string_ref.to_str().unwrap()).unwrap();
@@ -64,7 +69,13 @@ fn read_bam(py: Python, path_or_file_like: PyObject, index: Option<PyObject>, re
 }
 
 #[pyfunction]
-fn read_bam_vpos(py: Python, path_or_file_like: PyObject, pos_lo: (u64, u16), pos_hi: (u64, u16), index: Option<PyObject>) -> PyObject {
+fn read_bam_vpos(
+    py: Python,
+    path_or_file_like: PyObject,
+    pos_lo: (u64, u16),
+    pos_hi: (u64, u16),
+    index: Option<PyObject>,
+) -> PyObject {
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = bam::from_path(string_ref.to_str().unwrap()).unwrap();
