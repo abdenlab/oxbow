@@ -1,18 +1,22 @@
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 use pyo3::types::PyList;
+use pyo3::types::PyString;
 
+use oxbow::bam::BamReader;
+use oxbow::bigbed::BigBedReader;
+use oxbow::bigwig::BigWigReader;
 use oxbow::fasta::FastaReader;
 use oxbow::fastq::FastqReader;
-use oxbow::bam::BamReader;
-use oxbow::bigwig::BigWigReader;
-use oxbow::bigbed::BigBedReader;
 // use oxbow::cram::CramReader;
-use oxbow::vcf::VcfReader;
 use oxbow::bcf::BcfReader;
+use oxbow::vcf::VcfReader;
 
 use oxbow::vpos;
 
+mod file_like;
+
+use file_like::PyFileLikeObject;
 
 #[pyfunction]
 fn partition_from_index_file(path: &str, chunksize: u64) -> PyObject {
@@ -84,17 +88,41 @@ fn read_bcf_vpos(path: &str, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> PyObject
 }
 
 #[pyfunction]
-fn read_bigwig(path: &str, region: Option<&str>) -> PyObject {
-    let mut reader = BigWigReader::new(path).unwrap();
-    let ipc = reader.records_to_ipc(region).unwrap();
-    Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+fn read_bigwig(py: Python, path_or_file_like: PyObject, region: Option<&str>) -> PyObject {
+    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+        // If it's a string, treat it as a path
+        let mut reader = BigWigReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let ipc = reader.records_to_ipc(region).unwrap();
+        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+    } else {
+        // Otherwise, treat it as file-like
+        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
+            Ok(file_like) => file_like,
+            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
+        };
+        let mut reader = BigWigReader::new(file_like).unwrap();
+        let ipc = reader.records_to_ipc(region).unwrap();
+        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+    }
 }
 
 #[pyfunction]
-fn read_bigbed(path: &str, region: Option<&str>) -> PyObject {
-    let mut reader = BigBedReader::new(path).unwrap();
-    let ipc = reader.records_to_ipc(region).unwrap();
-    Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+fn read_bigbed(py: Python, path_or_file_like: PyObject, region: Option<&str>) -> PyObject {
+    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+        // If it's a string, treat it as a path
+        let mut reader = BigBedReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let ipc = reader.records_to_ipc(region).unwrap();
+        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+    } else {
+        // Otherwise, treat it as file-like
+        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
+            Ok(file_like) => file_like,
+            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
+        };
+        let mut reader = BigBedReader::new(file_like).unwrap();
+        let ipc = reader.records_to_ipc(region).unwrap();
+        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+    }
 }
 
 #[pymodule]

@@ -7,13 +7,14 @@ use arrow::{error::ArrowError, record_batch::RecordBatch};
 use bigtools::utils::reopen::ReopenableFile;
 use bigtools::{BBIRead, BigWigRead};
 use noodles::core::Region;
+use std::io::{Read, Seek};
 use std::sync::Arc;
 
 use crate::batch_builder::{finish_batch, BatchBuilder};
 
 /// A BigWig reader.
-pub struct BigWigReader {
-    read: BigWigRead<ReopenableFile>,
+pub struct BigWigReader<R> {
+    read: BigWigRead<R>,
     chroms: StringArray,
 }
 
@@ -24,10 +25,21 @@ pub struct BigWigRecord<'a> {
     pub value: f32,
 }
 
-impl BigWigReader {
-    /// Creates a BigWig reader.
-    pub fn new(path: &str) -> std::io::Result<Self> {
+impl BigWigReader<ReopenableFile> {
+    /// Creates a BigWig reader from a given file path.
+    pub fn new_from_path(path: &str) -> std::io::Result<Self> {
         let read = BigWigRead::open_file(path)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
+        let chroms: StringArray = StringArray::from(chroms);
+        Ok(Self { read, chroms })
+    }
+}
+
+impl<R: Read + Seek> BigWigReader<R> {
+    /// Creates a BigWig reader from a given file path.
+    pub fn new(read: R) -> std::io::Result<Self> {
+        let read = BigWigRead::open(read)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
         let chroms: StringArray = StringArray::from(chroms);
@@ -43,7 +55,7 @@ impl BigWigReader {
     /// ```no_run
     /// use oxbow::bigwig::BigWigReader;
     ///
-    /// let mut reader = BigWigReader::new("sample.bigWig").unwrap();
+    /// let mut reader = BigWigReader::new_from_path("sample.bigWig").unwrap();
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
     pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
@@ -179,7 +191,7 @@ mod tests {
     fn read_record_batch(region: Option<&str>) -> RecordBatch {
         let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir.push("../fixtures/valid.bigWig");
-        let mut reader = BigWigReader::new(dir.to_str().unwrap()).unwrap();
+        let mut reader = BigWigReader::new_from_path(dir.to_str().unwrap()).unwrap();
         let ipc = reader.records_to_ipc(region).unwrap();
         let cursor = std::io::Cursor::new(ipc);
         let mut arrow_reader = FileReader::try_new(cursor, None).unwrap();

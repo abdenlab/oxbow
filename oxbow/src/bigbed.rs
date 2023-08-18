@@ -10,13 +10,14 @@ use arrow::{error::ArrowError, record_batch::RecordBatch};
 use bigtools::utils::reopen::ReopenableFile;
 use bigtools::{BBIRead, BigBedRead};
 use noodles::core::Region;
+use std::io::{Read, Seek};
 use std::sync::Arc;
 
 use crate::batch_builder::{finish_batch, BatchBuilder};
 
 /// A BigBed reader.
-pub struct BigBedReader {
-    read: BigBedRead<ReopenableFile>,
+pub struct BigBedReader<R> {
+    read: BigBedRead<R>,
 }
 
 pub struct BigBedRecord<'a> {
@@ -26,10 +27,17 @@ pub struct BigBedRecord<'a> {
     pub rest: &'a str,
 }
 
-impl BigBedReader {
-    /// Creates a BigBed reader.
-    pub fn new(path: &str) -> std::io::Result<Self> {
+impl BigBedReader<ReopenableFile> {
+    pub fn new_from_path(path: &str) -> std::io::Result<Self> {
         let read = BigBedRead::open_file(path)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        Ok(Self { read })
+    }
+}
+impl<R: Read + Seek> BigBedReader<R> {
+    /// Creates a BigBed reader.
+    pub fn new(read: R) -> std::io::Result<Self> {
+        let read = BigBedRead::open(read)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         Ok(Self { read })
     }
@@ -43,7 +51,7 @@ impl BigBedReader {
     /// ```no_run
     /// use oxbow::bigbed::BigBedReader;
     ///
-    /// let mut reader = BigBedReader::new("sample.bigBed").unwrap();
+    /// let mut reader = BigBedReader::new_from_path("sample.bigBed").unwrap();
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
     pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
@@ -157,7 +165,10 @@ struct BigBedBatchBuilder {
 }
 
 impl BigBedBatchBuilder {
-    pub fn new(capacity: usize, read: &mut BigBedRead<ReopenableFile>) -> Result<Self, ArrowError> {
+    pub fn new<R: Read + Seek>(
+        capacity: usize,
+        read: &mut BigBedRead<R>,
+    ) -> Result<Self, ArrowError> {
         let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
         let chroms: StringArray = StringArray::from(chroms);
         let autosql = read.autosql().unwrap();
@@ -322,7 +333,7 @@ mod tests {
     fn read_record_batch(region: Option<&str>) -> RecordBatch {
         let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir.push("../fixtures/small.bigBed");
-        let mut reader = BigBedReader::new(dir.to_str().unwrap()).unwrap();
+        let mut reader = BigBedReader::new_from_path(dir.to_str().unwrap()).unwrap();
         let ipc = reader.records_to_ipc(region).unwrap();
         let cursor = std::io::Cursor::new(ipc);
         let mut arrow_reader = FileReader::try_new(cursor, None).unwrap();
