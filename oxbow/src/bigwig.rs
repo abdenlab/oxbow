@@ -15,7 +15,6 @@ use crate::batch_builder::{finish_batch, BatchBuilder};
 /// A BigWig reader.
 pub struct BigWigReader<R> {
     read: BigWigRead<R>,
-    chroms: StringArray,
 }
 
 pub struct BigWigRecord<'a> {
@@ -30,9 +29,7 @@ impl BigWigReader<ReopenableFile> {
     pub fn new_from_path(path: &str) -> std::io::Result<Self> {
         let read = BigWigRead::open_file(path)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-        let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
-        let chroms: StringArray = StringArray::from(chroms);
-        Ok(Self { read, chroms })
+        Ok(Self { read })
     }
 }
 
@@ -41,9 +38,7 @@ impl<R: Read + Seek> BigWigReader<R> {
     pub fn new(read: R) -> std::io::Result<Self> {
         let read = BigWigRead::open(read)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-        let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
-        let chroms: StringArray = StringArray::from(chroms);
-        Ok(Self { read, chroms })
+        Ok(Self { read })
     }
 
     /// Returns the records in the given region as Apache Arrow IPC.
@@ -59,7 +54,7 @@ impl<R: Read + Seek> BigWigReader<R> {
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
     pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
-        let mut batch_builder = BigWigBatchBuilder::new(1024, &self.chroms)?;
+        let mut batch_builder = BigWigBatchBuilder::new(1024, &mut self.read)?;
         match region {
             Some(region) => {
                 let region: Region = region.parse().unwrap();
@@ -152,9 +147,14 @@ struct BigWigBatchBuilder {
 }
 
 impl BigWigBatchBuilder {
-    pub fn new(capacity: usize, chroms: &StringArray) -> Result<Self, ArrowError> {
+    pub fn new<R: Read + Seek>(
+        capacity: usize,
+        read: &mut BigWigRead<R>,
+    ) -> Result<Self, ArrowError> {
+        let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
+        let chroms: StringArray = StringArray::from(chroms);
         Ok(Self {
-            chrom: StringDictionaryBuilder::<Int32Type>::new_with_dictionary(capacity, chroms)?,
+            chrom: StringDictionaryBuilder::<Int32Type>::new_with_dictionary(capacity, &chroms)?,
             start: UInt32Array::builder(capacity),
             end: UInt32Array::builder(capacity),
             value: Float32Array::builder(capacity),
