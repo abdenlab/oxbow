@@ -20,35 +20,37 @@ pub struct BamReader<R> {
     index: csi::Index,
 }
 
-pub fn from_path(path: &str) -> std::io::Result<BamReader<BufReader<File>>> {
-    let bai_path = format!("{}.bai", path);
-    let csi_path = format!("{}.csi", path);
-    let index = if Path::new(&bai_path).exists() {
-        bam::bai::read(bai_path)?
-    } else if Path::new(&csi_path).exists() {
-        csi::read(csi_path)?
-    } else {
-        panic!("Could not find a .bai or .csi index file for the given BAM file.");
-    };
-
-    let file = std::fs::File::open(path)?;
-    let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
-    let mut reader = bam::Reader::new(buf_file);
-    let header = reader.read_header()?;
-    Ok(BamReader {
-        reader,
-        header,
-        index,
-    })
-}
-
 pub fn index_from_reader<R>(read: R) -> io::Result<csi::Index>
-where
-    R: Read + Seek,
-{
+where R : Read + Seek {
     let mut bai_reader = bam::bai::Reader::new(read);
     bai_reader.read_header()?;
     bai_reader.read_index()
+}
+
+
+impl BamReader<BufReader<File>> {
+    /// Creates a BAM reader from a given file path.
+    pub fn new_from_path(path: &str) -> std::io::Result<Self> {
+        let bai_path = format!("{}.bai", path);
+        let csi_path = format!("{}.csi", path);
+        let index = if Path::new(&bai_path).exists() {
+            bam::bai::read(bai_path)?
+        } else if Path::new(&csi_path).exists() {
+            csi::read(csi_path)?
+        } else {
+            panic!("Could not find a .bai or .csi index file for the given BAM file.");
+        };
+
+        let file = std::fs::File::open(path)?;
+        let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
+        let mut reader = bam::Reader::new(buf_file);
+        let header = reader.read_header()?;
+        Ok(Self {
+            reader,
+            header,
+            index,
+        })
+    }
 }
 
 impl<R: Read + Seek> BamReader<R> {
@@ -62,6 +64,8 @@ impl<R: Read + Seek> BamReader<R> {
             index,
         })
     }
+
+
     /// Returns the records in the given region as Apache Arrow IPC.
     ///
     /// If the region is `None`, all records are returned.
@@ -275,7 +279,7 @@ mod tests {
     fn read_record_batch(region: Option<&str>) -> RecordBatch {
         let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir.push("../fixtures/sample.bam");
-        let mut reader = from_path(dir.to_str().unwrap()).unwrap();
+        let mut reader = BamReader::new_from_path(dir.to_str().unwrap()).unwrap();
         let ipc = reader.records_to_ipc(region).unwrap();
         let cursor = std::io::Cursor::new(ipc);
         let mut arrow_reader = FileReader::try_new(cursor, None).unwrap();
