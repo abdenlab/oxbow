@@ -4,13 +4,13 @@ use pyo3::types::PyList;
 use pyo3::types::PyString;
 
 use oxbow::bam;
-use oxbow::bcf;
-use oxbow::vcf;
 use oxbow::bam::BamReader;
+use oxbow::bcf;
 use oxbow::bigbed::BigBedReader;
 use oxbow::bigwig::BigWigReader;
 use oxbow::fasta::FastaReader;
 use oxbow::fastq::FastqReader;
+use oxbow::vcf;
 // use oxbow::cram::CramReader;
 use oxbow::bcf::BcfReader;
 use oxbow::vcf::VcfReader;
@@ -20,7 +20,6 @@ use oxbow::vpos;
 mod file_like;
 
 use file_like::PyFileLikeObject;
-
 
 #[pyfunction]
 fn partition_from_index_file(path: &str, chunksize: u64) -> PyObject {
@@ -43,16 +42,12 @@ fn read_fastq(path: &str) -> PyObject {
 }
 
 #[pyfunction]
-<<<<<<< HEAD
 fn read_bam(
     py: Python,
     path_or_file_like: PyObject,
-    index: Option<PyObject>,
     region: Option<&str>,
+    index: Option<PyObject>,
 ) -> PyObject {
-=======
-fn read_bam(py: Python, path_or_file_like: PyObject, region: Option<&str>, index: Option<PyObject>) -> PyObject {
->>>>>>> 5252a90 (Turn from_path back into method)
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BamReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
@@ -106,7 +101,12 @@ fn read_bam_vpos(
 }
 
 #[pyfunction]
-fn read_vcf(py: Python, path_or_file_like: PyObject, region: Option<&str>, index: Option<PyObject>) -> PyObject {
+fn read_vcf(
+    py: Python,
+    path_or_file_like: PyObject,
+    region: Option<&str>,
+    index: Option<PyObject>,
+) -> PyObject {
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = VcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
@@ -130,7 +130,13 @@ fn read_vcf(py: Python, path_or_file_like: PyObject, region: Option<&str>, index
 }
 
 #[pyfunction]
-fn read_vcf_vpos(py: Python, path_or_file_like: PyObject, pos_lo: (u64, u16), pos_hi: (u64, u16), index: Option<PyObject>) -> PyObject {
+fn read_vcf_vpos(
+    py: Python,
+    path_or_file_like: PyObject,
+    pos_lo: (u64, u16),
+    pos_hi: (u64, u16),
+    index: Option<PyObject>,
+) -> PyObject {
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = VcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
@@ -154,7 +160,12 @@ fn read_vcf_vpos(py: Python, path_or_file_like: PyObject, pos_lo: (u64, u16), po
 }
 
 #[pyfunction]
-fn read_bcf(py: Python, path_or_file_like: PyObject, region: Option<&str>, index: Option<PyObject>) -> PyObject {
+fn read_bcf(
+    py: Python,
+    path_or_file_like: PyObject,
+    region: Option<&str>,
+    index: Option<PyObject>,
+) -> PyObject {
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
@@ -178,7 +189,13 @@ fn read_bcf(py: Python, path_or_file_like: PyObject, region: Option<&str>, index
 }
 
 #[pyfunction]
-fn read_bcf_vpos(py: Python, path_or_file_like: PyObject, pos_lo: (u64, u16), pos_hi: (u64, u16), index: Option<PyObject>) -> PyObject {
+fn read_bcf_vpos(
+    py: Python,
+    path_or_file_like: PyObject,
+    pos_lo: (u64, u16),
+    pos_hi: (u64, u16),
+    index: Option<PyObject>,
+) -> PyObject {
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = VcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();

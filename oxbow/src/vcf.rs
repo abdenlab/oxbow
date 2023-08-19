@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{self, Read, Seek, BufReader};
+use std::io::{self, BufReader, Read, Seek};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -13,7 +13,6 @@ use noodles::{bgzf, csi, tabix, vcf};
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
-
 fn read_magic(read: &mut dyn Read) -> io::Result<[u8; 4]> {
     let mut magic = [0; 4];
     let mut bgzf_file = bgzf::Reader::new(read);
@@ -21,9 +20,10 @@ fn read_magic(read: &mut dyn Read) -> io::Result<[u8; 4]> {
     Ok(magic)
 }
 
-
 pub fn index_from_reader<R>(mut read: R) -> io::Result<csi::Index>
-where R : Read + Seek {
+where
+    R: Read + Seek,
+{
     let magic = read_magic(&mut read)?;
     read.seek(io::SeekFrom::Start(0))?;
     if magic == b"TBI\x01" as &[u8] {
@@ -34,7 +34,6 @@ where R : Read + Seek {
         csi_reader.read_index()
     }
 }
-
 
 pub fn index_from_path(path: &str) -> io::Result<csi::Index> {
     let tbi_path = format!("{}.tbi", path);
@@ -48,7 +47,6 @@ pub fn index_from_path(path: &str) -> io::Result<csi::Index> {
     };
     Ok(index)
 }
-
 
 /// A VCF reader.
 pub struct VcfReader<R> {
@@ -72,7 +70,7 @@ impl VcfReader<BufReader<File>> {
     }
 }
 
-impl <R: Read + Seek> VcfReader<R> {
+impl<R: Read + Seek> VcfReader<R> {
     /// Creates a VCF Reader.
     pub fn new(read: R, index: csi::Index) -> std::io::Result<Self> {
         let mut reader = vcf::Reader::new(bgzf::Reader::new(read));

@@ -13,9 +13,10 @@ use noodles::{bam, bgzf, csi, sam};
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
-
 pub fn index_from_reader<R>(mut read: R) -> io::Result<csi::Index>
-where R : Read + Seek {
+where
+    R: Read + Seek,
+{
     // Unlike .tbi and .csi, .bai is not bgzf-compressed
     // so we read off the magic directly.
     let mut magic = [0; 4];
@@ -31,7 +32,6 @@ where R : Read + Seek {
     }
 }
 
-
 pub fn index_from_path(path: &str) -> io::Result<csi::Index> {
     let bai_path = format!("{}.bai", path);
     let csi_path = format!("{}.csi", path);
@@ -44,7 +44,6 @@ pub fn index_from_path(path: &str) -> io::Result<csi::Index> {
     };
     Ok(index)
 }
-
 
 /// A BAM reader.
 pub struct BamReader<R> {
@@ -69,7 +68,7 @@ impl BamReader<BufReader<File>> {
     }
 }
 
-impl <R: Read + Seek> BamReader<R> {
+impl<R: Read + Seek> BamReader<R> {
     /// Creates a BAM reader.
     pub fn new(read: R, index: csi::Index) -> std::io::Result<Self> {
         let mut reader = bam::Reader::new(read);
@@ -127,7 +126,6 @@ impl <R: Read + Seek> BamReader<R> {
         write_ipc_err(records, batch_builder)
     }
 }
-
 
 struct BamBatchBuilder<'a> {
     header: &'a sam::Header,
