@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{self, Read, Seek};
+use std::io::{self, Read, Seek, BufReader};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -13,31 +13,69 @@ use noodles::{bgzf, csi, tabix, vcf};
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
-type BufferedReader = io::BufReader<File>;
+
+fn read_magic(read: &mut dyn Read) -> io::Result<[u8; 4]> {
+    let mut magic = [0; 4];
+    let mut bgzf_file = bgzf::Reader::new(read);
+    bgzf_file.read_exact(&mut magic)?;
+    Ok(magic)
+}
+
+
+pub fn index_from_reader<R>(mut read: R) -> io::Result<csi::Index>
+where R : Read + Seek {
+    let magic = read_magic(&mut read)?;
+    read.seek(io::SeekFrom::Start(0))?;
+    if magic == b"TBI\x01" as &[u8] {
+        let mut tbi_reader = tabix::Reader::new(read);
+        tbi_reader.read_index()
+    } else {
+        let mut csi_reader = csi::Reader::new(read);
+        csi_reader.read_index()
+    }
+}
+
+
+pub fn index_from_path(path: &str) -> io::Result<csi::Index> {
+    let tbi_path = format!("{}.tbi", path);
+    let csi_path = format!("{}.csi", path);
+    let index = if Path::new(&tbi_path).exists() {
+        tabix::read(tbi_path)?
+    } else if Path::new(&csi_path).exists() {
+        csi::read(csi_path)?
+    } else {
+        panic!("Could not find a .tbi or .csi index file for the given VCF file.");
+    };
+    Ok(index)
+}
+
 
 /// A VCF reader.
-pub struct VcfReader {
-    reader: vcf::Reader<bgzf::Reader<BufferedReader>>,
+pub struct VcfReader<R> {
+    reader: vcf::Reader<bgzf::Reader<R>>,
     header: vcf::Header,
     index: csi::Index,
 }
 
-impl VcfReader {
-    /// Creates a VCF Reader.
-    pub fn new(path: &str) -> std::io::Result<Self> {
-        let tbi_path = format!("{}.tbi", path);
-        let csi_path = format!("{}.csi", path);
-        let index = if Path::new(&tbi_path).exists() {
-            tabix::read(tbi_path)?
-        } else if Path::new(&csi_path).exists() {
-            csi::read(csi_path)?
-        } else {
-            panic!("Could not find a .tbi or .csi index file for the given VCF file.");
-        };
-
+impl VcfReader<BufReader<File>> {
+    pub fn new_from_path(path: &str) -> std::io::Result<Self> {
+        let index = index_from_path(path)?;
         let file = std::fs::File::open(path)?;
         let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
         let mut reader = vcf::Reader::new(bgzf::Reader::new(buf_file));
+        let header = reader.read_header()?;
+        Ok(Self {
+            reader,
+            header,
+            index,
+        })
+    }
+}
+
+impl <R: Read + Seek> VcfReader<R> {
+    /// Creates a VCF Reader.
+    pub fn new(read: R, index: csi::Index) -> std::io::Result<Self> {
+        let mut reader = vcf::Reader::new(bgzf::Reader::new(read));
         let header = reader.read_header()?;
         Ok(Self {
             reader,
