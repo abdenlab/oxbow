@@ -13,6 +13,39 @@ use noodles::{bam, bgzf, csi, sam};
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
+
+pub fn index_from_reader<R>(mut read: R) -> io::Result<csi::Index>
+where R : Read + Seek {
+    // Unlike .tbi and .csi, .bai is not bgzf-compressed
+    // so we read off the magic directly.
+    let mut magic = [0; 4];
+    read.read_exact(&mut magic)?;
+    read.seek(io::SeekFrom::Start(0))?;
+    if magic == b"BAI\x01" as &[u8] {
+        let mut bai_reader = bam::bai::Reader::new(read);
+        bai_reader.read_header()?;
+        bai_reader.read_index()
+    } else {
+        let mut csi_reader = csi::Reader::new(read);
+        csi_reader.read_index()
+    }
+}
+
+
+pub fn index_from_path(path: &str) -> io::Result<csi::Index> {
+    let bai_path = format!("{}.bai", path);
+    let csi_path = format!("{}.csi", path);
+    let index = if Path::new(&bai_path).exists() {
+        bam::bai::read(bai_path)?
+    } else if Path::new(&csi_path).exists() {
+        csi::read(csi_path)?
+    } else {
+        panic!("Could not find a .bai or .csi index file for the given BAM file.");
+    };
+    Ok(index)
+}
+
+
 /// A BAM reader.
 pub struct BamReader<R> {
     reader: bam::Reader<bgzf::Reader<R>>,
@@ -20,27 +53,10 @@ pub struct BamReader<R> {
     index: csi::Index,
 }
 
-pub fn index_from_reader<R>(read: R) -> io::Result<csi::Index>
-where R : Read + Seek {
-    let mut bai_reader = bam::bai::Reader::new(read);
-    bai_reader.read_header()?;
-    bai_reader.read_index()
-}
-
-
 impl BamReader<BufReader<File>> {
     /// Creates a BAM reader from a given file path.
     pub fn new_from_path(path: &str) -> std::io::Result<Self> {
-        let bai_path = format!("{}.bai", path);
-        let csi_path = format!("{}.csi", path);
-        let index = if Path::new(&bai_path).exists() {
-            bam::bai::read(bai_path)?
-        } else if Path::new(&csi_path).exists() {
-            csi::read(csi_path)?
-        } else {
-            panic!("Could not find a .bai or .csi index file for the given BAM file.");
-        };
-
+        let index = index_from_path(path)?;
         let file = std::fs::File::open(path)?;
         let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
         let mut reader = bam::Reader::new(buf_file);
@@ -53,7 +69,7 @@ impl BamReader<BufReader<File>> {
     }
 }
 
-impl<R: Read + Seek> BamReader<R> {
+impl <R: Read + Seek> BamReader<R> {
     /// Creates a BAM reader.
     pub fn new(read: R, index: csi::Index) -> std::io::Result<Self> {
         let mut reader = bam::Reader::new(read);
@@ -64,7 +80,6 @@ impl<R: Read + Seek> BamReader<R> {
             index,
         })
     }
-
 
     /// Returns the records in the given region as Apache Arrow IPC.
     ///
@@ -112,6 +127,7 @@ impl<R: Read + Seek> BamReader<R> {
         write_ipc_err(records, batch_builder)
     }
 }
+
 
 struct BamBatchBuilder<'a> {
     header: &'a sam::Header,

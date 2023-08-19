@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{self, Read, Seek};
+use std::io::{self, Read, Seek, BufReader};
 // use std::path::Path;
 use std::sync::Arc;
 
@@ -13,22 +13,40 @@ use noodles::{bcf, bgzf, csi, vcf};
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
-type BufferedReader = io::BufReader<File>;
+
+pub fn index_from_reader<R>(read: R) -> io::Result<csi::Index>
+where R : Read + Seek {
+    let mut csi_reader = csi::Reader::new(read);
+    csi_reader.read_index()
+}
+
 
 /// A BCF reader.
-pub struct BcfReader {
-    reader: bcf::Reader<bgzf::Reader<BufferedReader>>,
+pub struct BcfReader<R> {
+    reader: bcf::Reader<bgzf::Reader<R>>,
     header: vcf::Header,
     index: csi::Index,
 }
 
-impl BcfReader {
-    /// Creates a BCF Reader.
-    pub fn new(path: &str) -> std::io::Result<Self> {
+impl BcfReader<BufReader<File>> {
+    pub fn new_from_path(path: &str) -> std::io::Result<Self> {
         let index = csi::read(format!("{}.csi", path))?;
         let file = std::fs::File::open(path)?;
         let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
         let mut reader = bcf::Reader::new(buf_file);
+        let header = reader.read_header()?;
+        Ok(Self {
+            reader,
+            header,
+            index,
+        })
+    }
+}
+
+impl <R: Read + Seek> BcfReader<R> {
+    /// Creates a BCF Reader.
+    pub fn new(read: R, index: csi::Index) -> std::io::Result<Self> {
+        let mut reader = bcf::Reader::new(read);
         let header = reader.read_header()?;
         Ok(Self {
             reader,
