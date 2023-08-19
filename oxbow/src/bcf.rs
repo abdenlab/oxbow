@@ -64,7 +64,7 @@ impl<R: Read + Seek> BcfReader<R> {
     /// ```no_run
     /// use oxbow::bcf::BcfReader;
     ///
-    /// let mut reader = BcfReader::new("sample.bcf").unwrap();
+    /// let mut reader = BcfReader::new_from_path("sample.bcf").unwrap();
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
     pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {

@@ -91,7 +91,7 @@ impl<R: Read + Seek> VcfReader<R> {
     /// ```no_run
     /// use oxbow::vcf::VcfReader;
     ///
-    /// let mut reader = VcfReader::new("sample.vcf.gz").unwrap();
+    /// let mut reader = VcfReader::new_from_path("sample.vcf.gz").unwrap();
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
     pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
