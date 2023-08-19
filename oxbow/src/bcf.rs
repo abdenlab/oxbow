@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{self, Read, Seek, BufReader};
+use std::io::{self, BufReader, Read, Seek};
 // use std::path::Path;
 use std::sync::Arc;
 
@@ -13,13 +13,13 @@ use noodles::{bcf, bgzf, csi, vcf};
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
-
 pub fn index_from_reader<R>(read: R) -> io::Result<csi::Index>
-where R : Read + Seek {
+where
+    R: Read + Seek,
+{
     let mut csi_reader = csi::Reader::new(read);
     csi_reader.read_index()
 }
-
 
 /// A BCF reader.
 pub struct BcfReader<R> {
@@ -43,7 +43,7 @@ impl BcfReader<BufReader<File>> {
     }
 }
 
-impl <R: Read + Seek> BcfReader<R> {
+impl<R: Read + Seek> BcfReader<R> {
     /// Creates a BCF Reader.
     pub fn new(read: R, index: csi::Index) -> std::io::Result<Self> {
         let mut reader = bcf::Reader::new(read);
