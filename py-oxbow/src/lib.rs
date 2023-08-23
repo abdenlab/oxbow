@@ -1,3 +1,4 @@
+use oxbow::bigwig::ZoomSummaryMetric;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 use pyo3::types::PyList;
@@ -88,12 +89,26 @@ fn read_bcf_vpos(path: &str, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> PyObject
 }
 
 #[pyfunction]
-fn read_bigwig(py: Python, path_or_file_like: PyObject, region: Option<&str>) -> PyObject {
+fn read_bigwig(py: Python, path_or_file_like: PyObject, region: Option<&str>, zoom_level: Option<u32>, zoom_summary_metric: Option<&str>) -> PyObject {
+    let zoom_summary_metric = match (zoom_level, zoom_summary_metric) {
+        (None, _) | (_, None) | (_, Some("mean")) => ZoomSummaryMetric::MEAN,
+        (_, Some("max")) => ZoomSummaryMetric::MAX,
+        (_, Some("min")) => ZoomSummaryMetric::MIN,
+        _ => panic!("Invalid zoom summary metric passed. Expected `mean`, `max`, or `min`."),
+    };
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BigWigReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        match zoom_level {
+            Some(zoom_level) => {
+                let ipc = reader.zoom_records_to_ipc(region, zoom_level, zoom_summary_metric).unwrap();
+                Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+            }
+            None => {
+                let ipc = reader.records_to_ipc(region).unwrap();
+                Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+            }
+        }
     } else {
         // Otherwise, treat it as file-like
         let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
@@ -101,8 +116,16 @@ fn read_bigwig(py: Python, path_or_file_like: PyObject, region: Option<&str>) ->
             Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
         };
         let mut reader = BigWigReader::new(file_like).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        match zoom_level {
+            Some(zoom_level) => {
+                let ipc = reader.zoom_records_to_ipc(region, zoom_level, zoom_summary_metric).unwrap();
+                Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+            }
+            None => {
+                let ipc = reader.records_to_ipc(region).unwrap();
+                Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+            }
+        }
     }
 }
 
