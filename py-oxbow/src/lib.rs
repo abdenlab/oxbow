@@ -266,11 +266,11 @@ fn read_bigwig(
 }
 
 #[pyfunction]
-fn read_bigbed(py: Python, path_or_file_like: PyObject, region: Option<&str>) -> PyObject {
+fn read_bigbed(py: Python, path_or_file_like: PyObject, region: Option<&str>, fields: Option<HashSet<&str>>) -> PyObject {
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BigBedReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
+        let ipc = reader.records_to_ipc(region, fields).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
@@ -279,7 +279,7 @@ fn read_bigbed(py: Python, path_or_file_like: PyObject, region: Option<&str>) ->
             Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
         };
         let mut reader = BigBedReader::new(file_like).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
+        let ipc = reader.records_to_ipc(region, fields).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     }
 }
