@@ -10,6 +10,7 @@ use arrow::{error::ArrowError, record_batch::RecordBatch};
 use bigtools::utils::reopen::ReopenableFile;
 use bigtools::{BBIRead, BigBedRead};
 use noodles::core::Region;
+use std::collections::HashSet;
 use std::io::{Read, Seek};
 use std::sync::Arc;
 
@@ -52,10 +53,14 @@ impl<R: Read + Seek> BigBedReader<R> {
     /// use oxbow::bigbed::BigBedReader;
     ///
     /// let mut reader = BigBedReader::new_from_path("sample.bigBed").unwrap();
-    /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
+    /// let ipc = reader.records_to_ipc(Some("sq0:1-1000"), None).unwrap();
     /// ```
-    pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
-        let mut batch_builder = BigBedBatchBuilder::new(1024, &mut self.read)?;
+    pub fn records_to_ipc(
+        &mut self,
+        region: Option<&str>,
+        fields: Option<HashSet<&str>>,
+    ) -> Result<Vec<u8>, ArrowError> {
+        let mut batch_builder = BigBedBatchBuilder::new(1024, &mut self.read, fields)?;
         match region {
             Some(region) => {
                 let region: Region = region.parse().unwrap();
@@ -154,7 +159,7 @@ enum Column {
 
 enum ExtraColumns {
     Full(StringBuilder),
-    Split(Vec<(String, Column)>),
+    Split(Vec<Option<(String, Column)>>),
 }
 
 struct BigBedBatchBuilder {
@@ -168,6 +173,7 @@ impl BigBedBatchBuilder {
     pub fn new<R: Read + Seek>(
         capacity: usize,
         read: &mut BigBedRead<R>,
+        columns: Option<HashSet<&str>>,
     ) -> Result<Self, ArrowError> {
         let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
         let chroms: StringArray = StringArray::from(chroms);
@@ -186,6 +192,12 @@ impl BigBedBatchBuilder {
                     .into_iter()
                     .skip(3)
                     .map(|f| {
+                        if columns
+                            .as_ref()
+                            .map_or(false, |c| !c.contains(f.name.as_str()))
+                        {
+                            return None;
+                        }
                         use bigtools::bed::autosql::parse::FieldType::*;
                         let column = match f.field_type {
                             Int => Column::Int(Int32Array::builder(capacity)),
@@ -214,7 +226,7 @@ impl BigBedBatchBuilder {
                             }
                             Declaration(_, _) => panic!("Unexpected field type"),
                         };
-                        (f.name, column)
+                        Some((f.name, column))
                     })
                     .collect();
                 ExtraColumns::Split(columns)
@@ -239,9 +251,10 @@ impl BatchBuilder for BigBedBatchBuilder {
         match &mut self.extra {
             ExtraColumns::Full(rest) => rest.append_value(record.rest),
             ExtraColumns::Split(columns) => {
-                for ((_, builder), col) in
+                for (builder, col) in
                     std::iter::zip(columns.iter_mut(), record.rest.split_whitespace())
                 {
+                    let Some((_, builder)) = builder else { continue };
                     match builder {
                         Column::Int(builder) => {
                             let value: i32 = col.replace(",", "").parse().unwrap();
@@ -305,7 +318,7 @@ impl BatchBuilder for BigBedBatchBuilder {
                     ("end".to_string(), Arc::new(self.end.finish()) as ArrayRef),
                 ]
                 .into_iter()
-                .chain(columns.into_iter().map(|mut c| {
+                .chain(columns.into_iter().flatten().map(|mut c| {
                     let array = match &mut c.1 {
                         Column::Int(builder) => Arc::new(builder.finish()) as ArrayRef,
                         Column::Uint(builder) => Arc::new(builder.finish()) as ArrayRef,
@@ -334,7 +347,7 @@ mod tests {
         let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir.push("../fixtures/small.bigBed");
         let mut reader = BigBedReader::new_from_path(dir.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
+        let ipc = reader.records_to_ipc(region, None).unwrap();
         let cursor = std::io::Cursor::new(ipc);
         let mut arrow_reader = FileReader::try_new(cursor, None).unwrap();
         // make sure we have one batch
