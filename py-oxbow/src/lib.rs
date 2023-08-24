@@ -1,4 +1,3 @@
-use oxbow::bigwig::ZoomSummaryMetric;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 use pyo3::types::PyList;
@@ -220,19 +219,13 @@ fn read_bcf_vpos(
 }
 
 #[pyfunction]
-fn read_bigwig(py: Python, path_or_file_like: PyObject, region: Option<&str>, zoom_level: Option<u32>, zoom_summary_metric: Option<&str>) -> PyObject {
-    let zoom_summary_metric = match (zoom_level, zoom_summary_metric) {
-        (None, _) | (_, None) | (_, Some("mean")) => ZoomSummaryMetric::MEAN,
-        (_, Some("max")) => ZoomSummaryMetric::MAX,
-        (_, Some("min")) => ZoomSummaryMetric::MIN,
-        _ => panic!("Invalid zoom summary metric passed. Expected `mean`, `max`, or `min`."),
-    };
+fn read_bigwig(py: Python, path_or_file_like: PyObject, region: Option<&str>, zoom_level: Option<u32>) -> PyObject {
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BigWigReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
         match zoom_level {
             Some(zoom_level) => {
-                let ipc = reader.zoom_records_to_ipc(region, zoom_level, zoom_summary_metric).unwrap();
+                let ipc = reader.zoom_records_to_ipc(region, zoom_level).unwrap();
                 Python::with_gil(|py| PyBytes::new(py, &ipc).into())
             }
             None => {
@@ -249,7 +242,7 @@ fn read_bigwig(py: Python, path_or_file_like: PyObject, region: Option<&str>, zo
         let mut reader = BigWigReader::new(file_like).unwrap();
         match zoom_level {
             Some(zoom_level) => {
-                let ipc = reader.zoom_records_to_ipc(region, zoom_level, zoom_summary_metric).unwrap();
+                let ipc = reader.zoom_records_to_ipc(region, zoom_level).unwrap();
                 Python::with_gil(|py| PyBytes::new(py, &ipc).into())
             }
             None => {
