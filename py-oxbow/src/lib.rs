@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 use pyo3::types::PyList;
@@ -88,13 +90,21 @@ fn read_bcf_vpos(path: &str, pos_lo: (u64, u16), pos_hi: (u64, u16)) -> PyObject
 }
 
 #[pyfunction]
-fn read_bigwig(py: Python, path_or_file_like: PyObject, region: Option<&str>, zoom_level: Option<u32>) -> PyObject {
+fn read_bigwig(
+    py: Python,
+    path_or_file_like: PyObject,
+    region: Option<&str>,
+    zoom_level: Option<u32>,
+    zoom_summary_columns: Option<HashSet<&str>>,
+) -> PyObject {
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BigWigReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
         match zoom_level {
             Some(zoom_level) => {
-                let ipc = reader.zoom_records_to_ipc(region, zoom_level).unwrap();
+                let ipc = reader
+                    .zoom_records_to_ipc(region, zoom_level, zoom_summary_columns)
+                    .unwrap();
                 Python::with_gil(|py| PyBytes::new(py, &ipc).into())
             }
             None => {
@@ -111,7 +121,9 @@ fn read_bigwig(py: Python, path_or_file_like: PyObject, region: Option<&str>, zo
         let mut reader = BigWigReader::new(file_like).unwrap();
         match zoom_level {
             Some(zoom_level) => {
-                let ipc = reader.zoom_records_to_ipc(region, zoom_level).unwrap();
+                let ipc = reader
+                    .zoom_records_to_ipc(region, zoom_level, zoom_summary_columns)
+                    .unwrap();
                 Python::with_gil(|py| PyBytes::new(py, &ipc).into())
             }
             None => {

@@ -7,6 +7,7 @@ use arrow::{error::ArrowError, record_batch::RecordBatch};
 use bigtools::utils::reopen::ReopenableFile;
 use bigtools::{BBIRead, BigWigRead, Summary};
 use noodles::core::Region;
+use std::collections::HashSet;
 use std::io::{Read, Seek};
 use std::sync::Arc;
 
@@ -97,7 +98,9 @@ impl<R: Read + Seek> BigWigReader<R> {
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
     pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
-        let mut batch_builder = BigWigBatchBuilder::new(1024, &mut self.read)?;
+        let capacity = 1024;
+        let mut batch_builder =
+            BigWigBatchBuilder::new(capacity, Float32Array::builder(capacity), &mut self.read)?;
         match region {
             Some(region) => {
                 let (chrom_name, start, end) = self.start_end_from_region(region)?;
@@ -143,20 +146,57 @@ impl<R: Read + Seek> BigWigReader<R> {
     ///
     /// If the region is `None`, all records are returned.
     ///
+    /// Valid columns are:
+    ///   - total_items
+    ///   - bases_covered
+    ///   - min
+    ///   - max
+    ///   - sum
+    ///   - sum_squares
+    ///
     /// # Examples
     ///
     /// ```no_run
     /// use oxbow::bigwig::BigWigReader;
+    /// use std::collections::HashSet;
     ///
     /// let mut reader = BigWigReader::new_from_path("sample.bigWig").unwrap();
-    /// let ipc = reader.zoom_records_to_ipc(Some("sq0:1-1000"), 1024).unwrap();
+    /// let ipc = reader.zoom_records_to_ipc(Some("sq0:1-1000"), 1024, Some(HashSet::from_iter(["sum", "bases_covered"]))).unwrap();
     /// ```
     pub fn zoom_records_to_ipc(
         &mut self,
         region: Option<&str>,
         zoom_level: u32,
+        columns: Option<HashSet<&str>>,
     ) -> Result<Vec<u8>, ArrowError> {
-        let mut batch_builder = BigWigBatchBuilder::new(1024, &mut self.read)?;
+        let capacity = 1024;
+        let builder = (
+            columns
+                .as_ref()
+                .map_or(true, |c| c.contains("total_items"))
+                .then(|| UInt64Array::builder(capacity)),
+            columns
+                .as_ref()
+                .map_or(true, |c| c.contains("bases_covered"))
+                .then(|| UInt64Array::builder(capacity)),
+            columns
+                .as_ref()
+                .map_or(true, |c| c.contains("min"))
+                .then(|| Float64Array::builder(capacity)),
+            columns
+                .as_ref()
+                .map_or(true, |c| c.contains("max"))
+                .then(|| Float64Array::builder(capacity)),
+            columns
+                .as_ref()
+                .map_or(true, |c| c.contains("sum"))
+                .then(|| Float64Array::builder(capacity)),
+            columns
+                .as_ref()
+                .map_or(true, |c| c.contains("sum_Squares"))
+                .then(|| Float64Array::builder(capacity)),
+        );
+        let mut batch_builder = BigWigBatchBuilder::new(capacity, builder, &mut self.read)?;
         match region {
             Some(region) => {
                 let (chrom_name, start, end) = self.start_end_from_region(region)?;
@@ -212,7 +252,6 @@ trait ValueToIpc {
     type Builder;
     type Schema: IntoIterator<Item = (&'static str, ArrayRef)>;
 
-    fn builder(capacity: usize) -> Self::Builder;
     fn append_value_to(self, builder: &mut Self::Builder);
     fn finish(builder: Self::Builder) -> Self::Schema;
 }
@@ -220,10 +259,6 @@ trait ValueToIpc {
 impl ValueToIpc for f32 {
     type Builder = Float32Builder;
     type Schema = [(&'static str, ArrayRef); 1];
-
-    fn builder(capacity: usize) -> Self::Builder {
-        Float32Array::builder(capacity)
-    }
 
     fn append_value_to(self, builder: &mut Self::Builder) {
         builder.append_value(self)
@@ -236,42 +271,55 @@ impl ValueToIpc for f32 {
 
 impl ValueToIpc for Summary {
     type Builder = (
-        UInt64Builder,  // total items
-        UInt64Builder,  // bases covered
-        Float64Builder, // min
-        Float64Builder, // max
-        Float64Builder, // sum
-        Float64Builder, // sum squares
+        Option<UInt64Builder>,  // total items
+        Option<UInt64Builder>,  // bases covered
+        Option<Float64Builder>, // min
+        Option<Float64Builder>, // max
+        Option<Float64Builder>, // sum
+        Option<Float64Builder>, // sum squares
     );
-    type Schema = [(&'static str, ArrayRef); 6];
+    type Schema = std::iter::Flatten<std::array::IntoIter<Option<(&'static str, ArrayRef)>, 6>>;
 
-    fn builder(capacity: usize) -> Self::Builder {
-        (
-            UInt64Array::builder(capacity),
-            UInt64Array::builder(capacity),
-            Float64Array::builder(capacity),
-            Float64Array::builder(capacity),
-            Float64Array::builder(capacity),
-            Float64Array::builder(capacity),
-        )
-    }
     fn append_value_to(self, builder: &mut Self::Builder) {
-        builder.0.append_value(self.total_items);
-        builder.1.append_value(self.bases_covered);
-        builder.2.append_value(self.min_val);
-        builder.3.append_value(self.max_val);
-        builder.4.append_value(self.sum);
-        builder.5.append_value(self.sum_squares);
+        builder.0.as_mut().map(|b| b.append_value(self.total_items));
+        builder
+            .1
+            .as_mut()
+            .map(|b| b.append_value(self.bases_covered));
+        builder.2.as_mut().map(|b| b.append_value(self.min_val));
+        builder.3.as_mut().map(|b| b.append_value(self.max_val));
+        builder.4.as_mut().map(|b| b.append_value(self.sum));
+        builder.5.as_mut().map(|b| b.append_value(self.sum_squares));
     }
     fn finish(mut builder: Self::Builder) -> Self::Schema {
         [
-            ("total_items", Arc::new(builder.0.finish()) as ArrayRef),
-            ("bases_covered", Arc::new(builder.1.finish()) as ArrayRef),
-            ("min", Arc::new(builder.2.finish()) as ArrayRef),
-            ("max", Arc::new(builder.3.finish()) as ArrayRef),
-            ("sum", Arc::new(builder.4.finish()) as ArrayRef),
-            ("sum_squares", Arc::new(builder.5.finish()) as ArrayRef),
+            builder
+                .0
+                .as_mut()
+                .map(|b| ("total_items", Arc::new(b.finish()) as ArrayRef)),
+            builder
+                .1
+                .as_mut()
+                .map(|b| ("bases_covered", Arc::new(b.finish()) as ArrayRef)),
+            builder
+                .2
+                .as_mut()
+                .map(|b| ("min", Arc::new(b.finish()) as ArrayRef)),
+            builder
+                .3
+                .as_mut()
+                .map(|b| ("max", Arc::new(b.finish()) as ArrayRef)),
+            builder
+                .4
+                .as_mut()
+                .map(|b| ("sum", Arc::new(b.finish()) as ArrayRef)),
+            builder
+                .5
+                .as_mut()
+                .map(|b| ("sum_squares", Arc::new(b.finish()) as ArrayRef)),
         ]
+        .into_iter()
+        .flatten()
     }
 }
 
@@ -279,12 +327,13 @@ struct BigWigBatchBuilder<V: ValueToIpc> {
     chrom: StringDictionaryBuilder<Int32Type>,
     start: UInt32Builder,
     end: UInt32Builder,
-    value: V::Builder,
+    value_builder: V::Builder,
 }
 
 impl<V: ValueToIpc> BigWigBatchBuilder<V> {
     pub fn new<R: Read + Seek>(
         capacity: usize,
+        value_builder: V::Builder,
         read: &mut BigWigRead<R>,
     ) -> Result<Self, ArrowError> {
         let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
@@ -293,7 +342,7 @@ impl<V: ValueToIpc> BigWigBatchBuilder<V> {
             chrom: StringDictionaryBuilder::<Int32Type>::new_with_dictionary(capacity, &chroms)?,
             start: UInt32Array::builder(capacity),
             end: UInt32Array::builder(capacity),
-            value: V::builder(capacity),
+            value_builder,
         })
     }
 }
@@ -305,7 +354,7 @@ impl<V: ValueToIpc> BatchBuilder for BigWigBatchBuilder<V> {
         self.chrom.append_value(record.chrom);
         self.start.append_value(record.start);
         self.end.append_value(record.end);
-        record.value.append_value_to(&mut self.value)
+        record.value.append_value_to(&mut self.value_builder)
     }
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
@@ -316,7 +365,7 @@ impl<V: ValueToIpc> BatchBuilder for BigWigBatchBuilder<V> {
                 ("end", Arc::new(self.end.finish()) as ArrayRef),
             ]
             .into_iter()
-            .chain(V::finish(self.value)),
+            .chain(V::finish(self.value_builder)),
         )
     }
 }
@@ -343,7 +392,7 @@ mod tests {
         let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir.push("../fixtures/valid.bigWig");
         let mut reader = BigWigReader::new_from_path(dir.to_str().unwrap()).unwrap();
-        let ipc = reader.zoom_records_to_ipc(region, 10240).unwrap();
+        let ipc = reader.zoom_records_to_ipc(region, 10240, None).unwrap();
         let cursor = std::io::Cursor::new(ipc);
         let mut arrow_reader = FileReader::try_new(cursor, None).unwrap();
         // make sure we have one batch
