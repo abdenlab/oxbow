@@ -5,11 +5,13 @@ use std::sync::Arc;
 
 use arrow::array::{
     ArrayRef, GenericStringBuilder, Int32Array, Int32Builder, StringArray, StringDictionaryBuilder,
-    UInt16Array, UInt16Builder, UInt8Array, UInt8Builder,
+    UInt16Array, UInt16Builder, UInt8Array, UInt8Builder, GenericListBuilder, StringBuilder
 };
 use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
+use noodles::sam::record::data::field::Tag;
 use noodles::{bam, bgzf, csi, sam};
+use std::str::FromStr;
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
@@ -50,33 +52,41 @@ pub struct BamReader<R> {
     reader: bam::Reader<bgzf::Reader<R>>,
     header: sam::Header,
     index: csi::Index,
+    fields: Vec<Tag>
 }
 
 impl BamReader<BufReader<File>> {
     /// Creates a BAM reader from a given file path.
-    pub fn new_from_path(path: &str) -> std::io::Result<Self> {
+    pub fn new_from_path(path: &str, tags: Vec<&str>) -> std::io::Result<Self> {
         let index = index_from_path(path)?;
         let file = std::fs::File::open(path)?;
         let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
         let mut reader = bam::Reader::new(buf_file);
         let header = reader.read_header()?;
+        let fields: Vec<Tag> = tags.iter().map(|x| Tag::from_str(x).unwrap()).collect();
+
+
         Ok(Self {
             reader,
             header,
             index,
+            fields
         })
     }
 }
 
 impl<R: Read + Seek> BamReader<R> {
     /// Creates a BAM reader.
-    pub fn new(read: R, index: csi::Index) -> std::io::Result<Self> {
+    pub fn new(read: R, index: csi::Index, tags: Vec<&str>) -> std::io::Result<Self> {
         let mut reader = bam::Reader::new(read);
         let header = reader.read_header()?;
+        let fields: Vec<Tag> = tags.iter().map(|x| Tag::from_str(x).unwrap()).collect();
+
         Ok(Self {
             reader,
             header,
             index,
+            fields
         })
     }
 
@@ -93,7 +103,7 @@ impl<R: Read + Seek> BamReader<R> {
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
     pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
-        let batch_builder = BamBatchBuilder::new(1024, &self.header)?;
+        let batch_builder = BamBatchBuilder::new(1024, &self.header, &self.fields)?;
         if let Some(region) = region {
             let region: Region = region.parse().unwrap();
             let query = self
@@ -120,7 +130,7 @@ impl<R: Read + Seek> BamReader<R> {
             .map_err(|e| ArrowError::ExternalError(e.into()))?;
         let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi)
             .map_err(|e| ArrowError::ExternalError(e.into()))?;
-        let batch_builder = BamBatchBuilder::new(1024, &self.header)?;
+        let batch_builder = BamBatchBuilder::new(1024, &self.header, &self.fields)?;
         let records = BamRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi)
             .map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
         write_ipc_err(records, batch_builder)
@@ -141,10 +151,12 @@ struct BamBatchBuilder<'a> {
     seq: GenericStringBuilder<i32>,
     qual: GenericStringBuilder<i32>,
     end: Int32Builder,
+    tags: &'a Vec<Tag>,
+    tag_values: GenericListBuilder<i32, StringBuilder>,
 }
 
 impl<'a> BamBatchBuilder<'a> {
-    pub fn new(capacity: usize, header: &'a sam::Header) -> Result<Self, ArrowError> {
+    pub fn new(capacity: usize, header: &'a sam::Header, tags: &'a Vec<Tag>) -> Result<Self, ArrowError> {
         let categories = StringArray::from(
             header
                 .reference_sequences()
@@ -172,6 +184,10 @@ impl<'a> BamBatchBuilder<'a> {
             seq: GenericStringBuilder::<i32>::new(),
             qual: GenericStringBuilder::<i32>::new(),
             end: Int32Array::builder(capacity),
+            tags,
+            tag_values: GenericListBuilder::<i32, StringBuilder>::new(
+                StringBuilder::new(),
+            ),
         })
     }
 }
@@ -206,6 +222,17 @@ impl<'a> BatchBuilder for BamBatchBuilder<'a> {
         // extra
         self.end
             .append_option(record.alignment_end().map(|x| x.get() as i32));
+
+        for tag in self.tags {
+            match record.data().get(tag) {
+                Some(value) => {
+                    self.tag_values.values().append_value(value.to_string());
+                },
+                None => {},
+            }
+        }
+
+        self.tag_values.append(true);
     }
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
@@ -224,6 +251,7 @@ impl<'a> BatchBuilder for BamBatchBuilder<'a> {
             ("qual", Arc::new(self.qual.finish()) as ArrayRef),
             // extra
             ("end", Arc::new(self.end.finish()) as ArrayRef),
+            ("tag_values", Arc::new(self.tag_values.finish()) as ArrayRef),
         ])
     }
 }
@@ -293,7 +321,7 @@ mod tests {
     fn read_record_batch(region: Option<&str>) -> RecordBatch {
         let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir.push("../fixtures/sample.bam");
-        let mut reader = BamReader::new_from_path(dir.to_str().unwrap()).unwrap();
+        let mut reader = BamReader::new_from_path(dir.to_str().unwrap(), vec!["MD", "NM"]).unwrap();
         let ipc = reader.records_to_ipc(region).unwrap();
         let cursor = std::io::Cursor::new(ipc);
         let mut arrow_reader = FileReader::try_new(cursor, None).unwrap();
@@ -305,6 +333,7 @@ mod tests {
     #[test]
     fn test_read_all() {
         let record_batch = read_record_batch(None);
+        dbg!(&record_batch);
         assert_eq!(record_batch.num_rows(), 6);
     }
 
