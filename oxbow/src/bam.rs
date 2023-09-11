@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufReader, Read, Seek};
 use std::path::Path;
@@ -5,7 +6,7 @@ use std::sync::Arc;
 
 use arrow::array::{
     ArrayRef, GenericStringBuilder, Int32Array, Int32Builder, StringArray, StringDictionaryBuilder,
-    UInt16Array, UInt16Builder, UInt8Array, UInt8Builder, GenericListBuilder, StringBuilder
+    UInt16Array, UInt16Builder, UInt8Array, UInt8Builder, GenericListBuilder, StringBuilder, self
 };
 use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
@@ -152,7 +153,7 @@ struct BamBatchBuilder<'a> {
     qual: GenericStringBuilder<i32>,
     end: Int32Builder,
     tags: &'a Vec<Tag>,
-    tag_values: GenericListBuilder<i32, StringBuilder>,
+    tag_values: HashMap<&'a Tag,GenericStringBuilder<i32>>,
 }
 
 impl<'a> BamBatchBuilder<'a> {
@@ -164,6 +165,13 @@ impl<'a> BamBatchBuilder<'a> {
                 .map(|(rs, _)| Some(rs.as_str()))
                 .collect::<Vec<_>>(),
         );
+
+        let mut tag_values = HashMap::new();
+
+        for tag in tags {
+            tag_values.insert(tag, GenericStringBuilder::<i32>::new());
+        }
+
         Ok(Self {
             header,
             qname: GenericStringBuilder::<i32>::new(),
@@ -185,9 +193,7 @@ impl<'a> BamBatchBuilder<'a> {
             qual: GenericStringBuilder::<i32>::new(),
             end: Int32Array::builder(capacity),
             tags,
-            tag_values: GenericListBuilder::<i32, StringBuilder>::new(
-                StringBuilder::new(),
-            ),
+            tag_values,
         })
     }
 }
@@ -226,33 +232,43 @@ impl<'a> BatchBuilder for BamBatchBuilder<'a> {
         for tag in self.tags {
             match record.data().get(tag) {
                 Some(value) => {
-                    self.tag_values.values().append_value(value.to_string());
+                    match self.tag_values.get_mut(&tag) {
+                        Some(tag_value) => {
+                            tag_value.append_value(value.to_string());
+                        },
+                        None => {},
+                    }
                 },
                 None => {},
             }
         }
-
-        self.tag_values.append(true);
     }
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
-        RecordBatch::try_from_iter(vec![
+        let mut record_batch = vec![
             // spec
-            ("qname", Arc::new(self.qname.finish()) as ArrayRef),
-            ("flag", Arc::new(self.flag.finish()) as ArrayRef),
-            ("rname", Arc::new(self.rname.finish()) as ArrayRef),
-            ("pos", Arc::new(self.pos.finish()) as ArrayRef),
-            ("mapq", Arc::new(self.mapq.finish()) as ArrayRef),
-            ("cigar", Arc::new(self.cigar.finish()) as ArrayRef),
-            ("rnext", Arc::new(self.rnext.finish()) as ArrayRef),
-            ("pnext", Arc::new(self.pnext.finish()) as ArrayRef),
-            ("tlen", Arc::new(self.tlen.finish()) as ArrayRef),
-            ("seq", Arc::new(self.seq.finish()) as ArrayRef),
-            ("qual", Arc::new(self.qual.finish()) as ArrayRef),
+            (String::from("qname"), Arc::new(self.qname.finish()) as ArrayRef),
+            (String::from("flag"), Arc::new(self.flag.finish()) as ArrayRef),
+            (String::from("rname"), Arc::new(self.rname.finish()) as ArrayRef),
+            (String::from("pos"), Arc::new(self.pos.finish()) as ArrayRef),
+            (String::from("mapq"), Arc::new(self.mapq.finish()) as ArrayRef),
+            (String::from("cigar"), Arc::new(self.cigar.finish()) as ArrayRef),
+            (String::from("rnext"), Arc::new(self.rnext.finish()) as ArrayRef),
+            (String::from("pnext"), Arc::new(self.pnext.finish()) as ArrayRef),
+            (String::from("tlen"), Arc::new(self.tlen.finish()) as ArrayRef),
+            (String::from("seq"), Arc::new(self.seq.finish()) as ArrayRef),
+            (String::from("qual"), Arc::new(self.qual.finish()) as ArrayRef),
             // extra
-            ("end", Arc::new(self.end.finish()) as ArrayRef),
-            ("tag_values", Arc::new(self.tag_values.finish()) as ArrayRef),
-        ])
+            (String::from("end"), Arc::new(self.end.finish()) as ArrayRef),
+        ];
+
+        for (key,value) in self.tag_values.iter_mut() {
+            let array_ref = Arc::new(value.finish()) as ArrayRef;
+
+            record_batch.push((key.to_string(), array_ref));
+        }
+        
+        RecordBatch::try_from_iter(record_batch)
     }
 }
 
