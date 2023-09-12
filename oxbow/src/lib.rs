@@ -33,4 +33,5 @@ pub mod bcf;
 pub mod bigbed;
 pub mod bigwig;
 pub mod gff;
+pub mod gtf;
 pub mod vcf;

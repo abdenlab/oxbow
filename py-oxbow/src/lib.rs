@@ -16,6 +16,7 @@ use oxbow::vcf;
 // use oxbow::cram::CramReader;
 use oxbow::bcf::BcfReader;
 use oxbow::gff::GffReader;
+use oxbow::gtf::GtfReader;
 use oxbow::vcf::VcfReader;
 
 use oxbow::vpos;
@@ -309,6 +310,25 @@ fn read_gff(py: Python, path_or_file_like: PyObject) -> PyObject {
     }
 }
 
+#[pyfunction]
+fn read_gtf(py: Python, path_or_file_like: PyObject) -> PyObject {
+    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+        // If it's a string, treat it as a path
+        let mut reader = GtfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let ipc = reader.records_to_ipc().unwrap();
+        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+    } else {
+        // Otherwise, treat it as file-like
+        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
+            Ok(file_like) => file_like,
+            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
+        };
+        let mut reader = GtfReader::new(file_like).unwrap();
+        let ipc = reader.records_to_ipc().unwrap();
+        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+    }
+}
+
 #[pymodule]
 #[pyo3(name = "oxbow")]
 fn py_oxbow(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -326,5 +346,6 @@ fn py_oxbow(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_bigwig, m)?)?;
     m.add_function(wrap_pyfunction!(read_bigbed, m)?)?;
     m.add_function(wrap_pyfunction!(read_gff, m)?)?;
+    m.add_function(wrap_pyfunction!(read_gtf, m)?)?;
     Ok(())
 }
