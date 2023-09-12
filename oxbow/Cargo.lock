@@ -776,6 +776,7 @@ dependencies = [
  "noodles-csi",
  "noodles-fasta",
  "noodles-fastq",
+ "noodles-gff",
  "noodles-sam",
  "noodles-tabix",
  "noodles-vcf",
@@ -879,6 +880,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1763486d2d1a1e39a86676a47aa05728c75f73f0f883415e36439711ead2641"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "noodles-gff"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29cd6131bf39317a7b222eab0e99f3a14559e02a2a8c22e6160f66d17a513b74"
+dependencies = [
+ "indexmap 2.0.0",
+ "noodles-bgzf",
+ "noodles-core",
+ "noodles-csi",
+ "percent-encoding",
 ]
 
 [[package]]
