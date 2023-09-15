@@ -89,7 +89,7 @@ impl<R: Read + Seek> BamReader<R> {
 
     /// Returns the records in the given region as Apache Arrow IPC.
     ///
-    /// If the region is `None`, all records are returned. The second paramter to 
+    /// If the region is `None`, all records are returned. The second paramter to
     /// `records_to_ipc` is a set of tags to include in the output. If it is `None`,
     /// all tags are included. If it is `Some`, only the tags in the set are included.
     ///
