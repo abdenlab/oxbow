@@ -89,7 +89,9 @@ impl<R: Read + Seek> BamReader<R> {
 
     /// Returns the records in the given region as Apache Arrow IPC.
     ///
-    /// If the region is `None`, all records are returned.
+    /// If the region is `None`, all records are returned. The second paramter to 
+    /// `records_to_ipc` is a set of tags to include in the output. If it is `None`,
+    /// all tags are included. If it is `Some`, only the tags in the set are included.
     ///
     /// # Examples
     ///
@@ -97,7 +99,7 @@ impl<R: Read + Seek> BamReader<R> {
     /// use oxbow::bam::BamReader;
     ///
     /// let mut reader = BamReader::new_from_path("sample.bam").unwrap();
-    /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
+    /// let ipc = reader.records_to_ipc(Some("sq0:1-1000"), None).unwrap();
     /// ```
     pub fn records_to_ipc(
         &mut self,
