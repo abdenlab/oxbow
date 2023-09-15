@@ -4,6 +4,7 @@ use std::io::{self, BufReader, Read, Seek};
 use std::path::Path;
 use std::sync::Arc;
 
+use arrow::array::ArrayBuilder;
 use arrow::array::{
     ArrayRef, GenericStringBuilder, Int32Array, Int32Builder, StringArray, StringDictionaryBuilder,
     UInt16Array, UInt16Builder, UInt8Array, UInt8Builder,
@@ -12,9 +13,8 @@ use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
 use noodles::sam::record::data::field::Tag;
 use noodles::{bam, bgzf, csi, sam};
-use std::str::FromStr;
 use std::collections::HashSet;
-use arrow::array::ArrayBuilder;
+use std::str::FromStr;
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
@@ -76,7 +76,7 @@ impl BamReader<BufReader<File>> {
 
 impl<R: Read + Seek> BamReader<R> {
     /// Creates a BAM reader.
-    pub fn new(read: R, index: csi::Index,) -> std::io::Result<Self> {
+    pub fn new(read: R, index: csi::Index) -> std::io::Result<Self> {
         let mut reader = bam::Reader::new(read);
         let header = reader.read_header()?;
 
@@ -99,7 +99,11 @@ impl<R: Read + Seek> BamReader<R> {
     /// let mut reader = BamReader::new_from_path("sample.bam").unwrap();
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
-    pub fn records_to_ipc(&mut self, region: Option<&str>, tags: Option<HashSet<&str>>) -> Result<Vec<u8>, ArrowError> {
+    pub fn records_to_ipc(
+        &mut self,
+        region: Option<&str>,
+        tags: Option<HashSet<&str>>,
+    ) -> Result<Vec<u8>, ArrowError> {
         let batch_builder = BamBatchBuilder::new(1024, &self.header, tags)?;
         if let Some(region) = region {
             let region: Region = region.parse().unwrap();
@@ -198,10 +202,15 @@ impl<'a> BamBatchBuilder<'a> {
         // part of the trait itself.
         let tags;
         match &self.tags {
-            Some(t) => tags=t.iter().filter_map(|x| Tag::from_str(x).ok()).collect::<HashSet<_>>(),
+            Some(t) => {
+                tags = t
+                    .iter()
+                    .filter_map(|x| Tag::from_str(x).ok())
+                    .collect::<HashSet<_>>()
+            }
 
             // if no tags are specified, return all tags
-            None => tags=record.data().keys().collect::<HashSet<_>>(),
+            None => tags = record.data().keys().collect::<HashSet<_>>(),
         }
 
         // Go through each expected tag (the ones asked for or all tags if the asked for were omitted)
@@ -227,7 +236,7 @@ impl<'a> BamBatchBuilder<'a> {
                     None => {
                         // We haven't seen this tag before so we have to create a GenericStringBuilder
                         // to start adding values.
-                        let mut str_builder =  GenericStringBuilder::<i32>::new();
+                        let mut str_builder = GenericStringBuilder::<i32>::new();
 
                         // Add null values for all the previous rows where this tag wasn't present
                         while str_builder.len() < self.qname.len() - 1 {
@@ -238,10 +247,7 @@ impl<'a> BamBatchBuilder<'a> {
                         str_builder.append_value(value.to_string());
 
                         // Attach this GenericStringBuilder to the tag
-                        self.tag_values.insert(
-                            tag_str,
-                            str_builder,
-                        );
+                        self.tag_values.insert(tag_str, str_builder);
                     }
                 },
                 None => {}
@@ -288,7 +294,7 @@ impl<'a> BatchBuilder for BamBatchBuilder<'a> {
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
         let num_records = self.qname.len();
-        
+
         let mut record_batch = vec![
             // spec
             (
@@ -412,7 +418,7 @@ mod tests {
     use arrow::ipc::reader::FileReader;
     use arrow::record_batch::RecordBatch;
 
-    fn read_record_batch(region: Option<&str>, tags: Option<HashSet<&str>> ) -> RecordBatch {
+    fn read_record_batch(region: Option<&str>, tags: Option<HashSet<&str>>) -> RecordBatch {
         let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir.push("../fixtures/sample.bam");
         let mut reader = BamReader::new_from_path(dir.to_str().unwrap()).unwrap();
