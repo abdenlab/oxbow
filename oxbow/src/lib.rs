@@ -8,7 +8,7 @@
 //! use oxbow::bam::BamReader;
 //!
 //! let mut reader = BamReader::new_from_path("sample.bam").unwrap();
-//! let ipc = reader.records_to_ipc(None).unwrap();
+//! let ipc = reader.records_to_ipc(None, None).unwrap();
 //! ```
 //!
 //! ## Query records
@@ -19,7 +19,7 @@
 //! use oxbow::bam::BamReader;
 //!
 //! let mut reader = BamReader::new_from_path("sample.bam").unwrap();
-//! let ipc = reader.records_to_ipc(Some("chr1:1-100000")).unwrap();
+//! let ipc = reader.records_to_ipc(Some("chr1:1-100000"), None).unwrap();
 //! ```
 //!
 
