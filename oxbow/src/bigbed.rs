@@ -255,7 +255,7 @@ impl BatchBuilder for BigBedBatchBuilder {
                     std::iter::zip(columns.iter_mut(), record.rest.split_whitespace())
                 {
                     let Some((_, builder)) = builder else {
-                        continue
+                        continue;
                     };
                     match builder {
                         Column::Int(builder) => {
