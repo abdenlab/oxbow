@@ -13,6 +13,8 @@ use noodles::core::Region;
 use noodles::sam::record::data::field::Tag;
 use noodles::{bam, bgzf, csi, sam};
 use std::str::FromStr;
+use std::collections::HashSet;
+use arrow::array::ArrayBuilder;
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
@@ -53,40 +55,35 @@ pub struct BamReader<R> {
     reader: bam::Reader<bgzf::Reader<R>>,
     header: sam::Header,
     index: csi::Index,
-    fields: Vec<Tag>,
 }
 
 impl BamReader<BufReader<File>> {
     /// Creates a BAM reader from a given file path.
-    pub fn new_from_path(path: &str, tags: Vec<&str>) -> std::io::Result<Self> {
+    pub fn new_from_path(path: &str) -> std::io::Result<Self> {
         let index = index_from_path(path)?;
         let file = std::fs::File::open(path)?;
         let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
         let mut reader = bam::Reader::new(buf_file);
         let header = reader.read_header()?;
-        let fields: Vec<Tag> = tags.iter().map(|x| Tag::from_str(x).unwrap()).collect();
 
         Ok(Self {
             reader,
             header,
             index,
-            fields,
         })
     }
 }
 
 impl<R: Read + Seek> BamReader<R> {
     /// Creates a BAM reader.
-    pub fn new(read: R, index: csi::Index, tags: Vec<&str>) -> std::io::Result<Self> {
+    pub fn new(read: R, index: csi::Index,) -> std::io::Result<Self> {
         let mut reader = bam::Reader::new(read);
         let header = reader.read_header()?;
-        let fields: Vec<Tag> = tags.iter().map(|x| Tag::from_str(x).unwrap()).collect();
 
         Ok(Self {
             reader,
             header,
             index,
-            fields,
         })
     }
 
@@ -102,8 +99,8 @@ impl<R: Read + Seek> BamReader<R> {
     /// let mut reader = BamReader::new_from_path("sample.bam").unwrap();
     /// let ipc = reader.records_to_ipc(Some("sq0:1-1000")).unwrap();
     /// ```
-    pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
-        let batch_builder = BamBatchBuilder::new(1024, &self.header, &self.fields)?;
+    pub fn records_to_ipc(&mut self, region: Option<&str>, tags: Option<HashSet<&str>>) -> Result<Vec<u8>, ArrowError> {
+        let batch_builder = BamBatchBuilder::new(1024, &self.header, tags)?;
         if let Some(region) = region {
             let region: Region = region.parse().unwrap();
             let query = self
@@ -125,12 +122,13 @@ impl<R: Read + Seek> BamReader<R> {
         &mut self,
         pos_lo: (u64, u16),
         pos_hi: (u64, u16),
+        tags: Option<HashSet<&str>>,
     ) -> Result<Vec<u8>, ArrowError> {
         let vpos_lo = bgzf::VirtualPosition::try_from(pos_lo)
             .map_err(|e| ArrowError::ExternalError(e.into()))?;
         let vpos_hi = bgzf::VirtualPosition::try_from(pos_hi)
             .map_err(|e| ArrowError::ExternalError(e.into()))?;
-        let batch_builder = BamBatchBuilder::new(1024, &self.header, &self.fields)?;
+        let batch_builder = BamBatchBuilder::new(1024, &self.header, tags)?;
         let records = BamRecords::new(&mut self.reader, &self.header, vpos_lo, vpos_hi)
             .map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
         write_ipc_err(records, batch_builder)
@@ -151,15 +149,15 @@ struct BamBatchBuilder<'a> {
     seq: GenericStringBuilder<i32>,
     qual: GenericStringBuilder<i32>,
     end: Int32Builder,
-    tags: &'a Vec<Tag>,
-    tag_values: HashMap<&'a Tag, GenericStringBuilder<i32>>,
+    tags: Option<HashSet<&'a str>>,
+    tag_values: HashMap<String, GenericStringBuilder<i32>>,
 }
 
 impl<'a> BamBatchBuilder<'a> {
     pub fn new(
         capacity: usize,
         header: &'a sam::Header,
-        tags: &'a Vec<Tag>,
+        tags: Option<HashSet<&'a str>>,
     ) -> Result<Self, ArrowError> {
         let categories = StringArray::from(
             header
@@ -168,12 +166,6 @@ impl<'a> BamBatchBuilder<'a> {
                 .map(|(rs, _)| Some(rs.as_str()))
                 .collect::<Vec<_>>(),
         );
-
-        let mut tag_values = HashMap::new();
-
-        for tag in tags {
-            tag_values.insert(tag, GenericStringBuilder::<i32>::new());
-        }
 
         Ok(Self {
             header,
@@ -196,8 +188,65 @@ impl<'a> BamBatchBuilder<'a> {
             qual: GenericStringBuilder::<i32>::new(),
             end: Int32Array::builder(capacity),
             tags,
-            tag_values,
+            tag_values: HashMap::new(),
         })
+    }
+
+    fn add_tags(&mut self, record: &sam::alignment::Record) {
+        // Add tags from a record to the tag_values hashmap. This is a method
+        // That is called by the BatchBuilder trait implementation but it's not
+        // part of the trait itself.
+        let tags;
+        match &self.tags {
+            Some(t) => tags=t.iter().filter_map(|x| Tag::from_str(x).ok()).collect::<HashSet<_>>(),
+
+            // if no tags are specified, return all tags
+            None => tags=record.data().keys().collect::<HashSet<_>>(),
+        }
+
+        // Go through each expected tag (the ones asked for or all tags if the asked for were omitted)
+        for tag in tags {
+            let tag_str = tag.to_string();
+
+            match record.data().get(&tag) {
+                // Does the record have the tag we're looking for?
+                // If it doesn't, we don't care and move on.
+                Some(value) => match self.tag_values.get_mut(tag_str.as_str()) {
+                    // See if we're already keeping track of this tag
+                    Some(tag_value) => {
+                        // If we are, we need to add in nulls for all the previous records
+                        // that didn't have this tag so that in the end all returned columns
+                        // have the same length
+                        while tag_value.len() < self.qname.len() - 1 {
+                            tag_value.append_null();
+                        }
+
+                        // Add the actual value
+                        tag_value.append_value(value.to_string());
+                    }
+                    None => {
+                        // We haven't seen this tag before so we have to create a GenericStringBuilder
+                        // to start adding values.
+                        let mut str_builder =  GenericStringBuilder::<i32>::new();
+
+                        // Add null values for all the previous rows where this tag wasn't present
+                        while str_builder.len() < self.qname.len() - 1 {
+                            str_builder.append_null();
+                        }
+
+                        // Add the actual value
+                        str_builder.append_value(value.to_string());
+
+                        // Attach this GenericStringBuilder to the tag
+                        self.tag_values.insert(
+                            tag_str,
+                            str_builder,
+                        );
+                    }
+                },
+                None => {}
+            }
+        }
     }
 }
 
@@ -232,20 +281,14 @@ impl<'a> BatchBuilder for BamBatchBuilder<'a> {
         self.end
             .append_option(record.alignment_end().map(|x| x.get() as i32));
 
-        for tag in self.tags {
-            match record.data().get(tag) {
-                Some(value) => match self.tag_values.get_mut(&tag) {
-                    Some(tag_value) => {
-                        tag_value.append_value(value.to_string());
-                    }
-                    None => {}
-                },
-                None => {}
-            }
-        }
+        // Add tag values. This is a little more complicated than the other fields so we're
+        // doing it in a separate method.
+        self.add_tags(record);
     }
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
+        let num_records = self.qname.len();
+        
         let mut record_batch = vec![
             // spec
             (
@@ -290,7 +333,14 @@ impl<'a> BatchBuilder for BamBatchBuilder<'a> {
             (String::from("end"), Arc::new(self.end.finish()) as ArrayRef),
         ];
 
+        // Add the tags
         for (key, value) in self.tag_values.iter_mut() {
+            // If a tag appeared in some records but not the last ones, we need to
+            // fill in the remaining blanks with nulls
+            while value.len() < num_records {
+                value.append_null();
+            }
+
             let array_ref = Arc::new(value.finish()) as ArrayRef;
 
             record_batch.push((key.to_string(), array_ref));
@@ -362,11 +412,11 @@ mod tests {
     use arrow::ipc::reader::FileReader;
     use arrow::record_batch::RecordBatch;
 
-    fn read_record_batch(region: Option<&str>) -> RecordBatch {
+    fn read_record_batch(region: Option<&str>, tags: Option<HashSet<&str>> ) -> RecordBatch {
         let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir.push("../fixtures/sample.bam");
-        let mut reader = BamReader::new_from_path(dir.to_str().unwrap(), vec!["MD", "NM"]).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
+        let mut reader = BamReader::new_from_path(dir.to_str().unwrap()).unwrap();
+        let ipc = reader.records_to_ipc(region, tags).unwrap();
         let cursor = std::io::Cursor::new(ipc);
         let mut arrow_reader = FileReader::try_new(cursor, None).unwrap();
         // make sure we have one batch
@@ -375,21 +425,41 @@ mod tests {
     }
 
     #[test]
-    fn test_read_all() {
-        let record_batch = read_record_batch(None);
+    fn test_read_tags() {
+        let record_batch = read_record_batch(None, Some(HashSet::from(["MD"])));
+
+        // Check to make sure the tags we requested are present
+        assert!(record_batch.column_by_name("MD").is_some());
+
+        // Check to make sure tags we didn't request are not present
+        assert!(record_batch.column_by_name("NM").is_none());
+
+        let record_batch = read_record_batch(None, None);
+
+        // Check to make sure both tags are present when no tags are specified
         dbg!(&record_batch);
+
+        assert!(record_batch.column_by_name("MD").is_some());
+        assert!(record_batch.column_by_name("NM").is_some());
+
+        assert_eq!(record_batch.num_rows(), 6);
+    }
+
+    #[test]
+    fn test_read_all() {
+        let record_batch = read_record_batch(None, None);
         assert_eq!(record_batch.num_rows(), 6);
     }
 
     #[test]
     fn test_region_full() {
-        let record_batch = read_record_batch(Some("chr1"));
+        let record_batch = read_record_batch(Some("chr1"), None);
         assert_eq!(record_batch.num_rows(), 4);
     }
 
     #[test]
     fn rest_region_partial() {
-        let record_batch = read_record_batch(Some("chr1:1-100000"));
+        let record_batch = read_record_batch(Some("chr1:1-100000"), None);
         assert_eq!(record_batch.num_rows(), 2);
     }
 }

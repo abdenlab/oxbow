@@ -49,11 +49,12 @@ fn read_bam(
     path_or_file_like: PyObject,
     region: Option<&str>,
     index: Option<PyObject>,
+    tags: Option<HashSet<&str>>
 ) -> PyObject {
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BamReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
+        let ipc = reader.records_to_ipc(region, tags).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
@@ -67,7 +68,7 @@ fn read_bam(
         };
         let index = bam::index_from_reader(index_file_like).unwrap();
         let mut reader = BamReader::new(file_like, index).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
+        let ipc = reader.records_to_ipc(region, tags).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     }
 }
@@ -79,11 +80,12 @@ fn read_bam_vpos(
     pos_lo: (u64, u16),
     pos_hi: (u64, u16),
     index: Option<PyObject>,
+    tags: Option<HashSet<&str>>
 ) -> PyObject {
     if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BamReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
+        let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi, tags).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
@@ -97,7 +99,7 @@ fn read_bam_vpos(
         };
         let index = bam::index_from_reader(index_file_like).unwrap();
         let mut reader = BamReader::new(file_like, index).unwrap();
-        let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
+        let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi, tags).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     }
 }
