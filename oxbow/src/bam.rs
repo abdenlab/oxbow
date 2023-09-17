@@ -7,11 +7,11 @@ use arrow::array::{
     ArrayRef, GenericStringBuilder, Int32Array, Int32Builder, StringArray, StringDictionaryBuilder,
     UInt16Array, UInt16Builder, UInt8Array, UInt8Builder,
 };
+use arrow::ipc::writer::FileWriter;
 use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
 use noodles::vcf::record::info::field::key::SV_LENGTHS;
 use noodles::{bam, bgzf, csi, sam};
-use arrow::ipc::writer::FileWriter;
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
@@ -127,37 +127,38 @@ impl<R: Read + Seek> BamReader<R> {
             .map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
         write_ipc_err(records, batch_builder)
     }
+}
 
-    /// Returns the reference sequences in the BAM in Apache Arrow IPC.    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use oxbow::bam::BamReader;
-    ///
-    /// let mut reader = BamReader::new_from_path("sample.bam").unwrap();
-    /// let ipc = reader.references_to_ipc().unwrap();
-    /// ```
-    pub fn references_to_ipc(
-        &mut self,
-    ) -> Result<Vec<u8>, ArrowError> {
-        let mut names = GenericStringBuilder::<i32>::new();
-        let mut lengths = Int32Array::builder(1024);
+/// Returns the reference sequences in the BAM in Apache Arrow IPC.    ///
+/// # Examples
+///
+/// ```no_run
+/// use oxbow::bam::references_to_ipc;
+///
+/// let file = std::fs::File::open("sample.bam")?;
+/// let ipc = references_to_ipc(file).unwrap();
+/// ```
+pub fn references_to_ipc<R: Read + Seek>(read: R) -> Result<Vec<u8>, ArrowError> {
+    let mut reader = bam::Reader::new(read);
+    let header = reader.read_header()?;
 
-        for (name, sequence) in self.header.reference_sequences() {
-            names.append_value(name.as_str());
-            lengths.append_value(sequence.length().get() as i32);
-        }
+    let mut names = GenericStringBuilder::<i32>::new();
+    let mut lengths = Int32Array::builder(1024);
 
-        let batch = RecordBatch::try_from_iter(vec![
-            ("name", Arc::new(names.finish()) as ArrayRef),
-            ("length", Arc::new(lengths.finish()) as ArrayRef),
-        ])?;
-
-        let mut writer = FileWriter::try_new(Vec::new(), &batch.schema())?;
-        writer.write(&batch)?;
-        writer.finish()?;
-        writer.into_inner()
+    for (name, sequence) in header.reference_sequences() {
+        names.append_value(name.as_str());
+        lengths.append_value(sequence.length().get() as i32);
     }
+
+    let batch = RecordBatch::try_from_iter(vec![
+        ("name", Arc::new(names.finish()) as ArrayRef),
+        ("length", Arc::new(lengths.finish()) as ArrayRef),
+    ])?;
+
+    let mut writer = FileWriter::try_new(Vec::new(), &batch.schema())?;
+    writer.write(&batch)?;
+    writer.finish()?;
+    writer.into_inner()
 }
 
 struct BamBatchBuilder<'a> {
@@ -361,9 +362,10 @@ mod tests {
     fn test_references() {
         let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir.push("../fixtures/sample.bam");
-        let mut reader = BamReader::new_from_path(dir.to_str().unwrap()).unwrap();
+        let read = std::fs::File::open(dir.to_str().unwrap()).unwrap();
 
-        let ipc = reader.references_to_ipc().unwrap();
-        dbg!(&ipc);
+        let ipc = references_to_ipc(read).unwrap();
+        let record_batch = record_batch_from_ipc(ipc);
+        assert_eq!(record_batch.num_rows(), 24);
     }
 }
