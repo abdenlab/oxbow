@@ -10,7 +10,6 @@ use arrow::array::{
 use arrow::ipc::writer::FileWriter;
 use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
-use noodles::vcf::record::info::field::key::SV_LENGTHS;
 use noodles::{bam, bgzf, csi, sam};
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
@@ -135,7 +134,7 @@ impl<R: Read + Seek> BamReader<R> {
 /// ```no_run
 /// use oxbow::bam::references_to_ipc;
 ///
-/// let file = std::fs::File::open("sample.bam")?;
+/// let file = std::fs::File::open("sample.bam").unwrap();
 /// let ipc = references_to_ipc(file).unwrap();
 /// ```
 pub fn references_to_ipc<R: Read + Seek>(read: R) -> Result<Vec<u8>, ArrowError> {
