@@ -5,9 +5,9 @@ use std::path::Path;
 use std::sync::Arc;
 
 use arrow::array::{
-    ArrayRef, Float32Builder, GenericStringBuilder, Int16Builder, Int32Array,
-    Int32Builder, Int8Builder, StringArray, StringDictionaryBuilder, StructArray,
-    UInt16Array, UInt16Builder, UInt32Builder, UInt8Array, UInt8Builder,
+    ArrayRef, Float32Builder, GenericStringBuilder, Int16Builder, Int32Array, Int32Builder,
+    Int8Builder, StringArray, StringDictionaryBuilder, StructArray, UInt16Array, UInt16Builder,
+    UInt32Builder, UInt8Array, UInt8Builder,
 };
 use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
