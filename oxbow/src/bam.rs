@@ -185,9 +185,7 @@ impl TagsBuilder {
                 Some(Value::Character(v)) => {
                     let builder = self.inner.entry(*tag).or_insert_with(|| {
                         let mut builder = GenericStringBuilder::<i32>::new();
-                        for _ in 0..self.seen {
-                            builder.append_null();
-                        }
+                        builder.extend(std::iter::repeat(None::<&str>).take(self.seen));
                         TagArrayBuilder::Character(builder)
                     });
                     match builder {
@@ -291,9 +289,7 @@ impl TagsBuilder {
                 Some(Value::String(v)) => {
                     let builder = self.inner.entry(*tag).or_insert_with(|| {
                         let mut builder = GenericStringBuilder::<i32>::new();
-                        for _ in 0..self.seen {
-                            builder.append_null();
-                        }
+                        builder.extend(std::iter::repeat(None::<&str>).take(self.seen));
                         TagArrayBuilder::String(builder)
                     });
                     match builder {
@@ -306,9 +302,7 @@ impl TagsBuilder {
                 Some(Value::Hex(v)) => {
                     let builder = self.inner.entry(*tag).or_insert_with(|| {
                         let mut builder = GenericStringBuilder::<i32>::new();
-                        for _ in 0..self.seen {
-                            builder.append_null();
-                        }
+                        builder.extend(std::iter::repeat(None::<&str>).take(self.seen));
                         TagArrayBuilder::Hex(builder)
                     });
                     match builder {
