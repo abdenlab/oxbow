@@ -1,14 +1,18 @@
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufReader, Read, Seek};
 use std::path::Path;
 use std::sync::Arc;
 
 use arrow::array::{
-    ArrayRef, GenericStringBuilder, Int32Array, Int32Builder, StringArray, StringDictionaryBuilder,
-    UInt16Array, UInt16Builder, UInt8Array, UInt8Builder,
+    ArrayRef, Float32Builder, GenericStringBuilder, Int16Builder, Int32Array,
+    Int32Builder, Int8Builder, StringArray, StringDictionaryBuilder, StructArray,
+    UInt16Array, UInt16Builder, UInt32Builder, UInt8Array, UInt8Builder,
 };
 use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
+use noodles::sam::record::data::field::Tag;
+use noodles::sam::record::Data;
 use noodles::{bam, bgzf, csi, sam};
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
@@ -141,6 +145,230 @@ struct BamBatchBuilder<'a> {
     seq: GenericStringBuilder<i32>,
     qual: GenericStringBuilder<i32>,
     end: Int32Builder,
+    tags: TagsBuilder,
+}
+
+enum TagArrayBuilder {
+    Character(GenericStringBuilder<i32>),
+    Int8(Int8Builder),
+    UInt8(UInt8Builder),
+    Int16(Int16Builder),
+    UInt16(UInt16Builder),
+    Int32(Int32Builder),
+    UInt32(UInt32Builder),
+    Float(Float32Builder),
+    String(GenericStringBuilder<i32>),
+    Hex(GenericStringBuilder<i32>),
+}
+
+struct TagsBuilder {
+    inner: HashMap<Tag, TagArrayBuilder>,
+    seen: usize,
+    tags: HashSet<Tag>,
+}
+
+impl TagsBuilder {
+    pub fn new() -> Self {
+        Self {
+            inner: HashMap::new(),
+            seen: 0,
+            tags: HashSet::new(),
+        }
+    }
+
+    pub fn push_tags(&mut self, data: &'_ Data) {
+        use sam::record::data::field::Value;
+        self.tags.extend(data.keys());
+
+        for tag in self.tags.iter() {
+            match data.get(tag) {
+                Some(Value::Character(v)) => {
+                    let builder = self.inner.entry(*tag).or_insert_with(|| {
+                        let mut builder = GenericStringBuilder::<i32>::new();
+                        for _ in 0..self.seen {
+                            builder.append_null();
+                        }
+                        TagArrayBuilder::Character(builder)
+                    });
+                    match builder {
+                        TagArrayBuilder::Character(builder) => {
+                            builder.append_value(v.to_string());
+                        }
+                        _ => panic!("Wrong type"),
+                    }
+                }
+                Some(Value::Int8(v)) => {
+                    let builder = self.inner.entry(*tag).or_insert_with(|| {
+                        let mut builder = Int8Builder::new();
+                        builder.extend(std::iter::repeat(None).take(self.seen));
+                        TagArrayBuilder::Int8(builder)
+                    });
+                    match builder {
+                        TagArrayBuilder::Int8(builder) => {
+                            builder.append_value(*v);
+                        }
+                        _ => panic!("Wrong type"),
+                    }
+                }
+                Some(Value::UInt8(v)) => {
+                    let builder = self.inner.entry(*tag).or_insert_with(|| {
+                        let mut builder = UInt8Builder::new();
+                        builder.extend(std::iter::repeat(None).take(self.seen));
+                        TagArrayBuilder::UInt8(builder)
+                    });
+                    match builder {
+                        TagArrayBuilder::UInt8(builder) => {
+                            builder.append_value(*v);
+                        }
+                        _ => panic!("Wrong type"),
+                    }
+                }
+                Some(Value::Int16(v)) => {
+                    let builder = self.inner.entry(*tag).or_insert_with(|| {
+                        let mut builder = Int16Builder::new();
+                        builder.extend(std::iter::repeat(None).take(self.seen));
+                        TagArrayBuilder::Int16(builder)
+                    });
+                    match builder {
+                        TagArrayBuilder::Int16(builder) => {
+                            builder.append_value(*v);
+                        }
+                        _ => panic!("Wrong type"),
+                    }
+                }
+                Some(Value::UInt16(v)) => {
+                    let builder = self.inner.entry(*tag).or_insert_with(|| {
+                        let mut builder = UInt16Builder::new();
+                        builder.extend(std::iter::repeat(None).take(self.seen));
+                        TagArrayBuilder::UInt16(builder)
+                    });
+                    match builder {
+                        TagArrayBuilder::UInt16(builder) => {
+                            builder.append_value(*v);
+                        }
+                        _ => panic!("Wrong type"),
+                    }
+                }
+                Some(Value::Int32(v)) => {
+                    let builder = self.inner.entry(*tag).or_insert_with(|| {
+                        let mut builder = Int32Builder::new();
+                        builder.extend(std::iter::repeat(None).take(self.seen));
+                        TagArrayBuilder::Int32(builder)
+                    });
+                    match builder {
+                        TagArrayBuilder::Int32(builder) => {
+                            builder.append_value(*v);
+                        }
+                        _ => panic!("Wrong type"),
+                    }
+                }
+                Some(Value::UInt32(v)) => {
+                    let builder = self.inner.entry(*tag).or_insert_with(|| {
+                        let mut builder = UInt32Builder::new();
+                        builder.extend(std::iter::repeat(None).take(self.seen));
+                        TagArrayBuilder::UInt32(builder)
+                    });
+                    match builder {
+                        TagArrayBuilder::UInt32(builder) => {
+                            builder.append_value(*v);
+                        }
+                        _ => panic!("Wrong type"),
+                    }
+                }
+                Some(Value::Float(v)) => {
+                    let builder = self.inner.entry(*tag).or_insert_with(|| {
+                        let mut builder = Float32Builder::new();
+                        builder.extend(std::iter::repeat(None).take(self.seen));
+                        TagArrayBuilder::Float(builder)
+                    });
+                    match builder {
+                        TagArrayBuilder::Float(builder) => {
+                            builder.append_value(*v);
+                        }
+                        _ => panic!("Wrong type"),
+                    }
+                }
+                Some(Value::String(v)) => {
+                    let builder = self.inner.entry(*tag).or_insert_with(|| {
+                        let mut builder = GenericStringBuilder::<i32>::new();
+                        for _ in 0..self.seen {
+                            builder.append_null();
+                        }
+                        TagArrayBuilder::String(builder)
+                    });
+                    match builder {
+                        TagArrayBuilder::String(builder) => {
+                            builder.append_value(v.as_str());
+                        }
+                        _ => panic!("Wrong type"),
+                    }
+                }
+                Some(Value::Hex(v)) => {
+                    let builder = self.inner.entry(*tag).or_insert_with(|| {
+                        let mut builder = GenericStringBuilder::<i32>::new();
+                        for _ in 0..self.seen {
+                            builder.append_null();
+                        }
+                        TagArrayBuilder::Hex(builder)
+                    });
+                    match builder {
+                        TagArrayBuilder::Hex(builder) => {
+                            builder.append_value(v.as_ref());
+                        }
+                        _ => panic!("Wrong type"),
+                    }
+                }
+                Some(Value::Array(_)) => {
+                    panic!("Array not implemented");
+                }
+                None => match self.inner.get_mut(tag).expect("Tag not found") {
+                    TagArrayBuilder::Character(builder) => builder.append_null(),
+                    TagArrayBuilder::Int8(builder) => builder.append_null(),
+                    TagArrayBuilder::UInt8(builder) => builder.append_null(),
+                    TagArrayBuilder::Int16(builder) => builder.append_null(),
+                    TagArrayBuilder::UInt16(builder) => builder.append_null(),
+                    TagArrayBuilder::Int32(builder) => builder.append_null(),
+                    TagArrayBuilder::UInt32(builder) => builder.append_null(),
+                    TagArrayBuilder::Float(builder) => builder.append_null(),
+                    TagArrayBuilder::String(builder) => builder.append_null(),
+                    TagArrayBuilder::Hex(builder) => builder.append_null(),
+                },
+            }
+        }
+        self.seen += 1;
+    }
+
+    fn try_finish(&mut self) -> Result<StructArray, ArrowError> {
+        let keys = self.inner.keys().map(|x| x.to_string()).collect::<Vec<_>>();
+        let arrays: Vec<(&str, ArrayRef)> = self
+            .inner
+            .iter_mut()
+            .zip(keys.iter())
+            .map(|((_, builder), key)| {
+                let arr: ArrayRef = match builder {
+                    TagArrayBuilder::Character(builder) => Arc::new(builder.finish()) as ArrayRef,
+                    TagArrayBuilder::Int8(builder) => Arc::new(builder.finish()) as ArrayRef,
+                    TagArrayBuilder::UInt8(builder) => Arc::new(builder.finish()) as ArrayRef,
+                    TagArrayBuilder::Int16(builder) => Arc::new(builder.finish()) as ArrayRef,
+                    TagArrayBuilder::UInt16(builder) => Arc::new(builder.finish()) as ArrayRef,
+                    TagArrayBuilder::Int32(builder) => Arc::new(builder.finish()) as ArrayRef,
+                    TagArrayBuilder::UInt32(builder) => Arc::new(builder.finish()) as ArrayRef,
+                    TagArrayBuilder::Float(builder) => Arc::new(builder.finish()) as ArrayRef,
+                    TagArrayBuilder::String(builder) => Arc::new(builder.finish()) as ArrayRef,
+                    TagArrayBuilder::Hex(builder) => Arc::new(builder.finish()) as ArrayRef,
+                };
+                (key.as_str(), arr)
+            })
+            .collect();
+
+        StructArray::try_from(arrays)
+    }
+}
+
+impl Default for TagsBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<'a> BamBatchBuilder<'a> {
@@ -172,6 +400,7 @@ impl<'a> BamBatchBuilder<'a> {
             seq: GenericStringBuilder::<i32>::new(),
             qual: GenericStringBuilder::<i32>::new(),
             end: Int32Array::builder(capacity),
+            tags: TagsBuilder::new(),
         })
     }
 }
@@ -206,9 +435,11 @@ impl<'a> BatchBuilder for BamBatchBuilder<'a> {
         // extra
         self.end
             .append_option(record.alignment_end().map(|x| x.get() as i32));
+        self.tags.push_tags(record.data());
     }
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
+        let tags = self.tags.try_finish()?;
         RecordBatch::try_from_iter(vec![
             // spec
             ("qname", Arc::new(self.qname.finish()) as ArrayRef),
@@ -222,6 +453,7 @@ impl<'a> BatchBuilder for BamBatchBuilder<'a> {
             ("tlen", Arc::new(self.tlen.finish()) as ArrayRef),
             ("seq", Arc::new(self.seq.finish()) as ArrayRef),
             ("qual", Arc::new(self.qual.finish()) as ArrayRef),
+            ("tags", Arc::new(tags) as ArrayRef),
             // extra
             ("end", Arc::new(self.end.finish()) as ArrayRef),
         ])
