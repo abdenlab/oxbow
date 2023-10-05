@@ -18,7 +18,6 @@ jobs:
 
       - name: Build the docs
         run: |
-          pushd py-oxbow
           pip install --upgrade hatch
           hatch --config ./py-oxbow/pyproject.toml run docs:build
 
