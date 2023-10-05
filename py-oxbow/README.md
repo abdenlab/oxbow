@@ -14,6 +14,8 @@ pip install oxbow
 
 ## Usage
 
+[API Documentation](https://abdenlab.org/oxbow/)
+
 ```python
 import oxbow as ox
 
