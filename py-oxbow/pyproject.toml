@@ -31,5 +31,18 @@ dependencies = [
     "pysam",
 ]
 
+[tool.hatch.envs.docs]
+dependencies = [
+    "furo",
+    "myst_parser>=0.13",
+    "sphinx>=4.0",
+    "sphinx-autobuild",
+    "sphinx-book-theme>=0.1.0",
+    "sphinx_copybutton",
+]
+[tool.hatch.envs.docs.scripts]
+build = "sphinx-build docs docs/_build/html"
+serve = "sphinx-autobuild docs docs/_build/html"
+
 [tool.ruff.isort]
 known-first-party = ["oxbow"]
