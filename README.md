@@ -12,7 +12,7 @@ Learn more in our recent [blog post](https://open.substack.com/pub/lifeinbytes/p
 
 ## Docs
 
-Read the [latest API documentation](https://docs.rs/oxbow/latest/oxbow/).
+Read the latest [Python](https://abdenlab.org/oxbow/) and [Rust](https://docs.rs/oxbow/latest/oxbow/) API documentation.
 
 ## Contributing
 
