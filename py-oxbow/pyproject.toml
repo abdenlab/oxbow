@@ -44,5 +44,13 @@ dependencies = [
 build = "sphinx-build docs docs/_build/html"
 serve = "sphinx-autobuild docs docs/_build/html"
 
+[tool.hatch.envs.test]
+dependencies = [
+    "polars",
+    "pytest",
+]
+[tool.hatch.envs.test.scripts]
+all = "pytest {args:tests}"
+
 [tool.ruff.isort]
 known-first-party = ["oxbow"]
