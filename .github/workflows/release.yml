@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - '*'
+      - 'py-oxbow@v*'
   workflow_dispatch:
 
 permissions:
