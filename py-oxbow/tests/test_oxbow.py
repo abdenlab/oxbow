@@ -19,7 +19,7 @@ class TestBam:
         assert not df.is_empty()
 
         # Check number of columns
-        assert len(df.columns) == 12
+        assert len(df.columns) == 13
 
     def test_read_all(self):
         ipc = ox.read_bam(self.bam_path)
