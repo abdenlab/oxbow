@@ -1,34 +1,58 @@
-use arrow::array::{ArrayRef, GenericStringBuilder};
-use arrow::{error::ArrowError, record_batch::RecordBatch};
+use arrow::{
+    array::{ArrayRef, GenericStringBuilder},
+    error::ArrowError,
+    record_batch::RecordBatch,
+};
 use noodles::core::Region;
-use noodles::fasta;
-use noodles::fasta::fai;
-use std::sync::Arc;
+use noodles::fasta::{self, fai};
+use std::{
+    fs::File,
+    io::{self, BufReader, Read, Seek},
+    sync::Arc,
+};
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
 
-type BufferedReader = std::io::BufReader<std::fs::File>;
-
-/// A FASTA reader.
-pub struct FastaReader {
-    reader: fasta::IndexedReader<BufferedReader>,
-    stream_reader: fasta::Reader<Box<dyn std::io::BufRead>>,
+pub fn index_from_reader<R>(read: R) -> io::Result<fai::Index>
+where
+    R: Read,
+{
+    let mut fai_reader = fai::Reader::new(BufReader::new(read));
+    fai_reader.read_index()
 }
 
-impl FastaReader {
+pub fn index_from_path(path: &str) -> io::Result<fai::Index> {
+    let fai_path = format!("{}.fai", path);
+    let index = if std::path::Path::new(&fai_path).exists() {
+        fai::read(fai_path)?
+    } else {
+        panic!("Could not find a .fai index file for the given fasta file.");
+    };
+    Ok(index)
+}
+
+/// A FASTA reader.
+pub struct FastaReader<R> {
+    reader: fasta::Reader<BufReader<R>>,
+    index: fai::Index,
+}
+
+impl FastaReader<BufReader<File>> {
+    /// Creates a Fasta reader from a given file path.
+    pub fn new_from_path(path: &str) -> io::Result<Self> {
+        let index = index_from_path(path)?;
+        let file = File::open(path)?;
+        let bufreader = BufReader::with_capacity(1024 * 1024, file);
+        let reader = fasta::Reader::new(BufReader::new(bufreader));
+        Ok(Self { reader, index })
+    }
+}
+
+impl<R: Read + Seek> FastaReader<R> {
     /// Creates a Fasta Reader.
-    pub fn new(path: &str) -> std::io::Result<Self> {
-        let index = fai::read(format!("{}.fai", path))?;
-        let file = std::fs::File::open(path)?;
-        let bufreader = std::io::BufReader::with_capacity(1024 * 1024, file);
-        let reader = fasta::indexed_reader::Builder::default()
-            .set_index(index)
-            .build_from_reader(bufreader)?;
-        let stream_reader = fasta::reader::Builder::default().build_from_path(path)?;
-        Ok(Self {
-            reader,
-            stream_reader,
-        })
+    pub fn new(read: R, index: fai::Index) -> io::Result<Self> {
+        let reader = fasta::Reader::new(BufReader::new(read));
+        Ok(Self { reader, index })
     }
 
     /// Returns the records in the given region as Apache Arrow IPC.
@@ -40,20 +64,18 @@ impl FastaReader {
     /// ```no_run
     /// use oxbow::fasta::FastaReader;
     ///
-    /// let mut reader = FastaReader::new("sample.fasta.gz").unwrap();
+    /// let mut reader = FastaReader::new_from_path("sample.fasta.gz").unwrap();
     /// let ipc = reader.records_to_ipc(Some("sq0")).unwrap();
     /// ```
     pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
         let batch_builder = FastaBatchBuilder::new(1024)?;
-
         if let Some(region) = region {
             let region: Region = region.parse().unwrap();
-            let query = self.reader.query(&region).unwrap();
+            let query = self.reader.query(&self.index, &region).unwrap();
             let iter = std::iter::once(query);
             return write_ipc(iter, batch_builder);
         }
-
-        let records = self.stream_reader.records().map(|r| r.unwrap());
+        let records = self.reader.records().map(|r| r.unwrap());
         write_ipc(records, batch_builder)
     }
 }
