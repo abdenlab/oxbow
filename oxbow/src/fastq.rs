@@ -42,7 +42,7 @@ impl<R: Read + Seek> FastqReader<R> {
     /// ```no_run
     /// use oxbow::fastq::FastqReader;
     ///
-    /// let mut reader = FastqReader::new("sample.fastq.gz").unwrap();
+    /// let mut reader = FastqReader::new_from_path("sample.fastq.gz").unwrap();
     /// let ipc = reader.records_to_ipc().unwrap();
     /// ```
     pub fn records_to_ipc(&mut self) -> Result<Vec<u8>, ArrowError> {
