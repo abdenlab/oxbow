@@ -1,35 +1,31 @@
 use arrow::array::{ArrayRef, GenericStringBuilder};
 use arrow::{error::ArrowError, record_batch::RecordBatch};
+// use noodles::core::Region;
 use noodles::fastq;
-use std::{
-    fs::File,
-    io::{self, BufReader, Read, Seek},
-    str,
-    sync::Arc,
-};
+// use noodles::fastq::fai;
+use std::sync::Arc;
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
 
+type BufferedReader = std::io::BufReader<std::fs::File>;
+
 /// A FASTQ reader.
-pub struct FastqReader<R> {
-    reader: fastq::Reader<BufReader<R>>,
+pub struct FastqReader {
+    reader: fastq::Reader<BufferedReader>,
+    // index: fai::Reader<std::io::BufReader<std::fs::File>>,
 }
 
-impl FastqReader<BufReader<File>> {
-    /// Creates a Fasta reader from a given file path.
-    pub fn new_from_path(path: &str) -> io::Result<Self> {
-        let reader = File::open(path)
-            .map(BufReader::new)
-            .map(BufReader::new)
-            .map(fastq::Reader::new)?;
-        Ok(Self { reader })
-    }
-}
-
-impl<R: Read + Seek> FastqReader<R> {
+impl FastqReader {
     /// Creates a Fastq Reader.
-    pub fn new(read: R) -> io::Result<Self> {
-        let reader = fastq::Reader::new(BufReader::new(read));
+    pub fn new(path: &str) -> std::io::Result<Self> {
+        // let index_file = std::fs::File::open(format!("{}.fai", path))?;
+        // let index_bufreader = std::io::BufReader::with_capacity(1024 * 1024, index_file);
+        // let index = fai::Reader::new(index_bufreader);
+
+        let file = std::fs::File::open(path)?;
+        let bufreader = std::io::BufReader::with_capacity(1024 * 1024, file);
+        let reader = fastq::reader::Reader::new(bufreader);
+
         Ok(Self { reader })
     }
 
@@ -75,13 +71,13 @@ impl BatchBuilder for FastqBatchBuilder {
 
     fn push(&mut self, record: Self::Record<'_>) {
         self.name
-            .append_value(str::from_utf8(record.name()).unwrap());
+            .append_value(std::str::from_utf8(record.name()).unwrap());
         self.description
-            .append_value(str::from_utf8(record.description()).unwrap());
+            .append_value(std::str::from_utf8(record.description()).unwrap());
         self.sequence
-            .append_value(str::from_utf8(record.sequence()).unwrap());
+            .append_value(std::str::from_utf8(record.sequence()).unwrap());
         self.quality_scores
-            .append_value(str::from_utf8(record.quality_scores()).unwrap());
+            .append_value(std::str::from_utf8(record.quality_scores()).unwrap());
     }
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
