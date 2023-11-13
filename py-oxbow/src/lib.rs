@@ -39,10 +39,22 @@ fn read_fasta(path: &str, region: Option<&str>) -> PyObject {
 }
 
 #[pyfunction]
-fn read_fastq(path: &str) -> PyObject {
-    let mut reader = FastqReader::new(path).unwrap();
-    let ipc = reader.records_to_ipc().unwrap();
-    Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+fn read_fastq(py: Python, path_or_file_like: PyObject) -> PyObject {
+    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+        // If it's a string, treat it like a path
+        let mut reader = FastqReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let ipc = reader.records_to_ipc().unwrap();
+        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+    } else {
+        // Otherwise, treat it as file-like
+        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
+	    Ok(file_like) => file_like,
+            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
+	};
+        let mut reader = FastqReader::new(file_like).unwrap();
+        let ipc = reader.records_to_ipc().unwrap();
+        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+    }
 }
 
 #[pyfunction]
