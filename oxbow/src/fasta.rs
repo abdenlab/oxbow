@@ -8,6 +8,9 @@ use noodles::fasta::{self, fai};
 use std::{
     fs::File,
     io::{self, BufReader, Read, Seek},
+    iter,
+    path::Path,
+    str,
     sync::Arc,
 };
 
@@ -23,7 +26,7 @@ where
 
 pub fn index_from_path(path: &str) -> io::Result<fai::Index> {
     let fai_path = format!("{}.fai", path);
-    let index = if std::path::Path::new(&fai_path).exists() {
+    let index = if Path::new(&fai_path).exists() {
         fai::read(fai_path)?
     } else {
         panic!("Could not find a .fai index file for the given fasta file.");
@@ -72,7 +75,7 @@ impl<R: Read + Seek> FastaReader<R> {
         if let Some(region) = region {
             let region: Region = region.parse().unwrap();
             let query = self.reader.query(&self.index, &region).unwrap();
-            let iter = std::iter::once(query);
+            let iter = iter::once(query);
             return write_ipc(iter, batch_builder);
         }
         let records = self.reader.records().map(|r| r.unwrap());
@@ -101,8 +104,7 @@ impl BatchBuilder for FastaBatchBuilder {
         let seq = record.sequence().as_ref();
 
         self.name.append_value(record.name());
-        self.sequence
-            .append_value(std::str::from_utf8(seq).unwrap());
+        self.sequence.append_value(str::from_utf8(seq).unwrap());
     }
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
