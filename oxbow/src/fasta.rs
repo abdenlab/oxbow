@@ -3,83 +3,56 @@ use arrow::{
     error::ArrowError,
     record_batch::RecordBatch,
 };
-use noodles::core::Region;
-use noodles::fasta::{self, fai};
-use std::{
-    fs::File,
-    io::{self, BufReader, Read, Seek},
-    iter,
-    path::Path,
-    str,
-    sync::Arc,
-};
+use noodles::fasta::{self, io::BufReadSeek, IndexedReader};
+use std::{io, iter, path::Path, str, sync::Arc};
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
 
-pub fn index_from_reader<R>(read: R) -> io::Result<fai::Index>
+pub fn new_from_path<P>(path: P) -> io::Result<IndexedReader<Box<dyn BufReadSeek>>>
 where
-    R: Read,
+    P: AsRef<Path>,
 {
-    let mut fai_reader = fai::Reader::new(BufReader::new(read));
-    fai_reader.read_index()
+    // Also reads the index file and handles (b)gzipped files
+    fasta::indexed_reader::Builder::default().build_from_path(path)
 }
 
-pub fn index_from_path(path: &str) -> io::Result<fai::Index> {
-    let fai_path = format!("{}.fai", path);
-    let index = if Path::new(&fai_path).exists() {
-        fai::read(fai_path)?
+pub fn new_from_reader<R>(reader: R) -> io::Result<IndexedReader<R>>
+where
+    R: BufReadSeek,
+{
+    // This function is unused as PyOxbow's file_like handling doesn't currently handle the BufRead trait that the noodles fasta reader uses
+    fasta::indexed_reader::Builder::default().build_from_reader(reader)
+}
+
+/// Returns the records in the given region as Apache Arrow IPC.
+///
+/// If the region is `None`, all records are returned.
+///
+/// # Examples
+///
+/// ```no_run
+/// use oxbow::fasta;
+///
+/// let mut reader = fasta::new_from_path("sample.fasta.gz").unwrap();
+/// let ipc = fasta::records_to_ipc(reader, Some("sq0")).unwrap();
+/// ```
+pub fn records_to_ipc<R>(
+    mut indexed_reader: IndexedReader<R>,
+    region: Option<&str>,
+) -> Result<Vec<u8>, ArrowError>
+where
+    R: BufReadSeek,
+{
+    let batch_builder = FastaBatchBuilder::new(1024)?;
+    if let Some(region) = region {
+        let region = region.parse().unwrap();
+        let query = indexed_reader.query(&region)?;
+        let record_iter = iter::once(query);
+        return write_ipc(record_iter, batch_builder);
     } else {
-        panic!("Could not find a .fai index file for the given fasta file.");
-    };
-    Ok(index)
-}
-
-/// A FASTA reader.
-pub struct FastaReader<R> {
-    reader: fasta::Reader<BufReader<R>>,
-    index: fai::Index,
-}
-
-impl FastaReader<BufReader<File>> {
-    /// Creates a Fasta reader from a given file path.
-    pub fn new_from_path(path: &str) -> io::Result<Self> {
-        let index = index_from_path(path)?;
-        let file = File::open(path)?;
-        let bufreader = BufReader::with_capacity(1024 * 1024, file);
-        let reader = fasta::Reader::new(BufReader::new(bufreader));
-        Ok(Self { reader, index })
-    }
-}
-
-impl<R: Read + Seek> FastaReader<R> {
-    /// Creates a Fasta Reader.
-    pub fn new(read: R, index: fai::Index) -> io::Result<Self> {
-        let reader = fasta::Reader::new(BufReader::new(read));
-        Ok(Self { reader, index })
-    }
-
-    /// Returns the records in the given region as Apache Arrow IPC.
-    ///
-    /// If the region is `None`, all records are returned.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use oxbow::fasta::FastaReader;
-    ///
-    /// let mut reader = FastaReader::new_from_path("sample.fasta.gz").unwrap();
-    /// let ipc = reader.records_to_ipc(Some("sq0")).unwrap();
-    /// ```
-    pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
-        let batch_builder = FastaBatchBuilder::new(1024)?;
-        if let Some(region) = region {
-            let region: Region = region.parse().unwrap();
-            let query = self.reader.query(&self.index, &region).unwrap();
-            let iter = iter::once(query);
-            return write_ipc(iter, batch_builder);
-        }
-        let records = self.reader.records().map(|r| r.unwrap());
-        write_ipc(records, batch_builder)
+        let mut reader = fasta::reader::Builder.build_from_reader(indexed_reader.into_inner())?;
+        let records = reader.records().map(|r| r.unwrap());
+        return write_ipc(records, batch_builder);
     }
 }
 

@@ -10,7 +10,7 @@ use oxbow::bam::BamReader;
 use oxbow::bcf;
 use oxbow::bigbed::BigBedReader;
 use oxbow::bigwig::BigWigReader;
-use oxbow::fasta::FastaReader;
+use oxbow::fasta;
 use oxbow::fastq::FastqReader;
 use oxbow::vcf;
 // use oxbow::cram::CramReader;
@@ -32,31 +32,11 @@ fn partition_from_index_file(path: &str, chunksize: u64) -> PyObject {
 }
 
 #[pyfunction]
-fn read_fasta(
-    py: Python,
-    path_or_file_like: PyObject,
-    region: Option<&str>,
-    index: Option<PyObject>,
-) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
-        let mut reader = FastaReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
-    } else {
-        // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-        };
-        let index_file_like = match PyFileLikeObject::new(index.unwrap(), true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `index`. Not a file path string or url, and not a file-like object."),
-        };
-        let index = oxbow::fasta::index_from_reader(index_file_like).unwrap();
-        let mut reader = FastaReader::new(file_like, index).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
-    }
+fn read_fasta(path: &str, region: Option<&str>) -> PyObject {
+    // Only reads from path since PyFileLikeObject does not currently implement a BufRead trait
+    let reader = fasta::new_from_path(path).unwrap();
+    let ipc = fasta::records_to_ipc(reader, region).unwrap();
+    Python::with_gil(|py| PyBytes::new(py, &ipc).into())
 }
 
 #[pyfunction]
