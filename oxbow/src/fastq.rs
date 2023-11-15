@@ -3,7 +3,7 @@ use arrow::{error::ArrowError, record_batch::RecordBatch};
 use noodles::fastq;
 use std::{
     fs::File,
-    io::{self, BufReader, Read, Seek},
+    io::{self, BufReader, Read},
     str,
     sync::Arc,
 };
@@ -11,20 +11,19 @@ use std::{
 use crate::batch_builder::{write_ipc, BatchBuilder};
 
 pub struct FastqReader<R> {
-    reader: fastq::Reader<BufReader<R>>,
+    reader: fastq::Reader<R>,
 }
 
 impl FastqReader<BufReader<File>> {
     pub fn new_from_path(path: &str) -> io::Result<Self> {
         let reader = File::open(path)
             .map(BufReader::new)
-            .map(BufReader::new)
             .map(fastq::Reader::new)?;
         Ok(Self { reader })
     }
 }
 
-impl<R: Read + Seek> FastqReader<R> {
+impl<R: Read> FastqReader<BufReader<R>> {
     pub fn new(read: R) -> io::Result<Self> {
         let reader = fastq::Reader::new(BufReader::new(read));
         Ok(Self { reader })
