@@ -10,13 +10,11 @@ use std::{
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
 
-/// A FASTQ reader.
 pub struct FastqReader<R> {
     reader: fastq::Reader<BufReader<R>>,
 }
 
 impl FastqReader<BufReader<File>> {
-    /// Creates a Fasta reader from a given file path.
     pub fn new_from_path(path: &str) -> io::Result<Self> {
         let reader = File::open(path)
             .map(BufReader::new)
@@ -27,7 +25,6 @@ impl FastqReader<BufReader<File>> {
 }
 
 impl<R: Read + Seek> FastqReader<R> {
-    /// Creates a Fastq Reader.
     pub fn new(read: R) -> io::Result<Self> {
         let reader = fastq::Reader::new(BufReader::new(read));
         Ok(Self { reader })
