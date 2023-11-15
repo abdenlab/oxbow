@@ -23,9 +23,9 @@ pub fn new_from_reader<R>(fasta: R, fai: R) -> io::Result<fasta::IndexedReader<B
 where
     R: io::Read,
 {
-    let fasta_reader = BufReader::new(fasta);
-    let index: fasta::fai::Index = fasta::fai::Reader::new(BufReader::new(fai)).read_index()?;
-    Ok(fasta::IndexedReader::new(fasta_reader, index))
+    fasta::indexed_reader::Builder::default()
+        .set_index(fasta::fai::Reader::new(BufReader::new(fai)).read_index()?)
+        .build_from_reader(BufReader::new(fasta))
 }
 
 /// Returns the records in the given region as Apache Arrow IPC.
