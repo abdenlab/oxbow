@@ -3,25 +3,29 @@ use arrow::{
     error::ArrowError,
     record_batch::RecordBatch,
 };
-use noodles::fasta::{self, io::BufReadSeek, IndexedReader};
-use std::{io, iter, path::Path, str, sync::Arc};
+use noodles::fasta;
+use std::{
+    io::{self, BufReader},
+    iter, str,
+    sync::Arc,
+};
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
 
-pub fn new_from_path<P>(path: P) -> io::Result<IndexedReader<Box<dyn BufReadSeek>>>
-where
-    P: AsRef<Path>,
-{
+pub fn new_from_path(
+    path: &str,
+) -> io::Result<fasta::IndexedReader<Box<dyn fasta::io::BufReadSeek>>> {
     // Also reads the index file and handles (b)gzipped files
     fasta::indexed_reader::Builder::default().build_from_path(path)
 }
 
-pub fn new_from_reader<R>(reader: R) -> io::Result<IndexedReader<R>>
+pub fn new_from_reader<R>(fasta: R, fai: R) -> io::Result<fasta::IndexedReader<BufReader<R>>>
 where
-    R: BufReadSeek,
+    R: io::Read,
 {
-    // This function is unused as PyOxbow's file_like handling doesn't currently handle the BufRead trait that the noodles fasta reader uses
-    fasta::indexed_reader::Builder::default().build_from_reader(reader)
+    let fasta_reader = BufReader::new(fasta);
+    let index: fasta::fai::Index = fasta::fai::Reader::new(BufReader::new(fai)).read_index()?;
+    Ok(fasta::IndexedReader::new(fasta_reader, index))
 }
 
 /// Returns the records in the given region as Apache Arrow IPC.
@@ -37,11 +41,11 @@ where
 /// let ipc = fasta::records_to_ipc(reader, Some("sq0")).unwrap();
 /// ```
 pub fn records_to_ipc<R>(
-    mut indexed_reader: IndexedReader<R>,
+    mut indexed_reader: fasta::IndexedReader<R>,
     region: Option<&str>,
 ) -> Result<Vec<u8>, ArrowError>
 where
-    R: BufReadSeek,
+    R: fasta::io::BufReadSeek,
 {
     let batch_builder = FastaBatchBuilder::new(1024)?;
     if let Some(region) = region {
