@@ -9,24 +9,18 @@ use noodles::gtf;
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
-/// A GTF reader.
 pub struct GtfReader<R> {
-    reader: gtf::Reader<BufReader<R>>,
+    reader: gtf::Reader<R>,
 }
 
 impl GtfReader<BufReader<File>> {
-    /// Creates a GTF reader from a given file path.
     pub fn new_from_path(path: &str) -> std::io::Result<Self> {
-        let reader = File::open(path)
-            .map(BufReader::new)
-            .map(BufReader::new)
-            .map(gtf::Reader::new)?;
+        let reader = File::open(path).map(BufReader::new).map(gtf::Reader::new)?;
         Ok(Self { reader })
     }
 }
 
-impl<R: Read + Seek> GtfReader<R> {
-    /// Creates a GTF Reader.
+impl<R: Read + Seek> GtfReader<BufReader<R>> {
     pub fn new(read: R) -> std::io::Result<Self> {
         let reader = gtf::Reader::new(BufReader::new(read));
         Ok(Self { reader })
