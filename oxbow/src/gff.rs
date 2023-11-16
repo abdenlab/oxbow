@@ -9,24 +9,18 @@ use noodles::gff;
 
 use crate::batch_builder::{write_ipc_err, BatchBuilder};
 
-/// A GFF reader.
 pub struct GffReader<R> {
-    reader: gff::Reader<BufReader<R>>,
+    reader: gff::Reader<R>,
 }
 
 impl GffReader<BufReader<File>> {
-    /// Creates a GFF reader from a given file path.
     pub fn new_from_path(path: &str) -> std::io::Result<Self> {
-        let reader = File::open(path)
-            .map(BufReader::new)
-            .map(BufReader::new)
-            .map(gff::Reader::new)?;
+        let reader = File::open(path).map(BufReader::new).map(gff::Reader::new)?;
         Ok(Self { reader })
     }
 }
 
-impl<R: Read + Seek> GffReader<R> {
-    /// Creates a GFF Reader.
+impl<R: Read + Seek> GffReader<BufReader<R>> {
     pub fn new(read: R) -> std::io::Result<Self> {
         let reader = gff::Reader::new(BufReader::new(read));
         Ok(Self { reader })
