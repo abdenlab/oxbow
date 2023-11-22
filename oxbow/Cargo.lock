@@ -742,6 +742,7 @@ checksum = "de44e418359f87564942f592782671c69de012c2237d247052d982c9e0af2ef6"
 dependencies = [
  "noodles-bam",
  "noodles-bcf",
+ "noodles-bed",
  "noodles-bgzf",
  "noodles-core",
  "noodles-cram",
@@ -782,6 +783,15 @@ dependencies = [
  "noodles-core",
  "noodles-csi",
  "noodles-vcf",
+]
+
+[[package]]
+name = "noodles-bed"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "deba180b7b94c524307da91d5bc983e0ccb9a08c4e24384cc8f93e0210af254a"
+dependencies = [
+ "noodles-core",
 ]
 
 [[package]]

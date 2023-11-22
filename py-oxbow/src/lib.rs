@@ -8,6 +8,7 @@ use pyo3::types::PyString;
 use oxbow::bam;
 use oxbow::bam::BamReader;
 use oxbow::bcf;
+use oxbow::bed;
 use oxbow::bigbed::BigBedReader;
 use oxbow::bigwig::BigWigReader;
 use oxbow::fasta::FastaReader;
@@ -100,6 +101,25 @@ fn read_bam_vpos(
         let index = bam::index_from_reader(index_file_like).unwrap();
         let mut reader = BamReader::new(file_like, index).unwrap();
         let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
+        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+    }
+}
+
+#[pyfunction]
+fn read_bed(py: Python, path_or_file_like: PyObject) -> PyObject {
+    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+        // If it's a string, treat it as a path
+        let reader = bed::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let ipc = bed::records_to_ipc(reader).unwrap();
+        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+    } else {
+        // Otherwise, treat it as file-like
+        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
+            Ok(file_like) => file_like,
+            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
+        };
+        let reader = bed::new_from_reader(file_like).unwrap();
+        let ipc = bed::records_to_ipc(reader).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     }
 }
@@ -337,6 +357,7 @@ fn py_oxbow(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(partition_from_index_file, m)?)?;
     m.add_function(wrap_pyfunction!(read_bam, m)?)?;
     m.add_function(wrap_pyfunction!(read_bam_vpos, m)?)?;
+    m.add_function(wrap_pyfunction!(read_bed, m)?)?;
     // m.add_function(wrap_pyfunction!(read_cram, m)?)?;
     // m.add_function(wrap_pyfunction!(read_cram_vpos, m)?)?;
     m.add_function(wrap_pyfunction!(read_vcf, m)?)?;
