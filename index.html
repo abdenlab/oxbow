@@ -1,16 +1,16 @@
 <!doctype html>
-<html class="no-js" lang="en" data-content_root="">
+<html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
 
-    <!-- Generated with Sphinx 6.2.1 and Furo 2023.09.10 -->
+    <!-- Generated with Sphinx 7.2.6 and Furo 2023.09.10 -->
         <title>oxbow documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=369552022d0b975c8e74270ce6eabe0fb7978f24" />
-    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
     
     
 
@@ -189,7 +189,7 @@
         </div>
         <article role="main">
           <section id="oxbow">
-<h1>oxbow<a class="headerlink" href="#oxbow" title="Permalink to this heading">#</a></h1>
+<h1>oxbow<a class="headerlink" href="#oxbow" title="Link to this heading">#</a></h1>
 <p>Read specialized bioinformatic file formats as data frames in R, Python, and more.</p>
 <p>File formats create a lot of friction for computational biologists. Oxbow is a data unification layer that aims to improve data accessibility and ease of high-performance analytics.</p>
 <p>Data I/O is handled in Rust with features exposed to Python and R via Apache Arrow.</p>
@@ -197,70 +197,70 @@
 <div class="toctree-wrapper compound">
 </div>
 <section id="module-oxbow">
-<span id="api-docs"></span><h2>API docs<a class="headerlink" href="#module-oxbow" title="Permalink to this heading">#</a></h2>
+<span id="api-docs"></span><h2>API docs<a class="headerlink" href="#module-oxbow" title="Link to this heading">#</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.partition_from_index_file">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">partition_from_index_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunksize</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.partition_from_index_file" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">partition_from_index_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunksize</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.partition_from_index_file" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_bam">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bam</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bam" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bam</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bam" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_bam_vpos">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bam_vpos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_lo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_hi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bam_vpos" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bam_vpos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_lo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_hi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bam_vpos" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_bcf">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bcf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bcf" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bcf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bcf" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_bcf_vpos">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bcf_vpos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_lo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_hi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bcf_vpos" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bcf_vpos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_lo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_hi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bcf_vpos" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_bigbed">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bigbed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bigbed" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bigbed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bigbed" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_bigwig">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bigwig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zoom_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zoom_summary_columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bigwig" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_bigwig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zoom_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zoom_summary_columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_bigwig" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_fasta">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_fasta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_fasta" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_fasta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_fasta" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_fastq">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_fastq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_fastq" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_fastq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_fastq" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_gff">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_gff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_gff" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_gff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_gff" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_gtf">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_gtf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_gtf" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_gtf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_gtf" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_vcf">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_vcf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_vcf" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_vcf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_vcf" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="oxbow.read_vcf_vpos">
-<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_vcf_vpos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_lo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_hi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_vcf_vpos" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">oxbow.</span></span><span class="sig-name descname"><span class="pre">read_vcf_vpos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_file_like</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_lo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_hi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oxbow.read_vcf_vpos" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </section>
@@ -331,11 +331,11 @@
       
     </aside>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
-    <script src="_static/scripts/furo.js"></script>
-    <script src="_static/clipboard.min.js"></script>
-    <script src="_static/copybutton.js"></script>
+</div><script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
     </body>
 </html>
