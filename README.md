@@ -22,4 +22,4 @@ Want to contribute? [Join us](https://oxbow.zulipchat.com)!
 ## Development
 
 The **oxbow** project is split into separate [Rust](./oxbow), [Python](./py-oxbow), and [R](./r-oxbow) packages.
-You can download sample data by [following these instructions](./data/README.md).
+You can download sample data by [following these instructions](./fixtures/README.md).
