@@ -4,6 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "oxbow"
+dynamic = ["version"]
 description = "Read specialized bioinformatic file formats into dataframes."
 authors = [
     { name = "Oxbow Developers", email = "nabdennur@gmail.com" }
