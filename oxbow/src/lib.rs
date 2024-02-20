@@ -25,6 +25,7 @@
 
 pub mod bam;
 mod batch_builder;
+pub mod bed;
 pub mod fasta;
 pub mod fastq;
 pub mod vpos;
