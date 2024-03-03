@@ -8,7 +8,7 @@ use arrow::array::{
 use arrow::datatypes::Int32Type;
 use arrow::{error::ArrowError, record_batch::RecordBatch};
 use bigtools::utils::reopen::ReopenableFile;
-use bigtools::{BBIRead, BigBedRead};
+use bigtools::BigBedRead;
 use noodles::core::Region;
 use std::collections::HashSet;
 use std::io::{Read, Seek};
@@ -75,7 +75,7 @@ impl<R: Read + Seek> BigBedReader<R> {
                         let start = start.get() as u32 - 1; // 1-based to 0-based
                         let end = self
                             .read
-                            .get_chroms()
+                            .chroms()
                             .iter()
                             .find(|c| c.name == chrom_name)
                             .map(|c| c.length);
@@ -93,7 +93,7 @@ impl<R: Read + Seek> BigBedReader<R> {
                         let start = 0;
                         let end = self
                             .read
-                            .get_chroms()
+                            .chroms()
                             .iter()
                             .find(|c| c.name == chrom_name)
                             .map(|c| c.length);
@@ -123,7 +123,7 @@ impl<R: Read + Seek> BigBedReader<R> {
             }
             None => {
                 // Can't use write_ipc, because we have separate iterators for each chrom
-                let chroms = self.read.get_chroms().into_iter();
+                let chroms = self.read.chroms().to_vec();
                 for chrom in chroms {
                     let start = 0;
                     let end = chrom.length;
@@ -175,7 +175,7 @@ impl BigBedBatchBuilder {
         read: &mut BigBedRead<R>,
         columns: Option<HashSet<&str>>,
     ) -> Result<Self, ArrowError> {
-        let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
+        let chroms: Vec<String> = read.chroms().iter().map(|c| c.name.clone()).collect();
         let chroms: StringArray = StringArray::from(chroms);
         let autosql = read.autosql().unwrap();
         let mut declarations = bigtools::bed::autosql::parse::parse_autosql(&autosql).unwrap();
