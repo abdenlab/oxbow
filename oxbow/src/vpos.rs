@@ -102,7 +102,6 @@ fn parse_index_file(path: &str) -> io::Result<csi::Index> {
         reader.read_index()
     } else if path.ends_with(".bai") {
         let mut reader = File::open(path).map(bai::Reader::new)?;
-        reader.read_header()?;
         reader.read_index()
     // } else if path.ends_with(".crai") {
     //     let mut reader = File::open(path).map(crai::Reader::new)?;
