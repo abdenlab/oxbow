@@ -5,7 +5,7 @@ use arrow::array::{Float64Array, Float64Builder, StringArray, UInt64Array, UInt6
 use arrow::datatypes::Int32Type;
 use arrow::{error::ArrowError, record_batch::RecordBatch};
 use bigtools::utils::reopen::ReopenableFile;
-use bigtools::{BBIRead, BigWigRead, Summary};
+use bigtools::{BigWigRead, Summary};
 use noodles::core::Region;
 use std::collections::HashSet;
 use std::io::{Read, Seek};
@@ -55,7 +55,7 @@ impl<R: Read + Seek> BigWigReader<R> {
                 let start = start.get() as u32 - 1; // 1-based to 0-based
                 let end = self
                     .read
-                    .get_chroms()
+                    .chroms()
                     .iter()
                     .find(|c| c.name == chrom_name)
                     .map(|c| c.length);
@@ -73,7 +73,7 @@ impl<R: Read + Seek> BigWigReader<R> {
                 let start = 0;
                 let end = self
                     .read
-                    .get_chroms()
+                    .chroms()
                     .iter()
                     .find(|c| c.name == chrom_name)
                     .map(|c| c.length);
@@ -121,7 +121,7 @@ impl<R: Read + Seek> BigWigReader<R> {
             }
             None => {
                 // Can't use write_ipc, because we have separate iterators for each chrom
-                let chroms = self.read.get_chroms().into_iter();
+                let chroms = self.read.chroms().to_vec();
                 for chrom in chroms {
                     let start = 0;
                     let end = chrom.length;
@@ -217,7 +217,7 @@ impl<R: Read + Seek> BigWigReader<R> {
             }
             None => {
                 // Can't use write_ipc, because we have separate iterators for each chrom
-                let chroms = self.read.get_chroms().into_iter();
+                let chroms = self.read.chroms().to_vec();
                 for chrom in chroms {
                     let start = 0;
                     let end = chrom.length;
@@ -336,7 +336,7 @@ impl<V: ValueToIpc> BigWigBatchBuilder<V> {
         value_builder: V::Builder,
         read: &mut BigWigRead<R>,
     ) -> Result<Self, ArrowError> {
-        let chroms: Vec<String> = read.get_chroms().iter().map(|c| c.name.clone()).collect();
+        let chroms: Vec<String> = read.chroms().iter().map(|c| c.name.clone()).collect();
         let chroms: StringArray = StringArray::from(chroms);
         Ok(Self {
             chrom: StringDictionaryBuilder::<Int32Type>::new_with_dictionary(capacity, &chroms)?,
