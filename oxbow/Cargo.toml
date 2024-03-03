@@ -9,5 +9,5 @@ description = "Read specialized bioinformatic file formats as data frames in R, 
 [dependencies]
 arrow = "50.0.0"
 byteorder = "1.5.0"
-noodles = { version = "0.55.0", features = ["bam", "bcf", "bgzf", "core", "cram", "fasta", "fastq", "gff", "gtf", "sam", "csi", "vcf", "tabix"] }
+noodles = { version = "0.59.0", features = ["bam", "bcf", "bgzf", "core", "cram", "fasta", "fastq", "gff", "gtf", "sam", "csi", "vcf", "tabix"] }
 bigtools = { version = "0.4.1", default-features = false, features = ["read"] }
