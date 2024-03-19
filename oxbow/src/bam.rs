@@ -9,6 +9,7 @@ use arrow::array::{
     Int8Builder, StringArray, StringDictionaryBuilder, StructArray, UInt16Array, UInt16Builder,
     UInt32Builder, UInt8Array, UInt8Builder,
 };
+use arrow::ipc::writer::FileWriter;
 use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
 use noodles::sam::record::data::field::Tag;
@@ -128,6 +129,38 @@ impl<R: Read + Seek> BamReader<R> {
             .map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
         write_ipc_err(records, batch_builder)
     }
+}
+
+/// Returns the reference sequences in the BAM in Apache Arrow IPC.    ///
+/// # Examples
+///
+/// ```no_run
+/// use oxbow::bam::references_to_ipc;
+///
+/// let file = std::fs::File::open("sample.bam").unwrap();
+/// let ipc = references_to_ipc(file).unwrap();
+/// ```
+pub fn references_to_ipc<R: Read + Seek>(read: R) -> Result<Vec<u8>, ArrowError> {
+    let mut reader = bam::Reader::new(read);
+    let header = reader.read_header()?;
+
+    let mut names = GenericStringBuilder::<i32>::new();
+    let mut lengths = Int32Array::builder(1024);
+
+    for (name, sequence) in header.reference_sequences() {
+        names.append_value(name.as_str());
+        lengths.append_value(sequence.length().get() as i32);
+    }
+
+    let batch = RecordBatch::try_from_iter(vec![
+        ("name", Arc::new(names.finish()) as ArrayRef),
+        ("length", Arc::new(lengths.finish()) as ArrayRef),
+    ])?;
+
+    let mut writer = FileWriter::try_new(Vec::new(), &batch.schema())?;
+    writer.write(&batch)?;
+    writer.finish()?;
+    writer.into_inner()
 }
 
 struct BamBatchBuilder<'a> {
@@ -515,16 +548,20 @@ mod tests {
     use arrow::ipc::reader::FileReader;
     use arrow::record_batch::RecordBatch;
 
-    fn read_record_batch(region: Option<&str>) -> RecordBatch {
-        let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        dir.push("../fixtures/sample.bam");
-        let mut reader = BamReader::new_from_path(dir.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
+    fn record_batch_from_ipc(ipc: Vec<u8>) -> RecordBatch {
         let cursor = std::io::Cursor::new(ipc);
         let mut arrow_reader = FileReader::try_new(cursor, None).unwrap();
         // make sure we have one batch
         assert_eq!(arrow_reader.num_batches(), 1);
         arrow_reader.next().unwrap().unwrap()
+    }
+
+    fn read_record_batch(region: Option<&str>) -> RecordBatch {
+        let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        dir.push("../fixtures/sample.bam");
+        let mut reader = BamReader::new_from_path(dir.to_str().unwrap()).unwrap();
+        let ipc = reader.records_to_ipc(region).unwrap();
+        record_batch_from_ipc(ipc)
     }
 
     #[test]
@@ -543,5 +580,16 @@ mod tests {
     fn rest_region_partial() {
         let record_batch = read_record_batch(Some("chr1:1-100000"));
         assert_eq!(record_batch.num_rows(), 2);
+    }
+
+    #[test]
+    fn test_references() {
+        let mut dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        dir.push("../fixtures/sample.bam");
+        let read = std::fs::File::open(dir.to_str().unwrap()).unwrap();
+
+        let ipc = references_to_ipc(read).unwrap();
+        let record_batch = record_batch_from_ipc(ipc);
+        assert_eq!(record_batch.num_rows(), 24);
     }
 }
