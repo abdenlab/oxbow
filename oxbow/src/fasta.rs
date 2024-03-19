@@ -1,60 +1,62 @@
-use arrow::array::{ArrayRef, GenericStringBuilder};
-use arrow::{error::ArrowError, record_batch::RecordBatch};
-use noodles::core::Region;
+use arrow::{
+    array::{ArrayRef, GenericStringBuilder},
+    error::ArrowError,
+    record_batch::RecordBatch,
+};
 use noodles::fasta;
-use noodles::fasta::fai;
-use std::sync::Arc;
+use std::{
+    io::{self, BufReader},
+    iter, str,
+    sync::Arc,
+};
 
 use crate::batch_builder::{write_ipc, BatchBuilder};
 
-type BufferedReader = std::io::BufReader<std::fs::File>;
-
-/// A FASTA reader.
-pub struct FastaReader {
-    reader: fasta::IndexedReader<BufferedReader>,
-    stream_reader: fasta::Reader<Box<dyn std::io::BufRead>>,
+pub fn new_from_path(
+    path: &str,
+) -> io::Result<fasta::IndexedReader<Box<dyn fasta::io::BufReadSeek>>> {
+    // Also reads the index file and handles (b)gzipped files
+    fasta::indexed_reader::Builder::default().build_from_path(path)
 }
 
-impl FastaReader {
-    /// Creates a Fasta Reader.
-    pub fn new(path: &str) -> std::io::Result<Self> {
-        let index = fai::read(format!("{}.fai", path))?;
-        let file = std::fs::File::open(path)?;
-        let bufreader = std::io::BufReader::with_capacity(1024 * 1024, file);
-        let reader = fasta::indexed_reader::Builder::default()
-            .set_index(index)
-            .build_from_reader(bufreader)?;
-        let stream_reader = fasta::reader::Builder::default().build_from_path(path)?;
-        Ok(Self {
-            reader,
-            stream_reader,
-        })
-    }
+pub fn new_from_reader<R>(fasta: R, fai: R) -> io::Result<fasta::IndexedReader<BufReader<R>>>
+where
+    R: io::Read,
+{
+    fasta::indexed_reader::Builder::default()
+        .set_index(fasta::fai::Reader::new(BufReader::new(fai)).read_index()?)
+        .build_from_reader(BufReader::new(fasta))
+}
 
-    /// Returns the records in the given region as Apache Arrow IPC.
-    ///
-    /// If the region is `None`, all records are returned.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use oxbow::fasta::FastaReader;
-    ///
-    /// let mut reader = FastaReader::new("sample.fasta.gz").unwrap();
-    /// let ipc = reader.records_to_ipc(Some("sq0")).unwrap();
-    /// ```
-    pub fn records_to_ipc(&mut self, region: Option<&str>) -> Result<Vec<u8>, ArrowError> {
-        let batch_builder = FastaBatchBuilder::new(1024)?;
-
-        if let Some(region) = region {
-            let region: Region = region.parse().unwrap();
-            let query = self.reader.query(&region).unwrap();
-            let iter = std::iter::once(query);
-            return write_ipc(iter, batch_builder);
-        }
-
-        let records = self.stream_reader.records().map(|r| r.unwrap());
-        write_ipc(records, batch_builder)
+/// Returns the records in the given region as Apache Arrow IPC.
+///
+/// If the region is `None`, all records are returned.
+///
+/// # Examples
+///
+/// ```no_run
+/// use oxbow::fasta;
+///
+/// let mut reader = fasta::new_from_path("sample.fasta.gz").unwrap();
+/// let ipc = fasta::records_to_ipc(reader, Some("sq0")).unwrap();
+/// ```
+pub fn records_to_ipc<R>(
+    mut indexed_reader: fasta::IndexedReader<R>,
+    region: Option<&str>,
+) -> Result<Vec<u8>, ArrowError>
+where
+    R: fasta::io::BufReadSeek,
+{
+    let batch_builder = FastaBatchBuilder::new(1024)?;
+    if let Some(region) = region {
+        let region = region.parse().unwrap();
+        let query = indexed_reader.query(&region)?;
+        let record_iter = iter::once(query);
+        return write_ipc(record_iter, batch_builder);
+    } else {
+        let mut reader = fasta::reader::Builder.build_from_reader(indexed_reader.into_inner())?;
+        let records = reader.records().map(|r| r.unwrap());
+        return write_ipc(records, batch_builder);
     }
 }
 
@@ -79,8 +81,7 @@ impl BatchBuilder for FastaBatchBuilder {
         let seq = record.sequence().as_ref();
 
         self.name.append_value(record.name());
-        self.sequence
-            .append_value(std::str::from_utf8(seq).unwrap());
+        self.sequence.append_value(str::from_utf8(seq).unwrap());
     }
 
     fn finish(mut self) -> Result<RecordBatch, ArrowError> {
