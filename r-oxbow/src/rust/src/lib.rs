@@ -5,7 +5,7 @@ use oxbow::bam::BamReader;
 // use oxbow::cram::CramReader;
 use oxbow::vcf::VcfReader;
 use oxbow::bcf::BcfReader;
-use oxboq::vpos;
+use oxbow::vpos;
 
 /// Return Arrow IPC format from a FASTA file.
 /// @export
@@ -19,7 +19,7 @@ fn read_fasta(path: &str, region: Option<&str>) -> Vec<u8> {
 /// @export
 #[extendr]
 fn read_fastq(path: &str) -> Vec<u8> {
-    let mut reader = FastqReader::new(path).unwrap();
+    let mut reader = FastqReader::new_from_path(path).unwrap();
     reader.records_to_ipc().unwrap()
 }
 
@@ -27,7 +27,7 @@ fn read_fastq(path: &str) -> Vec<u8> {
 /// @export
 #[extendr]
 fn read_bam(path: &str, region: Option<&str>) -> Vec<u8> {
-    let mut reader = BamReader::new(path).unwrap();
+    let mut reader = BamReader::new_from_path(path).unwrap();
     reader.records_to_ipc(region).unwrap()
 }
 
@@ -35,7 +35,7 @@ fn read_bam(path: &str, region: Option<&str>) -> Vec<u8> {
 /// @export
 #[extendr]
 fn read_bam_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
-    let mut reader = BamReader::new(path).unwrap();
+    let mut reader = BamReader::new_from_path(path).unwrap();
     reader.records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi)).unwrap()
 }
 
@@ -43,7 +43,7 @@ fn read_bam_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: 
 /// @export
 #[extendr]
 fn read_vcf(path: &str, region: Option<&str>) -> Vec<u8> {
-    let mut reader = VcfReader::new(path).unwrap();
+    let mut reader = VcfReader::new_from_path(path).unwrap();
     reader.records_to_ipc(region).unwrap()
 }
 
@@ -51,7 +51,7 @@ fn read_vcf(path: &str, region: Option<&str>) -> Vec<u8> {
 /// @export
 #[extendr]
 fn read_vcf_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
-    let mut reader = VcfReader::new(path).unwrap();
+    let mut reader = VcfReader::new_from_path(path).unwrap();
     reader.records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi)).unwrap()
 }
 
@@ -59,7 +59,7 @@ fn read_vcf_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: 
 /// @export
 #[extendr]
 fn read_bcf(path: &str, region: Option<&str>) -> Vec<u8> {
-    let mut reader = BcfReader::new(path).unwrap();
+    let mut reader = BcfReader::new_from_path(path).unwrap();
     reader.records_to_ipc(region).unwrap()
 }
 
@@ -67,7 +67,7 @@ fn read_bcf(path: &str, region: Option<&str>) -> Vec<u8> {
 /// @export
 #[extendr]
 fn read_bcf_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
-    let mut reader = BcfReader::new(path).unwrap();
+    let mut reader = BcfReader::new_from_path(path).unwrap();
     reader.records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi)).unwrap()
 }
 
