@@ -3,7 +3,7 @@ use arrow::{error::ArrowError, record_batch::RecordBatch};
 use noodles::fastq;
 use std::{
     fs::File,
-    io::{self, BufReader, Read},
+    io::{self, BufRead, BufReader, Read},
     str,
     sync::Arc,
 };
@@ -23,9 +23,12 @@ impl FastqReader<BufReader<File>> {
     }
 }
 
-impl<R: Read> FastqReader<BufReader<R>> {
+impl<R> FastqReader<R>
+where
+    R: BufRead,
+{
     pub fn new(read: R) -> io::Result<Self> {
-        let reader = fastq::Reader::new(BufReader::new(read));
+        let reader = fastq::Reader::new(read);
         Ok(Self { reader })
     }
 

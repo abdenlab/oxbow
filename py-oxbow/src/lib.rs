@@ -53,8 +53,8 @@ fn read_fastq(py: Python, path_or_file_like: PyObject) -> PyObject {
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        // No BufReader here because FastqReader already has its own
         let file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .map(into_bufreader)
             .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
         let mut reader = FastqReader::new(file_like).unwrap();
         let ipc = reader.records_to_ipc().unwrap();
@@ -303,8 +303,8 @@ fn read_gff(py: Python, path_or_file_like: PyObject) -> PyObject {
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        // No BufReader here because GffReader already has its own
         let file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .map(into_bufreader)
             .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
         let mut reader = GffReader::new(file_like).unwrap();
         let ipc = reader.records_to_ipc().unwrap();
@@ -321,10 +321,9 @@ fn read_gtf(py: Python, path_or_file_like: PyObject) -> PyObject {
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        // No BufReader here because GtfReader already has its own
         let file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .map(into_bufreader)
             .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
-
         let mut reader = GtfReader::new(file_like).unwrap();
         let ipc = reader.records_to_ipc().unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
