@@ -23,11 +23,11 @@ where
 {
     // Unlike .tbi and .csi, .bai is not bgzf-compressed
     // so we read off the magic directly.
-    let mut buf_read = std::io::BufReader::with_capacity(1024 * 1024, file);
+    let mut buf_read = std::io::BufReader::with_capacity(1024 * 1024, read);
 
     let mut magic = [0; 4];
-    read.read_exact(&mut magic)?;
-    read.seek(io::SeekFrom::Start(0))?;
+    buf_read.read_exact(&mut magic)?;
+    buf_read.seek(io::SeekFrom::Start(0))?;
     if magic == b"BAI\x01" as &[u8] {
         let mut bai_reader = bam::bai::Reader::new(read);
         bai_reader.read_index()
