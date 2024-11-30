@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::io::BufReader;
 
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
@@ -25,6 +26,11 @@ mod file_like;
 
 use file_like::PyFileLikeObject;
 
+/// Alternative to `std::io::BufReader::new` with a larger buffer size (1MB instead of 8KB).
+fn into_bufreader<R: std::io::Read>(reader: R) -> BufReader<R> {
+    BufReader::with_capacity(1024 * 1024, reader)
+}
+
 #[pyfunction]
 fn partition_from_index_file(path: &str, chunksize: u64) -> PyObject {
     let voffsets = vpos::partition_from_index_file(path, chunksize);
@@ -47,10 +53,9 @@ fn read_fastq(py: Python, path_or_file_like: PyObject) -> PyObject {
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-	    Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-	};
+        // No BufReader here because FastqReader already has its own
+        let file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
         let mut reader = FastqReader::new(file_like).unwrap();
         let ipc = reader.records_to_ipc().unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
@@ -71,16 +76,14 @@ fn read_bam(
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-        };
-        let index_file_like = match PyFileLikeObject::new(index.unwrap(), true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `index`. Not a file path string or url, and not a file-like object."),
-        };
-        let index = bam::index_from_reader(index_file_like).unwrap();
-        let mut reader = BamReader::new(file_like, index).unwrap();
+        let buffered_file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
+        let buffered_index_file_like = PyFileLikeObject::new(index.unwrap(), true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
+        let index = bam::index_from_reader(buffered_index_file_like).unwrap();
+        let mut reader = BamReader::new(buffered_file_like, index).unwrap();
         let ipc = reader.records_to_ipc(region).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     }
@@ -101,16 +104,14 @@ fn read_bam_vpos(
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-        };
-        let index_file_like = match PyFileLikeObject::new(index.unwrap(), true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `index`. Not a file path string or url, and not a file-like object."),
-        };
-        let index = bam::index_from_reader(index_file_like).unwrap();
-        let mut reader = BamReader::new(file_like, index).unwrap();
+        let buffered_file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
+        let buffered_index_file_like = PyFileLikeObject::new(index.unwrap(), true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
+        let index = bam::index_from_reader(buffered_index_file_like).unwrap();
+        let mut reader = BamReader::new(buffered_file_like, index).unwrap();
         let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     }
@@ -130,16 +131,14 @@ fn read_vcf(
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-        };
-        let index_file_like = match PyFileLikeObject::new(index.unwrap(), true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `index`. Not a file path string or url, and not a file-like object."),
-        };
-        let index = vcf::index_from_reader(index_file_like).unwrap();
-        let mut reader = VcfReader::new(file_like, index).unwrap();
+        let buffered_file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
+        let buffered_index_file_like = PyFileLikeObject::new(index.unwrap(), true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
+        let index = vcf::index_from_reader(buffered_index_file_like).unwrap();
+        let mut reader = VcfReader::new(buffered_file_like, index).unwrap();
         let ipc = reader.records_to_ipc(region).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     }
@@ -160,16 +159,14 @@ fn read_vcf_vpos(
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-        };
-        let index_file_like = match PyFileLikeObject::new(index.unwrap(), true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `index`. Not a file path string or url, and not a file-like object."),
-        };
-        let index = vcf::index_from_reader(index_file_like).unwrap();
-        let mut reader = VcfReader::new(file_like, index).unwrap();
+        let buffered_file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
+        let buffered_index_file_like = PyFileLikeObject::new(index.unwrap(), true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
+        let index = vcf::index_from_reader(buffered_index_file_like).unwrap();
+        let mut reader = VcfReader::new(buffered_file_like, index).unwrap();
         let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     }
@@ -189,16 +186,14 @@ fn read_bcf(
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-        };
-        let index_file_like = match PyFileLikeObject::new(index.unwrap(), true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `index`. Not a file path string or url, and not a file-like object."),
-        };
-        let index = bcf::index_from_reader(index_file_like).unwrap();
-        let mut reader = BcfReader::new(file_like, index).unwrap();
+        let buffered_file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
+        let buffered_index_file_like = PyFileLikeObject::new(index.unwrap(), true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
+        let index = bcf::index_from_reader(buffered_index_file_like).unwrap();
+        let mut reader = BcfReader::new(buffered_file_like, index).unwrap();
         let ipc = reader.records_to_ipc(region).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     }
@@ -219,16 +214,14 @@ fn read_bcf_vpos(
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-        };
-        let index_file_like = match PyFileLikeObject::new(index.unwrap(), true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `index`. Not a file path string or url, and not a file-like object."),
-        };
-        let index = bcf::index_from_reader(index_file_like).unwrap();
-        let mut reader = VcfReader::new(file_like, index).unwrap();
+        let buffered_file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
+        let buffered_index_file_like = PyFileLikeObject::new(index.unwrap(), true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
+        let index = bcf::index_from_reader(buffered_index_file_like).unwrap();
+        let mut reader = VcfReader::new(buffered_file_like, index).unwrap();
         let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     }
@@ -259,11 +252,10 @@ fn read_bigwig(
         }
     } else {
         // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-        };
-        let mut reader = BigWigReader::new(file_like).unwrap();
+        let buffered_file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
+        let mut reader = BigWigReader::new(buffered_file_like).unwrap();
         match zoom_level {
             Some(zoom_level) => {
                 let ipc = reader
@@ -293,10 +285,9 @@ fn read_bigbed(
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-        };
+        let file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .map(into_bufreader)
+            .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
         let mut reader = BigBedReader::new(file_like).unwrap();
         let ipc = reader.records_to_ipc(region, fields).unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
@@ -312,10 +303,9 @@ fn read_gff(py: Python, path_or_file_like: PyObject) -> PyObject {
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-        };
+        // No BufReader here because GffReader already has its own
+        let file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
         let mut reader = GffReader::new(file_like).unwrap();
         let ipc = reader.records_to_ipc().unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
@@ -331,10 +321,10 @@ fn read_gtf(py: Python, path_or_file_like: PyObject) -> PyObject {
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
     } else {
         // Otherwise, treat it as file-like
-        let file_like = match PyFileLikeObject::new(path_or_file_like, true, false, true) {
-            Ok(file_like) => file_like,
-            Err(_) => panic!("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object."),
-        };
+        // No BufReader here because GtfReader already has its own
+        let file_like = PyFileLikeObject::new(path_or_file_like, true, false, true)
+            .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
+
         let mut reader = GtfReader::new(file_like).unwrap();
         let ipc = reader.records_to_ipc().unwrap();
         Python::with_gil(|py| PyBytes::new(py, &ipc).into())
