@@ -29,10 +29,10 @@ where
     buf_read.read_exact(&mut magic)?;
     buf_read.seek(io::SeekFrom::Start(0))?;
     if magic == b"BAI\x01" as &[u8] {
-        let mut bai_reader = bam::bai::Reader::new(read);
+        let mut bai_reader = bam::bai::Reader::new(buf_read);
         bai_reader.read_index()
     } else {
-        let mut csi_reader = csi::Reader::new(read);
+        let mut csi_reader = csi::Reader::new(buf_read);
         csi_reader.read_index()
     }
 }
