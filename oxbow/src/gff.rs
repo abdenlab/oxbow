@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufReader, Read, Seek};
+use std::io::{BufRead, BufReader, Read, Seek};
 use std::sync::Arc;
 
 use arrow::array::{ArrayRef, Float32Builder, GenericStringBuilder, Int32Builder};
@@ -20,9 +20,12 @@ impl GffReader<BufReader<File>> {
     }
 }
 
-impl<R: Read + Seek> GffReader<BufReader<R>> {
+impl<R> GffReader<R>
+where
+    R: BufRead,
+{
     pub fn new(read: R) -> std::io::Result<Self> {
-        let reader = gff::Reader::new(BufReader::new(read));
+        let reader = gff::Reader::new(read);
         Ok(Self { reader })
     }
 
@@ -42,7 +45,7 @@ impl<R: Read + Seek> GffReader<BufReader<R>> {
             .reader
             .records()
             .map(|i| i.map_err(|e| ArrowError::ExternalError(e.into())));
-        return write_ipc_err(records, batch_builder);
+        write_ipc_err(records, batch_builder)
     }
 }
 
