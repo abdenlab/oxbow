@@ -48,7 +48,7 @@ fn read_fasta(path: &str, region: Option<&str>) -> Vec<u8> {
 fn read_fastq(py: Python, path_or_file_like: PyObject) -> Vec<u8> {
     if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it like a path
-        let mut reader = FastqReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let mut reader = FastqReader::new_from_path(string_ref.to_string_lossy().as_ref()).unwrap();
         reader.records_to_ipc().unwrap()
     } else {
         // Otherwise, treat it as file-like
@@ -69,7 +69,7 @@ fn read_bam(
 ) -> Vec<u8> {
     if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
-        let mut reader = BamReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let mut reader = BamReader::new_from_path(string_ref.to_string_lossy().as_ref()).unwrap();
         reader.records_to_ipc(region).unwrap()
     } else {
         // Otherwise, treat it as file-like
@@ -94,7 +94,7 @@ fn read_bam_vpos(
 ) -> Vec<u8> {
     if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
-        let mut reader = BamReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let mut reader = BamReader::new_from_path(string_ref.to_string_lossy().as_ref()).unwrap();
         reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
     } else {
         // Otherwise, treat it as file-like
@@ -118,7 +118,7 @@ fn read_vcf(
 ) -> Vec<u8> {
     if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
-        let mut reader = VcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let mut reader = VcfReader::new_from_path(string_ref.to_string_lossy().as_ref()).unwrap();
         reader.records_to_ipc(region).unwrap()
     } else {
         // Otherwise, treat it as file-like
@@ -143,7 +143,7 @@ fn read_vcf_vpos(
 ) -> Vec<u8> {
     if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
-        let mut reader = VcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let mut reader = VcfReader::new_from_path(string_ref.to_string_lossy().as_ref()).unwrap();
         reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
     } else {
         // Otherwise, treat it as file-like
@@ -167,7 +167,7 @@ fn read_bcf(
 ) -> Vec<u8> {
     if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
-        let mut reader = BcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let mut reader = BcfReader::new_from_path(string_ref.to_string_lossy().as_ref()).unwrap();
         reader.records_to_ipc(region).unwrap()
     } else {
         // Otherwise, treat it as file-like
@@ -192,7 +192,7 @@ fn read_bcf_vpos(
 ) -> Vec<u8> {
     if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
-        let mut reader = VcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let mut reader = VcfReader::new_from_path(string_ref.to_string_lossy().as_ref()).unwrap();
         reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
     } else {
         // Otherwise, treat it as file-like
@@ -220,7 +220,8 @@ fn read_bigwig(
         .map(|h| h.iter().map(String::as_str).collect::<HashSet<&str>>());
     if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
-        let mut reader = BigWigReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let mut reader =
+            BigWigReader::new_from_path(string_ref.to_string_lossy().as_ref()).unwrap();
         match zoom_level {
             Some(zoom_level) => reader
                 .zoom_records_to_ipc(region, zoom_level, zoom_summary_columns_ref)
@@ -254,7 +255,8 @@ fn read_bigbed(
         .map(|h| h.iter().map(String::as_str).collect::<HashSet<&str>>());
     if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
-        let mut reader = BigBedReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let mut reader =
+            BigBedReader::new_from_path(string_ref.to_string_lossy().as_ref()).unwrap();
         reader.records_to_ipc(region, fields_ref).unwrap()
     } else {
         // Otherwise, treat it as file-like
@@ -269,7 +271,7 @@ fn read_bigbed(
 fn read_gff(py: Python, path_or_file_like: PyObject) -> Vec<u8> {
     if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
-        let mut reader = GffReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let mut reader = GffReader::new_from_path(string_ref.to_string_lossy().as_ref()).unwrap();
         reader.records_to_ipc().unwrap()
     } else {
         // Otherwise, treat it as file-like
@@ -284,7 +286,7 @@ fn read_gff(py: Python, path_or_file_like: PyObject) -> Vec<u8> {
 fn read_gtf(py: Python, path_or_file_like: PyObject) -> Vec<u8> {
     if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
-        let mut reader = GtfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
+        let mut reader = GtfReader::new_from_path(string_ref.to_string_lossy().as_ref()).unwrap();
         reader.records_to_ipc().unwrap()
     } else {
         // Otherwise, treat it as file-like

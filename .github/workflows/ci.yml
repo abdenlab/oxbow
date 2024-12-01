@@ -1,29 +1,30 @@
-permissions:
-  contents: read
+name: Test
 
 on:
   push:
     branches: [main]
   pull_request:
 
-name: Test
+permissions:
+  contents: read
+
+env:
+  # Disable incremental compilation for faster from-scratch builds
+  CARGO_INCREMENTAL: 0
 
 jobs:
   Test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - run: rustup update
 
       - name: Check formatting
-        run: cargo fmt --all --manifest-path ./oxbow/Cargo.toml -- --check
+        run: cargo fmt --all --check
 
       - name: Download fixtures
         run: cd fixtures && wget -i list.txt
 
       - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path ./oxbow/Cargo.toml
+        run: cargo test
