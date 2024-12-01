@@ -82,9 +82,9 @@ impl BatchBuilder for GtfBatchBuilder {
 
     fn push(&mut self, record: Self::Record<'_>) {
         self.reference_sequence_name
-            .append_value(record.reference_sequence_name().to_string());
-        self.source.append_value(record.source().to_string());
-        self.ty.append_value(record.ty().to_string());
+            .append_value(record.reference_sequence_name());
+        self.source.append_value(record.source());
+        self.ty.append_value(record.ty());
         self.start.append_value(usize::from(record.start()) as i32);
         self.end.append_value(usize::from(record.end()) as i32);
         match record.score() {
@@ -92,7 +92,7 @@ impl BatchBuilder for GtfBatchBuilder {
             None => self.score.append_null(),
         }
         match record.strand() {
-            Some(strand) => self.strand.append_value(strand.to_string()),
+            Some(strand) => self.strand.append_value(strand),
             None => self.strand.append_null(),
         }
         match record.frame() {

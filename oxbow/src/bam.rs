@@ -401,7 +401,7 @@ impl<'a> BamBatchBuilder<'a> {
     }
 }
 
-impl<'a> BatchBuilder for BamBatchBuilder<'a> {
+impl BatchBuilder for BamBatchBuilder<'_> {
     type Record<'x> = &'x sam::alignment::Record;
 
     fn push(&mut self, record: Self::Record<'_>) {
@@ -493,7 +493,7 @@ where
     }
 }
 
-impl<'a, R> Iterator for BamRecords<'a, R>
+impl<R> Iterator for BamRecords<'_, R>
 where
     R: Read + Seek,
 {

@@ -24,7 +24,7 @@ impl FastaReader {
         let reader = fasta::indexed_reader::Builder::default()
             .set_index(index)
             .build_from_reader(bufreader)?;
-        let stream_reader = fasta::reader::Builder::default().build_from_path(path)?;
+        let stream_reader = fasta::reader::Builder.build_from_path(path)?;
         Ok(Self {
             reader,
             stream_reader,

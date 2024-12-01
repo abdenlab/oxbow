@@ -206,7 +206,7 @@ where
     }
 }
 
-impl<'a, R> Iterator for BcfRecords<'a, R>
+impl<R> Iterator for BcfRecords<'_, R>
 where
     R: Read + Seek,
 {

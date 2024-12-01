@@ -233,7 +233,7 @@ where
     }
 }
 
-impl<'a, R> Iterator for VcfRecords<'a, R>
+impl<R> Iterator for VcfRecords<'_, R>
 where
     R: Read + Seek,
 {
