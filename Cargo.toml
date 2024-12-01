@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = [
+    "oxbow",
+    "py-oxbow",
+    "r-oxbow/src/rust"
+]
+
+[workspace.dependencies]
+oxbow = { path = "oxbow" }
