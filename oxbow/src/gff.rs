@@ -82,16 +82,16 @@ impl BatchBuilder for GffBatchBuilder {
 
     fn push(&mut self, record: Self::Record<'_>) {
         self.reference_sequence_name
-            .append_value(record.reference_sequence_name().to_string());
-        self.source.append_value(record.source().to_string());
-        self.ty.append_value(record.ty().to_string());
+            .append_value(record.reference_sequence_name());
+        self.source.append_value(record.source());
+        self.ty.append_value(record.ty());
         self.start.append_value(usize::from(record.start()) as i32);
         self.end.append_value(usize::from(record.end()) as i32);
         match record.score() {
             Some(score) => self.score.append_value(score),
             None => self.score.append_null(),
         }
-        self.strand.append_value(record.strand().to_string());
+        self.strand.append_value(record.strand());
         match record.phase() {
             Some(phase) => self.phase.append_value(phase),
             None => self.phase.append_null(),

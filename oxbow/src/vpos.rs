@@ -19,7 +19,7 @@ fn get_ref_last_position(rseq: &ReferenceSequence) -> bgzf::VirtualPosition {
 
 fn get_offsets_from_linear_index(rseq: &ReferenceSequence) -> Vec<(u64, u16)> {
     let mut offsets: Vec<(u64, u16)> = Vec::new();
-    let rend = get_ref_last_position(&rseq);
+    let rend = get_ref_last_position(rseq);
     for offset in rseq.linear_index() {
         let a = offset.compressed();
         let b = offset.uncompressed();
@@ -39,7 +39,7 @@ fn get_offsets_from_linear_index(rseq: &ReferenceSequence) -> Vec<(u64, u16)> {
 
 fn get_offsets_from_binning_index(rseq: &ReferenceSequence) -> Vec<(u64, u16)> {
     let mut offsets: Vec<(u64, u16)> = Vec::new();
-    let rend = get_ref_last_position(&rseq);
+    let rend = get_ref_last_position(rseq);
     for bin in rseq.bins().values() {
         for chunk in bin.chunks() {
             offsets.push((chunk.start().compressed(), chunk.start().uncompressed()));
@@ -55,7 +55,7 @@ fn get_offsets_from_binning_index(rseq: &ReferenceSequence) -> Vec<(u64, u16)> {
     offsets_uniq
 }
 
-fn consolidate_chunks(offsets: &Vec<(u64, u16)>, chunksize: u64) -> Vec<(u64, u16)> {
+fn consolidate_chunks(offsets: &[(u64, u16)], chunksize: u64) -> Vec<(u64, u16)> {
     let mut consolidated = Vec::new();
     let mut last_offset = 0;
 

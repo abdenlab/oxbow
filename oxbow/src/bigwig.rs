@@ -281,15 +281,24 @@ impl ValueToIpc for Summary {
     type Schema = std::iter::Flatten<std::array::IntoIter<Option<(&'static str, ArrayRef)>, 6>>;
 
     fn append_value_to(self, builder: &mut Self::Builder) {
-        builder.0.as_mut().map(|b| b.append_value(self.total_items));
-        builder
-            .1
-            .as_mut()
-            .map(|b| b.append_value(self.bases_covered));
-        builder.2.as_mut().map(|b| b.append_value(self.min_val));
-        builder.3.as_mut().map(|b| b.append_value(self.max_val));
-        builder.4.as_mut().map(|b| b.append_value(self.sum));
-        builder.5.as_mut().map(|b| b.append_value(self.sum_squares));
+        if let Some(b) = builder.0.as_mut() {
+            b.append_value(self.total_items)
+        }
+        if let Some(b) = builder.1.as_mut() {
+            b.append_value(self.bases_covered)
+        }
+        if let Some(b) = builder.2.as_mut() {
+            b.append_value(self.min_val)
+        }
+        if let Some(b) = builder.3.as_mut() {
+            b.append_value(self.max_val)
+        }
+        if let Some(b) = builder.4.as_mut() {
+            b.append_value(self.sum)
+        }
+        if let Some(b) = builder.5.as_mut() {
+            b.append_value(self.sum_squares)
+        }
     }
     fn finish(mut builder: Self::Builder) -> Self::Schema {
         [
