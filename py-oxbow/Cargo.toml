@@ -11,4 +11,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 oxbow = { workspace = true }
-pyo3 = "0.20.0"
+pyo3 = { version = "0.23.2", features = ["extension-module"] }

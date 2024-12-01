@@ -1,12 +1,13 @@
 use std::io::{self, Read, Seek, SeekFrom, Write};
 
 use pyo3::{
-    exceptions::PyTypeError, types::PyBytes, IntoPy, PyErr, PyObject, PyResult, Python, ToPyObject,
+    exceptions::PyTypeError,
+    types::{PyAnyMethods, PyBytes, PyBytesMethods},
+    IntoPyObject, PyErr, PyObject, PyResult, Python,
 };
 
 /// Represents a file-like object in python. This simply wraps the Rust io
 /// traits, calling into python io methods.
-#[derive(Clone)]
 pub struct PyFileLikeObject {
     inner: PyObject,
 }
@@ -42,14 +43,12 @@ impl PyFileLikeObject {
 
 /// Extracts a string repr from, and returns an IO error to send back to rust.
 fn to_io_error(py: Python<'_>, e: PyErr) -> io::Error {
-    let pyobj: PyObject = e.into_py(py);
-
-    match pyobj.call_method(py, "__str__", (), None) {
-        Ok(repr) => match repr.extract::<String>(py) {
+    match e.into_pyobject(py).map(|obj| obj.call_method0("__str__")) {
+        Ok(Ok(repr)) => match repr.extract::<String>() {
             Ok(s) => io::Error::new(io::ErrorKind::Other, s),
             Err(_e) => io::Error::new(io::ErrorKind::Other, "An unknown error has occurred"),
         },
-        Err(_) => io::Error::new(io::ErrorKind::Other, "An unknown error has occurred"),
+        _ => io::Error::new(io::ErrorKind::Other, "An unknown error has occurred"),
     }
 }
 
@@ -58,9 +57,13 @@ impl Read for PyFileLikeObject {
         Python::with_gil(|py| {
             let res = self
                 .inner
-                .call_method(py, "read", (buf.len(),), None)
+                .call_method1(py, "read", (buf.len(),))
                 .map_err(|e| to_io_error(py, e))?;
-            let pybytes: &PyBytes = res.downcast(py).map_err(|e| to_io_error(py, e.into()))?;
+
+            let pybytes: &pyo3::Bound<PyBytes> = res
+                .downcast_bound(py)
+                .map_err(|e| to_io_error(py, e.into()))?;
+
             let bytes = pybytes.as_bytes();
             buf.write_all(bytes)?;
             Ok(bytes.len())
@@ -71,11 +74,9 @@ impl Read for PyFileLikeObject {
 impl Write for PyFileLikeObject {
     fn write(&mut self, buf: &[u8]) -> Result<usize, io::Error> {
         Python::with_gil(|py| {
-            let arg = PyBytes::new(py, buf).to_object(py);
-
             let number_bytes_written = self
                 .inner
-                .call_method(py, "write", (arg,), None)
+                .call_method1(py, "write", (buf,))
                 .map_err(|e| to_io_error(py, e))?;
 
             if number_bytes_written.is_none(py) {
@@ -91,7 +92,7 @@ impl Write for PyFileLikeObject {
     fn flush(&mut self) -> Result<(), io::Error> {
         Python::with_gil(|py| {
             self.inner
-                .call_method(py, "flush", (), None)
+                .call_method0(py, "flush")
                 .map_err(|e| to_io_error(py, e))?;
 
             Ok(())
