@@ -10,5 +10,5 @@ name = "oxbow"
 crate-type = ["cdylib"]
 
 [dependencies]
-oxbow = { path = "../oxbow" }
+oxbow = { workspace = true }
 pyo3 = "0.20.0"
