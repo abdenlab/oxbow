@@ -37,3 +37,8 @@ pub fn finish_batch(batch_builder: impl BatchBuilder) -> Result<Vec<u8>, ArrowEr
     writer.finish()?;
     writer.into_inner()
 }
+
+/// Size of the buffer to use when reading files (1MB).
+///
+/// Larger than default for `std::io::BufReader::new()` (8KB).
+pub const BUFFER_SIZE_BYTES: usize = const { 1024 * 1024 };

@@ -11,7 +11,7 @@ use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
 use noodles::{bgzf, csi, tabix, vcf};
 
-use crate::batch_builder::{write_ipc_err, BatchBuilder};
+use crate::batch_builder::{write_ipc_err, BatchBuilder, BUFFER_SIZE_BYTES};
 
 fn read_magic(read: &mut dyn Read) -> io::Result<[u8; 4]> {
     let mut magic = [0; 4];
@@ -59,7 +59,7 @@ impl VcfReader<BufReader<File>> {
     pub fn new_from_path(path: &str) -> std::io::Result<Self> {
         let index = index_from_path(path)?;
         let file = std::fs::File::open(path)?;
-        let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
+        let buf_file = std::io::BufReader::with_capacity(BUFFER_SIZE_BYTES, file);
         let mut reader = vcf::Reader::new(bgzf::Reader::new(buf_file));
         let header = reader.read_header()?;
         Ok(Self {

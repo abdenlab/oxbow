@@ -31,7 +31,7 @@ use file_like::PyFileLikeObject;
 fn buffered_file_like(path_or_file_like: PyObject) -> PyResult<BufReader<PyFileLikeObject>> {
     PyFileLikeObject::new(path_or_file_like, true, false, true)
         // Alternative to `std::io::BufReader::new` with a larger buffer size (1MB instead of 8KB).
-        .map(|file_like| BufReader::with_capacity(1024 * 1024, file_like))
+        .map(|file_like| BufReader::with_capacity(const { 1024 * 1024 }, file_like))
 }
 
 #[pyfunction]

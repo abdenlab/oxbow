@@ -5,7 +5,7 @@ use noodles::fasta;
 use noodles::fasta::fai;
 use std::sync::Arc;
 
-use crate::batch_builder::{write_ipc, BatchBuilder};
+use crate::batch_builder::{write_ipc, BatchBuilder, BUFFER_SIZE_BYTES};
 
 type BufferedReader = std::io::BufReader<std::fs::File>;
 
@@ -20,7 +20,7 @@ impl FastaReader {
     pub fn new(path: &str) -> std::io::Result<Self> {
         let index = fai::read(format!("{}.fai", path))?;
         let file = std::fs::File::open(path)?;
-        let bufreader = std::io::BufReader::with_capacity(1024 * 1024, file);
+        let bufreader = std::io::BufReader::with_capacity(BUFFER_SIZE_BYTES, file);
         let reader = fasta::indexed_reader::Builder::default()
             .set_index(index)
             .build_from_reader(bufreader)?;

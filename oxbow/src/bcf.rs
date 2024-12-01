@@ -11,7 +11,7 @@ use arrow::{datatypes::Int32Type, error::ArrowError, record_batch::RecordBatch};
 use noodles::core::Region;
 use noodles::{bcf, bgzf, csi, vcf};
 
-use crate::batch_builder::{write_ipc_err, BatchBuilder};
+use crate::batch_builder::{write_ipc_err, BatchBuilder, BUFFER_SIZE_BYTES};
 
 pub fn index_from_reader<R>(read: R) -> io::Result<csi::Index>
 where
@@ -32,7 +32,7 @@ impl BcfReader<BufReader<File>> {
     pub fn new_from_path(path: &str) -> std::io::Result<Self> {
         let index = csi::read(format!("{}.csi", path))?;
         let file = std::fs::File::open(path)?;
-        let buf_file = std::io::BufReader::with_capacity(1024 * 1024, file);
+        let buf_file = std::io::BufReader::with_capacity(BUFFER_SIZE_BYTES, file);
         let mut reader = bcf::Reader::new(buf_file);
         let header = reader.read_header()?;
         Ok(Self {
