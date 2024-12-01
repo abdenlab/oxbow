@@ -1,10 +1,10 @@
 use extendr_api::prelude::*;
+use oxbow::bam::BamReader;
 use oxbow::fasta::FastaReader;
 use oxbow::fastq::FastqReader;
-use oxbow::bam::BamReader;
 // use oxbow::cram::CramReader;
-use oxbow::vcf::VcfReader;
 use oxbow::bcf::BcfReader;
+use oxbow::vcf::VcfReader;
 use oxbow::vpos;
 
 /// Return Arrow IPC format from a FASTA file.
@@ -36,7 +36,9 @@ fn read_bam(path: &str, region: Option<&str>) -> Vec<u8> {
 #[extendr]
 fn read_bam_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
     let mut reader = BamReader::new_from_path(path).unwrap();
-    reader.records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi)).unwrap()
+    reader
+        .records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi))
+        .unwrap()
 }
 
 /// Return Arrow IPC format from a VCF file.
@@ -52,7 +54,9 @@ fn read_vcf(path: &str, region: Option<&str>) -> Vec<u8> {
 #[extendr]
 fn read_vcf_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
     let mut reader = VcfReader::new_from_path(path).unwrap();
-    reader.records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi)).unwrap()
+    reader
+        .records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi))
+        .unwrap()
 }
 
 /// Return Arrow IPC format from a BCF file.
@@ -68,14 +72,20 @@ fn read_bcf(path: &str, region: Option<&str>) -> Vec<u8> {
 #[extendr]
 fn read_bcf_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
     let mut reader = BcfReader::new_from_path(path).unwrap();
-    reader.records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi)).unwrap()
+    reader
+        .records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi))
+        .unwrap()
 }
 
 /// Return a virtual position partition with an approximate uncompressed spacing.
 /// @export
 #[extendr]
-fn partition_from_index_file(path: &str, chunksize: u64) -> Vec<(u64, u16)> {
-    vpos::partition_from_index_file(path, chunksize)
+fn partition_from_index_file(path: &str, chunksize: u64) -> List {
+    let pos = vpos::partition_from_index_file(path, chunksize);
+    list!(
+        compressed_offset = pos.iter().map(|x| x.0).collect::<Vec<_>>(),
+        bin_index = pos.iter().map(|x| x.1).collect::<Vec<_>>()
+    )
 }
 
 // Macro to generate exports.

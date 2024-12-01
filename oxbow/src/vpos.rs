@@ -78,9 +78,9 @@ fn partition_from_index(index: &csi::Index, chunksize: u64) -> Vec<(u64, u16)> {
             continue;
         }
         let offsets = if rseq.linear_index().is_empty() {
-            get_offsets_from_binning_index(&rseq)
+            get_offsets_from_binning_index(rseq)
         } else {
-            get_offsets_from_linear_index(&rseq)
+            get_offsets_from_linear_index(rseq)
         };
         let consolidated = consolidate_chunks(&offsets, chunksize);
         partition.extend(consolidated);
@@ -114,6 +114,5 @@ fn parse_index_file(path: &str) -> io::Result<csi::Index> {
 
 pub fn partition_from_index_file(path: &str, chunksize: u64) -> Vec<(u64, u16)> {
     let index = parse_index_file(path).unwrap();
-    let partition = partition_from_index(&index, chunksize);
-    partition
+    partition_from_index(&index, chunksize)
 }
