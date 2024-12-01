@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, Seek};
+use std::io::{BufRead, BufReader};
 use std::sync::Arc;
 
 use arrow::array::{ArrayRef, Float32Builder, GenericStringBuilder, Int32Builder};
