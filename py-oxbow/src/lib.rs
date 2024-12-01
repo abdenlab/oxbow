@@ -2,8 +2,6 @@ use std::collections::HashSet;
 use std::io::BufReader;
 
 use pyo3::prelude::*;
-use pyo3::types::PyBytes;
-use pyo3::types::PyList;
 use pyo3::types::PyString;
 
 use oxbow::bam;
@@ -35,47 +33,44 @@ fn buffered_file_like(path_or_file_like: PyObject) -> PyResult<BufReader<PyFileL
 }
 
 #[pyfunction]
-fn partition_from_index_file(path: &str, chunksize: u64) -> PyObject {
-    let voffsets = vpos::partition_from_index_file(path, chunksize);
-    Python::with_gil(|py| PyList::new(py, &voffsets).into())
+fn partition_from_index_file(path: &str, chunksize: u64) -> Vec<(u64, u16)> {
+    vpos::partition_from_index_file(path, chunksize)
 }
 
 #[pyfunction]
-fn read_fasta(path: &str, region: Option<&str>) -> PyObject {
+#[pyo3(signature = (path, region=None))]
+fn read_fasta(path: &str, region: Option<&str>) -> Vec<u8> {
     let mut reader = FastaReader::new(path).unwrap();
-    let ipc = reader.records_to_ipc(region).unwrap();
-    Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+    reader.records_to_ipc(region).unwrap()
 }
 
 #[pyfunction]
-fn read_fastq(py: Python, path_or_file_like: PyObject) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+fn read_fastq(py: Python, path_or_file_like: PyObject) -> Vec<u8> {
+    if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it like a path
         let mut reader = FastqReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc().unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc().unwrap()
     } else {
         // Otherwise, treat it as file-like
         let file_like = buffered_file_like(path_or_file_like)
             .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
         let mut reader = FastqReader::new(file_like).unwrap();
-        let ipc = reader.records_to_ipc().unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc().unwrap()
     }
 }
 
 #[pyfunction]
+#[pyo3(signature = (path_or_file_like, region=None, index=None))]
 fn read_bam(
     py: Python,
     path_or_file_like: PyObject,
     region: Option<&str>,
     index: Option<PyObject>,
-) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+) -> Vec<u8> {
+    if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BamReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc(region).unwrap()
     } else {
         // Otherwise, treat it as file-like
         let file_like = buffered_file_like(path_or_file_like)
@@ -84,24 +79,23 @@ fn read_bam(
             .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
         let index = bam::index_from_reader(index_file_like).unwrap();
         let mut reader = BamReader::new(file_like, index).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc(region).unwrap()
     }
 }
 
 #[pyfunction]
+#[pyo3(signature = (path_or_file_like, pos_lo, pos_hi, index=None))]
 fn read_bam_vpos(
     py: Python,
     path_or_file_like: PyObject,
     pos_lo: (u64, u16),
     pos_hi: (u64, u16),
     index: Option<PyObject>,
-) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+) -> Vec<u8> {
+    if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BamReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
     } else {
         // Otherwise, treat it as file-like
         let file_like = buffered_file_like(path_or_file_like)
@@ -110,23 +104,22 @@ fn read_bam_vpos(
             .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
         let index = bam::index_from_reader(index_file_like).unwrap();
         let mut reader = BamReader::new(file_like, index).unwrap();
-        let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
     }
 }
 
 #[pyfunction]
+#[pyo3(signature = (path_or_file_like, region=None, index=None))]
 fn read_vcf(
     py: Python,
     path_or_file_like: PyObject,
     region: Option<&str>,
     index: Option<PyObject>,
-) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+) -> Vec<u8> {
+    if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = VcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc(region).unwrap()
     } else {
         // Otherwise, treat it as file-like
         let file_like = buffered_file_like(path_or_file_like)
@@ -135,24 +128,23 @@ fn read_vcf(
             .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
         let index = vcf::index_from_reader(index_file_like).unwrap();
         let mut reader = VcfReader::new(file_like, index).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc(region).unwrap()
     }
 }
 
 #[pyfunction]
+#[pyo3(signature = (path_or_file_like, pos_lo, pos_hi, index=None))]
 fn read_vcf_vpos(
     py: Python,
     path_or_file_like: PyObject,
     pos_lo: (u64, u16),
     pos_hi: (u64, u16),
     index: Option<PyObject>,
-) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+) -> Vec<u8> {
+    if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = VcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
     } else {
         // Otherwise, treat it as file-like
         let file_like = buffered_file_like(path_or_file_like)
@@ -161,23 +153,22 @@ fn read_vcf_vpos(
             .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
         let index = vcf::index_from_reader(index_file_like).unwrap();
         let mut reader = VcfReader::new(file_like, index).unwrap();
-        let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
     }
 }
 
 #[pyfunction]
+#[pyo3(signature = (path_or_file_like, region=None, index=None))]
 fn read_bcf(
     py: Python,
     path_or_file_like: PyObject,
     region: Option<&str>,
     index: Option<PyObject>,
-) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+) -> Vec<u8> {
+    if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc(region).unwrap()
     } else {
         // Otherwise, treat it as file-like
         let file_like = buffered_file_like(path_or_file_like)
@@ -186,24 +177,23 @@ fn read_bcf(
             .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
         let index = bcf::index_from_reader(index_file_like).unwrap();
         let mut reader = BcfReader::new(file_like, index).unwrap();
-        let ipc = reader.records_to_ipc(region).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc(region).unwrap()
     }
 }
 
 #[pyfunction]
+#[pyo3(signature = (path_or_file_like, pos_lo, pos_hi, index=None))]
 fn read_bcf_vpos(
     py: Python,
     path_or_file_like: PyObject,
     pos_lo: (u64, u16),
     pos_hi: (u64, u16),
     index: Option<PyObject>,
-) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+) -> Vec<u8> {
+    if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = VcfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
     } else {
         // Otherwise, treat it as file-like
         let file_like = buffered_file_like(path_or_file_like)
@@ -212,33 +202,30 @@ fn read_bcf_vpos(
             .expect("Unknown argument for `index`. Not a file path string or url, and not a file-like object.");
         let index = bcf::index_from_reader(index_file_like).unwrap();
         let mut reader = VcfReader::new(file_like, index).unwrap();
-        let ipc = reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc_from_vpos(pos_lo, pos_hi).unwrap()
     }
 }
 
 #[pyfunction]
+#[pyo3(signature = (path_or_file_like, region=None, zoom_level=None, zoom_summary_columns=None))]
 fn read_bigwig(
     py: Python,
     path_or_file_like: PyObject,
     region: Option<&str>,
     zoom_level: Option<u32>,
-    zoom_summary_columns: Option<HashSet<&str>>,
-) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+    zoom_summary_columns: Option<HashSet<String>>,
+) -> Vec<u8> {
+    let zoom_summary_columns_ref = zoom_summary_columns
+        .as_ref()
+        .map(|h| h.iter().map(String::as_str).collect::<HashSet<&str>>());
+    if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BigWigReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
         match zoom_level {
-            Some(zoom_level) => {
-                let ipc = reader
-                    .zoom_records_to_ipc(region, zoom_level, zoom_summary_columns)
-                    .unwrap();
-                Python::with_gil(|py| PyBytes::new(py, &ipc).into())
-            }
-            None => {
-                let ipc = reader.records_to_ipc(region).unwrap();
-                Python::with_gil(|py| PyBytes::new(py, &ipc).into())
-            }
+            Some(zoom_level) => reader
+                .zoom_records_to_ipc(region, zoom_level, zoom_summary_columns_ref)
+                .unwrap(),
+            None => reader.records_to_ipc(region).unwrap(),
         }
     } else {
         // Otherwise, treat it as file-like
@@ -246,79 +233,71 @@ fn read_bigwig(
             .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
         let mut reader = BigWigReader::new(file_like).unwrap();
         match zoom_level {
-            Some(zoom_level) => {
-                let ipc = reader
-                    .zoom_records_to_ipc(region, zoom_level, zoom_summary_columns)
-                    .unwrap();
-                Python::with_gil(|py| PyBytes::new(py, &ipc).into())
-            }
-            None => {
-                let ipc = reader.records_to_ipc(region).unwrap();
-                Python::with_gil(|py| PyBytes::new(py, &ipc).into())
-            }
+            Some(zoom_level) => reader
+                .zoom_records_to_ipc(region, zoom_level, zoom_summary_columns_ref)
+                .unwrap(),
+            None => reader.records_to_ipc(region).unwrap(),
         }
     }
 }
 
 #[pyfunction]
+#[pyo3(signature = (path_or_file_like, region=None, fields=None))]
 fn read_bigbed(
     py: Python,
     path_or_file_like: PyObject,
     region: Option<&str>,
-    fields: Option<HashSet<&str>>,
-) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+    fields: Option<HashSet<String>>,
+) -> Vec<u8> {
+    let fields_ref = fields
+        .as_ref()
+        .map(|h| h.iter().map(String::as_str).collect::<HashSet<&str>>());
+    if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = BigBedReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc(region, fields).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc(region, fields_ref).unwrap()
     } else {
         // Otherwise, treat it as file-like
         let file_like = buffered_file_like(path_or_file_like)
             .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
         let mut reader = BigBedReader::new(file_like).unwrap();
-        let ipc = reader.records_to_ipc(region, fields).unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc(region, fields_ref).unwrap()
     }
 }
 
 #[pyfunction]
-fn read_gff(py: Python, path_or_file_like: PyObject) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+fn read_gff(py: Python, path_or_file_like: PyObject) -> Vec<u8> {
+    if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = GffReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc().unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc().unwrap()
     } else {
         // Otherwise, treat it as file-like
         let file_like = buffered_file_like(path_or_file_like)
             .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
         let mut reader = GffReader::new(file_like).unwrap();
-        let ipc = reader.records_to_ipc().unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc().unwrap()
     }
 }
 
 #[pyfunction]
-fn read_gtf(py: Python, path_or_file_like: PyObject) -> PyObject {
-    if let Ok(string_ref) = path_or_file_like.downcast::<PyString>(py) {
+fn read_gtf(py: Python, path_or_file_like: PyObject) -> Vec<u8> {
+    if let Ok(string_ref) = path_or_file_like.downcast_bound::<PyString>(py) {
         // If it's a string, treat it as a path
         let mut reader = GtfReader::new_from_path(string_ref.to_str().unwrap()).unwrap();
-        let ipc = reader.records_to_ipc().unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc().unwrap()
     } else {
         // Otherwise, treat it as file-like
         let file_like = buffered_file_like(path_or_file_like)
             .expect("Unknown argument for `path_url_or_file_like`. Not a file path string or url, and not a file-like object.");
         let mut reader = GtfReader::new(file_like).unwrap();
-        let ipc = reader.records_to_ipc().unwrap();
-        Python::with_gil(|py| PyBytes::new(py, &ipc).into())
+        reader.records_to_ipc().unwrap()
     }
 }
 
 #[pymodule]
 #[pyo3(name = "oxbow")]
-fn py_oxbow(_py: Python, m: &PyModule) -> PyResult<()> {
+fn py_oxbow(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_fasta, m)?)?;
     m.add_function(wrap_pyfunction!(read_fastq, m)?)?;
     m.add_function(wrap_pyfunction!(partition_from_index_file, m)?)?;
