@@ -36,11 +36,11 @@ impl CramReader {
 
         // Open the CRAM file
         let file = std::fs::File::open(path)?;
-        let bufreader = std::io::BufReader::with_capacity(1024 * 1024, file);
+        let bufreader = std::io::BufReader::with_capacity(BUFFER_SIZE_BYTES, file);
         let mut reader = cram::indexed_reader::IndexedReader::new(bufreader, index);
         reader.read_file_definition()?;
         let header = reader.read_file_header()?;
-        
+
         Ok(Self { reader, header, repository })
     }
 
