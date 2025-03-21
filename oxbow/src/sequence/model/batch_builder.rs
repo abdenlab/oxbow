@@ -9,13 +9,22 @@ use indexmap::IndexMap;
 use super::field::Push as _;
 use super::field::{Field, FieldBuilder, FASTA_DEFAULT_FIELD_NAMES, FASTQ_DEFAULT_FIELD_NAMES};
 
-/// A builder for an Arrow record batch of sequences.
+/// A builder for Arrow record batches of sequence records.
 pub struct BatchBuilder {
     fields: Vec<Field>,
     field_builders: IndexMap<Field, FieldBuilder>,
 }
 
 impl BatchBuilder {
+    /// Creates a new `BatchBuilder` for FASTQ records.
+    ///
+    /// # Arguments
+    /// * `field_names` - Optional vector of field names to project. If `None`, the default field
+    /// names are used.
+    /// * `capacity` - The number of rows to preallocate for a batch.
+    ///
+    /// # Returns
+    /// A `Result` containing the `BatchBuilder` or an `io::Error` if the field names are invalid.
     pub fn new_fastq(field_names: Option<Vec<String>>, capacity: usize) -> io::Result<Self> {
         let default_field_names = FASTQ_DEFAULT_FIELD_NAMES
             .iter()
@@ -29,7 +38,7 @@ impl BatchBuilder {
 
         let mut field_builders = IndexMap::new();
         for field in &fields {
-            let builder = FieldBuilder::new(field.clone(), capacity, 1024);
+            let builder = FieldBuilder::new(field.clone(), capacity);
             field_builders.insert(field.clone(), builder);
         }
 
@@ -39,6 +48,15 @@ impl BatchBuilder {
         })
     }
 
+    /// Creates a new `BatchBuilder` for FASTA records.
+    ///
+    /// # Arguments
+    /// * `field_names` - Optional vector of field names to project. If `None`, the default field
+    /// names are used.
+    /// * `capacity` - The number of rows to preallocate for a batch.
+    ///
+    /// # Returns
+    /// A `Result` containing the `BatchBuilder` or an `io::Error` if the field names are invalid.
     pub fn new_fasta(field_names: Option<Vec<String>>, capacity: usize) -> io::Result<Self> {
         let default_field_names = FASTA_DEFAULT_FIELD_NAMES
             .iter()
@@ -52,7 +70,7 @@ impl BatchBuilder {
 
         let mut field_builders = IndexMap::new();
         for field in &fields {
-            let builder = FieldBuilder::new(field.clone(), capacity, 1024 * 1024);
+            let builder = FieldBuilder::new(field.clone(), capacity);
             field_builders.insert(field.clone(), builder);
         }
 
