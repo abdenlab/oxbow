@@ -6,8 +6,8 @@ use flate2::bufread::MultiGzDecoder;
 use noodles::bgzf::IndexedReader as IndexedBgzfReader;
 use noodles::core::Region;
 
-use oxbow::util::batches_to_ipc;
 use oxbow::sequence::{FastaScanner, FastqScanner};
+use oxbow::util::batches_to_ipc;
 
 pub const BUFFER_SIZE_BYTES: usize = const { 1024 * 1024 };
 
@@ -20,7 +20,7 @@ fn read_fastq(path: &str, fields: Option<Vec<String>>) -> Vec<u8> {
         .map(|f| BufReader::with_capacity(BUFFER_SIZE_BYTES, f))
         .unwrap();
     let scanner = FastqScanner::new();
-    
+
     let ipc = if compressed {
         let gz_reader = std::io::BufReader::new(MultiGzDecoder::new(reader));
         let fmt_reader = noodles::fastq::io::Reader::new(gz_reader);
@@ -31,20 +31,19 @@ fn read_fastq(path: &str, fields: Option<Vec<String>>) -> Vec<u8> {
         let batches = scanner.scan(fmt_reader, fields, None, None).unwrap();
         batches_to_ipc(batches)
     };
-    
+
     ipc.unwrap()
 }
-
 
 /// Return Arrow IPC format from a FASTA file.
 /// @export
 #[extendr]
 fn read_fasta(
-    path: &str, 
+    path: &str,
     regions: Option<Vec<String>>,
     index: Option<String>,
     gzi: Option<String>,
-    fields: Option<Vec<String>>
+    fields: Option<Vec<String>>,
 ) -> Vec<u8> {
     let compressed = path.ends_with(".gz");
     let reader = std::fs::File::open(path)
@@ -54,18 +53,16 @@ fn read_fasta(
 
     let ipc = if let Some(regions) = regions {
         let index_path = index.unwrap_or(format!("{}.fai", path));
-        let index = noodles::fasta::fai::read(index_path).expect(
-            "Could not read FASTA index file."
-        );
+        let index =
+            noodles::fasta::fai::read(index_path).expect("Could not read FASTA index file.");
         let regions: Vec<Region> = regions
             .into_iter()
-            .map(|s| {s.parse::<Region>().unwrap()})
+            .map(|s| s.parse::<Region>().unwrap())
             .collect();
         if compressed {
             let gzi_path = gzi.unwrap_or(format!("{}.gzi", path));
-            let gzindex = noodles::bgzf::gzi::read(gzi_path).expect(
-                "Could not read GZI index file."
-            );
+            let gzindex =
+                noodles::bgzf::gzi::read(gzi_path).expect("Could not read GZI index file.");
             let bgzf_reader = IndexedBgzfReader::new(reader, gzindex);
             let fmt_reader = noodles::fasta::io::Reader::new(bgzf_reader);
             let batches = scanner

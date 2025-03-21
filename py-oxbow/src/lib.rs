@@ -4,7 +4,7 @@ mod filelike;
 mod util;
 
 mod sequence;
-use crate::sequence::{PyFastaScanner, PyFastqScanner, read_fasta, read_fastq};
+use crate::sequence::{read_fasta, read_fastq, PyFastaScanner, PyFastqScanner};
 
 /////////////////
 /// Python module.
