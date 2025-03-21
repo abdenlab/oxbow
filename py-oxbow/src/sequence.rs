@@ -96,14 +96,14 @@ impl PyFastqScanner {
             let batch_reader = self
                 .scanner
                 .scan(fmt_reader, fields, batch_size, limit)
-                .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+                .map_err(PyErr::new::<PyValueError, _>)?;
             Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
         } else {
             let fmt_reader = noodles::fastq::io::Reader::new(reader);
             let batch_reader = self
                 .scanner
                 .scan(fmt_reader, fields, batch_size, limit)
-                .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+                .map_err(PyErr::new::<PyValueError, _>)?;
             Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
         }
     }
@@ -193,7 +193,7 @@ impl PyFastaScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, fields, batch_size, limit)
-            .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+            .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
     }
 
@@ -267,14 +267,14 @@ impl PyFastaScanner {
             let batch_reader = self
                 .scanner
                 .scan_query(fmt_reader, index, regions, fields, batch_size)
-                .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+                .map_err(PyErr::new::<PyValueError, _>)?;
             Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
         } else {
             let fmt_reader = noodles::fasta::io::Reader::new(reader);
             let batch_reader = self
                 .scanner
                 .scan_query(fmt_reader, index, regions, fields, batch_size)
-                .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+                .map_err(PyErr::new::<PyValueError, _>)?;
             Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
         }
     }
@@ -381,13 +381,13 @@ pub fn read_fasta(
             let fmt_reader = noodles::fasta::io::Reader::new(bgzf_reader);
             let batches = scanner
                 .scan_query(fmt_reader, index, regions, fields, None)
-                .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+                .map_err(PyErr::new::<PyValueError, _>)?;
             batches_to_ipc(batches)
         } else {
             let fmt_reader = noodles::fasta::io::Reader::new(reader);
             let batches = scanner
                 .scan_query(fmt_reader, index, regions, fields, None)
-                .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+                .map_err(PyErr::new::<PyValueError, _>)?;
             batches_to_ipc(batches)
         }
     } else {

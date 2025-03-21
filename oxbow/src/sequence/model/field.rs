@@ -52,7 +52,7 @@ impl FromStr for Field {
             "quality" => Ok(Self::Qual),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                format!("Invalid field name: {}", s.to_string()),
+                format!("Invalid field name: {}", s),
             )),
         }
     }
@@ -121,12 +121,12 @@ impl Push<&noodles::fastq::Record> for FieldBuilder {
             Self::Descr(builder) => builder.append_value(record.description().to_string()),
             Self::Seq(builder) => {
                 let seq = record.sequence();
-                let seq_str = std::str::from_utf8(seq.as_ref()).ok();
+                let seq_str = std::str::from_utf8(seq).ok();
                 builder.append_option(seq_str);
             }
             Self::Qual(builder) => {
                 let qual = record.quality_scores();
-                let qual_str = std::str::from_utf8(qual.as_ref()).ok();
+                let qual_str = std::str::from_utf8(qual).ok();
                 builder.append_option(qual_str);
             }
         }
@@ -150,8 +150,8 @@ impl Push<&noodles::fasta::Record> for FieldBuilder {
                 builder.append_option(descr_str);
             }
             Self::Seq(builder) => {
-                let seq = record.sequence();
-                let seq_str = std::str::from_utf8(seq.as_ref()).ok();
+                let seq = record.sequence().as_ref();
+                let seq_str = std::str::from_utf8(seq).ok();
                 builder.append_option(seq_str);
             }
             Self::Qual(_) => {

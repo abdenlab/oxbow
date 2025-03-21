@@ -12,16 +12,23 @@ use crate::sequence::model::field::FASTQ_DEFAULT_FIELD_NAMES;
 /// # Examples
 ///
 /// ```no_run
+/// use oxbow::sequence::format::fastq::Scanner;
 /// use std::fs::File;
 /// use std::io::BufReader;
 ///
-/// let inner = File::open("sample.R1.fastq").map(BufReader::new)?;
+/// let inner = File::open("sample.R1.fastq").map(BufReader::new).unwrap();
 /// let fmt_reader = noodles::fastq::io::Reader::new(inner);
 ///
-/// let scanner = Scanner::new();
+/// let scanner = Scanner::default();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {}
+
+impl Default for Scanner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Scanner {
     // Creates a FASTQ scanner.
