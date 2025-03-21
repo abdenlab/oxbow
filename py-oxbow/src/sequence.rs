@@ -276,7 +276,7 @@ impl PyFastaScanner {
 }
 
 /// Return Arrow IPC format from a FASTQ file.
-/// 
+///
 /// Parameters
 /// ----------
 /// src : str or file-like
@@ -286,7 +286,7 @@ impl PyFastaScanner {
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed. If None, it is assumed to be
 ///     uncompressed.
-/// 
+///
 /// Returns
 /// -------
 /// bytes
@@ -311,12 +311,12 @@ pub fn read_fastq(
         let batches = scanner.scan(fmt_reader, fields, None, None)?;
         batches_to_ipc(batches)
     };
-    
+
     ipc.map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
 }
 
 /// Return Arrow IPC format from a FASTA file.
-/// 
+///
 /// Parameters
 /// ----------
 /// src : str or file-like
@@ -334,7 +334,7 @@ pub fn read_fastq(
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed. If None, it is assumed to be
 ///     uncompressed.
-/// 
+///
 /// Returns
 /// -------
 /// bytes

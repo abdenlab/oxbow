@@ -4,14 +4,14 @@ use std::io::{BufRead, Read, Seek};
 use pyo3::prelude::*;
 use pyo3::types::PyString;
 
-use noodles::bgzf::io::Seek as BgzfSeek;
 use noodles::bgzf::gzi::Index as GzIndex;
+use noodles::bgzf::io::Seek as BgzfSeek;
 use noodles::bgzf::VirtualPosition;
 use noodles::fasta::fai::Index as FaIndex;
 
 use crate::filelike::PyFileLikeObject;
 use oxbow::util::index::IndexType;
-use oxbow::util::index::{index_from_path, index_from_reader, partition_from_index};
+use oxbow::util::index::{index_from_path, index_from_reader};
 
 pub const BUFFER_SIZE_BYTES: usize = const { 1024 * 1024 };
 
@@ -220,15 +220,4 @@ pub fn resolve_faidx(
             }
         }
     }
-}
-
-pub fn partition_index(
-    py: Python,
-    source: PyObject,
-    index: Option<PyObject>,
-    chunksize: Option<u64>,
-) -> Vec<(u64, u16)> {
-    let chunksize = chunksize.unwrap_or(1024 * 1024);
-    let index = resolve_index(py, source.clone(), index).unwrap();
-    partition_from_index(&index, chunksize)
 }

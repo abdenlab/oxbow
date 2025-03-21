@@ -16,7 +16,7 @@ use noodles::csi::BinningIndex;
 use noodles::{bgzf, csi, tabix};
 
 /// An enum representing the two types of binning indexes.
-/// 
+///
 /// A binning index contains a sub-index for each reference sequence.
 pub enum IndexType {
     Linear(Index<LinearRefIndex>),
