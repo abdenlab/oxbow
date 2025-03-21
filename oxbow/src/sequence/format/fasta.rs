@@ -52,6 +52,10 @@ impl Scanner {
     ///
     /// The scan will begin at the current position of the reader and will
     /// move the cursor to the end of the last record scanned.
+    ///
+    /// # Note
+    /// Since reference sequences are often large, the default batch size is
+    /// set to 1.
     pub fn scan<R: BufRead>(
         &self,
         fmt_reader: noodles::fasta::io::Reader<R>,
@@ -76,7 +80,7 @@ impl Scanner {
         fields: Option<Vec<String>>,
         batch_size: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
-        let batch_size = batch_size.unwrap_or(1);
+        let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = BatchBuilder::new_fasta(fields, batch_size)?;
         let batch_iter =
             QueryBatchIterator::new(fmt_reader, index, regions, batch_builder, batch_size);
