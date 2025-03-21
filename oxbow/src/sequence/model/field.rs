@@ -58,7 +58,7 @@ impl FromStr for Field {
     }
 }
 
-/// Builds an Arrow array (column) corresponding to a sequence standard field.
+/// A builder for an Arrow array (column) corresponding to a sequence standard field.
 pub enum FieldBuilder {
     Name(GenericStringBuilder<i32>),
     Descr(GenericStringBuilder<i32>),
@@ -67,7 +67,18 @@ pub enum FieldBuilder {
 }
 
 impl FieldBuilder {
-    pub fn new(field: Field, capacity: usize, data_capacity: usize) -> Self {
+    /// Creates a new `FieldBuilder` for the specified field with the given capacity.
+    ///
+    /// # Arguments
+    /// * `field` - The field for which to create the builder.
+    /// * `capacity` - The number of rows to preallocate for a batch.
+    ///
+    /// # Returns
+    /// A `FieldBuilder` for the specified field.
+    pub fn new(field: Field, capacity: usize) -> Self {
+        // Set a default initial data capacity for the string builders.
+        // This is the number of bytes preallocated for all items in the column, not per item.
+        let data_capacity = 1024 * 1024;
         match field {
             Field::Name => Self::Name(GenericStringBuilder::<i32>::with_capacity(
                 capacity,
