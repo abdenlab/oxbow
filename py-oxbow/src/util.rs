@@ -92,13 +92,13 @@ impl Reader {
     pub fn clone(&mut self) -> Self {
         match self {
             Self::File(source) => {
-                source.seek(std::io::SeekFrom::Current(0)).unwrap(); // discards buffer
+                source.stream_position().unwrap(); // discards buffer
                 let file = source.get_ref().try_clone().unwrap();
                 let reader = BufReader::with_capacity(BUFFER_SIZE_BYTES, file);
                 Self::File(reader)
             }
             Self::PyFileLike(source) => {
-                source.seek(std::io::SeekFrom::Current(0)).unwrap(); // discards buffer
+                source.stream_position().unwrap(); // discards buffer
                 let file_like = source.get_ref().clone();
                 let reader = BufReader::with_capacity(BUFFER_SIZE_BYTES, file_like);
                 Self::PyFileLike(reader)
@@ -152,6 +152,7 @@ pub fn pyobject_to_bufreader(
     }
 }
 
+#[allow(dead_code)]
 pub fn resolve_index(
     py: Python,
     source: PyObject,

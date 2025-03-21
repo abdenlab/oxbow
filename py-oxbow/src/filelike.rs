@@ -40,14 +40,17 @@ impl PyFileLikeObject {
         })
     }
 
+    #[allow(dead_code)]
     pub fn get_ref(&self) -> &PyObject {
         &self.inner
     }
 
+    #[allow(dead_code)]
     pub fn get_mut(&mut self) -> &mut PyObject {
         &mut self.inner
     }
 
+    #[allow(dead_code)]
     pub fn into_inner(self) -> PyObject {
         self.inner
     }

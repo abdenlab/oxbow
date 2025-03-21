@@ -20,7 +20,7 @@ impl BatchBuilder {
     ///
     /// # Arguments
     /// * `field_names` - Optional vector of field names to project. If `None`, the default field
-    /// names are used.
+    ///     names are used.
     /// * `capacity` - The number of rows to preallocate for a batch.
     ///
     /// # Returns
@@ -31,7 +31,7 @@ impl BatchBuilder {
             .map(|s| s.to_string())
             .collect();
         let fields: Vec<Field> = field_names
-            .unwrap_or_else(|| default_field_names)
+            .unwrap_or(default_field_names)
             .into_iter()
             .map(|name| name.parse())
             .collect::<Result<Vec<_>, _>>()?;
@@ -52,7 +52,7 @@ impl BatchBuilder {
     ///
     /// # Arguments
     /// * `field_names` - Optional vector of field names to project. If `None`, the default field
-    /// names are used.
+    ///     names are used.
     /// * `capacity` - The number of rows to preallocate for a batch.
     ///
     /// # Returns
@@ -63,7 +63,7 @@ impl BatchBuilder {
             .map(|s| s.to_string())
             .collect();
         let fields: Vec<Field> = field_names
-            .unwrap_or_else(|| default_field_names)
+            .unwrap_or(default_field_names)
             .into_iter()
             .map(|name| name.parse())
             .collect::<Result<Vec<_>, _>>()?;
@@ -100,7 +100,7 @@ impl BatchBuilder {
                 (name, builder.finish())
             })
             .collect();
-        RecordBatch::try_from_iter(name_to_array.into_iter())
+        RecordBatch::try_from_iter(name_to_array)
     }
 }
 
