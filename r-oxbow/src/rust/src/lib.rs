@@ -1,91 +1,91 @@
-use extendr_api::prelude::*;
-use oxbow::bam::BamReader;
-use oxbow::fasta::FastaReader;
-use oxbow::fastq::FastqReader;
-// use oxbow::cram::CramReader;
-use oxbow::bcf::BcfReader;
-use oxbow::vcf::VcfReader;
-use oxbow::vpos;
+use std::io::BufReader;
 
-/// Return Arrow IPC format from a FASTA file.
-/// @export
-#[extendr]
-fn read_fasta(path: &str, region: Option<&str>) -> Vec<u8> {
-    let mut reader = FastaReader::new(path).unwrap();
-    reader.records_to_ipc(region).unwrap()
-}
+use extendr_api::prelude::*;
+
+use flate2::bufread::MultiGzDecoder;
+use noodles::bgzf::IndexedReader as IndexedBgzfReader;
+use noodles::core::Region;
+
+use oxbow::util::batches_to_ipc;
+use oxbow::sequence::{FastaScanner, FastqScanner};
+
+pub const BUFFER_SIZE_BYTES: usize = const { 1024 * 1024 };
 
 /// Return Arrow IPC format from a FASTQ file.
 /// @export
 #[extendr]
-fn read_fastq(path: &str) -> Vec<u8> {
-    let mut reader = FastqReader::new_from_path(path).unwrap();
-    reader.records_to_ipc().unwrap()
+fn read_fastq(path: &str, fields: Option<Vec<String>>) -> Vec<u8> {
+    let compressed = path.ends_with(".gz");
+    let reader = std::fs::File::open(path)
+        .map(|f| BufReader::with_capacity(BUFFER_SIZE_BYTES, f))
+        .unwrap();
+    let scanner = FastqScanner::new();
+    
+    let ipc = if compressed {
+        let gz_reader = std::io::BufReader::new(MultiGzDecoder::new(reader));
+        let fmt_reader = noodles::fastq::io::Reader::new(gz_reader);
+        let batches = scanner.scan(fmt_reader, fields, None, None).unwrap();
+        batches_to_ipc(batches)
+    } else {
+        let fmt_reader = noodles::fastq::io::Reader::new(reader);
+        let batches = scanner.scan(fmt_reader, fields, None, None).unwrap();
+        batches_to_ipc(batches)
+    };
+    
+    ipc.unwrap()
 }
 
-/// Return Arrow IPC format from a BAM file.
-/// @export
-#[extendr]
-fn read_bam(path: &str, region: Option<&str>) -> Vec<u8> {
-    let mut reader = BamReader::new_from_path(path).unwrap();
-    reader.records_to_ipc(region).unwrap()
-}
 
-/// Return Arrow IPC format from a BAM file.
+/// Return Arrow IPC format from a FASTA file.
 /// @export
 #[extendr]
-fn read_bam_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
-    let mut reader = BamReader::new_from_path(path).unwrap();
-    reader
-        .records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi))
-        .unwrap()
-}
+fn read_fasta(
+    path: &str, 
+    regions: Option<Vec<String>>,
+    index: Option<String>,
+    gzi: Option<String>,
+    fields: Option<Vec<String>>
+) -> Vec<u8> {
+    let compressed = path.ends_with(".gz");
+    let reader = std::fs::File::open(path)
+        .map(|f| BufReader::with_capacity(BUFFER_SIZE_BYTES, f))
+        .unwrap();
+    let scanner = FastaScanner::new();
 
-/// Return Arrow IPC format from a VCF file.
-/// @export
-#[extendr]
-fn read_vcf(path: &str, region: Option<&str>) -> Vec<u8> {
-    let mut reader = VcfReader::new_from_path(path).unwrap();
-    reader.records_to_ipc(region).unwrap()
-}
+    let ipc = if let Some(regions) = regions {
+        let index_path = index.unwrap_or(format!("{}.fai", path));
+        let index = noodles::fasta::fai::read(index_path).expect(
+            "Could not read FASTA index file."
+        );
+        let regions: Vec<Region> = regions
+            .into_iter()
+            .map(|s| {s.parse::<Region>().unwrap()})
+            .collect();
+        if compressed {
+            let gzi_path = gzi.unwrap_or(format!("{}.gzi", path));
+            let gzindex = noodles::bgzf::gzi::read(gzi_path).expect(
+                "Could not read GZI index file."
+            );
+            let bgzf_reader = IndexedBgzfReader::new(reader, gzindex);
+            let fmt_reader = noodles::fasta::io::Reader::new(bgzf_reader);
+            let batches = scanner
+                .scan_query(fmt_reader, index, regions, fields, None)
+                .unwrap();
+            batches_to_ipc(batches)
+        } else {
+            let fmt_reader = noodles::fasta::io::Reader::new(reader);
+            let batches = scanner
+                .scan_query(fmt_reader, index, regions, fields, None)
+                .unwrap();
+            batches_to_ipc(batches)
+        }
+    } else {
+        let fmt_reader = noodles::fasta::io::Reader::new(reader);
+        let batches = scanner.scan(fmt_reader, fields, None, None).unwrap();
+        batches_to_ipc(batches)
+    };
 
-/// Return Arrow IPC format from a VCF file.
-/// @export
-#[extendr]
-fn read_vcf_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
-    let mut reader = VcfReader::new_from_path(path).unwrap();
-    reader
-        .records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi))
-        .unwrap()
-}
-
-/// Return Arrow IPC format from a BCF file.
-/// @export
-#[extendr]
-fn read_bcf(path: &str, region: Option<&str>) -> Vec<u8> {
-    let mut reader = BcfReader::new_from_path(path).unwrap();
-    reader.records_to_ipc(region).unwrap()
-}
-
-/// Return Arrow IPC format from a BCF file.
-/// @export
-#[extendr]
-fn read_bcf_vpos(path: &str, cpos_lo: u64, upos_lo: u16, cpos_hi: u64, upos_hi: u16) -> Vec<u8> {
-    let mut reader = BcfReader::new_from_path(path).unwrap();
-    reader
-        .records_to_ipc_from_vpos((cpos_lo, upos_lo), (cpos_hi, upos_hi))
-        .unwrap()
-}
-
-/// Return a virtual position partition with an approximate uncompressed spacing.
-/// @export
-#[extendr]
-fn partition_from_index_file(path: &str, chunksize: u64) -> List {
-    let pos = vpos::partition_from_index_file(path, chunksize);
-    list!(
-        compressed_offset = pos.iter().map(|x| x.0).collect::<Vec<_>>(),
-        bin_index = pos.iter().map(|x| x.1).collect::<Vec<_>>()
-    )
+    ipc.unwrap()
 }
 
 // Macro to generate exports.
@@ -95,10 +95,4 @@ extendr_module! {
     mod oxbow;
     fn read_fasta;
     fn read_fastq;
-    fn read_bam;
-    fn read_bam_vpos;
-    fn read_vcf;
-    fn read_vcf_vpos;
-    fn read_bcf;
-    fn read_bcf_vpos;
 }

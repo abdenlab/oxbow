@@ -9,4 +9,7 @@ name = 'oxbow'
 
 [dependencies]
 extendr-api = '*'
+
 oxbow = { workspace = true }
+noodles = { workspace = true }
+flate2 = { workspace = true }
