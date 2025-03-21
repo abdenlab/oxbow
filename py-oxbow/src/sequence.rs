@@ -167,7 +167,7 @@ impl PyFastaScanner {
     /// ----------
     /// fields : list[str], optional
     ///     Names of the fixed fields to project.
-    /// batch_size : int, optional [default: 1024]
+    /// batch_size : int, optional [default: 1]
     ///     The number of records to include in each batch.
     /// limit : int, optional
     ///     The maximum number of records to scan. If None, records are scanned
@@ -177,6 +177,11 @@ impl PyFastaScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
+    ///
+    /// Notes
+    /// -----
+    /// Since reference sequences are often large, the default batch size is
+    /// set to 1.
     fn scan(
         &mut self,
         fields: Option<Vec<String>>,
