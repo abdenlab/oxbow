@@ -13,18 +13,27 @@ use crate::sequence::model::field::FASTA_DEFAULT_FIELD_NAMES;
 /// # Examples
 ///
 /// ```no_run
+/// use oxbow::sequence::format::fasta::Scanner;
 /// use std::fs::File;
+/// use std::io::BufReader;
+/// use noodles::core::Region;
 ///
-/// let inner = File::open("sample.fa")?;
+/// let inner = File::open("sample.fa").map(BufReader::new).unwrap();
 /// let fmt_reader = noodles::fasta::io::Reader::new(inner);
-/// let index = noodles::fasta::fai::read("sample.fa.fai")?;
+/// let index = noodles::fasta::fai::read("sample.fa.fai").unwrap();
 ///
-/// let scanner = Scanner::new();
+/// let scanner = Scanner::default();
 /// let regions = vec!["chr1:1-1000", "chr1:1001-2000", "chr1:2001-3000", "chr1:3001-4000"];
 /// let regions: Vec<Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
 /// let batches = scanner.scan_query(fmt_reader, index, regions, None, Some(2));
 /// ```
 pub struct Scanner {}
+
+impl Default for Scanner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Scanner {
     // Creates a FASTA scanner.
