@@ -28,7 +28,7 @@ remotes::install_github("abdenlab/oxbow", subdir="r-oxbow")
 library(oxbow)
 
 arrow_ipc <- oxbow::read_bam("./data.bam", region="chr1:1-10000")
-df <- arrow::read_arrow_ipc(arrow_ipc)
+df <- arrow::read_feather(arrow_ipc)
 head(df)
 ```
 
