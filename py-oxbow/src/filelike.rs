@@ -2,8 +2,8 @@ use std::io::{self, Read, Seek, SeekFrom, Write};
 
 use pyo3::{
     exceptions::PyTypeError,
-    types::{PyBytes, PyBytesMethods},
-    PyErr, PyObject, PyResult, Python, ToPyObject,
+    types::{PyAnyMethods, PyBytes, PyBytesMethods},
+    PyErr, PyObject, PyResult, Python,
 };
 
 /// Represents a file-like object in python. This simply wraps the Rust io
@@ -58,8 +58,8 @@ impl PyFileLikeObject {
 
 /// Extracts a string repr from, and returns an IO error to send back to rust.
 fn to_io_error(py: Python<'_>, e: PyErr) -> io::Error {
-    match e.to_object(py).call_method0(py, "__str__") {
-        Ok(repr) => match repr.extract::<String>(py) {
+    match e.value(py).call_method0("__str__") {
+        Ok(repr) => match repr.extract::<String>() {
             Ok(s) => io::Error::new(io::ErrorKind::Other, s),
             Err(_e) => io::Error::new(io::ErrorKind::Other, "An unknown error has occurred"),
         },
@@ -126,7 +126,7 @@ impl Seek for PyFileLikeObject {
 
             let new_position = self
                 .inner
-                .call_method_bound(py, "seek", (offset, whence), None)
+                .call_method(py, "seek", (offset, whence), None)
                 .map_err(|e| to_io_error(py, e))?;
 
             new_position.extract(py).map_err(|e| to_io_error(py, e))
@@ -137,7 +137,7 @@ impl Seek for PyFileLikeObject {
 impl Clone for PyFileLikeObject {
     fn clone(&self) -> Self {
         PyFileLikeObject {
-            inner: self.inner.clone(),
+            inner: Python::with_gil(|py| self.inner.clone_ref(py)),
         }
     }
 }

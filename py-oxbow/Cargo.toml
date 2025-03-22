@@ -10,9 +10,8 @@ name = "oxbow"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.21.2" }
-pyo3-arrow = "0.1.0"
-
 oxbow = { workspace = true }
 flate2 = { workspace = true }
 noodles = { workspace = true }
+pyo3 = "0.23.5"
+pyo3-arrow = "0.7.2"
