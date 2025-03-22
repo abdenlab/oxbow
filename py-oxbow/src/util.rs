@@ -11,7 +11,7 @@ use noodles::fasta::fai::Index as FaIndex;
 
 use crate::filelike::PyFileLikeObject;
 use oxbow::util::index::IndexType;
-use oxbow::util::index::{index_from_path, index_from_reader};
+use oxbow::util::index::{index_from_reader, index_from_source_path};
 
 pub const BUFFER_SIZE_BYTES: usize = const { 1024 * 1024 };
 
@@ -164,7 +164,7 @@ pub fn resolve_index(
             // If source is a path, try to find companion index file path
             Ok(py_string) => {
                 let source_path = py_string.to_string();
-                index_from_path(&source_path)
+                index_from_source_path(&source_path)
             }
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,

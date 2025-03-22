@@ -24,6 +24,24 @@ pub enum IndexType {
 }
 
 impl IndexType {
+    pub fn from_path(path: &str) -> io::Result<Self> {
+        if path.ends_with(".csi") {
+            let mut reader = File::open(path).map(csi::Reader::new)?;
+            Ok(IndexType::Binned(reader.read_index()?))
+        } else if path.ends_with(".tbi") {
+            let mut reader = File::open(path).map(tabix::Reader::new)?;
+            Ok(IndexType::Linear(reader.read_index()?))
+        } else if path.ends_with(".bai") {
+            let mut reader = File::open(path).map(bai::Reader::new)?;
+            Ok(IndexType::Linear(reader.read_index()?))
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Index file must end with .csi, .tbi, or .bai",
+            ))
+        }
+    }
+
     pub fn into_boxed(self) -> Box<dyn BinningIndex> {
         match self {
             IndexType::Linear(index) => Box::new(index),
@@ -145,75 +163,55 @@ pub fn partition_from_index(index: &IndexType, chunksize: u64) -> Vec<(u64, u16)
     partition
 }
 
-fn parse_index_file(path: &str) -> io::Result<IndexType> {
-    if path.ends_with(".csi") {
-        let mut reader = File::open(path).map(csi::Reader::new)?;
-        Ok(IndexType::Binned(reader.read_index()?))
-    } else if path.ends_with(".tbi") {
-        let mut reader = File::open(path).map(tabix::Reader::new)?;
-        Ok(IndexType::Linear(reader.read_index()?))
-    } else if path.ends_with(".bai") {
-        let mut reader = File::open(path).map(bai::Reader::new)?;
-        Ok(IndexType::Linear(reader.read_index()?))
-    // } else if path.ends_with(".crai") {
-    //     let mut reader = File::open(path).map(crai::Reader::new)?;
-    //     reader.read_header()?;
-    //     return reader.read_index();
-    } else {
-        Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Index file must end with .csi, .tbi, or .bai",
-        ))
-    }
-}
-
-pub fn partition_from_index_file(path: &str, chunksize: u64) -> Vec<(u64, u16)> {
-    let index = parse_index_file(path).unwrap();
-    partition_from_index(&index, chunksize)
-}
-
+/// Load an index from a file reader, returning the appropriate IndexType.
 pub fn index_from_reader<R>(mut read: R) -> io::Result<IndexType>
 where
     R: Read + Seek,
 {
-    // Unlike .tbi and .csi, .bai is not bgzf-compressed
-    // so we read off the magic directly.
+    // BAI is not BGZF-compressed so we read off its candidate magic directly.
     let mut magic = [0; 4];
     read.read_exact(&mut magic)?;
     read.seek(SeekFrom::Start(0))?;
+
     if magic == b"BAI\x01" as &[u8] {
         let mut bai_reader = noodles::bam::bai::Reader::new(read);
-        let index = bai_reader.read_index()?;
-        Ok(IndexType::Linear(index))
-    } else {
-        let mut csi_reader = noodles::csi::Reader::new(read);
-        match csi_reader.read_index() {
-            Ok(index) => Ok(IndexType::Binned(index)),
-            Err(_) => {
-                let mut read = csi_reader.into_inner().into_inner();
-                read.seek(SeekFrom::Start(0))?;
-                let mut tabix_reader = noodles::tabix::Reader::new(read);
-                let index = tabix_reader.read_index()?;
-                Ok(IndexType::Linear(index))
+        return Ok(IndexType::Linear(bai_reader.read_index()?));
+    }
+
+    // Try CSI, then TBI if CSI fails.
+    let mut csi_reader = noodles::csi::Reader::new(read);
+    match csi_reader.read_index() {
+        Ok(index) => Ok(IndexType::Binned(index)),
+        Err(_) => {
+            let mut read = csi_reader.into_inner().into_inner();
+            read.seek(SeekFrom::Start(0))?;
+            let mut tabix_reader = noodles::tabix::Reader::new(read);
+            match tabix_reader.read_index() {
+                Ok(index) => Ok(IndexType::Linear(index)),
+                Err(_) => Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Failed to read index from reader.",
+                )),
             }
         }
     }
 }
 
-pub fn index_from_path(path: &str) -> io::Result<IndexType> {
+/// Find an index file for a given source path and load it.
+pub fn index_from_source_path(path: &str) -> io::Result<IndexType> {
     let bai_path = format!("{}.bai", path);
     let csi_path = format!("{}.csi", path);
     let tbi_path = format!("{}.tbi", path);
     let index = if Path::new(&bai_path).exists() {
-        IndexType::Linear(noodles::bam::bai::read(bai_path)?)
+        IndexType::from_path(&bai_path)?
     } else if Path::new(&csi_path).exists() {
-        IndexType::Binned(noodles::csi::read(csi_path)?)
+        IndexType::from_path(&csi_path)?
     } else if Path::new(&tbi_path).exists() {
-        IndexType::Linear(noodles::tabix::read(tbi_path)?)
+        IndexType::from_path(&tbi_path)?
     } else {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
-            "Could not find a .bai or .csi index file for the given file.",
+            "Could not find a .bai, .csi, or .tbi index file for the given file.",
         ));
     };
     Ok(index)
