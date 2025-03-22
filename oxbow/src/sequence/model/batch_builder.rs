@@ -127,3 +127,82 @@ impl Push<&noodles::fastq::Record> for BatchBuilder {
         Ok(())
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_fastq_with_default_fields() {
+        let capacity = 10;
+        let batch_builder = BatchBuilder::new_fastq(None, capacity).unwrap();
+
+        assert_eq!(batch_builder.fields.len(), FASTQ_DEFAULT_FIELD_NAMES.len());
+        for (field, default_name) in batch_builder.fields.iter().zip(FASTQ_DEFAULT_FIELD_NAMES) {
+            assert_eq!(field.name(), default_name);
+        }
+    }
+
+    #[test]
+    fn test_new_fasta_with_default_fields() {
+        let capacity = 10;
+        let batch_builder = BatchBuilder::new_fasta(None, capacity).unwrap();
+
+        assert_eq!(batch_builder.fields.len(), FASTA_DEFAULT_FIELD_NAMES.len());
+        for (field, default_name) in batch_builder.fields.iter().zip(FASTA_DEFAULT_FIELD_NAMES) {
+            assert_eq!(field.name(), default_name);
+        }
+    }
+
+    #[test]
+    fn test_get_arrow_schema() {
+        let capacity = 10;
+        let batch_builder = BatchBuilder::new_fastq(None, capacity).unwrap();
+
+        let schema = batch_builder.get_arrow_schema();
+        assert_eq!(schema.fields().len(), FASTQ_DEFAULT_FIELD_NAMES.len());
+        for (field, default_name) in schema.fields().iter().zip(FASTQ_DEFAULT_FIELD_NAMES) {
+            assert_eq!(field.name(), default_name);
+        }
+    }
+
+    #[test]
+    fn test_push_fasta_record() {
+        let capacity = 10;
+        let mut batch_builder = BatchBuilder::new_fasta(None, capacity).unwrap();
+
+        let record = noodles::fasta::Record::new(
+            noodles::fasta::record::Definition::new(b"s0", Some(b"description".to_vec())),
+            noodles::fasta::record::Sequence::from(b"ACGT".to_vec()),
+        );
+        batch_builder.push(&record).unwrap();
+
+        let record_batch = batch_builder.finish().unwrap();
+        assert_eq!(record_batch.num_rows(), 1);
+    }
+
+    #[test]
+    fn test_push_fastq_record() {
+        let capacity = 10;
+        let mut batch_builder = BatchBuilder::new_fastq(None, capacity).unwrap();
+
+        let record = noodles::fastq::Record::new(
+            noodles::fastq::record::Definition::new(b"s0", b""),
+            b"ACGT",
+            b"!!!!",
+        );
+        batch_builder.push(&record).unwrap();
+
+        let record_batch = batch_builder.finish().unwrap();
+        assert_eq!(record_batch.num_rows(), 1);
+    }
+
+    #[test]
+    fn test_finish_empty_batch() {
+        let capacity = 10;
+        let mut batch_builder = BatchBuilder::new_fastq(None, capacity).unwrap();
+
+        let record_batch = batch_builder.finish().unwrap();
+        assert_eq!(record_batch.num_rows(), 0);
+        assert_eq!(record_batch.num_columns(), FASTQ_DEFAULT_FIELD_NAMES.len());
+    }
+}

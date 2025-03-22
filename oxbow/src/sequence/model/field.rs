@@ -164,3 +164,67 @@ impl Push<&noodles::fasta::Record> for FieldBuilder {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arrow::array::StringArray;
+
+    #[test]
+    fn test_field_arrow_type() {
+        for field in [Field::Name, Field::Descr, Field::Seq, Field::Qual] {
+            let mut builder = FieldBuilder::new(field.clone(), 10);
+            let data_type = builder.finish().data_type().clone();
+            assert_eq!(field.arrow_type(), data_type);
+        }
+    }
+
+    #[test]
+    fn test_field_from_str() {
+        assert_eq!(Field::from_str("name").unwrap(), Field::Name);
+        assert_eq!(Field::from_str("description").unwrap(), Field::Descr);
+        assert_eq!(Field::from_str("sequence").unwrap(), Field::Seq);
+        assert_eq!(Field::from_str("quality").unwrap(), Field::Qual);
+        assert!(Field::from_str("invalid").is_err());
+    }
+
+    #[test]
+    fn test_field_builder_push_fastq() {
+        let record = noodles::fastq::Record::new(
+            noodles::fastq::record::Definition::new(b"s0", b""),
+            b"ACGT",
+            b"!!!!",
+        );
+        let mut builder = FieldBuilder::new(Field::Name, 10);
+        builder.push(&record).unwrap();
+        let array = builder.finish();
+        let array = array.as_any().downcast_ref::<StringArray>().unwrap();
+
+        assert_eq!(array.value(0), "s0");
+    }
+
+    #[test]
+    fn test_field_builder_push_fasta() {
+        let record = noodles::fasta::Record::new(
+            noodles::fasta::record::Definition::new(b"s0", Some(b"description".to_vec())),
+            noodles::fasta::record::Sequence::from(b"ACGT".to_vec()),
+        );
+        let mut builder = FieldBuilder::new(Field::Name, 10);
+        builder.push(&record).unwrap();
+        let array = builder.finish();
+        let array = array.as_any().downcast_ref::<StringArray>().unwrap();
+
+        assert_eq!(array.value(0), "s0");
+    }
+
+    #[test]
+    fn test_field_builder_push_fasta_no_quality() {
+        let record = noodles::fasta::Record::new(
+            noodles::fasta::record::Definition::new(b"s0", Some(b"description".to_vec())),
+            noodles::fasta::record::Sequence::from(b"ACGT".to_vec()),
+        );
+        let mut builder = FieldBuilder::new(Field::Qual, 10);
+
+        assert!(builder.push(&record).is_err());
+    }
+}
