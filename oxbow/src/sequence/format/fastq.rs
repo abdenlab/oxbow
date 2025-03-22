@@ -69,3 +69,62 @@ impl Scanner {
         Ok(batch_iter)
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_scanner_default() {
+        let scanner = Scanner::default();
+        assert_eq!(
+            scanner.field_names(),
+            FASTQ_DEFAULT_FIELD_NAMES
+                .iter()
+                .map(|&s| s.to_string())
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn test_scanner_schema() {
+        let scanner = Scanner::new();
+        let schema = scanner.schema(None).unwrap();
+        assert_eq!(schema.fields().len(), FASTQ_DEFAULT_FIELD_NAMES.len());
+        let schema = scanner
+            .schema(Some(vec!["name".to_string(), "quality".to_string()]))
+            .unwrap();
+        assert_eq!(schema.fields().len(), 2);
+    }
+
+    #[test]
+    fn test_scanner_scan() {
+        let data =
+            b"@SEQ_ID\nGATTA\n+\n!!!!!\n@SEQ_ID2\nCATTAG\n+\n!!!!!!\n@SEQ_ID3\nTTAGGA\n+\n!!!!!!\n";
+        let file = std::io::Cursor::new(data);
+        let fmt_reader = noodles::fastq::io::Reader::new(file);
+
+        let scanner = Scanner::new();
+        let mut batch_iter = scanner.scan(fmt_reader, None, Some(2), None).unwrap();
+
+        let batch = batch_iter.next().unwrap().unwrap();
+        assert_eq!(batch.num_rows(), 2);
+        let batch = batch_iter.next().unwrap().unwrap();
+        assert_eq!(batch.num_rows(), 1);
+        assert!(batch_iter.next().is_none());
+    }
+
+    #[test]
+    fn test_scanner_scan_with_limit() {
+        let data =
+            b"@SEQ_ID\nGATTA\n+\n!!!!!\n@SEQ_ID2\nCATTAG\n+\n!!!!!!\n@SEQ_ID3\nTTAGGA\n+\n!!!!!!\n";
+        let file = std::io::Cursor::new(data);
+        let fmt_reader = noodles::fastq::io::Reader::new(file);
+
+        let scanner = Scanner::new();
+        let mut batch_iter = scanner.scan(fmt_reader, None, Some(3), Some(2)).unwrap();
+
+        let batch = batch_iter.next().unwrap().unwrap();
+        assert_eq!(batch.num_rows(), 2);
+        assert!(batch_iter.next().is_none());
+    }
+}
