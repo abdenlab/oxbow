@@ -13,5 +13,5 @@ crate-type = ["cdylib"]
 oxbow = { workspace = true }
 flate2 = { workspace = true }
 noodles = { workspace = true }
-pyo3 = "0.23.5"
-pyo3-arrow = "0.7.2"
+pyo3 = { version = "0.23", features = ["abi3-py38"] }
+pyo3-arrow = { version = "0.7.2", default-features = false }
