@@ -10,7 +10,7 @@ authors = [
     { name = "Oxbow Developers", email = "nabdennur@gmail.com" }
 ]
 license = { text = "MIT OR Apache-2.0" }
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
