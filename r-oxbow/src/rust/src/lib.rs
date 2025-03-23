@@ -66,13 +66,13 @@ fn read_fasta(
             let bgzf_reader = IndexedBgzfReader::new(reader, gzindex);
             let fmt_reader = noodles::fasta::io::Reader::new(bgzf_reader);
             let batches = scanner
-                .scan_query(fmt_reader, index, regions, fields, None)
+                .scan_query(fmt_reader, regions, index, fields, None)
                 .unwrap();
             batches_to_ipc(batches)
         } else {
             let fmt_reader = noodles::fasta::io::Reader::new(reader);
             let batches = scanner
-                .scan_query(fmt_reader, index, regions, fields, None)
+                .scan_query(fmt_reader, regions, index, fields, None)
                 .unwrap();
             batches_to_ipc(batches)
         }
