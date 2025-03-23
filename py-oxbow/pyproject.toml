@@ -19,19 +19,23 @@ classifiers = [
 homepage = "https://github.com/abdenlab/oxbow"
 
 [dependency-groups]
-dev = ["polars>=1.26.0", "pytest>=8.3.5", "ruff>=0.11.2"]
+dev = [
+    "polars>=1.26.0; python_version >= '3.9'",
+    "pytest>=8.3.5",
+    "ruff>=0.11.2",
+]
 docs = [
     "furo>=2024.8.6",
-    "myst-parser>=4.0.1",
-    "sphinx>=8.1.3",
-    "sphinx-autobuild>=2024.10.3",
-    "sphinx-book-theme>=1.1.4",
+    "myst-parser>=4.0.1; python_version >= '3.10'",
+    "sphinx>=8.1.3; python_version >= '3.11'",
+    "sphinx-autobuild>=2024.10.3; python_version >= '3.9'",
+    "sphinx-book-theme>=1.1.4; python_version >= '3.9'",
     "sphinx-copybutton>=0.5.2",
 ]
 notebooks = [
     "jupyterlab>=4.3.6",
-    "pandas>=2.2.3",
-    "pyarrow>=19.0.1",
+    "pandas>=2.2.3; python_version >= '3.9'",
+    "pyarrow>=19.0.1; python_version >= '3.9'",
     "pysam>=0.23.0",
 ]
 
