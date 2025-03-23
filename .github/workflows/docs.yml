@@ -15,7 +15,7 @@ jobs:
           version: "0.6.x"
 
       - name: Build the docs
-        run: uv run --group=docs sphinx-build docs docs/_build/html
+        run: uv run --no-default-groups --group=docs sphinx-build docs docs/_build/html
         working-directory: py-oxbow
 
       - name: Deploy

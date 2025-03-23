@@ -52,7 +52,7 @@ jobs:
           pyproject-file: "py-oxbow/pyproject.toml"
       - run: |
           cd py-oxbow
-          uv run pytest
+          uv run --no-default-groups --dev pytest
 
   LintPython:
     name: "Lint Python"
@@ -65,6 +65,6 @@ jobs:
           pyproject-file: "py-oxbow/pyproject.toml"
       - run: |
           cd py-oxbow
-          uv run --only-group=dev ruff format --check
-          uv run --only-group=dev ruff check
+          uv run --no-default-groups --only-group=dev ruff format --check
+          uv run --no-default-groups --only-group=dev ruff check
 
