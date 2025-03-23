@@ -63,7 +63,7 @@ jobs:
         with:
           version: "0.6.x"
       - run: |
-          uv run --no-project ruff format --check
-          uv run --no-project ruff check
+          uv run --only-group=dev ruff format --check
+          uv run --only-group=dev ruff check
         working-directory: py-oxbow
 
