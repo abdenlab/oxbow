@@ -45,6 +45,8 @@ cache-keys = [
     { file = "Cargo.toml" },
     { file = "**/*.rs" },
 ]
+# handled by CI
+required-version = ">=0.5.0"
 
 [tool.ruff.lint.isort]
 known-first-party = ["oxbow"]
