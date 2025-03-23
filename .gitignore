@@ -68,9 +68,6 @@ py-oxbow/docs/_build/
 # VSCode
 .vscode/
 
-# Pyenv
-.python-version
-
 fixtures
 .Rbuildignore
 py-oxbow/notebooks/*.bam*
