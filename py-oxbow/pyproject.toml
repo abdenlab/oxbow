@@ -51,6 +51,7 @@ cache-keys = [
 ]
 # handled by CI
 required-version = ">=0.5.0"
+default-groups = "all"
 
 [tool.ruff.lint.isort]
 known-first-party = ["oxbow"]

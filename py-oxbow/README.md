@@ -33,17 +33,19 @@ df = pyarrow.ipc.open_file(io.BytesIO(ipc)).read_pandas()
 
 ## Development
 
-This project is a hybrid Python/Rust project and requires
+This is a hybrid Python/Rust project and requires
 [`uv`](https://github.com/astral-sh/uv) for development, relying on
 [`maturin`](https://github.com/PyO3/maturin) as a build system. Dependencies
 are organized into [PEP 735](https://peps.python.org/pep-0735/)-style
 _dependency groups_ in the `pyproject.toml`.
 
-To ensure your environment includes **all** dependencies required for various
-project commands, use the `--all-groups` flag:
+By default, the development environment enables **all** dependency groups,
+ensuring that all tools and libraries required by project commands are
+available locally. In CI, we selectively enable groups to avoid unnecessary
+compilation or installation of unused dependencies for specific commands.
 
 ```sh
-uv sync --all-groups  # Create `.venv` with all dependency groups
+uv sync # Create `.venv` with all dependency groups
 ```
 
 ### Building the project
