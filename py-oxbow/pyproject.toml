@@ -6,9 +6,7 @@ build-backend = "maturin"
 name = "oxbow"
 dynamic = ["version"]
 description = "Read specialized bioinformatic file formats into dataframes."
-authors = [
-    { name = "Oxbow Developers", email = "nabdennur@gmail.com" }
-]
+authors = [{ name = "Oxbow Developers", email = "nabdennur@gmail.com" }]
 license = { text = "MIT OR Apache-2.0" }
 requires-python = ">=3.10"
 classifiers = [
@@ -20,39 +18,37 @@ classifiers = [
 [project.urls]
 homepage = "https://github.com/abdenlab/oxbow"
 
+[dependency-groups]
+dev = [
+    "polars>=1.26.0",
+ "pytest>=8.3.5",
+ "ruff>=0.11.2",
+]
+docs = [
+    "furo>=2024.8.6",
+    "myst-parser>=4.0.1",
+    "sphinx>=8.1.3",
+    "sphinx-autobuild>=2024.10.3",
+    "sphinx-book-theme>=1.1.4",
+    "sphinx-copybutton>=0.5.2",
+]
+notebooks = [
+    "jupyterlab>=4.3.6",
+    "pandas>=2.2.3",
+    "pyarrow>=19.0.1",
+    "pysam>=0.23.0",
+]
+
 [tool.maturin]
 features = ["pyo3/extension-module"]
 
-[tool.hatch.envs.default]
-dependencies = [
-    "jupyterlab",
-    "pandas",
-    "polars",
-    "pyarrow",
-    "pysam",
+[tool.uv]
+# Rebuild package when any rust files change
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "Cargo.toml" },
+    { file = "**/*.rs" },
 ]
 
-[tool.hatch.envs.docs]
-dependencies = [
-    "furo",
-    "myst_parser>=0.13",
-    "sphinx>=4.0",
-    "sphinx-autobuild",
-    "sphinx-book-theme>=0.1.0",
-    "sphinx_copybutton",
-]
-
-[tool.hatch.envs.docs.scripts]
-build = "sphinx-build docs docs/_build/html"
-serve = "sphinx-autobuild docs docs/_build/html"
-
-[tool.hatch.envs.test]
-dependencies = [
-    "polars",
-    "pytest",
-]
-[tool.hatch.envs.test.scripts]
-all = "pytest {args:tests}"
-
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["oxbow"]
