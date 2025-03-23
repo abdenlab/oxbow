@@ -1,8 +1,3 @@
-from pathlib import Path
-
-import oxbow as ox  # Remember to build via maturin in the current env
-import polars as pl
-
 # See `../../fixtures/README.md` to download files that aren't checked into the repo
 # test_path = Path(__file__).resolve()
 # project_root = test_path.parents[2]
