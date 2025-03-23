@@ -19,11 +19,7 @@ classifiers = [
 homepage = "https://github.com/abdenlab/oxbow"
 
 [dependency-groups]
-dev = [
-    "polars>=1.26.0",
- "pytest>=8.3.5",
- "ruff>=0.11.2",
-]
+dev = ["polars>=1.26.0", "pytest>=8.3.5", "ruff>=0.11.2"]
 docs = [
     "furo>=2024.8.6",
     "myst-parser>=4.0.1",
