@@ -25,7 +25,7 @@ use crate::sequence::model::field::FASTA_DEFAULT_FIELD_NAMES;
 /// let scanner = Scanner::default();
 /// let regions = vec!["chr1:1-1000", "chr1:1001-2000", "chr1:2001-3000", "chr1:3001-4000"];
 /// let regions: Vec<Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
-/// let batches = scanner.scan_query(fmt_reader, index, regions, None, Some(2));
+/// let batches = scanner.scan_query(fmt_reader, regions, index, None, Some(2));
 /// ```
 pub struct Scanner {}
 
@@ -84,8 +84,8 @@ impl Scanner {
     pub fn scan_query<R: BufRead + Seek>(
         &self,
         fmt_reader: noodles::fasta::io::Reader<R>,
-        index: noodles::fasta::fai::Index,
         regions: Vec<Region>,
+        index: noodles::fasta::fai::Index,
         fields: Option<Vec<String>>,
         batch_size: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
@@ -159,7 +159,7 @@ mod tests {
         let regions = vec!["seq1:1-4", "seq2:1-4", "seq3:1-4"];
         let regions: Vec<Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
         let mut batch_iter = scanner
-            .scan_query(fmt_reader, index, regions, None, Some(2))
+            .scan_query(fmt_reader, regions, index, None, Some(2))
             .unwrap();
 
         let batch = batch_iter.next().unwrap().unwrap();
