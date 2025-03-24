@@ -40,7 +40,7 @@ impl BatchBuilder {
             .map(|name| name.to_string())
             .collect();
         let fields: Vec<Field> = field_names
-            .unwrap_or_else(|| default_field_names)
+            .unwrap_or(default_field_names)
             .into_iter()
             .map(|name| name.parse())
             .collect::<Result<Vec<_>, _>>()?;
@@ -52,9 +52,9 @@ impl BatchBuilder {
         }
 
         let tag_defs: Vec<TagDef> = tag_defs
-            .unwrap_or_else(|| vec![])
+            .unwrap_or_default()
             .into_iter()
-            .map(|def| TagDef::try_from(def))
+            .map(TagDef::try_from)
             .collect::<Result<Vec<_>, _>>()?;
         let mut tag_builders = IndexMap::new();
         for tag in tag_defs.clone() {
@@ -130,7 +130,7 @@ impl BatchBuilder {
             name_to_array.push(("tags", Arc::new(tags)));
         }
 
-        RecordBatch::try_from_iter(name_to_array.into_iter())
+        RecordBatch::try_from_iter(name_to_array)
     }
 }
 

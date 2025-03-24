@@ -94,7 +94,7 @@ impl PySamScanner {
                 Ok(defs)
             }
             _ => {
-                let pos = reader.seek(std::io::SeekFrom::Current(0))?;
+                let pos = reader.stream_position()?;
                 let mut fmt_reader = noodles::sam::io::Reader::new(reader);
                 let defs = self.scanner.tag_defs(&mut fmt_reader, scan_rows)?;
                 fmt_reader
@@ -190,6 +190,7 @@ impl PySamScanner {
     /// pyo3_arrow.PyRecordBatchReader
     ///     A PyCapsule stream iterator for the record batches.
     #[pyo3(signature = (region, index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[allow(clippy::too_many_arguments)]
     fn scan_query(
         &mut self,
         py: Python,
@@ -254,11 +255,9 @@ impl PySamScanner {
                 };
                 Ok(py_batch_reader)
             }
-            _ => {
-                return Err(PyErr::new::<PyValueError, _>(
-                    "Scanning unmapped reads is only supported for bgzf-compressed sources.",
-                ));
-            }
+            _ => Err(PyErr::new::<PyValueError, _>(
+                "Scanning unmapped reads is only supported for bgzf-compressed sources.",
+            )),
         }
     }
 
@@ -338,11 +337,9 @@ impl PySamScanner {
                 };
                 Ok(py_batch_reader)
             }
-            _ => {
-                return Err(PyErr::new::<PyValueError, _>(
-                    "Scanning unmapped reads is only supported for bgzf-compressed sources.",
-                ));
-            }
+            _ => Err(PyErr::new::<PyValueError, _>(
+                "Scanning unmapped reads is only supported for bgzf-compressed sources.",
+            )),
         }
     }
 }
@@ -438,7 +435,7 @@ impl PyBamScanner {
                 Ok(defs)
             }
             _ => {
-                let pos = reader.seek(std::io::SeekFrom::Current(0))?;
+                let pos = reader.stream_position()?;
                 let mut fmt_reader = noodles::bam::io::Reader::from(reader);
                 let defs = self.scanner.tag_defs(&mut fmt_reader, scan_rows)?;
                 fmt_reader
@@ -509,6 +506,7 @@ impl PyBamScanner {
     /// pyo3_arrow.PyRecordBatchReader
     ///     A PyCapsule stream iterator for the record batches.
     #[pyo3(signature = (region, index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[allow(clippy::too_many_arguments)]
     fn scan_query(
         &mut self,
         py: Python,
@@ -573,11 +571,9 @@ impl PyBamScanner {
                 };
                 Ok(py_batch_reader)
             }
-            _ => {
-                return Err(PyErr::new::<PyValueError, _>(
-                    "Scanning query ranges is only supported for indexed bgzf-compressed sources.",
-                ));
-            }
+            _ => Err(PyErr::new::<PyValueError, _>(
+                "Scanning query ranges is only supported for indexed bgzf-compressed sources.",
+            )),
         }
     }
 
@@ -657,11 +653,9 @@ impl PyBamScanner {
                 };
                 Ok(py_batch_reader)
             }
-            _ => {
-                return Err(PyErr::new::<PyValueError, _>(
-                    "Scanning unmapped reads is only supported for indexed bgzf-compressed sources.",
-                ));
-            }
+            _ => Err(PyErr::new::<PyValueError, _>(
+                "Scanning unmapped reads is only supported for indexed bgzf-compressed sources.",
+            )),
         }
     }
 }

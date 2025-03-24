@@ -85,7 +85,7 @@ impl Scanner {
         fmt_reader: &mut noodles::sam::io::Reader<R>,
         scan_rows: Option<usize>,
     ) -> io::Result<Vec<(String, String)>> {
-        let scan_rows = scan_rows.unwrap_or_else(|| 1024);
+        let scan_rows = scan_rows.unwrap_or(1024);
         let records = fmt_reader.records();
         let mut tag_scanner = TagScanner::new();
         for result in records.take(scan_rows) {
@@ -124,6 +124,7 @@ impl Scanner {
     /// The scan will consume contiguous "chunks" of BGZF blocks and filter for
     /// records that overlap the given region. The cursor will move to the end
     /// of the last record scanned.
+    #[allow(clippy::too_many_arguments)]
     pub fn scan_query<R: BufRead + Seek>(
         &self,
         fmt_reader: noodles::sam::io::Reader<noodles::bgzf::Reader<R>>,

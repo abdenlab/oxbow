@@ -97,7 +97,7 @@ impl FromStr for Field {
             "end" => Ok(Self::End),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                format!("Invalid field name: {}", s.to_string()),
+                format!("Invalid field name: {}", s),
             )),
         }
     }
@@ -120,12 +120,12 @@ pub enum FieldBuilder {
 }
 
 impl FieldBuilder {
-    pub fn new(field: Field, capacity: usize, ref_names: &Vec<String>) -> Result<Self, ArrowError> {
+    pub fn new(field: Field, capacity: usize, ref_names: &[String]) -> Result<Self, ArrowError> {
         let field = match field {
             Field::Qname => Self::Qname(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::Flag => Self::Flag(UInt16Builder::with_capacity(capacity)),
             Field::Rname => {
-                let refs = StringArray::from(ref_names.clone());
+                let refs = StringArray::from(ref_names.to_owned());
                 Self::Rname(StringDictionaryBuilder::<Int32Type>::new_with_dictionary(
                     capacity, &refs,
                 )?)
@@ -134,7 +134,7 @@ impl FieldBuilder {
             Field::Mapq => Self::Mapq(UInt8Builder::with_capacity(capacity)),
             Field::Cigar => Self::Cigar(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::Rnext => {
-                let refs = StringArray::from(ref_names.clone());
+                let refs = StringArray::from(ref_names.to_owned());
                 Self::Rnext(StringDictionaryBuilder::<Int32Type>::new_with_dictionary(
                     capacity, &refs,
                 )?)
@@ -186,7 +186,7 @@ impl Push<&noodles::sam::Record> for FieldBuilder {
             }
             Self::Rname(builder) => {
                 let rname = record
-                    .reference_sequence(&header)
+                    .reference_sequence(header)
                     .and_then(|result| result.ok().map(|(name, _)| name.to_string()));
                 builder.append_option(rname);
             }

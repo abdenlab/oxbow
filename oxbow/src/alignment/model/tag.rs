@@ -39,12 +39,12 @@ impl TryFrom<(String, String)> for TagDef {
                 "Tag name must be 2 characters",
             ));
         }
-        let ty: TagType = code
-            .parse()
-            .map_err(|_| io::Error::new(
+        let ty: TagType = code.parse().map_err(|_| {
+            io::Error::new(
                 io::ErrorKind::InvalidInput,
-                format!("Invalid tag type: {}", code))
-            )?;
+                format!("Invalid tag type: {}", code),
+            )
+        })?;
         Ok(Self { name, ty })
     }
 }
@@ -210,7 +210,7 @@ impl FromStr for TagType {
             "Bf" => Ok(TagType::ArrayFloat),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                format!("Invalid tag type code: {}", s.to_string()),
+                format!("Invalid tag type code: {}", s),
             )),
         }
     }
@@ -478,7 +478,7 @@ impl TagBuilder {
                     ),
                 )),
             },
-            Value::Array(array) => self.append_values(array)
+            Value::Array(array) => self.append_values(array),
         }
     }
 
@@ -489,7 +489,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e.into()),
+                            Err(e) => return Err(e),
                         }
                     }
                     builder.append(true);
@@ -508,7 +508,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e.into()),
+                            Err(e) => return Err(e),
                         }
                     }
                     builder.append(true);
@@ -527,7 +527,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e.into()),
+                            Err(e) => return Err(e),
                         }
                     }
                     builder.append(true);
@@ -546,7 +546,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e.into()),
+                            Err(e) => return Err(e),
                         }
                     }
                     builder.append(true);
@@ -565,7 +565,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e.into()),
+                            Err(e) => return Err(e),
                         }
                     }
                     builder.append(true);
@@ -584,7 +584,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e.into()),
+                            Err(e) => return Err(e),
                         }
                     }
                     builder.append(true);
@@ -603,7 +603,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e.into()),
+                            Err(e) => return Err(e),
                         }
                     }
                     builder.append(true);
@@ -646,6 +646,12 @@ impl TagBuilder {
 /// A scanner to collect unique tag definitions from a stream of alignment records.
 pub struct TagScanner {
     tags: BTreeMap<Tag, String>,
+}
+
+impl Default for TagScanner {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TagScanner {

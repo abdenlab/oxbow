@@ -140,7 +140,7 @@ pub fn intersects(
     region_interval: Interval,
 ) -> io::Result<bool> {
     match (
-        record.reference_sequence_id(&header).transpose()?,
+        record.reference_sequence_id(header).transpose()?,
         record.alignment_start().transpose()?,
         record.alignment_end().transpose()?,
     ) {
