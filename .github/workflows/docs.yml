@@ -9,18 +9,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
         with:
-          python-version: '3.x'
+          version: "0.6.x"
 
       - name: Build the docs
-        run: |
-          pushd ./py-oxbow
-          pip install --upgrade hatch
-          hatch run docs:build
+        run: uv run --no-default-groups --group=docs sphinx-build docs docs/_build/html
+        working-directory: py-oxbow
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

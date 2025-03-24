@@ -13,17 +13,13 @@ env:
   CARGO_INCREMENTAL: 0
 
 jobs:
-  Test:
+  TestOxbow:
+    name: "Test Rust"
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
       - run: rustup update
-
-      - name: Set up Python for py-oxbow
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
 
       # Typechecking
       - name: Run Cargo Check
@@ -43,3 +39,32 @@ jobs:
 
       - name: Run Tests
         run: cargo test -p oxbow -p py-oxbow --all-features
+
+  TestPython:
+    name: "Test Python"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update
+      - uses: astral-sh/setup-uv@v5
+        with:
+          pyproject-file: "py-oxbow/pyproject.toml"
+      - run: |
+          cd py-oxbow
+          uv run --no-default-groups --dev pytest
+
+  LintPython:
+    name: "Lint Python"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          pyproject-file: "py-oxbow/pyproject.toml"
+      - run: |
+          cd py-oxbow
+          uv run --no-default-groups --only-group=dev ruff format --check
+          uv run --no-default-groups --only-group=dev ruff check
+

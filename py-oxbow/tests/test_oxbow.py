@@ -1,7 +1,9 @@
-from pathlib import Path
+import oxbow as ox
 
-import oxbow as ox  # Remember to build via maturin in the current env
-import polars as pl
+
+def test_has_version():
+    assert hasattr(ox, "__version__")
+
 
 # See `../../fixtures/README.md` to download files that aren't checked into the repo
 # test_path = Path(__file__).resolve()

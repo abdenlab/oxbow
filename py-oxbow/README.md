@@ -33,21 +33,57 @@ df = pyarrow.ipc.open_file(io.BytesIO(ipc)).read_pandas()
 
 ## Development
 
-This project uses `maturin` and `hatch` for development, which can be installed with `pipx`.
+This is a hybrid Python/Rust project and requires
+[`uv`](https://github.com/astral-sh/uv) for development, relying on
+[`maturin`](https://github.com/PyO3/maturin) as a build system. Dependencies
+are organized into [PEP 735](https://peps.python.org/pep-0735/)-style
+_dependency groups_ in the `pyproject.toml`.
+
+By default, the development environment enables **all** dependency groups,
+ensuring that all tools and libraries required by project commands are
+available locally. In CI, we selectively enable groups to avoid unnecessary
+compilation or installation of unused dependencies for specific commands.
 
 ```sh
-# create a virtual env
-hatch shell
-
-# compile a development version of the package
-maturin develop --release
-
-# open the jupyter notebooks/
-jupyterlab
+uv sync # Create `.venv` with all dependency groups
 ```
 
-A local build of `oxbow` will be added to your virtual environment.
+### Building the project
 
-```python
-import oxbow as ox
+To (re)build and install a local development version of `oxbow` into your
+virtual environment:
+
+```sh
+uvx maturin develop --uv # --release (for non-debug build)
+```
+
+You can then test the build interactively:
+
+```sh
+uv run python
+# >>> import oxbow as ox
+```
+
+or running one of the example notebooks:
+
+```sh
+uv run jupyter lab ./notebooks/bench.ipynb
+```
+
+### Running Tests
+
+Tests use `pytest` and require only the dev dependency group (default, no
+`--group` necessary):
+
+```sh
+uv run pytest
+```
+
+### Documentation
+
+Documentation is managed with `sphinx` and uses the isolated `docs` dependency group:
+
+```sh
+uv run --group=docs sphinx-build docs docs/_build/html       # Build docs
+uv run --group=docs sphinx-autobuild docs docs/_build/html   # Live-reload server
 ```
