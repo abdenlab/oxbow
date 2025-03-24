@@ -21,8 +21,7 @@ use oxbow::util::batches_to_ipc;
 /// src : str or file-like
 ///     The path to the FASTQ file or a file-like object.
 /// compressed : bool, optional [default: False]
-///     Whether the source is GZIP-compressed. If None, it is assumed to be
-///     uncompressed.
+///     Whether the source is GZIP-compressed.
 #[pyclass]
 pub struct PyFastqScanner {
     reader: Reader,
@@ -116,8 +115,7 @@ impl PyFastqScanner {
 /// src : str or file-like
 ///     The path to the FASTA file or a file-like object.
 /// compressed : bool, optional [default: False]
-///     Whether the source is BGZF-compressed. If None, it is assumed to be
-///     uncompressed.
+///     Whether the source is BGZF-compressed.
 #[pyclass]
 pub struct PyFastaScanner {
     src: PyObject,
@@ -292,8 +290,7 @@ impl PyFastaScanner {
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 /// compressed : bool, optional [default: False]
-///     Whether the source is BGZF-compressed. If None, it is assumed to be
-///     uncompressed.
+///     Whether the source is GZIP-compressed.
 ///
 /// Returns
 /// -------
@@ -341,8 +338,7 @@ pub fn read_fastq(
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 /// compressed : bool, optional [default: False]
-///     Whether the source is BGZF-compressed. If None, it is assumed to be
-///     uncompressed.
+///     Whether the source is BGZF-compressed.
 ///
 /// Returns
 /// -------
