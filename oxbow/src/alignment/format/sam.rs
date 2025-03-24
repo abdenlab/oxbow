@@ -16,14 +16,17 @@ use crate::util::query::BgzfChunkReader;
 /// # Examples
 ///
 /// ```no_run
+/// use oxbow::alignment::format::sam::Scanner;
 /// use std::fs::File;
+/// use std::io::BufReader;
 ///
-/// let inner = File::open("sample.sam")?;
+/// let inner = File::open("sample.sam").map(BufReader::new).unwrap();
 /// let mut fmt_reader = noodles::sam::io::Reader::new(inner);
-/// let header = fmt_reader.read_header()?;
+/// let header = fmt_reader.read_header().unwrap();
 ///
 /// let scanner = Scanner::new(header);
-/// let tag_defs = scanner.tag_defs(&mut fmt_reader, Some(1000))?;
+/// let tag_defs = scanner.tag_defs(&mut fmt_reader, Some(1000)).unwrap();
+/// let batches = scanner.scan(fmt_reader, None, Some(tag_defs), None, Some(1000));
 /// ```
 pub struct Scanner {
     header: sam::Header,
