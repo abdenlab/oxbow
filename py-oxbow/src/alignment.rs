@@ -709,7 +709,7 @@ pub fn read_sam(
                     index.into_boxed(),
                     fields,
                     tag_defs,
-                    1024,
+                    None,
                     None,
                 )?;
                 batches_to_ipc(batches)
