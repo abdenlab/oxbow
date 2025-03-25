@@ -125,31 +125,47 @@ impl FieldBuilder {
     /// # Arguments
     /// * `field` - The field to build.
     /// * `capacity` - The number of rows to preallocate for a batch.
-    /// * `ref_names` - The reference sequence names.
-    pub fn new(field: Field, capacity: usize, ref_names: &[String]) -> Result<Self, ArrowError> {
-        let field = match field {
+    pub fn new(field: Field, capacity: usize) -> Self {
+        match field {
             Field::Qname => Self::Qname(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::Flag => Self::Flag(UInt16Builder::with_capacity(capacity)),
+            Field::Rname => Self::Rname(StringDictionaryBuilder::<Int32Type>::new()),
+            Field::Pos => Self::Pos(Int32Builder::with_capacity(capacity)),
+            Field::Mapq => Self::Mapq(UInt8Builder::with_capacity(capacity)),
+            Field::Cigar => Self::Cigar(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
+            Field::Rnext => Self::Rnext(StringDictionaryBuilder::<Int32Type>::new()),
+            Field::Pnext => Self::Pnext(Int32Builder::with_capacity(capacity)),
+            Field::Tlen => Self::Tlen(Int32Builder::with_capacity(capacity)),
+            Field::Seq => Self::Seq(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
+            Field::Qual => Self::Qual(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
+            Field::End => Self::End(Int32Builder::with_capacity(capacity)),
+        }
+    }
+
+    pub fn with_refs(
+        field: Field,
+        capacity: usize,
+        ref_names: &[String],
+    ) -> Result<Self, ArrowError> {
+        let field = match field {
             Field::Rname => {
                 let refs = StringArray::from(ref_names.to_owned());
                 Self::Rname(StringDictionaryBuilder::<Int32Type>::new_with_dictionary(
                     capacity, &refs,
                 )?)
             }
-            Field::Pos => Self::Pos(Int32Builder::with_capacity(capacity)),
-            Field::Mapq => Self::Mapq(UInt8Builder::with_capacity(capacity)),
-            Field::Cigar => Self::Cigar(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::Rnext => {
                 let refs = StringArray::from(ref_names.to_owned());
                 Self::Rnext(StringDictionaryBuilder::<Int32Type>::new_with_dictionary(
                     capacity, &refs,
                 )?)
             }
-            Field::Pnext => Self::Pnext(Int32Builder::with_capacity(capacity)),
-            Field::Tlen => Self::Tlen(Int32Builder::with_capacity(capacity)),
-            Field::Seq => Self::Seq(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
-            Field::Qual => Self::Qual(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
-            Field::End => Self::End(Int32Builder::with_capacity(capacity)),
+            _ => {
+                return Err(ArrowError::InvalidArgumentError(format!(
+                    "Field {:?} does not require reference names",
+                    field
+                )))
+            }
         };
         Ok(field)
     }

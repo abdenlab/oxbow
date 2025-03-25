@@ -26,6 +26,10 @@ impl TagDef {
     pub fn into_bytes(&self) -> [u8; 2] {
         self.name.as_bytes().try_into().unwrap()
     }
+
+    pub fn get_arrow_field(&self) -> ArrowField {
+        ArrowField::new(&self.name, self.ty.arrow_type(), true)
+    }
 }
 
 impl TryFrom<(String, String)> for TagDef {
@@ -259,53 +263,6 @@ impl TagBuilder {
             TagType::ArrayUInt32 => Self::ArrayUInt32(ListBuilder::new(UInt32Builder::new())),
             TagType::ArrayFloat => Self::ArrayFloat(ListBuilder::new(Float32Builder::new())),
         }
-    }
-
-    pub fn arrow_type(&self) -> DataType {
-        match self {
-            Self::Character(_) => DataType::Utf8,
-            Self::String(_) => DataType::Utf8,
-            Self::Hex(_) => DataType::Utf8,
-            Self::Int8(_) => DataType::Int8,
-            Self::UInt8(_) => DataType::UInt8,
-            Self::Int16(_) => DataType::Int16,
-            Self::UInt16(_) => DataType::UInt16,
-            Self::Int32(_) => DataType::Int32,
-            Self::UInt32(_) => DataType::UInt32,
-            Self::Float(_) => DataType::Float32,
-            Self::ArrayInt8(_) => {
-                let item = ArrowField::new("item", DataType::Int8, true);
-                DataType::List(Arc::new(item))
-            }
-            Self::ArrayUInt8(_) => {
-                let item = ArrowField::new("item", DataType::UInt8, true);
-                DataType::List(Arc::new(item))
-            }
-            Self::ArrayInt16(_) => {
-                let item = ArrowField::new("item", DataType::Int16, true);
-                DataType::List(Arc::new(item))
-            }
-            Self::ArrayUInt16(_) => {
-                let item = ArrowField::new("item", DataType::UInt16, true);
-                DataType::List(Arc::new(item))
-            }
-            Self::ArrayInt32(_) => {
-                let item = ArrowField::new("item", DataType::Int32, true);
-                DataType::List(Arc::new(item))
-            }
-            Self::ArrayUInt32(_) => {
-                let item = ArrowField::new("item", DataType::UInt32, true);
-                DataType::List(Arc::new(item))
-            }
-            Self::ArrayFloat(_) => {
-                let item = ArrowField::new("item", DataType::Float32, true);
-                DataType::List(Arc::new(item))
-            }
-        }
-    }
-
-    pub fn get_arrow_field(&self, name: String) -> ArrowField {
-        ArrowField::new(name, self.arrow_type(), true)
     }
 
     pub fn append_null(&mut self) {

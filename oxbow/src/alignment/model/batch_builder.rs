@@ -47,8 +47,13 @@ impl BatchBuilder {
             .collect::<Result<Vec<_>, _>>()?;
         let mut field_builders = IndexMap::new();
         for field in &fields {
-            let builder = FieldBuilder::new(field.clone(), capacity, &ref_names)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+            let builder = match field {
+                Field::Rname | Field::Rnext => {
+                    FieldBuilder::with_refs(field.clone(), capacity, &ref_names)
+                        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+                }
+                _ => FieldBuilder::new(field.clone(), capacity),
+            };
             field_builders.insert(field.clone(), builder);
         }
 
@@ -87,9 +92,9 @@ impl BatchBuilder {
         // tags (optional)
         if !self.tag_defs.is_empty() {
             let nested_fields: Vec<ArrowField> = self
-                .tag_builders
+                .tag_defs
                 .iter()
-                .map(|(def, b)| b.get_arrow_field(def.name.clone()))
+                .map(|def| def.get_arrow_field())
                 .collect();
             let tag_field = ArrowField::new(
                 "tags",
@@ -123,7 +128,7 @@ impl BatchBuilder {
                 .tag_builders
                 .iter_mut()
                 .map(|(def, builder)| {
-                    let arrow_field = builder.get_arrow_field(def.name.clone());
+                    let arrow_field = def.get_arrow_field();
                     (Arc::new(arrow_field), builder.finish())
                 })
                 .collect();
