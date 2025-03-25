@@ -3,7 +3,6 @@ use std::io::{self, BufRead, Seek};
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema;
 use noodles::csi::BinningIndex;
-use noodles::sam;
 
 use crate::alignment::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::alignment::model::field::DEFAULT_FIELD_NAMES;
@@ -29,12 +28,12 @@ use crate::util::query::BgzfChunkReader;
 /// let batches = scanner.scan(fmt_reader, None, Some(tag_defs), None, Some(1000));
 /// ```
 pub struct Scanner {
-    header: sam::Header,
+    header: noodles::sam::Header,
 }
 
 impl Scanner {
     /// Creates a SAM scanner from a SAM header.
-    pub fn new(header: sam::Header) -> Self {
+    pub fn new(header: noodles::sam::Header) -> Self {
         Self { header }
     }
 
