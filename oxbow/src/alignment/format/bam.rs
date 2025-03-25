@@ -87,14 +87,26 @@ impl Scanner {
         fmt_reader: &mut noodles::bam::io::Reader<R>,
         scan_rows: Option<usize>,
     ) -> io::Result<Vec<(String, String)>> {
-        let scan_rows = scan_rows.unwrap_or(1024);
         let records = fmt_reader.records();
         let mut tag_scanner = TagScanner::new();
-        for result in records.take(scan_rows) {
-            if let Ok(record) = result {
-                tag_scanner.push(&record);
-            } else {
-                eprintln!("Failed to read record");
+        match scan_rows {
+            None => {
+                for result in records {
+                    if let Ok(record) = result {
+                        tag_scanner.push(&record);
+                    } else {
+                        eprintln!("Failed to read record");
+                    }
+                }
+            }
+            Some(n) => {
+                for result in records.take(n) {
+                    if let Ok(record) = result {
+                        tag_scanner.push(&record);
+                    } else {
+                        eprintln!("Failed to read record");
+                    }
+                }
             }
         }
         Ok(tag_scanner.collect())
