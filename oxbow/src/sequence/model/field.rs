@@ -45,7 +45,7 @@ impl FromStr for Field {
     type Err = std::io::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
+        match s.to_lowercase().as_str() {
             "name" => Ok(Self::Name),
             "description" => Ok(Self::Descr),
             "sequence" => Ok(Self::Seq),

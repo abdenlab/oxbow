@@ -8,5 +8,6 @@ description = "Read specialized bioinformatic file formats as data frames in R, 
 
 [dependencies]
 arrow = { workspace = true }
+bstr = { workspace = true }
 indexmap = { workspace = true }
 noodles = { workspace = true }

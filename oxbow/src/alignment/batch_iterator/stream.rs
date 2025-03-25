@@ -1,16 +1,14 @@
-use std::io::BufRead;
+use std::io::{BufRead, Read};
 use std::sync::Arc;
 
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use arrow::record_batch::RecordBatchReader;
-use noodles::fasta::record::Definition;
-use noodles::fasta::record::Sequence;
 
-use crate::sequence::model::BatchBuilder;
-use crate::sequence::model::Push as _;
+use crate::alignment::model::BatchBuilder;
+use crate::alignment::model::Push as _;
 
-/// A record batch iterator yielding FASTA or FASTQ records from a readable stream.
+/// A record batch iterator yielding SAM or BAM records from a readable stream.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,
@@ -40,28 +38,26 @@ where
     }
 }
 
-impl<R> Iterator for BatchIterator<noodles::fastq::io::Reader<R>>
+impl<R> Iterator for BatchIterator<noodles::sam::io::Reader<R>>
 where
     R: BufRead,
 {
     type Item = Result<RecordBatch, ArrowError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut record = noodles::fastq::Record::default();
+        let mut record = noodles::sam::Record::default();
         let mut count = 0;
 
         while count < self.batch_size && self.count < self.limit {
             match self.reader.read_record(&mut record) {
                 Ok(0) => break,
-                Ok(_) => {
-                    match self.builder.push(&record) {
-                        Ok(()) => {
-                            self.count += 1;
-                            count += 1;
-                        }
-                        Err(e) => return Some(Err(e.into())),
-                    };
-                }
+                Ok(_) => match self.builder.push(&record) {
+                    Ok(()) => {
+                        self.count += 1;
+                        count += 1;
+                    }
+                    Err(e) => return Some(Err(e.into())),
+                },
                 Err(e) => return Some(Err(e.into())),
             }
         }
@@ -75,40 +71,26 @@ where
     }
 }
 
-impl<R> Iterator for BatchIterator<noodles::fasta::io::Reader<R>>
+impl<R> Iterator for BatchIterator<noodles::bam::io::Reader<R>>
 where
-    R: BufRead,
+    R: Read,
 {
     type Item = Result<RecordBatch, ArrowError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut line_buf = String::new();
+        let mut record = noodles::bam::Record::default();
         let mut count = 0;
 
         while count < self.batch_size && self.count < self.limit {
-            line_buf.clear();
-            let definition = match self.reader.read_definition(&mut line_buf) {
+            match self.reader.read_record(&mut record) {
                 Ok(0) => break,
-                Ok(_) => match line_buf.parse::<Definition>() {
-                    Ok(def) => def,
-                    Err(e) => return Some(Err(ArrowError::ExternalError(Box::new(e)))),
+                Ok(_) => match self.builder.push(&record) {
+                    Ok(()) => {
+                        self.count += 1;
+                        count += 1;
+                    }
+                    Err(e) => return Some(Err(e.into())),
                 },
-                Err(e) => return Some(Err(e.into())),
-            };
-
-            let mut sequence_buf = Vec::new();
-            match self.reader.read_sequence(&mut sequence_buf) {
-                Ok(_) => {
-                    let record =
-                        noodles::fasta::Record::new(definition, Sequence::from(sequence_buf));
-                    match self.builder.push(&record) {
-                        Ok(()) => {
-                            self.count += 1;
-                            count += 1;
-                        }
-                        Err(e) => return Some(Err(e.into())),
-                    };
-                }
                 Err(e) => return Some(Err(e.into())),
             }
         }
