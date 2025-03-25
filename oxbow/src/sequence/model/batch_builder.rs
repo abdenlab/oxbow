@@ -127,6 +127,7 @@ impl Push<&noodles::fastq::Record> for BatchBuilder {
         Ok(())
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
