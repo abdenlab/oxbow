@@ -10,7 +10,7 @@ use crate::alignment::model::BatchBuilder;
 use crate::alignment::model::Push as _;
 use crate::util::query::BgzfChunkReader;
 
-/// An iterator over records of an indexed file that intersects a given region.
+/// A record batch iterator yielding SAM or BAM records that intersect a genomic range.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,
@@ -44,7 +44,7 @@ impl<R> BatchIterator<R> {
 
 impl<R> RecordBatchReader for BatchIterator<R>
 where
-    BatchIterator<R>: Iterator<Item = Result<RecordBatch, ArrowError>>,
+    Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
         Arc::new(self.builder.get_arrow_schema())

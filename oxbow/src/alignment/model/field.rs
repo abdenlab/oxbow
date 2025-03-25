@@ -18,7 +18,7 @@ pub const DEFAULT_FIELD_NAMES: [&str; 12] = [
 ];
 
 /// An alignment (SAM/BAM/CRAM) standard field.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Field {
     Qname,
     Flag,
@@ -103,7 +103,7 @@ impl FromStr for Field {
     }
 }
 
-/// Builds an Arrow array (column) corresponding to an alignment standard field.
+/// A builder for an Arrow array (column) corresponding to an alignment standard field.
 pub enum FieldBuilder {
     Qname(GenericStringBuilder<i32>),
     Flag(UInt16Builder),
@@ -120,6 +120,12 @@ pub enum FieldBuilder {
 }
 
 impl FieldBuilder {
+    /// Creates a new `FieldBuilder` for the specified field with the given capacity.
+    ///
+    /// # Arguments
+    /// * `field` - The field to build.
+    /// * `capacity` - The number of rows to preallocate for a batch.
+    /// * `ref_names` - The reference sequence names.
     pub fn new(field: Field, capacity: usize, ref_names: &[String]) -> Result<Self, ArrowError> {
         let field = match field {
             Field::Qname => Self::Qname(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),

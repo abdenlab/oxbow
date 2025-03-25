@@ -68,7 +68,7 @@ impl PySamScanner {
     /// Parameters
     /// ----------
     /// scan_rows : int, optional [default: 1024]
-    ///    The number of records to scan.
+    ///    The number of records to scan. If None, all records are scanned.
     ///
     /// Returns
     /// -------
@@ -116,7 +116,7 @@ impl PySamScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PySchema
+    /// arro3 Schema (pycapsule)
     #[pyo3(signature = (fields=None, tag_defs=None))]
     fn schema(
         &self,
@@ -143,8 +143,8 @@ impl PySamScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (fields=None, tag_defs=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
@@ -187,8 +187,8 @@ impl PySamScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (region, index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
     #[allow(clippy::too_many_arguments)]
     fn scan_query(
@@ -283,8 +283,8 @@ impl PySamScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
     fn scan_unmapped(
         &mut self,
@@ -409,7 +409,7 @@ impl PyBamScanner {
     /// Parameters
     /// ----------
     /// scan_rows : int, optional [default: 1024]
-    ///    The number of records to scan.
+    ///    The number of records to scan. If None, all records are scanned.
     ///
     /// Returns
     /// -------
@@ -462,8 +462,8 @@ impl PyBamScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (fields=None, tag_defs=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
@@ -503,8 +503,8 @@ impl PyBamScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (region, index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
     #[allow(clippy::too_many_arguments)]
     fn scan_query(
@@ -599,8 +599,8 @@ impl PyBamScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
     fn scan_unmapped(
         &mut self,

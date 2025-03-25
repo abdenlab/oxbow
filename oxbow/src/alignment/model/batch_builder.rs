@@ -23,6 +23,7 @@ pub struct BatchBuilder {
 }
 
 impl BatchBuilder {
+    /// Creates a new `BatchBuilder` for SAM/BAM records.
     pub fn new(
         header: noodles::sam::Header,
         field_names: Option<Vec<String>>,

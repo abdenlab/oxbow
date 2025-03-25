@@ -60,7 +60,7 @@ impl Scanner {
             .collect()
     }
 
-    /// Returns the fixed field names.
+    /// Returns the standard field names.
     pub fn field_names(&self) -> Vec<String> {
         DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
     }
@@ -112,7 +112,7 @@ impl Scanner {
         Ok(tag_scanner.collect())
     }
 
-    /// Returns an iterator over record batches.
+    /// Returns an iterator yielding record batches.
     ///
     /// The scan will begin at the current position of the reader and will
     /// move the cursor to the end of the last record scanned.
@@ -131,7 +131,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator over record batches satisfying a genomic range query.
+    /// Returns an iterator yielding record batches satisfying a genomic range query.
     ///
     /// This operation requires a BGZF source and an Index.
     ///
@@ -170,7 +170,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator over record batches of unaligned reads.
+    /// Returns an iterator yielding record batches of unaligned reads.
     ///
     /// This operation requires a BGZF source and an Index.
     ///

@@ -10,7 +10,7 @@ use noodles::fasta::record::Sequence;
 use crate::sequence::model::BatchBuilder;
 use crate::sequence::model::Push as _;
 
-/// A record batch iterator for FASTA and FASTQ records from a readable stream.
+/// A record batch iterator yielding FASTA or FASTQ records from a readable stream.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,

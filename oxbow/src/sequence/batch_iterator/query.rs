@@ -10,22 +10,13 @@ use noodles::core::region::Region;
 use crate::sequence::model::BatchBuilder;
 use crate::sequence::model::Push as _;
 
-/// A record batch iterator for slicing sequences in an indexed FASTA file.
+/// A record batch iterator that slices sequences from an indexed FASTA file.
 pub struct BatchIterator<R> {
     reader: R,
     index: noodles::fasta::fai::Index,
     regions: IntoIter<Region>,
     builder: BatchBuilder,
     batch_size: usize,
-}
-
-impl<R> RecordBatchReader for BatchIterator<R>
-where
-    Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
-{
-    fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
-    }
 }
 
 impl<R> BatchIterator<noodles::fasta::io::Reader<R>>
@@ -46,6 +37,15 @@ where
             batch_size,
             builder,
         }
+    }
+}
+
+impl<R> RecordBatchReader for BatchIterator<R>
+where
+    Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
+{
+    fn schema(&self) -> arrow::datatypes::SchemaRef {
+        Arc::new(self.builder.get_arrow_schema())
     }
 }
 

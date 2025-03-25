@@ -8,7 +8,7 @@ use arrow::record_batch::RecordBatchReader;
 use crate::alignment::model::BatchBuilder;
 use crate::alignment::model::Push as _;
 
-/// An batch iterator over records starting at the current position.
+/// A record batch iterator yielding SAM or BAM records from a readable stream.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,
@@ -31,7 +31,7 @@ impl<R> BatchIterator<R> {
 
 impl<R> RecordBatchReader for BatchIterator<R>
 where
-    BatchIterator<R>: Iterator<Item = Result<RecordBatch, ArrowError>>,
+    Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
         Arc::new(self.builder.get_arrow_schema())
