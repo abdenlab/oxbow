@@ -15,7 +15,7 @@ use super::tag::{TagBuilder, TagDef};
 
 /// A builder for an Arrow record batch of alignments.
 pub struct BatchBuilder {
-    pub header: noodles::sam::Header,
+    header: noodles::sam::Header,
     fields: Vec<Field>,
     tag_defs: Vec<TagDef>,
     field_builders: IndexMap<Field, FieldBuilder>,
@@ -243,5 +243,89 @@ impl Push<&noodles::bam::Record> for BatchBuilder {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_batch_builder_new() {
+        let header = noodles::sam::Header::default();
+        let field_names = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
+        let capacity = 10;
+
+        let batch_builder = BatchBuilder::new(header.clone(), field_names, tag_defs, capacity).unwrap();
+        assert_eq!(batch_builder.header(), header);
+        assert_eq!(batch_builder.fields.len(), 2);
+        assert_eq!(batch_builder.tag_defs.len(), 1);
+    }
+
+    #[test]
+    fn test_get_arrow_schema() {
+        let header = noodles::sam::Header::default();
+        let field_names = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
+        let capacity = 10;
+
+        let batch_builder = BatchBuilder::new(header, field_names, tag_defs, capacity).unwrap();
+        let schema = batch_builder.get_arrow_schema();
+        assert_eq!(schema.fields().len(), 3);
+        assert_eq!(schema.fields()[0].name(), "qname");
+        assert_eq!(schema.fields()[1].name(), "flag");
+        assert_eq!(schema.fields()[2].name(), "tags");
+        assert_eq!(
+            schema.fields()[2].data_type(), 
+            &DataType::Struct(vec![ArrowField::new("NM", DataType::Int32, true)].into())
+        );
+    }
+
+    #[test]
+    fn test_push_sam_record() {
+        let header = noodles::sam::Header::default();
+        let field_names = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
+        let capacity = 10;
+
+        let mut batch_builder = BatchBuilder::new(header, field_names, tag_defs, capacity).unwrap();
+
+        let record = noodles::sam::Record::default();
+        let result = batch_builder.push(&record);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_push_bam_record() {
+        let header = noodles::sam::Header::default();
+        let field_names = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
+        let capacity = 10;
+
+        let mut batch_builder = BatchBuilder::new(header, field_names, tag_defs, capacity).unwrap();
+
+        let record = noodles::bam::Record::default();
+        let result = batch_builder.push(&record);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_finish() {
+        let header = noodles::sam::Header::default();
+        let field_names = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
+        let capacity = 10;
+
+        let mut batch_builder = BatchBuilder::new(header, field_names, tag_defs, capacity).unwrap();
+
+        let record = noodles::sam::Record::default();
+        batch_builder.push(&record).unwrap();
+        let record_batch = batch_builder.finish();
+        assert!(record_batch.is_ok());
+
+        let record_batch = record_batch.unwrap();
+        assert_eq!(record_batch.num_columns(), 3);
+        assert_eq!(record_batch.num_rows(), 1);
     }
 }

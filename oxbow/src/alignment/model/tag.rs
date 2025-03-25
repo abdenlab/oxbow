@@ -647,3 +647,70 @@ impl TagScanner {
         tag_defs
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tag_def_try_from_valid() {
+        let tag_def = TagDef::try_from(("NM".to_string(), "i".to_string())).unwrap();
+        assert_eq!(tag_def.name, "NM");
+        assert_eq!(tag_def.ty, TagType::Int32);
+    }
+
+    #[test]
+    fn test_tag_def_try_from_invalid() {
+        let result = TagDef::try_from(("N".to_string(), "i".to_string()));
+        assert!(result.is_err());
+        let result = TagDef::try_from(("NM".to_string(), "x".to_string()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_tag_def_into_bytes() {
+        let tag_def = TagDef {
+            name: "NM".to_string(),
+            ty: TagType::Int32,
+        };
+        assert_eq!(tag_def.into_bytes(), [78, 77]); // ASCII for 'N' and 'M'
+    }
+
+    #[test]
+    fn test_tag_arrow_type() {
+        for ty in [
+            TagType::Character,
+            TagType::String,
+            TagType::Hex,
+            TagType::Int8,
+            TagType::UInt8,
+            TagType::Int16,
+            TagType::UInt16,
+            TagType::Int32,
+            TagType::UInt32,
+            TagType::Float,
+        ] {
+            let mut builder = TagBuilder::new(&ty);
+            let data_type = builder.finish().data_type().clone();
+            assert_eq!(ty.arrow_type(), data_type);
+        }
+    }
+
+    #[test]
+    fn test_tag_builder_append_null() {
+        let mut builder = TagBuilder::new(&TagType::Int32);
+        builder.append_null();
+        let array = builder.finish();
+        assert!(array.is_nullable());
+        assert!(array.is_null(0));
+    }
+
+    #[test]
+    fn test_tag_builder_append_value() {
+        let mut builder = TagBuilder::new(&TagType::Int32);
+        builder.append_value(&Value::Int32(42)).unwrap();
+        let array = builder.finish();
+        let int_array = array.as_any().downcast_ref::<arrow::array::Int32Array>().unwrap();
+        assert_eq!(int_array.value(0), 42);
+    }
+}

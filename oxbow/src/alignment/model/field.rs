@@ -82,7 +82,7 @@ impl FromStr for Field {
     type Err = std::io::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
+        match s.to_lowercase().as_str() {
             "qname" => Ok(Self::Qname),
             "flag" => Ok(Self::Flag),
             "rname" => Ok(Self::Rname),
@@ -384,4 +384,73 @@ pub fn get_cigar(cigar: impl Cigar) -> Option<String> {
     }
 
     String::from_utf8(buf).ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_field_arrow_type() {
+        for field in [
+            Field::Qname,
+            Field::Flag,
+            Field::Rname,
+            Field::Pos,
+            Field::Mapq,
+            Field::Cigar,
+            Field::Rnext,
+            Field::Pnext,
+            Field::Tlen,
+            Field::Seq,
+            Field::Qual,
+            Field::End,
+        ] {
+            let mut builder = FieldBuilder::new(field.clone(), 10);
+            let data_type = builder.finish().data_type().clone();
+            assert_eq!(field.arrow_type(), data_type);
+        }
+    }
+
+    #[test]
+    fn test_field_from_str() {
+        assert_eq!(Field::from_str("qname").unwrap(), Field::Qname);
+        assert_eq!(Field::from_str("flag").unwrap(), Field::Flag);
+        assert_eq!(Field::from_str("rname").unwrap(), Field::Rname);
+        assert_eq!(Field::from_str("pos").unwrap(), Field::Pos);
+        assert_eq!(Field::from_str("mapq").unwrap(), Field::Mapq);
+        assert_eq!(Field::from_str("cigar").unwrap(), Field::Cigar);
+        assert_eq!(Field::from_str("rnext").unwrap(), Field::Rnext);
+        assert_eq!(Field::from_str("pnext").unwrap(), Field::Pnext);
+        assert_eq!(Field::from_str("tlen").unwrap(), Field::Tlen);
+        assert_eq!(Field::from_str("seq").unwrap(), Field::Seq);
+        assert_eq!(Field::from_str("qual").unwrap(), Field::Qual);
+        assert_eq!(Field::from_str("end").unwrap(), Field::End);
+        assert!(Field::from_str("invalid").is_err());
+    }
+
+    #[test]
+    fn test_field_builder_with_refs() {
+        let ref_names = vec!["chr1".to_string(), "chr2".to_string()];
+        let builder = FieldBuilder::with_refs(Field::Rname, 10, &ref_names).unwrap();
+        if let FieldBuilder::Rname(mut b) = builder {
+            let arr = b.finish();
+            for ref_name in &ref_names {
+                match arr.lookup_key(ref_name) {
+                    Some(_) => (),
+                    None => panic!("Reference name '{}' not found in dictionary", ref_name),
+                }
+            };
+        }
+        let result = FieldBuilder::with_refs(Field::Qname, 10, &ref_names);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_field_builder_push() {
+        let mut builder = FieldBuilder::new(Field::Flag, 10);
+        let record = noodles::sam::Record::default();
+        let header = noodles::sam::Header::default();
+        assert!(builder.push(&record, &header).is_ok());
+    }
 }
