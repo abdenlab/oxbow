@@ -710,7 +710,10 @@ mod tests {
         let mut builder = TagBuilder::new(&TagType::Int32);
         builder.append_value(&Value::Int32(42)).unwrap();
         let array = builder.finish();
-        let int_array = array.as_any().downcast_ref::<arrow::array::Int32Array>().unwrap();
+        let int_array = array
+            .as_any()
+            .downcast_ref::<arrow::array::Int32Array>()
+            .unwrap();
         assert_eq!(int_array.value(0), 42);
     }
 }

@@ -440,7 +440,7 @@ mod tests {
                     Some(_) => (),
                     None => panic!("Reference name '{}' not found in dictionary", ref_name),
                 }
-            };
+            }
         }
         let result = FieldBuilder::with_refs(Field::Qname, 10, &ref_names);
         assert!(result.is_err());

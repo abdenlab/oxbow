@@ -257,7 +257,8 @@ mod tests {
         let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
         let capacity = 10;
 
-        let batch_builder = BatchBuilder::new(header.clone(), field_names, tag_defs, capacity).unwrap();
+        let batch_builder =
+            BatchBuilder::new(header.clone(), field_names, tag_defs, capacity).unwrap();
         assert_eq!(batch_builder.header(), header);
         assert_eq!(batch_builder.fields.len(), 2);
         assert_eq!(batch_builder.tag_defs.len(), 1);
@@ -277,7 +278,7 @@ mod tests {
         assert_eq!(schema.fields()[1].name(), "flag");
         assert_eq!(schema.fields()[2].name(), "tags");
         assert_eq!(
-            schema.fields()[2].data_type(), 
+            schema.fields()[2].data_type(),
             &DataType::Struct(vec![ArrowField::new("NM", DataType::Int32, true)].into())
         );
     }
