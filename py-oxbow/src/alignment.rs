@@ -214,7 +214,7 @@ impl PySamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(
-                                fmt_reader, index, region, fields, tag_defs, batch_size, limit,
+                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(Box::new(batch_reader))
@@ -223,7 +223,7 @@ impl PySamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(
-                                fmt_reader, index, region, fields, tag_defs, batch_size, limit,
+                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(Box::new(batch_reader))
@@ -238,7 +238,7 @@ impl PySamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(
-                                fmt_reader, index, region, fields, tag_defs, batch_size, limit,
+                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(Box::new(batch_reader))
@@ -247,7 +247,7 @@ impl PySamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(
-                                fmt_reader, index, region, fields, tag_defs, batch_size, limit,
+                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(Box::new(batch_reader))
@@ -530,7 +530,7 @@ impl PyBamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(
-                                fmt_reader, index, region, fields, tag_defs, batch_size, limit,
+                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(Box::new(batch_reader))
@@ -539,7 +539,7 @@ impl PyBamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(
-                                fmt_reader, index, region, fields, tag_defs, batch_size, limit,
+                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(Box::new(batch_reader))
@@ -554,7 +554,7 @@ impl PyBamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(
-                                fmt_reader, index, region, fields, tag_defs, batch_size, limit,
+                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(Box::new(batch_reader))
@@ -563,7 +563,7 @@ impl PyBamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(
-                                fmt_reader, index, region, fields, tag_defs, batch_size, limit,
+                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(Box::new(batch_reader))
@@ -705,11 +705,11 @@ pub fn read_sam(
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
                 let batches = scanner.scan_query(
                     fmt_reader,
-                    index.into_boxed(),
                     region,
+                    index.into_boxed(),
                     fields,
                     tag_defs,
-                    None,
+                    1024,
                     None,
                 )?;
                 batches_to_ipc(batches)
@@ -718,8 +718,8 @@ pub fn read_sam(
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
                 let batches = scanner.scan_query(
                     fmt_reader,
-                    index.into_boxed(),
                     region,
+                    index.into_boxed(),
                     fields,
                     tag_defs,
                     None,
@@ -787,8 +787,8 @@ pub fn read_bam(
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
                 let batches = scanner.scan_query(
                     fmt_reader,
-                    index.into_boxed(),
                     region,
+                    index.into_boxed(),
                     fields,
                     tag_defs,
                     None,
@@ -800,8 +800,8 @@ pub fn read_bam(
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
                 let batches = scanner.scan_query(
                     fmt_reader,
-                    index.into_boxed(),
                     region,
+                    index.into_boxed(),
                     fields,
                     tag_defs,
                     None,
