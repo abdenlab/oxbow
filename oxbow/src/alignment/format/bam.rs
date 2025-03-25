@@ -131,7 +131,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator yielding batches of records satisfying a genomic range predicate.
+    /// Returns an iterator yielding record batches satisfying a genomic range query.
     ///
     /// This operation requires a BGZF source and an Index.
     ///
