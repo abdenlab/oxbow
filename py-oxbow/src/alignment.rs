@@ -392,6 +392,17 @@ impl PyBamScanner {
     }
 
     /// Return the Arrow schema.
+    ///
+    /// Parameters
+    /// ----------
+    /// fields : list[str], optional
+    ///    Names of the fixed fields to project.
+    /// tag_defs : list[tuple[str, str]], optional
+    ///    Definitions of tag fields to project.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 Schema (pycapsule)
     #[pyo3(signature = (fields=None, tag_defs=None))]
     fn schema(
         &self,
