@@ -2,8 +2,8 @@ use std::io;
 use std::sync::Arc;
 
 use arrow::array::{
-    ArrayBuilder, ArrayRef, BooleanBuilder, FixedSizeListBuilder, Float32Builder,
-    GenericStringBuilder, Int32Builder, ListBuilder,
+    ArrayRef, BooleanBuilder, FixedSizeListBuilder, Float32Builder, GenericStringBuilder,
+    Int32Builder, ListBuilder,
 };
 use arrow::datatypes::{DataType, Field as ArrowField};
 
@@ -25,7 +25,15 @@ impl InfoDef {
         Self { name, ty }
     }
 
-    pub fn try_from_strings(def: (String, String, String)) -> Result<Self, io::Error> {
+    pub fn get_arrow_field(&self) -> ArrowField {
+        ArrowField::new(&self.name, self.ty.arrow_type(), true)
+    }
+}
+
+impl TryFrom<(String, String, String)> for InfoDef {
+    type Error = io::Error;
+
+    fn try_from(def: (String, String, String)) -> Result<Self, Self::Error> {
         let (name, number, ty) = def;
         let number = match number.as_str() {
             "A" => Number::AlternateBases,
@@ -126,6 +134,52 @@ impl InfoType {
             Self::FloatList => None,
         }
     }
+
+    pub fn arrow_type(&self) -> DataType {
+        match self {
+            Self::Character => DataType::Utf8,
+            Self::CharacterList => {
+                let item = ArrowField::new("item", DataType::Utf8, true);
+                DataType::List(Arc::new(item))
+            }
+            Self::CharacterFixedSizeList(n) => {
+                let item = ArrowField::new("item", DataType::Utf8, true);
+                DataType::FixedSizeList(Arc::new(item), *n as i32)
+            }
+
+            Self::String => DataType::Utf8,
+            Self::StringList => {
+                let item = ArrowField::new("item", DataType::Utf8, true);
+                DataType::List(Arc::new(item))
+            }
+            Self::StringFixedSizeList(n) => {
+                let item = ArrowField::new("item", DataType::Utf8, true);
+                DataType::FixedSizeList(Arc::new(item), *n as i32)
+            }
+
+            Self::Integer => DataType::Int32,
+            Self::IntegerList => {
+                let item = ArrowField::new("item", DataType::Int32, true);
+                DataType::List(Arc::new(item))
+            }
+            Self::IntegerFixedSizeList(n) => {
+                let item = ArrowField::new("item", DataType::Int32, true);
+                DataType::FixedSizeList(Arc::new(item), *n as i32)
+            }
+
+            Self::Float => DataType::Float32,
+            Self::FloatList => {
+                let item = ArrowField::new("item", DataType::Float32, true);
+                DataType::List(Arc::new(item))
+            }
+            Self::FloatFixedSizeList(n) => {
+                let item = ArrowField::new("item", DataType::Float32, true);
+                DataType::FixedSizeList(Arc::new(item), *n as i32)
+            }
+
+            Self::Flag => DataType::Boolean,
+        }
+    }
 }
 
 /// A builder for Arrow arrays (columns) based on variant INFO fields.
@@ -180,60 +234,6 @@ impl InfoBuilder {
 
             InfoType::Flag => InfoBuilder::Flag(BooleanBuilder::new()),
         }
-    }
-
-    pub fn arrow_type(&self) -> DataType {
-        match self {
-            Self::Character(_) => DataType::Utf8,
-            Self::CharacterList(_) => {
-                let item = ArrowField::new("item", DataType::Utf8, true);
-                DataType::List(Arc::new(item))
-            }
-            Self::CharacterFixedSizeList(b) => {
-                let item = ArrowField::new("item", DataType::Utf8, true);
-                let n = b.len() as i32;
-                DataType::FixedSizeList(Arc::new(item), n)
-            }
-
-            Self::String(_) => DataType::Utf8,
-            Self::StringList(_) => {
-                let item = ArrowField::new("item", DataType::Utf8, true);
-                DataType::List(Arc::new(item))
-            }
-            Self::StringFixedSizeList(b) => {
-                let item = ArrowField::new("item", DataType::Utf8, true);
-                let n = b.len() as i32;
-                DataType::FixedSizeList(Arc::new(item), n)
-            }
-
-            Self::Integer(_) => DataType::Int32,
-            Self::IntegerList(_) => {
-                let item = ArrowField::new("item", DataType::Int32, true);
-                DataType::List(Arc::new(item))
-            }
-            Self::IntegerFixedSizeList(b) => {
-                let item = ArrowField::new("item", DataType::Int32, true);
-                let n = b.len() as i32;
-                DataType::FixedSizeList(Arc::new(item), n)
-            }
-
-            Self::Float(_) => DataType::Float32,
-            Self::FloatList(_) => {
-                let item = ArrowField::new("item", DataType::Float32, true);
-                DataType::List(Arc::new(item))
-            }
-            Self::FloatFixedSizeList(b) => {
-                let item = ArrowField::new("item", DataType::Float32, true);
-                let n = b.len() as i32;
-                DataType::FixedSizeList(Arc::new(item), n)
-            }
-
-            Self::Flag(_) => DataType::Boolean,
-        }
-    }
-
-    pub fn get_arrow_field(&self, name: &str) -> ArrowField {
-        ArrowField::new(name, self.arrow_type(), true)
     }
 
     pub fn append_null(&mut self) {

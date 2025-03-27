@@ -15,6 +15,7 @@ use super::field::{Field, FieldBuilder, DEFAULT_FIELD_NAMES};
 use super::genotype::{GenotypeDef, SampleStructBuilder, SeriesStructBuilder};
 use super::info::{InfoBuilder, InfoDef};
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum GenotypeBy {
     Sample,
     Field,
@@ -166,9 +167,9 @@ impl BatchBuilder {
         // info (optional)
         if !self.info_defs.is_empty() {
             let nested_fields: Vec<ArrowField> = self
-                .info_builders
+                .info_defs
                 .iter()
-                .map(|(def, b)| b.get_arrow_field(&def.name))
+                .map(|def| def.get_arrow_field())
                 .collect();
             let info_field = ArrowField::new(
                 "info",
@@ -235,7 +236,7 @@ impl BatchBuilder {
                 .info_builders
                 .iter_mut()
                 .map(|(def, builder)| {
-                    let arrow_field = builder.get_arrow_field(&def.name);
+                    let arrow_field = def.get_arrow_field();
                     let array_ref = builder.finish();
                     (Arc::new(arrow_field), array_ref)
                 })
