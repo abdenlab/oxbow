@@ -580,3 +580,126 @@ impl Push<&noodles::bcf::Record> for BatchBuilder {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use noodles::core::Position;
+    use noodles::vcf::header::record::value::map::{Contig, Format, Info, Map};
+    use noodles::vcf::variant::io::Write;
+    use noodles::vcf::variant::record_buf::samples::sample::Value;
+    use noodles::vcf::variant::record_buf::samples::Keys;
+    use noodles::vcf::variant::record_buf::Samples;
+    use noodles::vcf::{Header, Record as VcfRecord};
+
+    fn create_test_header() -> Header {
+        let contig = Map::<Contig>::new();
+        let info = Map::<Info>::from("DP");
+        let format = Map::<Format>::from("GT");
+        let header = Header::builder()
+            .add_contig("sq0", contig.clone())
+            .add_info("DP", info)
+            .add_format("GT", format)
+            .add_sample_name("sample1")
+            .add_sample_name("sample2")
+            .build();
+        header
+    }
+
+    fn create_test_vcfrecord(header: &Header) -> VcfRecord {
+        let keys: Keys = vec!["GT".to_string()].into_iter().collect();
+        let samples = Samples::new(
+            keys,
+            vec![
+                vec![Some(Value::from("0|0"))],
+                vec![Some(Value::from("1/1"))],
+            ],
+        );
+        let record_buf = noodles::vcf::variant::RecordBuf::builder()
+            .set_reference_sequence_name("sq0")
+            .set_variant_start(Position::MIN)
+            .set_reference_bases("A")
+            .set_samples(samples)
+            .build();
+        let mut writer = noodles::vcf::io::Writer::new(Vec::new());
+        writer.write_variant_record(header, &record_buf).unwrap();
+        let buf = writer.into_inner();
+        let record = noodles::vcf::Record::try_from(buf.as_slice()).unwrap();
+        record
+    }
+
+    #[test]
+    fn test_batch_builder_new() {
+        let header = create_test_header();
+        let batch_builder = BatchBuilder::new(
+            header.clone(),
+            None,
+            None,
+            None,
+            None,
+            GenotypeBy::Sample,
+            10,
+        )
+        .unwrap();
+
+        assert_eq!(batch_builder.header(), header);
+        assert_eq!(batch_builder.fields.len(), DEFAULT_FIELD_NAMES.len());
+        assert_eq!(batch_builder.sample_names.len(), 2);
+        assert_eq!(batch_builder.genotype_by, GenotypeBy::Sample);
+    }
+
+    #[test]
+    fn test_get_arrow_schema() {
+        let header = create_test_header();
+        let batch_builder =
+            BatchBuilder::new(header, None, None, None, None, GenotypeBy::Sample, 10).unwrap();
+
+        let schema = batch_builder.get_arrow_schema();
+        assert_eq!(
+            schema.fields().len(),
+            batch_builder.get_arrow_fields().len()
+        );
+    }
+
+    #[test]
+    fn test_push_vcf_record() {
+        let header = create_test_header();
+        let mut batch_builder = BatchBuilder::new(
+            header.clone(),
+            None,
+            None,
+            None,
+            None,
+            GenotypeBy::Sample,
+            10,
+        )
+        .unwrap();
+        let record = create_test_vcfrecord(&header);
+
+        assert!(batch_builder.push(&record).is_ok());
+    }
+
+    #[test]
+    fn test_finish() {
+        let header = create_test_header();
+        let mut batch_builder = BatchBuilder::new(
+            header.clone(),
+            None,
+            None,
+            None,
+            None,
+            GenotypeBy::Sample,
+            10,
+        )
+        .unwrap();
+        let record = create_test_vcfrecord(&header);
+        batch_builder.push(&record).unwrap();
+        let record_batch = batch_builder.finish().unwrap();
+
+        assert_eq!(record_batch.num_rows(), 1);
+        assert_eq!(
+            record_batch.num_columns(),
+            batch_builder.get_arrow_fields().len()
+        );
+    }
+}

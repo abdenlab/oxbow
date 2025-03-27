@@ -530,3 +530,91 @@ impl InfoBuilder {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use noodles::vcf::header::record::value::map::info::{Number, Type};
+
+    #[test]
+    fn test_infodef_new() {
+        let name = "DP".to_string();
+        let number = Number::Count(1);
+        let ty = Type::Integer;
+
+        let infodef = InfoDef::new(name.clone(), &number, &ty);
+
+        assert_eq!(infodef.name, name);
+        assert_eq!(infodef.ty, InfoType::Integer);
+    }
+
+    #[test]
+    fn test_infodef_try_from_valid() {
+        let def = ("DP".to_string(), "1".to_string(), "Integer".to_string());
+        let infodef = InfoDef::try_from(def).unwrap();
+
+        assert_eq!(infodef.name, "DP");
+        assert_eq!(infodef.ty, InfoType::Integer);
+    }
+
+    #[test]
+    fn test_infodef_try_from_invalid_number() {
+        let def = (
+            "DP".to_string(),
+            "invalid".to_string(),
+            "Integer".to_string(),
+        );
+        let result = InfoDef::try_from(def);
+        assert!(result.is_err());
+
+        let def = ("DP".to_string(), "1".to_string(), "InvalidType".to_string());
+        let result = InfoDef::try_from(def);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_infobuilder_arrow_type() {
+        for ty in [
+            InfoType::Character,
+            InfoType::CharacterList,
+            InfoType::CharacterFixedSizeList(10),
+            InfoType::String,
+            InfoType::StringList,
+            InfoType::StringFixedSizeList(10),
+            InfoType::Integer,
+            InfoType::IntegerList,
+            InfoType::IntegerFixedSizeList(10),
+            InfoType::Float,
+            InfoType::FloatList,
+            InfoType::FloatFixedSizeList(10),
+            InfoType::Flag,
+        ] {
+            let mut builder = InfoBuilder::new(&ty);
+            let data_type = builder.finish().data_type().clone();
+            assert_eq!(ty.arrow_type(), data_type);
+        }
+    }
+
+    #[test]
+    fn test_infobuilder_append_null() {
+        let mut builder = InfoBuilder::new(&InfoType::Integer);
+        builder.append_null();
+        let array = builder.finish();
+        assert!(array.is_nullable());
+        assert!(array.is_null(0));
+    }
+
+    #[test]
+    fn test_infobuilder_append_value() {
+        let mut builder = InfoBuilder::new(&InfoType::Integer);
+        let value = Value::Integer(42);
+        builder.append_value(&value).unwrap();
+        let array = builder.finish();
+        let int_array = array
+            .as_any()
+            .downcast_ref::<arrow::array::Int32Array>()
+            .unwrap();
+        assert_eq!(int_array.len(), 1);
+        assert_eq!(int_array.value(0), 42);
+    }
+}

@@ -343,3 +343,72 @@ impl Push<&noodles::bcf::Record> for FieldBuilder {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_field_arrow_type() {
+        for field in [
+            Field::Chrom,
+            Field::Pos,
+            Field::Id,
+            Field::Ref,
+            Field::Alt,
+            Field::Qual,
+            Field::Filter,
+        ] {
+            let mut builder = FieldBuilder::new(field.clone(), 10);
+            let data_type = builder.finish().data_type().clone();
+            assert_eq!(field.arrow_type(), data_type);
+        }
+    }
+
+    #[test]
+    fn test_field_from_str() {
+        assert_eq!(Field::from_str("chrom").unwrap(), Field::Chrom);
+        assert_eq!(Field::from_str("pos").unwrap(), Field::Pos);
+        assert_eq!(Field::from_str("id").unwrap(), Field::Id);
+        assert_eq!(Field::from_str("ref").unwrap(), Field::Ref);
+        assert_eq!(Field::from_str("alt").unwrap(), Field::Alt);
+        assert_eq!(Field::from_str("qual").unwrap(), Field::Qual);
+        assert_eq!(Field::from_str("filter").unwrap(), Field::Filter);
+        assert!(Field::from_str("invalid").is_err());
+    }
+
+    #[test]
+    fn test_field_builder_with_refs() {
+        let ref_names = vec!["chr1".to_string(), "chr2".to_string()];
+        let builder = FieldBuilder::with_refs(Field::Chrom, 10, &ref_names).unwrap();
+        if let FieldBuilder::Chrom(mut b) = builder {
+            let arr = b.finish();
+            for ref_name in &ref_names {
+                match arr.lookup_key(ref_name) {
+                    Some(_) => (),
+                    None => panic!("Reference name '{}' not found in dictionary", ref_name),
+                }
+            }
+        }
+        let result = FieldBuilder::with_refs(Field::Pos, 10, &ref_names);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_field_builder_push() {
+        for field in [
+            Field::Chrom,
+            Field::Pos,
+            Field::Id,
+            Field::Ref,
+            Field::Alt,
+            Field::Qual,
+            Field::Filter,
+        ] {
+            let mut builder = FieldBuilder::new(field, 10);
+            let record = noodles::vcf::Record::default();
+            let header = noodles::vcf::Header::default();
+            assert!(builder.push(&record, &header).is_ok());
+        }
+    }
+}
