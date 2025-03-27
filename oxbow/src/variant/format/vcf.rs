@@ -195,8 +195,8 @@ impl Scanner {
     pub fn scan_query<R: BufRead + Seek>(
         &self,
         fmt_reader: noodles::vcf::io::Reader<noodles::bgzf::Reader<R>>,
-        index: impl BinningIndex,
         region: noodles::core::Region,
+        index: impl BinningIndex,
         fields: Option<Vec<String>>,
         info_fields: Option<Vec<String>>,
         genotype_fields: Option<Vec<String>>,

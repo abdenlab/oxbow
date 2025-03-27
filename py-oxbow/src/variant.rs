@@ -238,8 +238,8 @@ impl PyVcfScanner {
                             .scanner
                             .scan_query(
                                 fmt_reader,
-                                index,
                                 region,
+                                index,
                                 fields,
                                 info_fields,
                                 genotype_fields,
@@ -256,8 +256,8 @@ impl PyVcfScanner {
                             .scanner
                             .scan_query(
                                 fmt_reader,
-                                index,
                                 region,
+                                index,
                                 fields,
                                 info_fields,
                                 genotype_fields,
@@ -280,8 +280,8 @@ impl PyVcfScanner {
                             .scanner
                             .scan_query(
                                 fmt_reader,
-                                index,
                                 region,
+                                index,
                                 fields,
                                 info_fields,
                                 genotype_fields,
@@ -298,8 +298,8 @@ impl PyVcfScanner {
                             .scanner
                             .scan_query(
                                 fmt_reader,
-                                index,
                                 region,
+                                index,
                                 fields,
                                 info_fields,
                                 genotype_fields,
@@ -549,8 +549,8 @@ impl PyBcfScanner {
                             .scanner
                             .scan_query(
                                 fmt_reader,
-                                index,
                                 region,
+                                index,
                                 fields,
                                 info_fields,
                                 genotype_fields,
@@ -567,8 +567,8 @@ impl PyBcfScanner {
                             .scanner
                             .scan_query(
                                 fmt_reader,
-                                index,
                                 region,
+                                index,
                                 fields,
                                 info_fields,
                                 genotype_fields,
@@ -591,8 +591,8 @@ impl PyBcfScanner {
                             .scanner
                             .scan_query(
                                 fmt_reader,
-                                index,
                                 region,
+                                index,
                                 fields,
                                 info_fields,
                                 genotype_fields,
@@ -609,8 +609,8 @@ impl PyBcfScanner {
                             .scanner
                             .scan_query(
                                 fmt_reader,
-                                index,
                                 region,
+                                index,
                                 fields,
                                 info_fields,
                                 genotype_fields,
@@ -701,8 +701,8 @@ pub fn read_vcf(
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
                 let batches = scanner.scan_query(
                     fmt_reader,
-                    index.into_boxed(),
                     region,
+                    index.into_boxed(),
                     fields,
                     info_fields,
                     genotype_fields,
@@ -717,8 +717,8 @@ pub fn read_vcf(
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
                 let batches = scanner.scan_query(
                     fmt_reader,
-                    index.into_boxed(),
                     region,
+                    index.into_boxed(),
                     fields,
                     info_fields,
                     genotype_fields,
@@ -811,8 +811,8 @@ pub fn read_bcf(
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
                 let batches = scanner.scan_query(
                     fmt_reader,
-                    index.into_boxed(),
                     region,
+                    index.into_boxed(),
                     fields,
                     info_fields,
                     genotype_fields,
@@ -827,8 +827,8 @@ pub fn read_bcf(
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
                 let batches = scanner.scan_query(
                     fmt_reader,
-                    index.into_boxed(),
                     region,
+                    index.into_boxed(),
                     fields,
                     info_fields,
                     genotype_fields,

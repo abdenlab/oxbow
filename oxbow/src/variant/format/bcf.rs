@@ -195,8 +195,8 @@ impl Scanner {
     pub fn scan_query<R: Read + Seek>(
         &self,
         fmt_reader: noodles::bcf::io::Reader<noodles::bgzf::Reader<R>>,
-        index: impl BinningIndex,
         region: noodles::core::Region,
+        index: impl BinningIndex,
         fields: Option<Vec<String>>,
         info_fields: Option<Vec<String>>,
         genotype_fields: Option<Vec<String>>,
@@ -246,27 +246,27 @@ fn resolve_chrom_id(
 ) -> io::Result<usize> {
     // For BCF, first try the source file's header, then try the index file's header.
     match header.contigs().get_index_of(chrom) {
-            Some(id) => Ok(id),
-            None => {
-                eprintln!(
-                    "Reference sequence {} not found in VCF header. Trying index header.",
-                    chrom
-                );
-                match index.header() {
-                    Some(index_header) => index_header
-                        .reference_sequence_names()
-                        .get_index_of(chrom.as_bytes())
-                        .ok_or_else(|| {
-                            io::Error::new(
-                                io::ErrorKind::InvalidInput,
+        Some(id) => Ok(id),
+        None => {
+            eprintln!(
+                "Reference sequence {} not found in VCF header. Trying index header.",
+                chrom
+            );
+            match index.header() {
+                Some(index_header) => index_header
+                    .reference_sequence_names()
+                    .get_index_of(chrom.as_bytes())
+                    .ok_or_else(|| {
+                        io::Error::new(
+                            io::ErrorKind::InvalidInput,
                             format!("Reference sequence '{}' not found in index header.", chrom),
-                            )
-                        }),
-                    None => Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        "Index header not found.",
-                    )),
-                }
+                        )
+                    }),
+                None => Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Index header not found.",
+                )),
             }
+        }
     }
 }
