@@ -653,14 +653,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_tag_def_try_from_valid() {
+    fn test_tagdef_try_from_valid() {
         let tag_def = TagDef::try_from(("NM".to_string(), "i".to_string())).unwrap();
         assert_eq!(tag_def.name, "NM");
         assert_eq!(tag_def.ty, TagType::Int32);
     }
 
     #[test]
-    fn test_tag_def_try_from_invalid() {
+    fn test_tagdef_try_from_invalid() {
         let result = TagDef::try_from(("N".to_string(), "i".to_string()));
         assert!(result.is_err());
         let result = TagDef::try_from(("NM".to_string(), "x".to_string()));
@@ -668,7 +668,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tag_def_into_bytes() {
+    fn test_tagdef_into_bytes() {
         let tag_def = TagDef {
             name: "NM".to_string(),
             ty: TagType::Int32,
@@ -697,7 +697,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tag_builder_append_null() {
+    fn test_tagbuilder_append_null() {
         let mut builder = TagBuilder::new(&TagType::Int32);
         builder.append_null();
         let array = builder.finish();
@@ -706,7 +706,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tag_builder_append_value() {
+    fn test_tagbuilder_append_value() {
         let mut builder = TagBuilder::new(&TagType::Int32);
         builder.append_value(&Value::Int32(42)).unwrap();
         let array = builder.finish();
@@ -714,6 +714,7 @@ mod tests {
             .as_any()
             .downcast_ref::<arrow::array::Int32Array>()
             .unwrap();
+        assert_eq!(int_array.len(), 1);
         assert_eq!(int_array.value(0), 42);
     }
 }

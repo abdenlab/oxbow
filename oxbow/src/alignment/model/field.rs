@@ -448,9 +448,24 @@ mod tests {
 
     #[test]
     fn test_field_builder_push() {
-        let mut builder = FieldBuilder::new(Field::Flag, 10);
-        let record = noodles::sam::Record::default();
-        let header = noodles::sam::Header::default();
-        assert!(builder.push(&record, &header).is_ok());
+        for field in [
+            Field::Qname,
+            Field::Flag,
+            Field::Rname,
+            Field::Pos,
+            Field::Mapq,
+            Field::Cigar,
+            Field::Rnext,
+            Field::Pnext,
+            Field::Tlen,
+            Field::Seq,
+            Field::Qual,
+            Field::End,
+        ] {
+            let mut builder = FieldBuilder::new(field, 10);
+            let record = noodles::sam::Record::default();
+            let header = noodles::sam::Header::default();
+            assert!(builder.push(&record, &header).is_ok());
+        }
     }
 }

@@ -3,3 +3,4 @@
 pub mod alignment;
 pub mod sequence;
 pub mod util;
+pub mod variant;
