@@ -152,7 +152,7 @@ impl Scanner {
 }
 
 impl Scanner {
-    /// Returns an iterator over record batches.
+    /// Returns an iterator yielding batches of records.
     ///
     /// The scan will begin at the current position of the reader and will
     /// move the cursor to the end of the last record scanned.
@@ -184,7 +184,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator over record batches satisfying a genomic range query.
+    /// Returns an iterator yielding record batches satisfying a genomic range query.
     ///
     /// This operation requires a BGZF source and an Index.
     ///
@@ -244,11 +244,8 @@ fn resolve_chrom_id(
     index: &impl BinningIndex,
     chrom: &str,
 ) -> io::Result<usize> {
-    let contig_string_map = header.string_maps().contigs();
-
-    match contig_string_map.get_index_of(chrom) {
-        Some(id) => Ok(id),
-        None => match header.contigs().get_index_of(chrom) {
+    // For BCF, first try the source file's header, then try the index file's header.
+    match header.contigs().get_index_of(chrom) {
             Some(id) => Ok(id),
             None => {
                 eprintln!(
@@ -262,10 +259,7 @@ fn resolve_chrom_id(
                         .ok_or_else(|| {
                             io::Error::new(
                                 io::ErrorKind::InvalidInput,
-                                format!(
-                                    "Reference sequence '{}' not found in index header.",
-                                    chrom
-                                ),
+                            format!("Reference sequence '{}' not found in index header.", chrom),
                             )
                         }),
                     None => Err(io::Error::new(
@@ -274,6 +268,5 @@ fn resolve_chrom_id(
                     )),
                 }
             }
-        },
     }
 }

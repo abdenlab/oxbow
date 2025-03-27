@@ -207,8 +207,8 @@ impl PyVcfScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (region, index=None, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
     #[allow(clippy::too_many_arguments)]
     fn scan_query(
@@ -413,7 +413,7 @@ impl PyBcfScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PySchema
+    /// arro3 Schema (pycapsule)
     #[pyo3(signature = (fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None))]
     fn schema(
         &self,
@@ -454,8 +454,8 @@ impl PyBcfScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
     #[allow(clippy::too_many_arguments)]
     fn scan(
@@ -517,8 +517,8 @@ impl PyBcfScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (region, index=None, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
     #[allow(clippy::too_many_arguments)]
     fn scan_query(

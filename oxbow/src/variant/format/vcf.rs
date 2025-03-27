@@ -152,9 +152,9 @@ impl Scanner {
 }
 
 impl Scanner {
-    /// Returns an iterator over record batches.
+    /// Returns an iterator yielding record batches.
     ///
-    /// The scan will begin at the current position of the reader and will
+    /// The scan will begin atv the current position of the reader and will
     /// move the cursor to the end of the last record scanned.
     #[allow(clippy::too_many_arguments)]
     pub fn scan<R: BufRead>(
@@ -184,7 +184,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator over record batches satisfying a genomic range query.
+    /// Returns an iterator yielding record batches satisfying a genomic range query.
     ///
     /// This operation requires a BGZF source and an Index.
     ///
@@ -244,6 +244,7 @@ fn resolve_chrom_id(
     index: &impl BinningIndex,
     chrom: &str,
 ) -> io::Result<usize> {
+    // For VCF, first try the index file's header, then try the source file's header.
     match index.header() {
         Some(index_header) => index_header
             .reference_sequence_names()
