@@ -188,7 +188,7 @@ impl Push<noodles::gtf::Record> for AttributeScanner {
     }
 }
 
-impl<'a> Push<noodles::gff::Record<'a>> for AttributeScanner {
+impl Push<noodles::gff::Record<'_>> for AttributeScanner {
     fn push(&mut self, record: noodles::gff::Record) {
         record.attributes().iter().for_each(|result| {
             let (key, value) = result.unwrap();

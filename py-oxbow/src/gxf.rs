@@ -72,7 +72,7 @@ impl PyGtfScanner {
     #[pyo3(signature = (scan_rows=1024))]
     fn attribute_defs(&mut self, scan_rows: Option<usize>) -> PyResult<Vec<(String, String)>> {
         let mut reader = self.reader.clone();
-        let defs = match &mut reader {
+        match &mut reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
@@ -88,7 +88,7 @@ impl PyGtfScanner {
                 Ok(defs)
             }
             _ => {
-                let pos = reader.seek(std::io::SeekFrom::Current(0))?;
+                let pos = reader.stream_position()?;
                 let mut fmt_reader = noodles::gtf::io::Reader::new(reader);
                 let defs = self.scanner.attribute_defs(&mut fmt_reader, scan_rows)?;
                 fmt_reader
@@ -96,8 +96,7 @@ impl PyGtfScanner {
                     .seek(std::io::SeekFrom::Start(pos))?;
                 Ok(defs)
             }
-        };
-        defs
+        }
     }
 
     /// Return the Arrow schema.
@@ -153,7 +152,7 @@ impl PyGtfScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, fields, attribute_defs, batch_size, limit)
-            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e))?;
+            .map_err(PyErr::new::<PyValueError, _>)?;
         let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
         Ok(py_batch_reader)
     }
@@ -182,6 +181,7 @@ impl PyGtfScanner {
     /// pyo3_arrow.PyRecordBatchReader
     ///     A PyCapsule stream iterator for the record batches.
     #[pyo3(signature = (region, index=None, fields=None, attribute_defs=None, batch_size=1024, limit=None))]
+    #[allow(clippy::too_many_arguments)]
     fn scan_query(
         &mut self,
         py: Python,
@@ -195,7 +195,7 @@ impl PyGtfScanner {
         let index = resolve_index(py, self.src.clone_ref(py), index)?;
         let region = region
             .parse::<Region>()
-            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
 
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => match index {
@@ -212,7 +212,7 @@ impl PyGtfScanner {
                             batch_size,
                             limit,
                         )
-                        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
@@ -229,7 +229,7 @@ impl PyGtfScanner {
                             batch_size,
                             limit,
                         )
-                        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
@@ -248,7 +248,7 @@ impl PyGtfScanner {
                             batch_size,
                             limit,
                         )
-                        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
@@ -265,16 +265,14 @@ impl PyGtfScanner {
                             batch_size,
                             limit,
                         )
-                        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
             },
-            _ => {
-                return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                    "Scanning query ranges is only supported for indexed bgzf-compressed sources.",
-                ));
-            }
+            _ => Err(PyErr::new::<PyValueError, _>(
+                "Scanning query ranges is only supported for indexed bgzf-compressed sources.",
+            )),
         }
     }
 }
@@ -332,7 +330,7 @@ impl PyGffScanner {
     #[pyo3(signature = (scan_rows=1024))]
     fn attribute_defs(&mut self, scan_rows: Option<usize>) -> PyResult<Vec<(String, String)>> {
         let mut reader = self.reader.clone();
-        let defs = match &mut reader {
+        match &mut reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
@@ -348,7 +346,7 @@ impl PyGffScanner {
                 Ok(defs)
             }
             _ => {
-                let pos = reader.seek(std::io::SeekFrom::Current(0))?;
+                let pos = reader.stream_position()?;
                 let mut fmt_reader = noodles::gff::io::Reader::new(reader);
                 let defs = self.scanner.attribute_defs(&mut fmt_reader, scan_rows)?;
                 fmt_reader
@@ -356,8 +354,7 @@ impl PyGffScanner {
                     .seek(std::io::SeekFrom::Start(pos))?;
                 Ok(defs)
             }
-        };
-        defs
+        }
     }
 
     /// Return the Arrow schema.
@@ -413,7 +410,7 @@ impl PyGffScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, fields, attribute_defs, batch_size, limit)
-            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e))?;
+            .map_err(PyErr::new::<PyValueError, _>)?;
         let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
         Ok(py_batch_reader)
     }
@@ -442,6 +439,7 @@ impl PyGffScanner {
     /// pyo3_arrow.PyRecordBatchReader
     ///     A PyCapsule stream iterator for the record batches.
     #[pyo3(signature = (region, index=None, fields=None, attribute_defs=None, batch_size=1024, limit=None))]
+    #[allow(clippy::too_many_arguments)]
     fn scan_query(
         &mut self,
         py: Python,
@@ -455,7 +453,7 @@ impl PyGffScanner {
         let index = resolve_index(py, self.src.clone_ref(py), index)?;
         let region = region
             .parse::<Region>()
-            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
 
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => match index {
@@ -472,7 +470,7 @@ impl PyGffScanner {
                             batch_size,
                             limit,
                         )
-                        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
@@ -489,7 +487,7 @@ impl PyGffScanner {
                             batch_size,
                             limit,
                         )
-                        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
@@ -508,7 +506,7 @@ impl PyGffScanner {
                             batch_size,
                             limit,
                         )
-                        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
@@ -525,16 +523,14 @@ impl PyGffScanner {
                             batch_size,
                             limit,
                         )
-                        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
             },
-            _ => {
-                return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                    "Scanning query ranges is only supported for indexed bgzf-compressed sources.",
-                ));
-            }
+            _ => Err(PyErr::new::<PyValueError, _>(
+                "Scanning query ranges is only supported for indexed bgzf-compressed sources.",
+            )),
         }
     }
 }

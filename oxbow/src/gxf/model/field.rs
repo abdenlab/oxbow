@@ -70,7 +70,7 @@ impl FromStr for Field {
             "frame" => Ok(Self::Frame),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                format!("Invalid field name: {}", s.to_string()),
+                format!("Invalid field name: {}", s),
             )),
         }
     }
@@ -215,9 +215,9 @@ impl Push<&noodles::gtf::Record> for FieldBuilder {
                 builder.append_option(strand);
             }
             Self::Frame(builder) => {
-                let frame = record.frame().and_then(|frame| {
+                let frame = record.frame().map(|frame| {
                     let n: u8 = frame.into();
-                    Some(n)
+                    n
                 });
                 builder.append_option(frame);
             }

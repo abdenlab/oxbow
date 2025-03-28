@@ -1,5 +1,4 @@
 use std::io;
-use std::str::FromStr;
 use std::sync::Arc;
 
 use arrow::array::{ArrayRef, StructArray};
@@ -33,9 +32,9 @@ impl BatchBuilder {
             .map(|name| name.to_string())
             .collect();
         let fields: Vec<Field> = field_names
-            .unwrap_or_else(|| default_field_names)
+            .unwrap_or(default_field_names)
             .into_iter()
-            .map(|name| Field::from_str(&name))
+            .map(|name| name.parse())
             .collect::<Result<Vec<_>, _>>()?;
         let mut field_builders = IndexMap::new();
         for field in &fields {
@@ -44,7 +43,7 @@ impl BatchBuilder {
         }
 
         let attr_defs: Vec<AttributeDef> = attr_defs
-            .unwrap_or_else(|| vec![])
+            .unwrap_or_default()
             .into_iter()
             .map(AttributeDef::try_from)
             .collect::<Result<Vec<_>, _>>()?;
@@ -117,7 +116,7 @@ impl BatchBuilder {
             name_to_array.push(("attributes", Arc::new(attrs)));
         }
 
-        RecordBatch::try_from_iter(name_to_array.into_iter())
+        RecordBatch::try_from_iter(name_to_array)
     }
 }
 

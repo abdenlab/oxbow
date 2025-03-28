@@ -136,6 +136,7 @@ impl Scanner {
     /// The scan will consume contiguous "chunks" of BGZF blocks and filter for
     /// records that overlap the given region. The cursor will move to the end
     /// of the last record scanned.
+    #[allow(clippy::too_many_arguments)]
     pub fn scan_query<R: BufRead + Seek>(
         &self,
         fmt_reader: noodles::gff::io::Reader<noodles::bgzf::Reader<R>>,
@@ -158,7 +159,7 @@ impl Scanner {
                 "Index header not found.",
             ));
         };
-        let reference_sequence_id = resolve_chrom_id(&header, &reference_sequence_name)?;
+        let reference_sequence_id = resolve_chrom_id(header, &reference_sequence_name)?;
         let chunks = index.query(reference_sequence_id, interval)?;
         let bgzf_reader = fmt_reader.into_inner();
         let query_reader = BgzfChunkReader::new(bgzf_reader, chunks);
