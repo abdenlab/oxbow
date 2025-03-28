@@ -185,3 +185,179 @@ impl Push<&noodles::bed::Record<3>> for BatchBuilder {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arrow::array::{Int64Array, StringArray};
+    use std::io::Cursor;
+
+    fn create_bed_record() -> noodles::bed::Record<3> {
+        let mut record = noodles::bed::Record::default();
+        let buf = b"chr1\t100\t200\tfoo\tbar\n".to_vec();
+        let mut reader = noodles::bed::Reader::<3, Cursor<Vec<u8>>>::new(Cursor::new(buf));
+        reader.read_record(&mut record).unwrap();
+        record
+    }
+
+    #[test]
+    fn test_batch_builder_new() {
+        let bed_schema = BedSchema::new(3, Some(2)).unwrap();
+        let batch_builder = BatchBuilder::new(None, &bed_schema, 10).unwrap();
+
+        assert_eq!(batch_builder.standard_fields.len(), 3);
+        assert_eq!(batch_builder.custom_field_names.len(), 2);
+        assert_eq!(batch_builder.get_arrow_fields().len(), 5);
+    }
+
+    #[test]
+    fn test_push_bed_record() {
+        let bed_schema = BedSchema::new(3, Some(2)).unwrap();
+        let mut batch_builder = BatchBuilder::new(None, &bed_schema, 10).unwrap();
+
+        let record = create_bed_record();
+        let result = batch_builder.push(&record);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_finish_bedn() {
+        let record = create_bed_record();
+
+        let bed_schema = BedSchema::new(3, Some(0)).unwrap();
+        let mut batch_builder = BatchBuilder::new(None, &bed_schema, 10).unwrap();
+        batch_builder.push(&record).unwrap();
+        let record_batch = batch_builder.finish();
+        assert!(record_batch.is_ok());
+
+        let record_batch = record_batch.unwrap();
+        assert_eq!(record_batch.num_columns(), 3);
+        assert_eq!(record_batch.num_rows(), 1);
+
+        let chrom_array = record_batch
+            .column(0)
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .unwrap();
+        assert_eq!(chrom_array.value(0), "chr1");
+
+        let start_array = record_batch
+            .column(1)
+            .as_any()
+            .downcast_ref::<Int64Array>()
+            .unwrap();
+        assert_eq!(start_array.value(0), 101);
+
+        let end_array = record_batch
+            .column(2)
+            .as_any()
+            .downcast_ref::<Int64Array>()
+            .unwrap();
+        assert_eq!(end_array.value(0), 200);
+    }
+
+    #[test]
+    fn test_finish_bedn_plus_m() {
+        let bed_schema = BedSchema::new(3, Some(2)).unwrap();
+        let mut batch_builder = BatchBuilder::new(None, &bed_schema, 10).unwrap();
+
+        let record = create_bed_record();
+        batch_builder.push(&record).unwrap();
+        let record_batch = batch_builder.finish();
+        assert!(record_batch.is_ok());
+
+        let record_batch = record_batch.unwrap();
+        assert_eq!(record_batch.num_columns(), 5);
+        assert_eq!(record_batch.num_rows(), 1);
+
+        let chrom_array = record_batch
+            .column(0)
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .unwrap();
+        assert_eq!(chrom_array.value(0), "chr1");
+
+        let start_array = record_batch
+            .column(1)
+            .as_any()
+            .downcast_ref::<Int64Array>()
+            .unwrap();
+        assert_eq!(start_array.value(0), 101);
+
+        let end_array = record_batch
+            .column(2)
+            .as_any()
+            .downcast_ref::<Int64Array>()
+            .unwrap();
+        assert_eq!(end_array.value(0), 200);
+
+        let custom1_array = record_batch
+            .column(3)
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .unwrap();
+        assert_eq!(custom1_array.value(0), "foo");
+        assert_eq!(
+            record_batch.schema().fields().get(3).unwrap().name(),
+            "BED3+1"
+        );
+
+        let custom2_array = record_batch
+            .column(4)
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .unwrap();
+        assert_eq!(custom2_array.value(0), "bar");
+        assert_eq!(
+            record_batch.schema().fields().get(4).unwrap().name(),
+            "BED3+2"
+        );
+    }
+
+    #[test]
+    fn test_finish_bedn_plus() {
+        let record = create_bed_record();
+
+        let bed_schema = BedSchema::new(3, None).unwrap();
+        let mut batch_builder = BatchBuilder::new(None, &bed_schema, 10).unwrap();
+        batch_builder.push(&record).unwrap();
+        let record_batch = batch_builder.finish();
+        assert!(record_batch.is_ok());
+
+        let record_batch = record_batch.unwrap();
+        assert_eq!(record_batch.num_columns(), 4);
+        assert_eq!(record_batch.num_rows(), 1);
+
+        let chrom_array = record_batch
+            .column(0)
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .unwrap();
+        assert_eq!(chrom_array.value(0), "chr1");
+
+        let start_array = record_batch
+            .column(1)
+            .as_any()
+            .downcast_ref::<Int64Array>()
+            .unwrap();
+        assert_eq!(start_array.value(0), 101);
+
+        let end_array = record_batch
+            .column(2)
+            .as_any()
+            .downcast_ref::<Int64Array>()
+            .unwrap();
+        assert_eq!(end_array.value(0), 200);
+
+        let rest_array = record_batch
+            .column(3)
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .unwrap();
+        assert_eq!(rest_array.value(0), "foo\tbar");
+        assert_eq!(
+            record_batch.schema().fields().get(3).unwrap().name(),
+            "rest"
+        );
+    }
+}

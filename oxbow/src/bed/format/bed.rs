@@ -14,13 +14,16 @@ use crate::util::query::BgzfChunkReader;
 /// # Examples
 ///
 /// ```no_run
+/// use oxbow::bed::format::bed::Scanner;
 /// use std::fs::File;
+/// use std::io::BufReader;
 ///
-/// let inner = File::open("sample.bed")?;
-/// let mut fmt_reader = noodles::bed::io::Reader::<3, _>::new(inner);
+/// let inner = File::open("sample.bed").map(BufReader::new).unwrap();
+/// let mut fmt_reader = noodles::bed::io::Reader::new(inner);
 ///
-/// let scanner = Scanner::new("bed6+3");
-/// let batches = scanner.scan(fmt_reader, None, None, Some(1000))?;
+/// let bed_schema = "bed6+3".parse().unwrap();
+/// let scanner = Scanner::new(bed_schema);
+/// let batches = scanner.scan(fmt_reader, None, None, Some(1000)).unwrap();
 /// ```
 pub struct Scanner {
     bed_schema: BedSchema,
@@ -38,9 +41,9 @@ impl Scanner {
     }
 
     /// Returns the Arrow schema.
-    pub fn schema(&self, fields: Option<Vec<String>>) -> Schema {
-        let batch_builder = BatchBuilder::new(fields, &self.bed_schema, 0);
-        batch_builder.get_arrow_schema()
+    pub fn schema(&self, fields: Option<Vec<String>>) -> io::Result<Schema> {
+        let batch_builder = BatchBuilder::new(fields, &self.bed_schema, 0)?;
+        Ok(batch_builder.get_arrow_schema())
     }
 }
 
@@ -57,7 +60,7 @@ impl Scanner {
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
-        let batch_builder = BatchBuilder::new(fields, &self.bed_schema, batch_size);
+        let batch_builder = BatchBuilder::new(fields, &self.bed_schema, batch_size)?;
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
         Ok(batch_iter)
     }
@@ -82,7 +85,7 @@ impl Scanner {
         let reference_sequence_name = region.name().to_string();
         let interval = region.interval();
 
-        let batch_builder = BatchBuilder::new(fields, &self.bed_schema, batch_size);
+        let batch_builder = BatchBuilder::new(fields, &self.bed_schema, batch_size)?;
 
         let Some(header) = index.header() else {
             return Err(io::Error::new(
@@ -90,7 +93,7 @@ impl Scanner {
                 "Index header not found.",
             ));
         };
-        let reference_sequence_id = resolve_chrom_id(&header, &reference_sequence_name)?;
+        let reference_sequence_id = resolve_chrom_id(header, &reference_sequence_name)?;
         let chunks = index.query(reference_sequence_id, interval)?;
         let bgzf_reader = fmt_reader.into_inner();
         let query_reader = BgzfChunkReader::new(bgzf_reader, chunks);

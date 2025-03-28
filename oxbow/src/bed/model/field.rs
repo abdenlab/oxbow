@@ -124,13 +124,13 @@ impl FromStr for Field {
             "value" => Ok(Self::Value),
             _ => Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                format!("Invalid field name: {}", s.to_string()),
+                format!("Invalid field name: {}", s),
             )),
         }
     }
 }
 
-/// Builds an Arrow array (column) corresponding to a BED field.
+/// A builder for an Arrow array (column) corresponding to a BED field.
 pub enum FieldBuilder {
     Chrom(GenericStringBuilder<i32>),
     Start(Int64Builder),
@@ -407,5 +407,76 @@ impl Push<&noodles::bed::Record<3>> for FieldBuilder {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_field_arrow_type() {
+        for field in [
+            Field::Chrom,
+            Field::Start,
+            Field::End,
+            Field::Name,
+            Field::Score,
+            Field::Strand,
+            Field::ThickStart,
+            Field::ThickEnd,
+            Field::ItemRgb,
+            Field::BlockCount,
+            Field::BlockSizes,
+            Field::BlockStarts,
+            Field::FloatScore,
+            Field::Value,
+        ] {
+            let mut builder = FieldBuilder::new(field.clone(), 10);
+            let data_type = builder.finish().data_type().clone();
+            assert_eq!(field.arrow_type(), data_type);
+        }
+    }
+
+    #[test]
+    fn test_field_from_str() {
+        assert_eq!(Field::from_str("chrom").unwrap(), Field::Chrom);
+        assert_eq!(Field::from_str("start").unwrap(), Field::Start);
+        assert_eq!(Field::from_str("end").unwrap(), Field::End);
+        assert_eq!(Field::from_str("name").unwrap(), Field::Name);
+        assert_eq!(Field::from_str("score").unwrap(), Field::Score);
+        assert_eq!(Field::from_str("strand").unwrap(), Field::Strand);
+        assert_eq!(Field::from_str("thickStart").unwrap(), Field::ThickStart);
+        assert_eq!(Field::from_str("thickEnd").unwrap(), Field::ThickEnd);
+        assert_eq!(Field::from_str("itemRgb").unwrap(), Field::ItemRgb);
+        assert_eq!(Field::from_str("blockCount").unwrap(), Field::BlockCount);
+        assert_eq!(Field::from_str("blockSizes").unwrap(), Field::BlockSizes);
+        assert_eq!(Field::from_str("blockStarts").unwrap(), Field::BlockStarts);
+        assert_eq!(Field::from_str("value").unwrap(), Field::Value);
+        assert!(Field::from_str("unknown").is_err());
+    }
+
+    #[test]
+    fn test_field_builder_push() {
+        for field in [
+            Field::Chrom,
+            Field::Start,
+            Field::End,
+            Field::Name,
+            Field::Score,
+            Field::Strand,
+            Field::ThickStart,
+            Field::ThickEnd,
+            Field::ItemRgb,
+            Field::BlockCount,
+            Field::BlockSizes,
+            Field::BlockStarts,
+            Field::FloatScore,
+            Field::Value,
+        ] {
+            let mut builder = FieldBuilder::new(field, 10);
+            let record = noodles::bed::Record::default();
+            assert!(builder.push(&record).is_ok());
+        }
     }
 }

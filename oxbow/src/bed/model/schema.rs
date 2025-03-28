@@ -23,21 +23,21 @@ use super::field::DEFAULT_FIELD_NAMES;
 ///
 /// ```
 /// use std::str::FromStr;
-/// use crate::bed::model::BedSchema;
+/// use oxbow::bed::model::BedSchema;
 ///
-/// let spec: BedSchema = "bed".parse()?;
+/// let spec: BedSchema = "bed".parse().unwrap();
 /// assert_eq!(spec.standard_field_count(), 6);
-/// assert_eq!(spec.custom_field_count(), 0);
+/// assert_eq!(spec.custom_field_count(), Some(0));
 ///
-/// let spec: BedSchema = "bed12".parse()?;
+/// let spec: BedSchema = "bed12".parse().unwrap();
 /// assert_eq!(spec.standard_field_count(), 12);
-/// assert_eq!(spec.custom_field_count(), 0);
+/// assert_eq!(spec.custom_field_count(), Some(0));
 ///
-/// let spec: BedSchema = "bed6+3".parse()?;
+/// let spec: BedSchema = "bed6+3".parse().unwrap();
 /// assert_eq!(spec.standard_field_count(), 6);
 /// assert_eq!(spec.custom_field_count(), Some(3));
 ///
-/// let spec: BedSchema = "bed6+".parse()?;
+/// let spec: BedSchema = "bed6+".parse().unwrap();
 /// assert_eq!(spec.standard_field_count(), 6);
 /// assert_eq!(spec.custom_field_count(), None);
 /// ```
@@ -110,11 +110,12 @@ impl FromStr for BedSchema {
             )
         }
 
-        if s.starts_with("bed") {
-            let rest = &s[3..];
+        if let Some(rest) = s.strip_prefix("bed") {
             if rest.ends_with('+') {
                 // BEDn+
-                let n = rest[..rest.len() - 1]
+                let n = rest
+                    .strip_suffix('+')
+                    .unwrap()
                     .parse::<usize>()
                     .map_err(|_| parse_error(&s))?;
                 Self::new(n, None)
