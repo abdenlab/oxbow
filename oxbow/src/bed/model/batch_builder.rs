@@ -15,6 +15,7 @@ use super::schema::BedSchema;
 
 /// A builder for an Arrow record batch of BED features.
 pub struct BatchBuilder {
+    bed_schema: BedSchema,
     standard_fields: Vec<Field>,
     custom_field_names: Vec<String>,
     standard_field_builders: IndexMap<Field, FieldBuilder>,
@@ -22,19 +23,23 @@ pub struct BatchBuilder {
 }
 
 impl BatchBuilder {
-    pub fn new(field_names: Option<Vec<String>>, schema: &BedSchema, capacity: usize) -> Self {
-        let n = schema.standard_field_count();
+    /// Creates a new `BatchBuilder` for BED records.
+    pub fn new(
+        field_names: Option<Vec<String>>,
+        bed_schema: &BedSchema,
+        capacity: usize,
+    ) -> io::Result<Self> {
+        let n = bed_schema.standard_field_count();
         let default_field_names: Vec<String> = DEFAULT_FIELD_NAMES
             .into_iter()
             .take(n)
             .map(|name| name.to_string())
             .collect();
         let standard_fields: Vec<Field> = field_names
-            .unwrap_or_else(|| default_field_names)
+            .unwrap_or(default_field_names)
             .into_iter()
             .map(|name| Field::from_str(&name))
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap();
+            .collect::<Result<Vec<_>, _>>()?;
         let mut standard_field_builders = IndexMap::new();
         for field in &standard_fields {
             let builder = FieldBuilder::new(field.clone(), capacity);
@@ -43,7 +48,7 @@ impl BatchBuilder {
 
         let mut custom_field_builders = IndexMap::new();
         let mut custom_field_names = Vec::new();
-        match schema.custom_field_count() {
+        match bed_schema.custom_field_count() {
             Some(m) => {
                 for i in 1..=m {
                     let name = format!("BED{}+{}", n, i);
@@ -53,20 +58,20 @@ impl BatchBuilder {
                 }
             }
             None => {
-                panic!("Extended BED schemas are only supported with a known number of additional fields");
-                // let builder = GenericStringBuilder::<i32>::new();
-                // let name = "rest".to_string();
-                // custom_field_builders.insert(name.clone(), builder);
-                // custom_field_names.push(name.clone());
+                let builder = GenericStringBuilder::<i32>::new();
+                let name = "rest".to_string();
+                custom_field_builders.insert(name.clone(), builder);
+                custom_field_names.push(name.clone());
             }
         }
 
-        Self {
+        Ok(Self {
+            bed_schema: bed_schema.clone(),
             standard_fields,
             custom_field_names,
             standard_field_builders,
             custom_field_builders,
-        }
+        })
     }
 
     pub fn get_arrow_fields(&self) -> Vec<ArrowField> {
@@ -90,6 +95,10 @@ impl BatchBuilder {
         fields
     }
 
+    pub fn bed_schema(&self) -> &BedSchema {
+        &self.bed_schema
+    }
+
     pub fn get_arrow_schema(&self) -> Schema {
         Schema::new(self.get_arrow_fields())
     }
@@ -107,15 +116,29 @@ impl BatchBuilder {
 
         // custom fields (optional)
         if !self.custom_field_builders.is_empty() {
-            let other: Vec<(&str, ArrayRef)> = self
-                .custom_field_builders
-                .iter_mut()
-                .map(|(name, builder)| (name.as_str(), Arc::new(builder.finish()) as ArrayRef))
-                .collect();
-            name_to_array.extend(other);
+            match self.bed_schema.custom_field_count() {
+                Some(0) => {}
+                Some(_) => {
+                    let other: Vec<(&str, ArrayRef)> = self
+                        .custom_field_builders
+                        .iter_mut()
+                        .map(|(name, builder)| {
+                            (name.as_str(), Arc::new(builder.finish()) as ArrayRef)
+                        })
+                        .collect();
+                    name_to_array.extend(other);
+                }
+                None => {
+                    let name = "rest";
+                    if let Some(builder) = self.custom_field_builders.get_mut(name) {
+                        let array = builder.finish();
+                        name_to_array.push((name, Arc::new(array) as ArrayRef));
+                    };
+                }
+            }
         }
 
-        RecordBatch::try_from_iter(name_to_array.into_iter())
+        RecordBatch::try_from_iter(name_to_array)
     }
 }
 
@@ -134,18 +157,28 @@ impl Push<&noodles::bed::Record<3>> for BatchBuilder {
         // custom fields
         let n = self.standard_fields.len();
         if !self.custom_field_builders.is_empty() {
-            for (i, value) in record.other_fields().iter().enumerate() {
-                let field_abs_idx = i + 3;
-                let field_rel_idx = match field_abs_idx.checked_sub(n) {
-                    Some(i) => i,
-                    None => continue,
+            if self.bed_schema.custom_field_count().is_none() {
+                let rest = record
+                    .other_fields()
+                    .iter()
+                    .map(|value| value.to_string())
+                    .collect::<Vec<_>>()
+                    .join("\t");
+                if let Some(builder) = self.custom_field_builders.get_mut("rest") {
+                    builder.append_value(rest);
                 };
-                let name = format!("BED{}+{}", n, field_rel_idx + 1);
-                let builder = match self.custom_field_builders.get_mut(&name) {
-                    Some(builder) => builder,
-                    None => continue, // skip if we are not collecting this field
-                };
-                builder.append_value(value.to_string());
+            } else {
+                for (i, value) in record.other_fields().iter().enumerate() {
+                    let field_abs_idx = i + 3;
+                    let field_rel_idx = match field_abs_idx.checked_sub(n) {
+                        Some(i) => i,
+                        None => continue,
+                    };
+                    let name = format!("BED{}+{}", n, field_rel_idx + 1);
+                    if let Some(builder) = self.custom_field_builders.get_mut(&name) {
+                        builder.append_value(value.to_string());
+                    };
+                }
             }
         }
 

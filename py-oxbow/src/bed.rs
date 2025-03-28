@@ -82,7 +82,7 @@ impl PyBedScanner {
     /// arro3 Schema (pycapsule)
     #[pyo3(signature = (fields=None))]
     fn schema(&self, fields: Option<Vec<String>>) -> PyResult<PySchema> {
-        let schema = self.scanner.schema(fields);
+        let schema = self.scanner.schema(fields)?;
         Ok(PySchema::new(Arc::new(schema)))
     }
 
@@ -114,7 +114,7 @@ impl PyBedScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, fields, batch_size, limit)
-            .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+            .map_err(PyErr::new::<PyValueError, _>)?;
         let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
         Ok(py_batch_reader)
     }
@@ -162,7 +162,7 @@ impl PyBedScanner {
                     let batch_reader = self
                         .scanner
                         .scan_query(fmt_reader, region, index, fields, batch_size, limit)
-                        .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
@@ -171,7 +171,7 @@ impl PyBedScanner {
                     let batch_reader = self
                         .scanner
                         .scan_query(fmt_reader, region, index, fields, batch_size, limit)
-                        .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
@@ -182,7 +182,7 @@ impl PyBedScanner {
                     let batch_reader = self
                         .scanner
                         .scan_query(fmt_reader, region, index, fields, batch_size, limit)
-                        .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
@@ -191,16 +191,14 @@ impl PyBedScanner {
                     let batch_reader = self
                         .scanner
                         .scan_query(fmt_reader, region, index, fields, batch_size, limit)
-                        .map_err(|e| PyErr::new::<PyValueError, _>(e))?;
+                        .map_err(PyErr::new::<PyValueError, _>)?;
                     let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                     Ok(py_batch_reader)
                 }
             },
-            _ => {
-                return Err(PyErr::new::<PyValueError, _>(
-                    "Scanning query ranges is only supported for indexed bgzf-compressed sources.",
-                ));
-            }
+            _ => Err(PyErr::new::<PyValueError, _>(
+                "Scanning query ranges is only supported for indexed bgzf-compressed sources.",
+            )),
         }
     }
 }

@@ -149,12 +149,17 @@ pub enum FieldBuilder {
 }
 
 impl FieldBuilder {
+    /// Creates a new `FieldBuilder` for the specified field with the given capacity.
+    ///
+    /// # Arguments
+    /// * `field` - The field to build.
+    /// * `capacity` - The number of rows to preallocate for a batch.
     pub fn new(field: Field, capacity: usize) -> Self {
         match field {
-            Field::Chrom => Self::Chrom(GenericStringBuilder::<i32>::new()),
+            Field::Chrom => Self::Chrom(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::Start => Self::Start(Int64Builder::with_capacity(capacity)),
             Field::End => Self::End(Int64Builder::with_capacity(capacity)),
-            Field::Name => Self::Name(GenericStringBuilder::<i32>::new()),
+            Field::Name => Self::Name(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::Score => Self::Score(UInt16Builder::with_capacity(capacity)),
             Field::Strand => {
                 let strand_values = StringArray::from(vec!["+", "-"]);
