@@ -17,6 +17,7 @@ pub struct BatchIterator<R> {
     batch_size: usize,
     limit: usize,
     count: usize,
+    header: noodles::sam::Header,
     reference_sequence_id: usize,
     interval: Interval,
 }
@@ -24,6 +25,7 @@ pub struct BatchIterator<R> {
 impl<R> BatchIterator<R> {
     pub fn new(
         reader: R,
+        header: noodles::sam::Header,
         reference_sequence_id: usize,
         interval: Interval,
         builder: BatchBuilder,
@@ -36,6 +38,7 @@ impl<R> BatchIterator<R> {
             batch_size,
             limit: limit.unwrap_or(usize::MAX),
             count: 0,
+            header,
             reference_sequence_id,
             interval,
         }
@@ -58,7 +61,6 @@ where
     type Item = Result<RecordBatch, ArrowError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let header = self.builder.header();
         let mut record = noodles::sam::Record::default();
         let mut count = 0;
 
@@ -66,7 +68,12 @@ where
             match self.reader.read_record(&mut record) {
                 Ok(0) => break,
                 Ok(_) => {
-                    match intersects(&header, &record, self.reference_sequence_id, self.interval) {
+                    match intersects(
+                        &self.header,
+                        &record,
+                        self.reference_sequence_id,
+                        self.interval,
+                    ) {
                         Ok(true) => match self.builder.push(&record) {
                             Ok(_) => {
                                 self.count += 1;
