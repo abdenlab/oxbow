@@ -16,10 +16,19 @@ pub struct AttributeDef {
 }
 
 impl AttributeDef {
-    pub fn try_from_strings(name: &str, ty: &str) -> io::Result<Self> {
-        let ty = match ty {
-            "String" => Ok(AttributeType::String),
-            "Array" => Ok(AttributeType::Array),
+    pub fn get_arrow_field(&self) -> ArrowField {
+        ArrowField::new(&self.name, self.ty.arrow_type(), true)
+    }
+}
+
+impl TryFrom<(String, String)> for AttributeDef {
+    type Error = io::Error;
+
+    fn try_from(def: (String, String)) -> Result<Self, Self::Error> {
+        let (name, ty) = def;
+        let ty = match ty.to_lowercase().as_str() {
+            "string" => Ok(AttributeType::String),
+            "array" => Ok(AttributeType::Array),
             _ => Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 format!(
@@ -28,10 +37,7 @@ impl AttributeDef {
                 ),
             )),
         }?;
-        Ok(Self {
-            name: name.to_string(),
-            ty,
-        })
+        Ok(Self { name, ty })
     }
 }
 
@@ -90,17 +96,6 @@ impl AttributeBuilder {
         }
     }
 
-    pub fn get_arrow_field(&self, name: &str) -> ArrowField {
-        match self {
-            Self::String(_) => ArrowField::new(name, DataType::Utf8, true),
-            Self::Array(_) => ArrowField::new(
-                name,
-                DataType::List(Arc::new(ArrowField::new(name, DataType::Utf8, true))),
-                true,
-            ),
-        }
-    }
-
     pub fn append_null(&mut self) {
         match self {
             Self::String(builder) => builder.append_null(),
@@ -153,6 +148,12 @@ impl AttributeBuilder {
 /// A scanner to collect unique attribute definitions from a stream of GXF records.
 pub struct AttributeScanner {
     attrs: BTreeMap<String, String>,
+}
+
+impl Default for AttributeScanner {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AttributeScanner {

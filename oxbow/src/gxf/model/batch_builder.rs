@@ -13,7 +13,7 @@ use crate::gxf::model::attribute::{AttributeBuilder, AttributeDef, AttributeValu
 use crate::gxf::model::field::Push as _;
 use crate::gxf::model::field::{Field, FieldBuilder, DEFAULT_FIELD_NAMES};
 
-/// A builder for an Arrow record batch of GXF features.
+/// A builder for an Arrow record batch of GXF (GTF/GFF) features.
 pub struct BatchBuilder {
     fields: Vec<Field>,
     attr_defs: Vec<AttributeDef>,
@@ -22,6 +22,7 @@ pub struct BatchBuilder {
 }
 
 impl BatchBuilder {
+    /// Creates a new `BatchBuilder` for GTF/GFF records.
     pub fn new(
         field_names: Option<Vec<String>>,
         attr_defs: Option<Vec<(String, String)>>,
@@ -45,7 +46,7 @@ impl BatchBuilder {
         let attr_defs: Vec<AttributeDef> = attr_defs
             .unwrap_or_else(|| vec![])
             .into_iter()
-            .map(|(name, ty)| AttributeDef::try_from_strings(&name, &ty))
+            .map(AttributeDef::try_from)
             .collect::<Result<Vec<_>, _>>()?;
         let mut attr_builders = IndexMap::new();
         for def in &attr_defs {
@@ -72,9 +73,9 @@ impl BatchBuilder {
         // attributes (optional)
         if !self.attr_defs.is_empty() {
             let nested_fields: Vec<ArrowField> = self
-                .attr_builders
+                .attr_defs
                 .iter()
-                .map(|(def, b)| b.get_arrow_field(&def.name))
+                .map(|def| def.get_arrow_field())
                 .collect();
             let tag_field = ArrowField::new(
                 "attributes",
@@ -108,7 +109,7 @@ impl BatchBuilder {
                 .attr_builders
                 .iter_mut()
                 .map(|(def, builder)| {
-                    let arrow_field = builder.get_arrow_field(&def.name);
+                    let arrow_field = def.get_arrow_field();
                     (Arc::new(arrow_field), builder.finish())
                 })
                 .collect();
