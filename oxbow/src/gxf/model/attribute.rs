@@ -201,3 +201,76 @@ impl Push<noodles::gff::Record<'_>> for AttributeScanner {
         });
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arrow::array::{Array, StringArray};
+
+    #[test]
+    fn test_attribute_def_try_from_valid() {
+        let def = AttributeDef::try_from(("name".to_string(), "String".to_string())).unwrap();
+        assert_eq!(def.name, "name");
+        assert_eq!(def.ty, AttributeType::String);
+
+        let def = AttributeDef::try_from(("name".to_string(), "Array".to_string())).unwrap();
+        assert_eq!(def.name, "name");
+        assert_eq!(def.ty, AttributeType::Array);
+    }
+
+    #[test]
+    fn test_attribute_def_try_from_invalid() {
+        let result = AttributeDef::try_from(("name".to_string(), "InvalidType".to_string()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_attribute_arrow_type() {
+        for ty in [AttributeType::String, AttributeType::Array] {
+            let mut builder = AttributeBuilder::new(&ty);
+            let data_type = builder.finish().data_type().clone();
+            assert_eq!(ty.arrow_type(), data_type);
+        }
+    }
+
+    #[test]
+    fn test_attribute_builder_append_null() {
+        let mut builder = AttributeBuilder::new(&AttributeType::String);
+        builder.append_null();
+        let array = builder.finish();
+        assert!(array.is_nullable());
+        assert!(array.is_null(0));
+    }
+
+    #[test]
+    fn test_attribute_builder_append_value_string() {
+        let mut builder = AttributeBuilder::new(&AttributeType::String);
+        builder
+            .append_value(&AttributeValue::String("value".to_string()))
+            .unwrap();
+        let array = builder.finish();
+        let string_array = array.as_any().downcast_ref::<StringArray>().unwrap();
+        assert_eq!(string_array.len(), 1);
+        assert_eq!(string_array.value(0), "value");
+    }
+
+    #[test]
+    fn test_attribute_builder_append_value_array() {
+        let mut builder = AttributeBuilder::new(&AttributeType::Array);
+        builder
+            .append_value(&AttributeValue::Array(vec![
+                "value1".to_string(),
+                "value2".to_string(),
+            ]))
+            .unwrap();
+        let array = builder.finish();
+        let list_array = array
+            .as_any()
+            .downcast_ref::<arrow::array::ListArray>()
+            .unwrap();
+        let values = list_array.value(0);
+        let item = values.as_any().downcast_ref::<StringArray>().unwrap();
+        assert_eq!(item.value(0), "value1");
+        assert_eq!(item.value(1), "value2");
+    }
+}

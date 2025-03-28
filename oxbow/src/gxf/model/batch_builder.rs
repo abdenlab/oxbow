@@ -187,3 +187,95 @@ impl Push<&noodles::gtf::Record> for BatchBuilder {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arrow::datatypes::{DataType, Field as ArrowField};
+
+    fn gff_recordbuf_to_line(record_buf: &noodles::gff::RecordBuf) -> noodles::gff::Line {
+        let mut writer = noodles::gff::io::Writer::new(Vec::new());
+        writer.write_record(record_buf).unwrap();
+        let buf = writer.into_inner();
+        let mut reader = noodles::gff::Reader::new(std::io::Cursor::new(buf.as_slice()));
+        let line = reader.lines().next().unwrap().unwrap();
+        line
+    }
+
+    #[test]
+    fn test_batch_builder_new() {
+        let field_names = Some(vec!["seqid".to_string(), "source".to_string()]);
+        let attr_defs = Some(vec![("gene_id".to_string(), "String".to_string())]);
+        let capacity = 10;
+
+        let batch_builder = BatchBuilder::new(field_names, attr_defs, capacity).unwrap();
+
+        assert_eq!(batch_builder.fields.len(), 2);
+        assert_eq!(batch_builder.attr_defs.len(), 1);
+    }
+
+    #[test]
+    fn test_get_arrow_schema() {
+        let field_names = Some(vec!["seqid".to_string(), "source".to_string()]);
+        let attr_defs = Some(vec![("gene_id".to_string(), "String".to_string())]);
+        let capacity = 10;
+
+        let batch_builder = BatchBuilder::new(field_names, attr_defs, capacity).unwrap();
+        let schema = batch_builder.get_arrow_schema();
+
+        assert_eq!(schema.fields().len(), 3); // 2 fields + 1 attributes struct
+        assert_eq!(schema.field(0).name(), "seqid");
+        assert_eq!(schema.field(1).name(), "source");
+        assert_eq!(schema.field(2).name(), "attributes");
+        assert_eq!(
+            schema.field(2).data_type(),
+            &DataType::Struct(vec![ArrowField::new("gene_id", DataType::Utf8, true),].into())
+        );
+    }
+
+    #[test]
+    fn test_push_gff_record() {
+        let field_names = Some(vec!["seqid".to_string(), "source".to_string()]);
+        let attr_defs = Some(vec![("gene_id".to_string(), "String".to_string())]);
+        let capacity = 10;
+
+        let mut batch_builder = BatchBuilder::new(field_names, attr_defs, capacity).unwrap();
+
+        let record_buf = noodles::gff::RecordBuf::default();
+        let line = gff_recordbuf_to_line(&record_buf);
+        let record = line.as_record().unwrap().unwrap();
+        let result = batch_builder.push(&record);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_push_gtf_record() {
+        let field_names = Some(vec!["seqid".to_string(), "source".to_string()]);
+        let attr_defs = Some(vec![("gene_id".to_string(), "String".to_string())]);
+        let capacity = 10;
+
+        let mut batch_builder = BatchBuilder::new(field_names, attr_defs, capacity).unwrap();
+
+        let record = noodles::gtf::Record::default();
+        let result = batch_builder.push(&record);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_finish() {
+        let field_names = Some(vec!["seqid".to_string(), "source".to_string()]);
+        let attr_defs = Some(vec![("gene_id".to_string(), "String".to_string())]);
+        let capacity = 10;
+
+        let mut batch_builder = BatchBuilder::new(field_names, attr_defs, capacity).unwrap();
+
+        let record = noodles::gtf::Record::default();
+        batch_builder.push(&record).unwrap();
+        let record_batch = batch_builder.finish();
+        assert!(record_batch.is_ok());
+
+        let record_batch = record_batch.unwrap();
+        assert_eq!(record_batch.num_columns(), 3);
+        assert_eq!(record_batch.num_rows(), 1);
+    }
+}

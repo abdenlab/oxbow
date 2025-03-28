@@ -274,9 +274,9 @@ mod tests {
         let batch_builder = BatchBuilder::new(header, field_names, tag_defs, capacity).unwrap();
         let schema = batch_builder.get_arrow_schema();
         assert_eq!(schema.fields().len(), 3);
-        assert_eq!(schema.fields()[0].name(), "qname");
-        assert_eq!(schema.fields()[1].name(), "flag");
-        assert_eq!(schema.fields()[2].name(), "tags");
+        assert_eq!(schema.field(0).name(), "qname");
+        assert_eq!(schema.field(1).name(), "flag");
+        assert_eq!(schema.field(2).name(), "tags");
         assert_eq!(
             schema.fields()[2].data_type(),
             &DataType::Struct(vec![ArrowField::new("NM", DataType::Int32, true)].into())

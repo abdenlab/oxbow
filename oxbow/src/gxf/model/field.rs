@@ -225,3 +225,57 @@ impl Push<&noodles::gtf::Record> for FieldBuilder {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_field_arrow_type() {
+        for field in [
+            Field::SeqId,
+            Field::Source,
+            Field::Type,
+            Field::Start,
+            Field::End,
+            Field::Score,
+            Field::Strand,
+            Field::Frame,
+        ] {
+            let mut builder = FieldBuilder::new(field.clone(), 10);
+            let data_type = builder.finish().data_type().clone();
+            assert_eq!(field.arrow_type(), data_type);
+        }
+    }
+
+    #[test]
+    fn test_field_from_str() {
+        assert_eq!(Field::from_str("seqid").unwrap(), Field::SeqId);
+        assert_eq!(Field::from_str("type").unwrap(), Field::Type);
+        assert_eq!(Field::from_str("source").unwrap(), Field::Source);
+        assert_eq!(Field::from_str("start").unwrap(), Field::Start);
+        assert_eq!(Field::from_str("end").unwrap(), Field::End);
+        assert_eq!(Field::from_str("score").unwrap(), Field::Score);
+        assert_eq!(Field::from_str("strand").unwrap(), Field::Strand);
+        assert_eq!(Field::from_str("frame").unwrap(), Field::Frame);
+        assert!(Field::from_str("invalid").is_err());
+    }
+
+    #[test]
+    fn test_field_builder_push_gtf() {
+        for field in [
+            Field::SeqId,
+            Field::Source,
+            Field::Type,
+            Field::Start,
+            Field::End,
+            Field::Score,
+            Field::Strand,
+            Field::Frame,
+        ] {
+            let mut builder = FieldBuilder::new(field, 10);
+            let record = noodles::gtf::Record::default();
+            assert!(builder.push(&record).is_ok());
+        }
+    }
+}
