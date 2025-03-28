@@ -205,8 +205,8 @@ impl PyGtfScanner {
                         .scanner
                         .scan_query(
                             fmt_reader,
-                            index,
                             region,
+                            index,
                             fields,
                             attribute_defs,
                             batch_size,
@@ -222,8 +222,8 @@ impl PyGtfScanner {
                         .scanner
                         .scan_query(
                             fmt_reader,
-                            index,
                             region,
+                            index,
                             fields,
                             attribute_defs,
                             batch_size,
@@ -241,8 +241,8 @@ impl PyGtfScanner {
                         .scanner
                         .scan_query(
                             fmt_reader,
-                            index,
                             region,
+                            index,
                             fields,
                             attribute_defs,
                             batch_size,
@@ -258,8 +258,8 @@ impl PyGtfScanner {
                         .scanner
                         .scan_query(
                             fmt_reader,
-                            index,
                             region,
+                            index,
                             fields,
                             attribute_defs,
                             batch_size,
@@ -465,8 +465,8 @@ impl PyGffScanner {
                         .scanner
                         .scan_query(
                             fmt_reader,
-                            index,
                             region,
+                            index,
                             fields,
                             attribute_defs,
                             batch_size,
@@ -482,8 +482,8 @@ impl PyGffScanner {
                         .scanner
                         .scan_query(
                             fmt_reader,
-                            index,
                             region,
+                            index,
                             fields,
                             attribute_defs,
                             batch_size,
@@ -501,8 +501,8 @@ impl PyGffScanner {
                         .scanner
                         .scan_query(
                             fmt_reader,
-                            index,
                             region,
+                            index,
                             fields,
                             attribute_defs,
                             batch_size,
@@ -518,8 +518,8 @@ impl PyGffScanner {
                         .scanner
                         .scan_query(
                             fmt_reader,
-                            index,
                             region,
+                            index,
                             fields,
                             attribute_defs,
                             batch_size,
@@ -548,7 +548,7 @@ impl PyGffScanner {
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 /// tag_defs : list[tuple[str, str]], optional
-///    Definitions of tag fields to project.
+///    Definitions of attribute fields to project.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed.
 ///
@@ -557,18 +557,17 @@ impl PyGffScanner {
 /// bytes
 ///     Arrow IPC
 #[pyfunction]
-#[pyo3(signature = (src, region=None, index=None, fields=None, tag_defs=None, compressed=false))]
+#[pyo3(signature = (src, region=None, index=None, fields=None, attr_defs=None, compressed=false))]
 pub fn read_gtf(
     py: Python,
     src: PyObject,
     region: Option<String>,
     index: Option<PyObject>,
     fields: Option<Vec<String>>,
-    tag_defs: Option<Vec<(String, String)>>,
+    attr_defs: Option<Vec<(String, String)>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let mut fmt_reader = noodles::gtf::io::Reader::from(reader);
     let scanner = GtfScanner::new(None);
 
     let ipc = if let Some(region) = region {
@@ -585,7 +584,7 @@ pub fn read_gtf(
                     region,
                     index.into_boxed(),
                     fields,
-                    None,
+                    attr_defs,
                     None,
                     None,
                 )?;
@@ -598,7 +597,7 @@ pub fn read_gtf(
                     region,
                     index.into_boxed(),
                     fields,
-                    None,
+                    attr_defs,
                     None,
                     None,
                 )?;
@@ -627,8 +626,8 @@ pub fn read_gtf(
 ///     The path to the source file or a file-like object.
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
-/// tag_defs : list[tuple[str, str]], optional
-///    Definitions of tag fields to project.
+/// attr_defs : list[tuple[str, str]], optional
+///    Definitions of attribute fields to project.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed.
 ///
@@ -637,19 +636,18 @@ pub fn read_gtf(
 /// bytes
 ///     Arrow IPC
 #[pyfunction]
-#[pyo3(signature = (src, region=None, index=None, fields=None, tag_defs=None, compressed=false))]
+#[pyo3(signature = (src, region=None, index=None, fields=None, attr_defs=None, compressed=false))]
 pub fn read_gff(
     py: Python,
     src: PyObject,
     region: Option<String>,
     index: Option<PyObject>,
     fields: Option<Vec<String>>,
-    tag_defs: Option<Vec<(String, String)>>,
+    attr_defs: Option<Vec<(String, String)>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let mut fmt_reader = noodles::gff::io::Reader::from(reader);
-    let scanner = GtfScanner::new(None);
+    let scanner = GffScanner::new(None);
 
     let ipc = if let Some(region) = region {
         let index = resolve_index(py, src.clone_ref(py), index)?;
@@ -665,7 +663,7 @@ pub fn read_gff(
                     region,
                     index.into_boxed(),
                     fields,
-                    None,
+                    attr_defs,
                     None,
                     None,
                 )?;
@@ -678,7 +676,7 @@ pub fn read_gff(
                     region,
                     index.into_boxed(),
                     fields,
-                    None,
+                    attr_defs,
                     None,
                     None,
                 )?;

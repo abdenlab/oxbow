@@ -133,8 +133,8 @@ impl Scanner {
     pub fn scan_query<R: BufRead + Seek>(
         &self,
         fmt_reader: noodles::gtf::io::Reader<noodles::bgzf::Reader<R>>,
-        index: impl BinningIndex,
         region: noodles::core::Region,
+        index: impl BinningIndex,
         fields: Option<Vec<String>>,
         attr_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
