@@ -161,6 +161,7 @@ impl Scanner {
         let fmt_reader = noodles::sam::io::Reader::new(query_reader);
         let batch_iter = QueryBatchIterator::new(
             fmt_reader,
+            self.header(),
             reference_sequence_id,
             interval,
             batch_builder,
