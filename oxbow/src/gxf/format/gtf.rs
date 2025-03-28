@@ -82,27 +82,38 @@ impl Scanner {
         fmt_reader: &mut noodles::gtf::io::Reader<R>,
         scan_rows: Option<usize>,
     ) -> io::Result<Vec<(String, String)>> {
-        let scan_rows = scan_rows.unwrap_or_else(|| 1024);
+        use noodles::gtf::Line;
         let lines = fmt_reader.lines();
-        let mut scanner = AttributeScanner::new();
-        for line in lines.take(scan_rows) {
-            match line {
-                // Line parsed successfully
-                Ok(line) => {
+        let mut attr_scanner = AttributeScanner::new();
+        match scan_rows {
+            None => {
+                for line in lines {
                     match line {
-                        // Line is a record
-                        noodles::gtf::Line::Record(record) => scanner.push(record),
-                        // Line is a comment, skip
-                        noodles::gtf::Line::Comment(_) => continue,
-                    };
+                        Ok(line) => {
+                            match line {
+                                Line::Record(record) => attr_scanner.push(record),
+                                Line::Comment(_) => continue,
+                            };
+                        }
+                        Err(e) => eprintln!("Failed to read line: {}", e),
+                    }
                 }
-                // Failed to read line
-                Err(e) => {
-                    eprintln!("Failed to read line: {}", e);
+            }
+            Some(n) => {
+                for line in lines.take(n) {
+                    match line {
+                        Ok(line) => {
+                            match line {
+                                Line::Record(record) => attr_scanner.push(record),
+                                Line::Comment(_) => continue,
+                            };
+                        }
+                        Err(e) => eprintln!("Failed to read line: {}", e),
+                    }
                 }
             }
         }
-        Ok(scanner.collect())
+        Ok(attr_scanner.collect())
     }
 
     /// Returns an iterator over record batches.

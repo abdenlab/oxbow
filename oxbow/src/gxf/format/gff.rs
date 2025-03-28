@@ -82,28 +82,29 @@ impl Scanner {
         fmt_reader: &mut noodles::gff::io::Reader<R>,
         scan_rows: Option<usize>,
     ) -> io::Result<Vec<(String, String)>> {
-        let scan_rows = scan_rows.unwrap_or_else(|| 1024);
         let lines = fmt_reader.lines();
         let mut attr_scanner = AttributeScanner::new();
-        for line in lines.take(scan_rows) {
-            match line {
-                // Line parsed successfully
-                Ok(line) => {
-                    match line.as_record() {
-                        // This line is a record line
-                        Some(result) => {
-                            let record = result?;
-                            attr_scanner.push(record);
-                        }
-                        // Not a record line, skip
-                        None => {
-                            continue;
-                        }
+        match scan_rows {
+            None => {
+                for line in lines {
+                    match line {
+                        Ok(line) => match line.as_record() {
+                            Some(result) => attr_scanner.push(result?),
+                            None => continue,
+                        },
+                        Err(e) => eprintln!("Failed to read line: {}", e),
                     }
                 }
-                // Failed to read line
-                Err(e) => {
-                    eprintln!("Failed to read line: {}", e);
+            }
+            Some(n) => {
+                for line in lines.take(n) {
+                    match line {
+                        Ok(line) => match line.as_record() {
+                            Some(result) => attr_scanner.push(result?),
+                            None => continue,
+                        },
+                        Err(e) => eprintln!("Failed to read line: {}", e),
+                    }
                 }
             }
         }

@@ -62,7 +62,7 @@ impl PyGtfScanner {
     /// Parameters
     /// ----------
     /// scan_rows : int, optional [default: 1024]
-    ///    The number of records to scan.
+    ///    The number of records to scan. If None, all records are scanned.
     ///
     /// Returns
     /// -------
@@ -322,7 +322,7 @@ impl PyGffScanner {
     /// Parameters
     /// ----------
     /// scan_rows : int, optional [default: 1024]
-    ///    The number of records to scan.
+    ///    The number of records to scan. If None, all records are scanned.
     ///
     /// Returns
     /// -------
