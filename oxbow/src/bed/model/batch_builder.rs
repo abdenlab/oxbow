@@ -74,6 +74,10 @@ impl BatchBuilder {
         })
     }
 
+    pub fn bed_schema(&self) -> &BedSchema {
+        &self.bed_schema
+    }
+
     pub fn get_arrow_fields(&self) -> Vec<ArrowField> {
         // standard fields
         let mut fields: Vec<ArrowField> = self
@@ -93,10 +97,6 @@ impl BatchBuilder {
         }
 
         fields
-    }
-
-    pub fn bed_schema(&self) -> &BedSchema {
-        &self.bed_schema
     }
 
     pub fn get_arrow_schema(&self) -> Schema {

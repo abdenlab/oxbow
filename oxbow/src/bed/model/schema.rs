@@ -93,6 +93,20 @@ impl BedSchema {
     }
 }
 
+impl std::fmt::Display for BedSchema {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(m) = self.m {
+            if m == 0 {
+                write!(f, "bed{}", self.n)
+            } else {
+                write!(f, "bed{}+{}", self.n, m)
+            }
+        } else {
+            write!(f, "bed{}+", self.n)
+        }
+    }
+}
+
 impl FromStr for BedSchema {
     type Err = io::Error;
 
@@ -212,5 +226,20 @@ mod tests {
             result.unwrap_err().to_string(),
             "Invalid BED format specifier: invalid"
         );
+    }
+
+    #[test]
+    fn test_bed_schema_display() {
+        let spec: BedSchema = "bed6".parse().unwrap();
+        assert_eq!(spec.to_string(), "bed6");
+
+        let spec: BedSchema = "bed6+3".parse().unwrap();
+        assert_eq!(spec.to_string(), "bed6+3");
+
+        let spec: BedSchema = "bed6+".parse().unwrap();
+        assert_eq!(spec.to_string(), "bed6+");
+
+        let spec: BedSchema = "bed12".parse().unwrap();
+        assert_eq!(spec.to_string(), "bed12");
     }
 }
