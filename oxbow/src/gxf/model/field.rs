@@ -60,14 +60,14 @@ impl FromStr for Field {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "seqid" => Ok(Field::SeqId),
-            "source" => Ok(Field::Source),
-            "type" => Ok(Field::Type),
-            "start" => Ok(Field::Start),
-            "end" => Ok(Field::End),
-            "score" => Ok(Field::Score),
-            "strand" => Ok(Field::Strand),
-            "frame" => Ok(Field::Frame),
+            "seqid" => Ok(Self::SeqId),
+            "source" => Ok(Self::Source),
+            "type" => Ok(Self::Type),
+            "start" => Ok(Self::Start),
+            "end" => Ok(Self::End),
+            "score" => Ok(Self::Score),
+            "strand" => Ok(Self::Strand),
+            "frame" => Ok(Self::Frame),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 format!("Invalid field name: {}", s.to_string()),
@@ -76,7 +76,7 @@ impl FromStr for Field {
     }
 }
 
-/// Builds an Arrow array (column) corresponding to a GXF feature standard field.
+/// A builder for an Arrow array (column) corresponding to a GXF feature standard field.
 pub enum FieldBuilder {
     SeqId(GenericStringBuilder<i32>),
     Source(GenericStringBuilder<i32>),
@@ -89,15 +89,24 @@ pub enum FieldBuilder {
 }
 
 impl FieldBuilder {
+    /// Creates a new `FieldBuilder` for the specified field with the given capacity.
+    ///
+    /// # Arguments
+    /// * `field` - The field to build.
+    /// * `capacity` - The number of rows to preallocate for a batch.
     pub fn new(field: Field, capacity: usize) -> Self {
         match field {
-            Field::SeqId => Self::SeqId(GenericStringBuilder::<i32>::new()),
-            Field::Source => Self::Source(GenericStringBuilder::<i32>::new()),
-            Field::Type => Self::Type(GenericStringBuilder::<i32>::new()),
+            Field::SeqId => Self::SeqId(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
+            Field::Source => {
+                Self::Source(GenericStringBuilder::<i32>::with_capacity(capacity, 1024))
+            }
+            Field::Type => Self::Type(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::Start => Self::Start(Int32Builder::with_capacity(capacity)),
             Field::End => Self::End(Int32Builder::with_capacity(capacity)),
             Field::Score => Self::Score(Float32Builder::with_capacity(capacity)),
-            Field::Strand => Self::Strand(GenericStringBuilder::<i32>::new()),
+            Field::Strand => {
+                Self::Strand(GenericStringBuilder::<i32>::with_capacity(capacity, 1024))
+            }
             Field::Frame => Self::Frame(UInt8Builder::with_capacity(capacity)),
         }
     }
