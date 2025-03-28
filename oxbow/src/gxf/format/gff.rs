@@ -5,7 +5,7 @@ use arrow::datatypes::Schema;
 use noodles::csi::binning_index;
 use noodles::csi::BinningIndex;
 
-use crate::gxf::batch_iterator::{BatchIterator, QueryBatchIterator, RangeBatchIterator};
+use crate::gxf::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::gxf::model::attribute::AttributeScanner;
 use crate::gxf::model::attribute::Push as _;
 use crate::gxf::model::field::DEFAULT_FIELD_NAMES;
@@ -125,59 +125,6 @@ impl Scanner {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = BatchBuilder::new(fields, attr_defs, batch_size)?;
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
-        Ok(batch_iter)
-    }
-
-    /// Returns an iterator over record batches that scans between two byte positions.
-    ///
-    /// This operation requires a byte-seekable source reader.
-    ///
-    /// The scan will begin at `start` and will stop once the reader has passed `stop`.
-    pub fn scan_range<R: BufRead + Seek>(
-        &self,
-        mut fmt_reader: noodles::gff::io::Reader<R>,
-        start: u64,
-        stop: u64,
-        fields: Option<Vec<String>>,
-        attr_defs: Option<Vec<(String, String)>>,
-        batch_size: Option<usize>,
-        limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
-        let batch_size = batch_size.unwrap_or(1024);
-        let batch_builder = BatchBuilder::new(fields, attr_defs, batch_size)?;
-
-        // Seek to the start position.
-        fmt_reader.get_mut().seek(std::io::SeekFrom::Start(start))?;
-
-        let batch_iter =
-            RangeBatchIterator::new(fmt_reader, batch_builder, batch_size, limit, stop);
-        Ok(batch_iter)
-    }
-
-    /// Returns an iterator over record batches that scans between two virtual positions.
-    ///
-    /// This operation requires a BGZF-encoded source reader.
-    ///
-    /// The scan will begin at virtual position `start` of the BGZF file
-    /// and will stop once the decoder has passed virtual position `stop`.
-    pub fn scan_vrange<R: BufRead + Seek>(
-        &self,
-        mut fmt_reader: noodles::gff::io::Reader<noodles::bgzf::Reader<R>>,
-        start: noodles::bgzf::VirtualPosition,
-        stop: noodles::bgzf::VirtualPosition,
-        fields: Option<Vec<String>>,
-        attr_defs: Option<Vec<(String, String)>>,
-        batch_size: Option<usize>,
-        limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
-        let batch_size = batch_size.unwrap_or(1024);
-        let batch_builder = BatchBuilder::new(fields, attr_defs, batch_size)?;
-
-        // Seek to the start virtual position.
-        fmt_reader.get_mut().seek(start)?;
-
-        let batch_iter =
-            RangeBatchIterator::new(fmt_reader, batch_builder, batch_size, limit, stop);
         Ok(batch_iter)
     }
 
