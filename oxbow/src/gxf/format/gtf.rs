@@ -17,13 +17,16 @@ use crate::util::query::BgzfChunkReader;
 /// # Examples
 ///
 /// ```no_run
+/// use oxbow::gxf::format::gtf::Scanner;
 /// use std::fs::File;
+/// use std::io::BufReader;
 ///
-/// let inner = File::open("sample.gff")?;
-/// let mut fmt_reader = noodles::gff::io::Reader::new(inner);
+/// let inner = File::open("sample.gtf").map(BufReader::new).unwrap();
+/// let mut fmt_reader = noodles::gtf::io::Reader::new(inner);
 ///
-/// let scanner = Scanner::new();
-/// let attr_defs = scanner.attribute_defs(&mut fmt_reader, Some(1000))?;
+/// let scanner = Scanner::new(None);
+/// let attr_defs = scanner.attribute_defs(&mut fmt_reader, Some(1000)).unwrap();
+/// let batches = scanner.scan(fmt_reader, None, Some(attr_defs), None, Some(1000));
 /// ```
 pub struct Scanner {
     header: Option<binning_index::index::Header>,
