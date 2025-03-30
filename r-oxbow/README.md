@@ -35,3 +35,10 @@ head(df)
 ## Development
 
 Changes must be recompiled as described [here](https://extendr.github.io/rextendr/articles/package.html#compile-and-use-the-package).
+
+```R
+library(devtools)
+library(rextendr)
+rextendr::document()
+devtools::load_all(".")
+```

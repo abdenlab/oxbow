@@ -11,12 +11,31 @@
 NULL
 
 #' Return Arrow IPC format from a FASTA file.
-#' @export
-read_fasta <- function(path, regions, index, gzi, fields) .Call(wrap__read_fasta, path, regions, index, gzi, fields)
+read_fasta_impl <- function(path, regions, index, gzi, fields) .Call(wrap__read_fasta_impl, path, regions, index, gzi, fields)
 
 #' Return Arrow IPC format from a FASTQ file.
-#' @export
-read_fastq <- function(path, fields) .Call(wrap__read_fastq, path, fields)
+read_fastq_impl <- function(path, fields) .Call(wrap__read_fastq_impl, path, fields)
+
+#' Return Arrow IPC format from a SAM file.
+read_sam_impl <- function(path, region, index, fields, scan_rows) .Call(wrap__read_sam_impl, path, region, index, fields, scan_rows)
+
+#' Return Arrow IPC format from a BAM file.
+read_bam_impl <- function(path, region, index, fields, scan_rows) .Call(wrap__read_bam_impl, path, region, index, fields, scan_rows)
+
+#' Return Arrow IPC format from a VCF file.
+read_vcf_impl <- function(path, region, index, fields, info_fields, genotype_fields, samples, genotype_by) .Call(wrap__read_vcf_impl, path, region, index, fields, info_fields, genotype_fields, samples, genotype_by)
+
+#' Return Arrow IPC format from a BCF file.
+read_bcf_impl <- function(path, region, index, fields, info_fields, genotype_fields, samples, genotype_by) .Call(wrap__read_bcf_impl, path, region, index, fields, info_fields, genotype_fields, samples, genotype_by)
+
+#' Return Arrow IPC format from a GTF file.
+read_gtf_impl <- function(path, region, index, fields, scan_rows) .Call(wrap__read_gtf_impl, path, region, index, fields, scan_rows)
+
+#' Return Arrow IPC format from a GFF file.
+read_gff_impl <- function(path, region, index, fields, scan_rows) .Call(wrap__read_gff_impl, path, region, index, fields, scan_rows)
+
+#' Return Arrow IPC format from a BED file.
+read_bed_impl <- function(path, bed_schema, region, index, fields) .Call(wrap__read_bed_impl, path, bed_schema, region, index, fields)
 
 
 # nolint end
