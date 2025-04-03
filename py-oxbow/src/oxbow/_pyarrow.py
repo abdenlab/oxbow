@@ -35,24 +35,18 @@ class BatchReaderFragment(Fragment):
 
         Parameters
         ----------
-        make_batchreader : Callable
-            A function that recreates a specific stream of record batches.
-        schema : pa.Schema
-            The schema of the RecordBatches.
-        batch_size : int, optional
-            The maximum row count for scanned record batches.
-        partition_expression : ds.Expression, optional
-            A partition expression for the fragment.
+        make_batchreader : A function that recreates a specific stream of record batches.
+        schema : The schema of the RecordBatches.
+        batch_size : The maximum row count for scanned record batches.
+        partition_expression : A partition expression for the fragment.
 
         Notes
         -----
         The `make_batchreader` function should accept the following arguments
         and return a pyarrow.RecordBatchReader:
 
-        * columns: list[str] | None
-            The columns to project.
-        * batch_size: int
-            The maximum number of rows per batch.
+        * columns: The columns to project.
+        * batch_size: The maximum number of rows per batch.
         """
         self._make_batchreader = make_batchreader
         self._schema = schema
@@ -67,8 +61,7 @@ class BatchReaderFragment(Fragment):
         """
         Returns
         -------
-        schema : pyarrow.Schema
-            The schema of the RecordBatches in the fragment.
+        schema : The schema of the RecordBatches in the fragment.
         """
         return self._schema
 
@@ -77,8 +70,7 @@ class BatchReaderFragment(Fragment):
         """
         Returns
         -------
-        partition_expression : pyarrow.dataset.Expression
-            An expression that evaluates to true for all data viewed by this fragment.
+        partition_expression : An expression that evaluates to true for all data viewed by this fragment.
         """
         return self._partition_expression
 
@@ -92,56 +84,37 @@ class BatchReaderFragment(Fragment):
         fragment_readahead: int = DEFAULT_FRAGMENT_READAHEAD,
         fragment_scan_options: ds.FragmentScanOptions | None = None,
         use_threads: bool = True,
-        memory_pool: ds.MemoryPool = None,
+        memory_pool: ds.MemoryPool | None = None,
     ) -> ds.Scanner:
         """
         Build a scan operation against the fragment.
 
         Parameters
         ----------
-        schema : pa.Schema, optional
-            The schema to use for scanning. This is used to unify a Fragment to
+        schema : The schema to use for scanning. This is used to unify a Fragment to
             its Dataset's schema. If not specified this will use the Fragment's
             physical schema.
-        columns : list[str], optional
-            Names of columns to project. By default all of the available
+        columns : Names of columns to project. By default all of the available
             columns are projected.
-        filter : pa.Expression, optional
-            A filter expression. Scan will return only the rows matching the
+        filter : A filter expression. Scan will return only the rows matching the
             filter.
-        batch_size : int, optional
-            The maximum row count for scanned record batches.
-        batch_readahead : int, default 16
-            The number of batches to read ahead in a file.
-        fragment_readahead : int, default 4
-            The number of fragments/files to read ahead.
-        fragment_scan_options : FragmentScanOptions, default None
-            Options specific to a particular scan and fragment type, which
+        batch_size : The maximum row count for scanned record batches.
+        batch_readahead : The number of batches to read ahead in a file.
+        fragment_readahead : The number of fragments/files to read ahead.
+        fragment_scan_options : Options specific to a particular scan and fragment type, which
             can change between different scans of the same dataset.
-        use_threads : bool, default True
-            If enabled, then maximum parallelism will be used determined by
+        use_threads : If enabled, then maximum parallelism will be used determined by
             the number of available CPU cores.
-        memory_pool : MemoryPool, default None
-            For memory allocations, if required. If not specified, uses the
+        memory_pool : For memory allocations, if required. If not specified, uses the
             default pool.
 
         Returns
         -------
         Scanner
-
-        Notes
-        -----
-        The list of columns may include special fields:
-
-        * ``__batch_index``: Index of the batch within the fragment.
-        * ``__fragment_index``: Index of the fragment within the dataset.
-        * ``__last_in_fragment``: Whether the batch is last in fragment.
-        * ``__filename``: Name of the source file or a description of the
-            source fragment.
         """
         # Apply column projection if specified
         schema = schema or self._schema
-        batches = self._make_batchreader(fields=columns, batch_size=batch_size)
+        batches = self._make_batchreader(columns, batch_size)
 
         # The scanner constructor treats a RecordBatchReader differently than
         # an opaque iterator, so we wrap it in an iterator for consistency
@@ -171,12 +144,12 @@ class BatchReaderFragment(Fragment):
         schema: pa.Schema | None = None,
         columns: list[str] | None = None,
         filter: ds.Expression | None = None,
-        batch_size: int | None = DEFAULT_BATCH_SIZE,
+        batch_size: int = DEFAULT_BATCH_SIZE,
         batch_readahead: int = DEFAULT_BATCH_READAHEAD,
         fragment_readahead: int = DEFAULT_FRAGMENT_READAHEAD,
         fragment_scan_options: ds.FragmentScanOptions | None = None,
         use_threads: bool = True,
-        memory_pool: ds.MemoryPool = None,
+        memory_pool: ds.MemoryPool | None = None,
     ) -> Iterator[pa.RecordBatch]:
         """
         Scan and read the fragment as materialized record batches.
@@ -185,45 +158,26 @@ class BatchReaderFragment(Fragment):
 
         Parameters
         ----------
-        schema : pa.Schema, optional
-            The schema to use for scanning. This is used to unify a Fragment to
+        schema : The schema to use for scanning. This is used to unify a Fragment to
             its Dataset's schema. If not specified this will use the Fragment's
             physical schema.
-        columns : list[str], optional
-            Names of columns to project. By default all of the available
+        columns : Names of columns to project. By default all of the available
             columns are projected.
-        filter : pa.Expression, optional
-            A filter expression. Scan will return only the rows matching the
+        filter : A filter expression. Scan will return only the rows matching the
             filter.
-        batch_size : int, optional
-            The maximum row count for scanned record batches.
-        batch_readahead : int, default 16
-            The number of batches to read ahead in a file.
-        fragment_readahead : int, default 4
-            The number of fragments/files to read ahead.
-        fragment_scan_options : FragmentScanOptions, default None
-            Options specific to a particular scan and fragment type, which
+        batch_size : The maximum row count for scanned record batches.
+        batch_readahead : The number of batches to read ahead in a file.
+        fragment_readahead : The number of fragments/files to read ahead.
+        fragment_scan_options : Options specific to a particular scan and fragment type, which
             can change between different scans of the same dataset.
-        use_threads : bool, default True
-            If enabled, then maximum parallelism will be used determined by
+        use_threads : If enabled, then maximum parallelism will be used determined by
             the number of available CPU cores.
-        memory_pool : MemoryPool, default None
-            For memory allocations, if required. If not specified, uses the
+        memory_pool : For memory allocations, if required. If not specified, uses the
             default pool.
 
         Returns
         -------
         Iterator[RecordBatch]
-
-        Notes
-        -----
-        The list of columns may include special fields:
-
-        * ``__batch_index``: Index of the batch within the fragment.
-        * ``__fragment_index``: Index of the fragment within the dataset.
-        * ``__last_in_fragment``: Whether the batch is last in fragment.
-        * ``__filename``: Name of the source file or a description of the
-            source fragment.
         """
         return self.scanner(
             schema=schema or self.schema,
@@ -238,7 +192,7 @@ class BatchReaderFragment(Fragment):
         ).to_batches()
 
     def iter_batches(self, columns=None, batch_size=DEFAULT_BATCH_SIZE):
-        return self._make_batchreader(fields=columns, batch_size=batch_size)
+        return self._make_batchreader(columns, batch_size)
 
     def __dask_tokenize__(self):
         from dask.base import normalize_token
@@ -264,11 +218,8 @@ class BatchReaderDataset(Dataset):
 
         Parameters
         ----------
-        fragments : list[BatchReaderFragment]
-            The list of fragments.
-
-        partition_expression : ds.Expression, optional
-            A partition expression for the dataset.
+        fragments : The list of fragments.
+        partition_expression : A partition expression for the dataset.
         """
         self._fragments = fragments
         self._schema = self._fragments[0].schema
@@ -283,8 +234,7 @@ class BatchReaderDataset(Dataset):
         """
         Returns
         -------
-        partition_expression : pyarrow.dataset.Expression
-            An expression that evaluates to true for all data viewed by this dataset.
+        partition_expression : An expression that evaluates to true for all data viewed by this dataset.
         """
         return self._partition_expression
 
@@ -293,8 +243,7 @@ class BatchReaderDataset(Dataset):
         """
         Returns
         -------
-        schema : pyarrow.Schema
-            The schema of the RecordBatches in the dataset.
+        schema : The schema of the RecordBatches in the dataset.
         """
         return self._schema
 
@@ -306,8 +255,7 @@ class BatchReaderDataset(Dataset):
 
         Parameters
         ----------
-        filter : pyarrow.dataset.Expression, optional
-            An expression to filter fragments. Not yet implemented.
+        filter : An expression to filter fragments. Not yet implemented.
 
         Returns
         -------
@@ -344,41 +292,23 @@ class BatchReaderDataset(Dataset):
 
         Parameters
         ----------
-        columns : list[str], optional
-            Names of columns to project. By default all of the available
+        columns : Names of columns to project. By default all of the available
             columns are projected.
-        filter : pa.Expression, optional
-            A filter expression. Scan will return only the rows matching the
+        filter : A filter expression. Scan will return only the rows matching the
             filter.
-        batch_size : int, optional
-            The maximum row count for scanned record batches.
-        batch_readahead : int, default 16
-            The number of batches to read ahead in a file.
-        fragment_readahead : int, default 4
-            The number of fragments/files to read ahead.
-        fragment_scan_options : FragmentScanOptions, default None
-            Options specific to a particular scan and fragment type, which
+        batch_size : The maximum row count for scanned record batches.
+        batch_readahead : The number of batches to read ahead in a file.
+        fragment_readahead : The number of fragments/files to read ahead.
+        fragment_scan_options : Options specific to a particular scan and fragment type, which
             can change between different scans of the same dataset.
-        use_threads : bool, default True
-            If enabled, then maximum parallelism will be used determined by
+        use_threads : If enabled, then maximum parallelism will be used determined by
             the number of available CPU cores.
-        memory_pool : MemoryPool, default None
-            For memory allocations, if required. If not specified, uses the
+        memory_pool : For memory allocations, if required. If not specified, uses the
             default pool.
 
         Returns
         -------
         Scanner
-
-        Notes
-        -----
-        The list of columns may include special fields:
-
-        * ``__batch_index``: Index of the batch within the fragment.
-        * ``__fragment_index``: Index of the fragment within the dataset.
-        * ``__last_in_fragment``: Whether the batch is last in fragment.
-        * ``__filename``: Name of the source file or a description of the
-            source fragment.
         """
         # TODO: Prune fragments using their partition expressions.
 
@@ -422,41 +352,23 @@ class BatchReaderDataset(Dataset):
 
         Parameters
         ----------
-        columns : list[str], optional
-            Names of columns to project. By default all of the available
+        columns : Names of columns to project. By default all of the available
             columns are projected.
-        filter : pa.Expression, optional
-            A filter expression. Scan will return only the rows matching the
+        filter : A filter expression. Scan will return only the rows matching the
             filter.
-        batch_size : int, optional
-            The maximum row count for scanned record batches.
-        batch_readahead : int, default 16
-            The number of batches to read ahead in a file.
-        fragment_readahead : int, default 4
-            The number of fragments/files to read ahead.
-        fragment_scan_options : FragmentScanOptions, default None
-            Options specific to a particular scan and fragment type, which
+        batch_size : The maximum row count for scanned record batches.
+        batch_readahead : The number of batches to read ahead in a file.
+        fragment_readahead : The number of fragments/files to read ahead.
+        fragment_scan_options : Options specific to a particular scan and fragment type, which
             can change between different scans of the same dataset.
-        use_threads : bool, default True
-            If enabled, then maximum parallelism will be used determined by
+        use_threads : If enabled, then maximum parallelism will be used determined by
             the number of available CPU cores.
-        memory_pool : MemoryPool, default None
-            For memory allocations, if required. If not specified, uses the
+        memory_pool : For memory allocations, if required. If not specified, uses the
             default pool.
 
         Returns
         -------
         Iterator[RecordBatch]
-
-        Notes
-        -----
-        The list of columns may include special fields:
-
-        * ``__batch_index``: Index of the batch within the fragment.
-        * ``__fragment_index``: Index of the fragment within the dataset.
-        * ``__last_in_fragment``: Whether the batch is last in fragment.
-        * ``__filename``: Name of the source file or a description of the
-            source fragment.
         """
         return self.scanner(
             columns=columns,
@@ -484,8 +396,7 @@ class BatchReaderDataset(Dataset):
 
         Parameters
         ----------
-        expression : pa.Expression
-            The filter expression.
+        expression : The filter expression.
 
         Returns
         -------
