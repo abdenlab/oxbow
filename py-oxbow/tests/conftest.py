@@ -6,9 +6,6 @@ import pytest
 from wiretap import WireTap
 
 
-spies = []
-
-
 @pytest.fixture
 def wiretap():
     def wrapper(target) -> WireTap:
@@ -24,8 +21,6 @@ def wiretap():
             ):
                 if name == "__class__":
                     continue
-                else:
-                    spies.append(wiretap.spy(cls, name))
         return wiretap
     yield wrapper
 
