@@ -21,11 +21,9 @@ class DataFileMeta(ABCMeta):
             try:
                 file_type_name = key.rsplit("_", 1)[-1].lower()
                 file_type = FILETYPE_BY_NAME[file_type_name]
-                return {
-                    k: v
-                    for k, v in cls._registry.items()
-                    if issubclass(v, cls)
-                }[file_type]
+                return {k: v for k, v in cls._registry.items() if issubclass(v, cls)}[
+                    file_type
+                ]
             except Exception as e:
                 raise KeyError(key) from e
 
@@ -50,7 +48,6 @@ class DataFile(metaclass=DataFileMeta):
     def _batch_readers(
         self,
     ) -> Iterable[Callable[[list[str] | None, int], pa.RecordBatchReader]]: ...
-
 
     def __init_subclass__(cls, file_type: FileType | None = None) -> None:
         if file_type:
@@ -79,9 +76,7 @@ class DataFile(metaclass=DataFileMeta):
     @property
     def schema(self) -> pa.Schema:
         if not self._schema:
-            self._schema = pa.schema(
-                self._scanner.schema(**self._schema_kwargs)
-            )
+            self._schema = pa.schema(self._scanner.schema(**self._schema_kwargs))
         return self._schema
 
     @property
@@ -98,7 +93,7 @@ class DataFile(metaclass=DataFileMeta):
         Select a subset of the data file.
 
         This method creates a new instance of the data file with the same
-        parameters, applies any overrides specified by keyword arguments, 
+        parameters, applies any overrides specified by keyword arguments,
         and returns it as a dataset.
 
         Parameters
