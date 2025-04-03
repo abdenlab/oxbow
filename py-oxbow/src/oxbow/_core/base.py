@@ -101,7 +101,8 @@ class DataFile(metaclass=DataFileMeta):
         batch_size
             The size of each batch to be read. Default is DEFAULT_BATCH_SIZE.
         **kwargs
-            Additional keyword arguments to override the current parameters.
+            Additional keyword arguments to override the current isntance's
+            parameters.
 
         Returns
         -------
