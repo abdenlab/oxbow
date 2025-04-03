@@ -1,0 +1,7 @@
+fields=('qname', 'rname', 'foo'), batch_size=None: 'Invalid field name: foo'
+fields=('qname', 'rname', 'mapq'), batch_size=None: {}
+fields=None, batch_size=1: {}
+fields=None, batch_size=2: {}
+fields=None, batch_size=3: {}
+fields=None, batch_size=4: {}
+fields=None, batch_size=None: {}
