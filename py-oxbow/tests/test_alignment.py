@@ -7,7 +7,6 @@ from utils import Input
 
 
 class TestBamFile:
-
     @pytest.mark.parametrize(
         "filepath",
         ["data/sample.bam", "data/malformed.bam", "data/does-not-exist.bam"],
@@ -20,9 +19,7 @@ class TestBamFile:
                 pass
             finally:
                 assert (
-                    manifest[
-                        f"{ox.BamFile.__name__}({Input(filepath)})"
-                    ]
+                    manifest[f"{ox.BamFile.__name__}({Input(filepath)})"]
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_select_callstack(self, wiretap, manifest: Manifest):
@@ -34,9 +31,7 @@ class TestBamFile:
                 pass
             finally:
                 assert (
-                    manifest[
-                        f"{ox.BamFile.__name__}(data/sample.bam).select()"
-                    ]
+                    manifest[f"{ox.BamFile.__name__}(data/sample.bam).select()"]
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_fragments_callstack(self, wiretap, manifest: Manifest):
@@ -74,9 +69,7 @@ class TestBamFile:
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BamFile(
-            "data/sample.bam", regions=regions
-        ).fragments()
+        fragments = ox.BamFile("data/sample.bam", regions=regions).fragments()
         assert len(fragments) == len(regions) if regions else 1
 
     @pytest.mark.parametrize(
@@ -104,7 +97,6 @@ class TestBamFile:
 
 
 class TestSamFile:
-
     @pytest.mark.parametrize(
         "filepath",
         ["data/sample.sam", "data/malformed.sam", "data/does-not-exist.sam"],
@@ -117,9 +109,7 @@ class TestSamFile:
                 pass
             finally:
                 assert (
-                    manifest[
-                        f"{ox.SamFile.__name__}({Input(filepath)})"
-                    ]
+                    manifest[f"{ox.SamFile.__name__}({Input(filepath)})"]
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_select_callstack(self, wiretap, manifest: Manifest):
@@ -131,9 +121,7 @@ class TestSamFile:
                 pass
             finally:
                 assert (
-                    manifest[
-                        f"{ox.SamFile.__name__}(data/sample.sam).select()"
-                    ]
+                    manifest[f"{ox.SamFile.__name__}(data/sample.sam).select()"]
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_fragments_callstack(self, wiretap, manifest: Manifest):
@@ -171,9 +159,7 @@ class TestSamFile:
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
     def test_fragments(self, regions):
-        fragments = ox.SamFile(
-            "data/sample.sam", regions=regions
-        ).fragments()
+        fragments = ox.SamFile("data/sample.sam", regions=regions).fragments()
         assert len(fragments) == len(regions) if regions else 1
 
     @pytest.mark.parametrize(

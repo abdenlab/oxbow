@@ -27,10 +27,7 @@ class Input:
         return ", ".join(
             (
                 *(swap_quotes(repr(v)) for v in self.args),
-                *(
-                    f"{k}={swap_quotes(repr(v))}"
-                    for k, v in self.kwargs.items()
-                ),
+                *(f"{k}={swap_quotes(repr(v))}" for k, v in self.kwargs.items()),
             )
         )
 
@@ -41,6 +38,4 @@ class Input:
                 combination[: len(args)],
                 combination[len(args) :],
             )
-            yield Input(
-                *arg_combination, **dict(zip(kwargs.keys(), kwarg_combination))
-            )
+            yield Input(*arg_combination, **dict(zip(kwargs.keys(), kwarg_combination)))

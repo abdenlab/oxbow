@@ -222,7 +222,7 @@ def from_sam(
 
     Notes
     -----
-    SAM (Sequence Alignment Map) is a widely used text-based format for storing 
+    SAM (Sequence Alignment Map) is a widely used text-based format for storing
     biological sequences aligned to a reference sequence.
     """
     return SamFile(

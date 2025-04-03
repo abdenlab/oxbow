@@ -36,16 +36,12 @@ class Input:
         return ", ".join(
             (
                 *(swap_quotes(repr(v)) for v in self.args),
-                *(
-                    f"{k}={swap_quotes(repr(v))}"
-                    for k, v in self.kwargs.items()
-                ),
+                *(f"{k}={swap_quotes(repr(v))}" for k, v in self.kwargs.items()),
             )
         )
 
 
 def obj_to_str(obj):
-
     try:
         return f"{obj.__module__ or ''}.{obj.__class__.__qualname__}.<object>"
     except AttributeError:
@@ -82,11 +78,7 @@ class Call:
         return "\n".join(
             (
                 f"{CALLED} {self.func.__module__}.{self.func.__qualname__}({self.input})",
-                *(
-                    f"    {l}"
-                    for c in self.calls
-                    for l in c.serialize().splitlines()
-                ),
+                *(f"    {l}" for c in self.calls for l in c.serialize().splitlines()),
                 f"{RAISED if isinstance(self.result, BaseException) else RETURNED} {swap_quotes(self.format(self.result))}",
             )
         )
@@ -140,15 +132,11 @@ class PropertyCall(Call):
         return "\n".join(
             (
                 f"{CALLED} {self.func.__module__}.{self.func.__qualname__}",
-                *(
-                    f"    {l}"
-                    for c in self.calls
-                    for l in c.serialize().splitlines()
-                ),
+                *(f"    {l}" for c in self.calls for l in c.serialize().splitlines()),
                 f"{RAISED if isinstance(self.result, BaseException) else RETURNED} {self.format(self.result)}",
             )
         )
-    
+
 
 class GeneratorCall(Call):
     def serialize(self) -> str:
@@ -157,11 +145,7 @@ class GeneratorCall(Call):
         return "\n".join(
             (
                 f"{CALLED} {self.func.__module__}.{self.func.__qualname__}.<generator>",
-                *(
-                    f"    {l}"
-                    for c in self.calls
-                    for l in c.serialize().splitlines()
-                ),
+                *(f"    {l}" for c in self.calls for l in c.serialize().splitlines()),
                 f"{RAISED if isinstance(self.result, BaseException) else RETURNED} {self.format(self.result)}",
             )
         )
@@ -198,9 +182,7 @@ class WireTap:
 
     def spy(self, obj, key):
         if self.spying:
-            raise RuntimeError(
-                "Cannot create a spy while the wiretap is active"
-            )
+            raise RuntimeError("Cannot create a spy while the wiretap is active")
         target = getattr(obj, key)
         assert (
             inspect.isfunction(target)
@@ -314,7 +296,6 @@ class WireTap:
                 raise e
             finally:
                 self.cursor = previous
-
 
         if asyncio.iscoroutinefunction(target):
             wrapped = functools.update_wrapper(async_wrapper, side_effect)

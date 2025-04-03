@@ -23,9 +23,7 @@ class TestPySamScanner:
         scanner = ox.PySamScanner("data/sample.sam")
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
@@ -55,9 +53,7 @@ class TestPyBamScanner:
         scanner = ox.PyBamScanner("data/sample.bam")
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
