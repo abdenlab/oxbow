@@ -145,7 +145,6 @@ class PropertyCall(Call):
             )
         )
 
-
 class GeneratorCall(Call):
     def serialize(self) -> str:
         if self.input.args:
