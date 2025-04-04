@@ -78,7 +78,11 @@ class Call:
         return "\n".join(
             (
                 f"{CALLED} {self.func.__module__}.{self.func.__qualname__}({self.input})",
-                *(f"    {l}" for c in self.calls for l in c.serialize().splitlines()),
+                *(
+                    f"    {line}"
+                    for c in self.calls
+                    for line in c.serialize().splitlines()
+                ),
                 f"{RAISED if isinstance(self.result, BaseException) else RETURNED} {swap_quotes(self.format(self.result))}",
             )
         )
@@ -132,7 +136,11 @@ class PropertyCall(Call):
         return "\n".join(
             (
                 f"{CALLED} {self.func.__module__}.{self.func.__qualname__}",
-                *(f"    {l}" for c in self.calls for l in c.serialize().splitlines()),
+                *(
+                    f"    {line}"
+                    for c in self.calls
+                    for line in c.serialize().splitlines()
+                ),
                 f"{RAISED if isinstance(self.result, BaseException) else RETURNED} {self.format(self.result)}",
             )
         )
@@ -145,7 +153,11 @@ class GeneratorCall(Call):
         return "\n".join(
             (
                 f"{CALLED} {self.func.__module__}.{self.func.__qualname__}.<generator>",
-                *(f"    {l}" for c in self.calls for l in c.serialize().splitlines()),
+                *(
+                    f"    {line}"
+                    for c in self.calls
+                    for line in c.serialize().splitlines()
+                ),
                 f"{RAISED if isinstance(self.result, BaseException) else RETURNED} {self.format(self.result)}",
             )
         )
