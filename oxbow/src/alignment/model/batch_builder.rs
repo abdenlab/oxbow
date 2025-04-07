@@ -278,7 +278,7 @@ mod tests {
         assert_eq!(schema.field(1).name(), "flag");
         assert_eq!(schema.field(2).name(), "tags");
         assert_eq!(
-            schema.fields()[2].data_type(),
+            schema.field(2).data_type(),
             &DataType::Struct(vec![ArrowField::new("NM", DataType::Int32, true)].into())
         );
     }
