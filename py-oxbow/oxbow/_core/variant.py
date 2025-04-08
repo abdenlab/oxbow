@@ -68,34 +68,34 @@ class VariantFile(DataFile):
         super().__init__(uri, opener, fields)
         self.__scanner_kwargs = dict(compressed=compressed)
         if info_fields is None:
-            info_fields = [d[0] for d in self._scanner.info_fields()]
+            info_fields = self._scanner.info_field_names()
         else:
             info_fields = [
-                d[0] for d in self._scanner.info_fields() if d[0] in info_fields
+                d for d in self._scanner.info_field_names() if d in info_fields
             ]
         if genotype_fields is None:
-            genotype_fields = [d[0] for d in self._scanner.genotype_fields()]
+            genotype_fields = self._scanner.genotype_field_names()
         else:
             genotype_fields = [
-                d[0] for d in self._scanner.genotype_fields() if d[0] in genotype_fields
+                d for d in self._scanner.genotype_field_names() if d in genotype_fields
             ]
         if samples is None:
-            sample_names = self._scanner.samples()
+            samples = self._scanner.sample_names()
         else:
-            sample_names = [s for s in self._scanner.samples() if s in samples]
+            samples = [s for s in self._scanner.sample_names() if s in samples]
         self.__schema_kwargs = dict(
             fields=fields,
             genotype_by=genotype_by,
             genotype_fields=genotype_fields,
             info_fields=info_fields,
-            samples=sample_names,
+            samples=samples,
         )
         self.__scan_kwargs = dict(
             fields=fields,
             genotype_by=genotype_by,
             genotype_fields=genotype_fields,
             info_fields=info_fields,
-            samples=sample_names,
+            samples=samples,
         )
 
 
