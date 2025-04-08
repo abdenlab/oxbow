@@ -24,4 +24,15 @@ SamFile("data/sample.sam", fields=('qname', 'rname', 'mapq')).batches(batch_size
         <-  qname: string
             rname: dictionary<values=string, indices=int32, ordered=0>
             mapq: uint8
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            qname: string
+            rname: dictionary<values=string, indices=int32, ordered=0>
+            mapq: uint8
+            ----
+            qname: ["r004","r003","r001"]
+            rname: -- dictionary:
+            ["chr1","chr2"]-- indices:
+            [0,0,0]
+            mapq: [30,30,30]
     <-  oxbow._core.alignment.AlignmentFile._batch_readers.<locals>.<lambda>

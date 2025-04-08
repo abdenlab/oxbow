@@ -21,6 +21,8 @@ def wiretap():
             ):
                 if name == "__class__":
                     continue
+                else:
+                    wiretap.spy(cls, name)
         return wiretap
 
     yield wrapper
