@@ -114,7 +114,7 @@ class TestPyBcfScanner:
     @pytest.mark.parametrize(
         "input",
         Input.permute(
-            region=["GL000207.1"],
+            region=["Y"],
             index=["data/sample.bcf.csi"],
             batch_size=[2],
             samples=[["HG00096", "HG00101", "HG00103"]],
@@ -221,7 +221,7 @@ class TestPyVcfScanner:
     @pytest.mark.parametrize(
         "input",
         Input.permute(
-            region=["GL000207.1"],
+            region=["Y"],
             index=["data/sample.vcf.gz.csi", "data/sample.vcf.gz.tbi"],
             batch_size=[2],
             samples=[["HG00096", "HG00101", "HG00103"]],

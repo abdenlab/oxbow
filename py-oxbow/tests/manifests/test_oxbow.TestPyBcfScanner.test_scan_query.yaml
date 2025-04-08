@@ -1,0 +1,144 @@
+region="Y", index="data/sample.bcf.csi", batch_size=2, samples=["HG00096", "HG00101", "HG00103"]:
+    HG00096:
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    HG00101:
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    HG00103:
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    alt:
+    -   - CA
+    -   - T
+    chrom:
+    - Y
+    - Y
+    filter:
+    - []
+    - []
+    id:
+    - []
+    - []
+    info:
+    -   AA: C
+        AC:
+        - 3
+        AF:
+        - 0.002433090005069971
+        AFR_AF:
+        - 0.003100000089034438
+        AMR_AF:
+        - 0.002899999963119626
+        AN: 1233
+        DP: 3663
+        EAS_AF:
+        - 0.0
+        END: null
+        EUR_AF:
+        - 0.0
+        NS: 1233
+        SAS_AF:
+        - 0.0
+        SVTYPE: null
+    -   AA: G
+        AC:
+        - 9
+        AF:
+        - 0.007563029881566763
+        AFR_AF:
+        - 0.0
+        AMR_AF:
+        - 0.0
+        AN: 1190
+        DP: 5210
+        EAS_AF:
+        - 0.0
+        END: null
+        EUR_AF:
+        - 0.0
+        NS: 1190
+        SAS_AF:
+        - 0.01730000041425228
+        SVTYPE: null
+    pos:
+    - 2761189
+    - 6932688
+    qual:
+    - 106.43299865722656
+    - 1751.52001953125
+    ref:
+    - C
+    - G
