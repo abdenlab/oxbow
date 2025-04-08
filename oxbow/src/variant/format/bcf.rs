@@ -245,28 +245,21 @@ fn resolve_chrom_id(
     chrom: &str,
 ) -> io::Result<usize> {
     // For BCF, first try the source file's header, then try the index file's header.
-    match header.contigs().get_index_of(chrom) {
-        Some(id) => Ok(id),
-        None => {
-            eprintln!(
-                "Reference sequence {} not found in VCF header. Trying index header.",
+    let id = header.contigs().get_index_of(chrom).or_else(|| {
+        index.header().and_then(|index_header| {
+            index_header
+                .reference_sequence_names()
+                .get_index_of(chrom.as_bytes())
+        })
+    });
+
+    id.ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!(
+                "Reference sequence '{}' not found in VCF header or Index header.",
                 chrom
-            );
-            match index.header() {
-                Some(index_header) => index_header
-                    .reference_sequence_names()
-                    .get_index_of(chrom.as_bytes())
-                    .ok_or_else(|| {
-                        io::Error::new(
-                            io::ErrorKind::InvalidInput,
-                            format!("Reference sequence '{}' not found in index header.", chrom),
-                        )
-                    }),
-                None => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    "Index header not found.",
-                )),
-            }
-        }
-    }
+            ),
+        )
+    })
 }
