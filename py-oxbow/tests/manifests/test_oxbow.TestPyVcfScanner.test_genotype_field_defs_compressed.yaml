@@ -1,0 +1,36 @@
+- !!python/tuple
+    - GT
+    - '1'
+    - String
+- !!python/tuple
+    - CN
+    - '1'
+    - Integer
+- !!python/tuple
+    - CNL
+    - .
+    - Float
+- !!python/tuple
+    - CNP
+    - .
+    - Float
+- !!python/tuple
+    - CNQ
+    - '1'
+    - Float
+- !!python/tuple
+    - GP
+    - G
+    - Float
+- !!python/tuple
+    - GQ
+    - '1'
+    - Integer
+- !!python/tuple
+    - FT
+    - '1'
+    - String
+- !!python/tuple
+    - PL
+    - G
+    - Integer

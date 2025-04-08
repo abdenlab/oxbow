@@ -5,6 +5,12 @@ from oxbow._core.alignment import (
     from_bam as from_bam,
     from_sam as from_sam,
 )
+from oxbow._core.variant import (
+    BcfFile as BcfFile,
+    from_bcf as from_bcf,
+    VcfFile as VcfFile,
+    from_vcf as from_vcf,
+)
 from oxbow.oxbow import (
     PyBamScanner as PyBamScanner,
     PySamScanner as PySamScanner,
