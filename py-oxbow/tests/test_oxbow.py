@@ -91,17 +91,13 @@ class TestPyBcfScanner:
 
     @pytest.mark.parametrize(
         "input",
-        Input.permute(
-            batch_size=[2], samples=[["HG00096", "HG00101", "HG00103"]]
-        ),
+        Input.permute(batch_size=[2], samples=[["HG00096", "HG00101", "HG00103"]]),
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
         scanner = ox.PyBcfScanner("data/sample.bcf")
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
@@ -128,9 +124,7 @@ class TestPyBcfScanner:
         scanner = ox.PyBcfScanner("data/sample.bcf")
         schema = scanner.schema()
         stream = scanner.scan_query(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
 
@@ -155,9 +149,7 @@ class TestPyVcfScanner:
         scanner = ox.PyVcfScanner("data/sample.vcf", compressed=False)
         assert manifest == scanner.info_field_names()
 
-    def test_info_field_names_compressed(
-        self, manifest: pytest_manifest.Manifest
-    ):
+    def test_info_field_names_compressed(self, manifest: pytest_manifest.Manifest):
         scanner = ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)
         assert manifest == scanner.info_field_names()
 
@@ -165,9 +157,7 @@ class TestPyVcfScanner:
         scanner = ox.PyVcfScanner("data/sample.vcf", compressed=False)
         assert manifest == scanner.info_field_defs()
 
-    def test_info_field_defs_compressed(
-        self, manifest: pytest_manifest.Manifest
-    ):
+    def test_info_field_defs_compressed(self, manifest: pytest_manifest.Manifest):
         scanner = ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)
         assert manifest == scanner.info_field_defs()
 
@@ -175,9 +165,7 @@ class TestPyVcfScanner:
         scanner = ox.PyVcfScanner("data/sample.vcf", compressed=False)
         assert manifest == scanner.genotype_field_names()
 
-    def test_genotype_field_names_compressed(
-        self, manifest: pytest_manifest.Manifest
-    ):
+    def test_genotype_field_names_compressed(self, manifest: pytest_manifest.Manifest):
         scanner = ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)
         assert manifest == scanner.genotype_field_names()
 
@@ -185,9 +173,7 @@ class TestPyVcfScanner:
         scanner = ox.PyVcfScanner("data/sample.vcf", compressed=False)
         assert manifest == scanner.genotype_field_defs()
 
-    def test_genotype_field_defs_compressed(
-        self, manifest: pytest_manifest.Manifest
-    ):
+    def test_genotype_field_defs_compressed(self, manifest: pytest_manifest.Manifest):
         scanner = ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)
         assert manifest == scanner.genotype_field_defs()
 
@@ -201,32 +187,24 @@ class TestPyVcfScanner:
 
     @pytest.mark.parametrize(
         "input",
-        Input.permute(
-            batch_size=[2], samples=[["HG00096", "HG00101", "HG00103"]]
-        ),
+        Input.permute(batch_size=[2], samples=[["HG00096", "HG00101", "HG00103"]]),
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
         scanner = ox.PyVcfScanner("data/sample.vcf", compressed=False)
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     @pytest.mark.parametrize(
         "input",
-        Input.permute(
-            batch_size=[2], samples=[["HG00096", "HG00101", "HG00103"]]
-        ),
+        Input.permute(batch_size=[2], samples=[["HG00096", "HG00101", "HG00103"]]),
     )
     def test_scan_compressed(self, input, manifest: pytest_manifest.Manifest):
         scanner = ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
@@ -244,7 +222,7 @@ class TestPyVcfScanner:
         "input",
         Input.permute(
             region=["GL000207.1"],
-            index=["data/sample.vcf.gz.csi", "data/sample.vcf.gz.tbi" ],
+            index=["data/sample.vcf.gz.csi", "data/sample.vcf.gz.tbi"],
             batch_size=[2],
             samples=[["HG00096", "HG00101", "HG00103"]],
         ),
@@ -253,7 +231,5 @@ class TestPyVcfScanner:
         scanner = ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)
         schema = scanner.schema()
         stream = scanner.scan_query(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()

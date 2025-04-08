@@ -7,7 +7,6 @@ from tests.utils import Input
 
 
 class TestBcfFile:
-
     @pytest.mark.parametrize(
         "filepath",
         [
@@ -50,9 +49,7 @@ class TestBcfFile:
                 pass
             finally:
                 assert (
-                    manifest[
-                        f"{ox.BcfFile.__name__}({Input(filepath)}).select()"
-                    ]
+                    manifest[f"{ox.BcfFile.__name__}({Input(filepath)}).select()"]
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_fragments_callstack(self, wiretap, manifest: Manifest):
@@ -119,9 +116,7 @@ class TestBcfFile:
             info_fields=("DP",),
             samples=("HG00096",),
         )
-        batches = ox.BcfFile(*input.args, **input.kwargs).batches(
-            batch_size=batch_size
-        )
+        batches = ox.BcfFile(*input.args, **input.kwargs).batches(batch_size=batch_size)
         try:
             actual = actual = len(list(batches))
         except ValueError as e:
@@ -131,7 +126,6 @@ class TestBcfFile:
 
 
 class TestVcfFile:
-
     @pytest.mark.parametrize(
         "filepath",
         [
@@ -174,9 +168,7 @@ class TestVcfFile:
                 pass
             finally:
                 assert (
-                    manifest[
-                        f"{ox.VcfFile.__name__}({input}).select()"
-                    ]
+                    manifest[f"{ox.VcfFile.__name__}({input}).select()"]
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_fragments_callstack(self, wiretap, manifest: Manifest):
@@ -243,9 +235,7 @@ class TestVcfFile:
             info_fields=("DP",),
             samples=("HG00096",),
         )
-        batches = ox.VcfFile(*input.args, **input.kwargs).batches(
-            batch_size=batch_size
-        )
+        batches = ox.VcfFile(*input.args, **input.kwargs).batches(batch_size=batch_size)
         try:
             actual = len(list(batches))
         except ValueError as e:

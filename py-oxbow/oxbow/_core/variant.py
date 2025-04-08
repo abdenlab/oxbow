@@ -71,26 +71,18 @@ class VariantFile(DataFile):
             info_fields = [d[0] for d in self._scanner.info_fields()]
         else:
             info_fields = [
-                d[0]
-                for d in self._scanner.info_fields()
-                if d[0] in info_fields
+                d[0] for d in self._scanner.info_fields() if d[0] in info_fields
             ]
         if genotype_fields is None:
-            genotype_fields = [
-                d[0] for d in self._scanner.genotype_fields()
-            ]
+            genotype_fields = [d[0] for d in self._scanner.genotype_fields()]
         else:
             genotype_fields = [
-                d[0]
-                for d in self._scanner.genotype_fields()
-                if d[0] in genotype_fields
+                d[0] for d in self._scanner.genotype_fields() if d[0] in genotype_fields
             ]
         if samples is None:
             sample_names = self._scanner.samples()
         else:
-            sample_names = [
-                s for s in self._scanner.samples() if s in samples
-            ]
+            sample_names = [s for s in self._scanner.samples() if s in samples]
         self.__schema_kwargs = dict(
             fields=fields,
             genotype_by=genotype_by,
