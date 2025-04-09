@@ -245,31 +245,22 @@ fn resolve_chrom_id(
     chrom: &str,
 ) -> io::Result<usize> {
     // For VCF, first try the index file's header, then try the source file's header.
-    match index.header() {
-        Some(index_header) => index_header
-            .reference_sequence_names()
-            .get_index_of(chrom.as_bytes())
-            .ok_or_else(|| {
-                io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!("Reference sequence '{}' not found in index header.", chrom),
-                )
-            }),
-        None => {
-            eprintln!("Index header not found. Trying VCF header.");
-            match header.contigs().get_index_of(chrom) {
-                Some(id) => Ok(id),
-                None => {
-                    let contig_string_map = header.string_maps().contigs();
-                    match contig_string_map.get_index_of(chrom) {
-                        Some(id) => Ok(id),
-                        None => Err(io::Error::new(
-                            io::ErrorKind::InvalidInput,
-                            format!("Reference sequence '{}' not found in VCF header.", chrom),
-                        )),
-                    }
-                }
-            }
-        }
-    }
+    let id = index
+        .header()
+        .and_then(|index_header| {
+            index_header
+                .reference_sequence_names()
+                .get_index_of(chrom.as_bytes())
+        })
+        .or_else(|| header.contigs().get_index_of(chrom));
+
+    id.ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!(
+                "Reference sequence '{}' not found in Index header or VCF header.",
+                chrom
+            ),
+        )
+    })
 }
