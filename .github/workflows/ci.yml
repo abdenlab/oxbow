@@ -51,7 +51,7 @@ jobs:
         with:
           pyproject-file: "py-oxbow/pyproject.toml"
       - run: |
-          cd py-oxbow
+          cd py-oxbow/tests
           uv run --no-default-groups --dev pytest
 
   LintPython:

@@ -14,17 +14,25 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
+dependencies = [
+    "polars>=1.26.0",
+    "pandas>=2.2.3",
+    "pyarrow>=19.0.1",
+]
+
 
 [project.urls]
 homepage = "https://github.com/abdenlab/oxbow"
 
 [dependency-groups]
 dev = [
-    "polars>=1.26.0",
+    "debugpy==1.8.13",
     "pytest>=8.3.5",
+    "pytest-manifest==0.1",
+    "pytest-mock",
     "ruff>=0.11.2",
 ]
-docs = [
+docs = [ 
     "furo>=2024.8.6",
     "myst-parser>=4.0.1; python_version >= '3.10'",
     "sphinx>=8.1.3; python_version >= '3.11'",
@@ -34,8 +42,6 @@ docs = [
 ]
 notebooks = [
     "jupyterlab>=4.3.6",
-    "pandas>=2.2.3",
-    "pyarrow>=19.0.1",
     "pysam>=0.23.0",
 ]
 
@@ -50,7 +56,7 @@ cache-keys = [
     { file = "**/*.rs" },
 ]
 # handled by CI
-required-version = ">=0.5.0"
+required-version = ">=0.6.8"
 default-groups = "all"
 
 [tool.ruff.lint.isort]
