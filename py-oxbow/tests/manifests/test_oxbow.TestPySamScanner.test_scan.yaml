@@ -1,0 +1,173 @@
+batch_size=1:
+    cigar:
+    - 6M14N1I5M
+    end:
+    - 40
+    flag:
+    - 0
+    mapq:
+    - 30
+    pnext:
+    - null
+    pos:
+    - 16
+    qname:
+    - r004
+    qual:
+    - null
+    rname:
+    - chr1
+    rnext:
+    - null
+    seq:
+    - ATAGCTCTCAGC
+    tlen:
+    - 0
+batch_size=2:
+    cigar:
+    - 6M14N1I5M
+    - 6H5M
+    end:
+    - 40
+    - 33
+    flag:
+    - 0
+    - 16
+    mapq:
+    - 30
+    - 30
+    pnext:
+    - null
+    - null
+    pos:
+    - 16
+    - 29
+    qname:
+    - r004
+    - r003
+    qual:
+    - null
+    - null
+    rname:
+    - chr1
+    - chr1
+    rnext:
+    - null
+    - null
+    seq:
+    - ATAGCTCTCAGC
+    - TAGGC
+    tlen:
+    - 0
+    - 0
+batch_size=3:
+    cigar:
+    - 6M14N1I5M
+    - 6H5M
+    - 9M
+    end:
+    - 40
+    - 33
+    - 45
+    flag:
+    - 0
+    - 16
+    - 83
+    mapq:
+    - 30
+    - 30
+    - 30
+    pnext:
+    - null
+    - null
+    - 7
+    pos:
+    - 16
+    - 29
+    - 37
+    qname:
+    - r004
+    - r003
+    - r001
+    qual:
+    - null
+    - null
+    - null
+    rname:
+    - chr1
+    - chr1
+    - chr1
+    rnext:
+    - null
+    - null
+    - chr1
+    seq:
+    - ATAGCTCTCAGC
+    - TAGGC
+    - CAGCGCCAT
+    tlen:
+    - 0
+    - 0
+    - -39
+batch_size=4:
+    cigar:
+    - 6M14N1I5M
+    - 6H5M
+    - 9M
+    end:
+    - 40
+    - 33
+    - 45
+    flag:
+    - 0
+    - 16
+    - 83
+    mapq:
+    - 30
+    - 30
+    - 30
+    pnext:
+    - null
+    - null
+    - 7
+    pos:
+    - 16
+    - 29
+    - 37
+    qname:
+    - r004
+    - r003
+    - r001
+    qual:
+    - null
+    - null
+    - null
+    rname:
+    - chr1
+    - chr1
+    - chr1
+    rnext:
+    - null
+    - null
+    - chr1
+    seq:
+    - ATAGCTCTCAGC
+    - TAGGC
+    - CAGCGCCAT
+    tlen:
+    - 0
+    - 0
+    - -39
+fields=("qname", "rname", "mapq"):
+    mapq:
+    - 30
+    - 30
+    - 30
+    qname:
+    - r004
+    - r003
+    - r001
+    rname:
+    - chr1
+    - chr1
+    - chr1
