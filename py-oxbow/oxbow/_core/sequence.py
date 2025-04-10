@@ -118,6 +118,31 @@ def from_fasta(
     compressed: bool = False,
     regions: list[tuple[int, int]] | None = None,
 ) -> FastaFile:
+    """
+    Create a FastaFile instance.
+
+    Parameters
+    ----------
+    uri
+        The URI of the FASTA file.
+    opener
+        A callable to open the file.
+    fields
+        Names of the fields to project.
+    index, optional
+        Path to the FAI index file.
+    gzi, optional
+        Path to the GZI index file for compressed sources.
+    compressed
+        Whether the source is compressed.
+    regions
+        Genomic regions to query.
+
+    Returns
+    -------
+    FastaFile
+        An instance of the FastaFile class.
+    """
     return FastaFile(
         uri=uri,
         opener=opener,
@@ -137,6 +162,29 @@ def from_fastq(
     gzi: str | None = None,
     compressed: bool = False,
 ) -> FastqFile:
+    """
+    Create a FastqFile instance.
+
+    Parameters
+    ----------
+    uri
+        The URI of the FASTQ file.
+    opener
+        A callable to open the file.
+    fields
+        Names of the fields to project.
+    index, optional
+        Path to the index file.
+    gzi, optional
+        Path to the GZI index file for compressed sources.
+    compressed
+        Whether the source is compressed.
+
+    Returns
+    -------
+    FastqFile
+        An instance of the FastqFile class.
+    """
     return FastqFile(
         uri=uri,
         opener=opener,
