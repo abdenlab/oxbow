@@ -11,6 +11,8 @@ class FileType(Enum):
 
     SAM = ox.PySamScanner
     BAM = ox.PyBamScanner
+    BCF = ox.PyBcfScanner
+    VCF = ox.PyVcfScanner
 
 
 FILETYPE_BY_NAME: Final[dict[str, FileType]] = {t.name.lower(): t for t in FileType}

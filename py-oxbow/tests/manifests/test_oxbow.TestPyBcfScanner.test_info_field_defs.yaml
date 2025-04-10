@@ -1,0 +1,52 @@
+- !!python/tuple
+    - DP
+    - '1'
+    - Integer
+- !!python/tuple
+    - END
+    - '1'
+    - Integer
+- !!python/tuple
+    - SVTYPE
+    - '1'
+    - String
+- !!python/tuple
+    - AA
+    - '1'
+    - String
+- !!python/tuple
+    - AC
+    - A
+    - Integer
+- !!python/tuple
+    - AF
+    - A
+    - Float
+- !!python/tuple
+    - NS
+    - '1'
+    - Integer
+- !!python/tuple
+    - AN
+    - '1'
+    - Integer
+- !!python/tuple
+    - SAS_AF
+    - A
+    - Float
+- !!python/tuple
+    - EUR_AF
+    - A
+    - Float
+- !!python/tuple
+    - AFR_AF
+    - A
+    - Float
+- !!python/tuple
+    - AMR_AF
+    - A
+    - Float
+- !!python/tuple
+    - EAS_AF
+    - A
+    - Float
