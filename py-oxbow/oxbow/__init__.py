@@ -16,3 +16,7 @@ from oxbow.oxbow import (
     PySamScanner as PySamScanner,
 )
 from oxbow._filetypes import FileType as FileType
+from oxbow._pyarrow import (
+    BatchReaderDataset as BatchReaderDataset,
+    BatchReaderFragment as BatchReaderFragment,
+)

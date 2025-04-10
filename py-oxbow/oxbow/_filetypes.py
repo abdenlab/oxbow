@@ -13,6 +13,8 @@ class FileType(Enum):
     BAM = ox.PyBamScanner
     BCF = ox.PyBcfScanner
     VCF = ox.PyVcfScanner
+    FASTA = ox.PyFastaScanner
+    FASTQ = ox.PyFastqScanner
 
 
 FILETYPE_BY_NAME: Final[dict[str, FileType]] = {t.name.lower(): t for t in FileType}
