@@ -46,9 +46,7 @@ class SequenceFile(DataFile):
         super().__init__(uri, opener, fields)
 
     def select(self, *args, **kwargs) -> BatchReaderDataset:
-        return super().select(
-            *args, gzi=self._gzi, index=self._index, **kwargs
-        )
+        return super().select(*args, gzi=self._gzi, index=self._index, **kwargs)
 
 
 class FastaFile(SequenceFile, file_type=FileType.FASTA):
