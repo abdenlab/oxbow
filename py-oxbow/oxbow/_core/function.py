@@ -95,6 +95,19 @@ class BbiFile(FunctionFile):
         return scanner.zoom_levels()
 
     def zoom(self, resolution: int) -> BbiFile:
+        """
+        Create a new BbiFile instance with the specified resolution.
+
+        Parameters
+        ----------
+        resolution
+            The resolution level for zoomed data.
+
+        Returns
+        -------
+        BbiFile
+            A new instance of the BbiFile class with the specified resolution.
+        """
         return type(self)(
             self._uri,
             self._opener,
@@ -259,6 +272,31 @@ def from_bed(
     bed_schema: str = "bed3",
     compressed: bool = False,
 ) -> BedFile:
+    """
+    Create a BedFile instance.
+
+    Parameters
+    ----------
+    uri
+        The URI of the BED file.
+    opener
+        A callable to open the file.
+    fields
+        Names of the fields to project.
+    index
+        Path to the index file.
+    regions
+        Genomic regions to query.
+    bed_schema
+        Schema for the BED file format.
+    compressed
+        Whether the source is compressed.
+
+    Returns
+    -------
+    BedFile
+        An instance of the BedFile class.
+    """
     return BedFile(
         uri,
         opener=opener,
@@ -278,6 +316,29 @@ def from_bigbed(
     resolution: int | None = None,
     bed_schema: str = "bed3+",
 ) -> BigBedFile:
+    """
+    Create a BigBedFile instance.
+
+    Parameters
+    ----------
+    uri
+        The URI of the BigBed file.
+    opener
+        A callable to open the file.
+    fields
+        Names of the fields to project.
+    regions
+        Genomic regions to query.
+    resolution
+        Resolution level for zoomed data.
+    bed_schema
+        Schema for the BED file format.
+
+    Returns
+    -------
+    BigBedFile
+        An instance of the BigBedFile class.
+    """
     return BigBedFile(
         uri,
         opener=opener,
@@ -295,6 +356,27 @@ def from_bigwig(
     regions: list[str] | None = None,
     resolution: int | None = None,
 ) -> BigWigFile:
+    """
+    Create a BigWigFile instance.
+
+    Parameters
+    ----------
+    uri
+        The URI of the BigWig file.
+    opener
+        A callable to open the file.
+    fields
+        Names of the fields to project.
+    regions
+        Genomic regions to query.
+    resolution
+        Resolution level for zoomed data.
+
+    Returns
+    -------
+    BigWigFile
+        An instance of the BigWigFile class.
+    """
     return BigWigFile(
         uri,
         opener=opener,
@@ -314,6 +396,33 @@ def from_gff(
     attribute_defs: dict | None = None,
     attribute_scan_rows: int = 1024,
 ) -> GffFile:
+    """
+    Create a GffFile instance.
+
+    Parameters
+    ----------
+    uri
+        The URI of the GFF file.
+    opener
+        A callable to open the file.
+    fields
+        Names of the fields to project.
+    index
+        Path to the index file.
+    compressed
+        Whether the source is compressed.
+    regions
+        Genomic regions to query.
+    attribute_defs
+        Attribute definitions for the file.
+    attribute_scan_rows
+        Number of rows to scan for attribute definitions.
+
+    Returns
+    -------
+    GffFile
+        An instance of the GffFile class.
+    """
     return GffFile(
         uri,
         opener=opener,
@@ -336,6 +445,33 @@ def from_gtf(
     attribute_defs: dict | None = None,
     attribute_scan_rows: int = 1024,
 ) -> GtfFile:
+    """
+    Create a GtfFile instance.
+
+    Parameters
+    ----------
+    uri
+        The URI of the GTF file.
+    opener
+        A callable to open the file.
+    fields
+        Names of the fields to project.
+    index
+        Path to the index file.
+    compressed
+        Whether the source is compressed.
+    regions
+        Genomic regions to query.
+    attribute_defs
+        Attribute definitions for the file.
+    attribute_scan_rows
+        Number of rows to scan for attribute definitions.
+
+    Returns
+    -------
+    GtfFile
+        An instance of the GtfFile class.
+    """
     return GtfFile(
         uri,
         opener=opener,
