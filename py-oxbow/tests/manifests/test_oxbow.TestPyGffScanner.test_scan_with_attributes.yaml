@@ -1,0 +1,336 @@
+batch_size=1:
+    attributes:
+    -   ID: exon:ENST00000782961.1:2
+        Parent: ENST00000782961.1
+        ccdsid: null
+        exon_id: ENSE00004156517.1
+        exon_number: '2'
+        gene_id: ENSG00000229309.3
+        gene_name: ENSG00000229309
+        gene_type: lncRNA
+        havana_gene: OTTHUMG00000017146.2
+        havana_transcript: null
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag:
+        - basic
+        - Ensembl_canonical
+        - TAGENE
+        transcript_id: ENST00000782961.1
+        transcript_name: ENST00000782961
+        transcript_support_level: null
+        transcript_type: lncRNA
+    end:
+    - 81326030
+    frame:
+    - null
+    score:
+    - null
+    seqid:
+    - chr13
+    source:
+    - HAVANA
+    start:
+    - 81326030
+    strand:
+    - +
+    type:
+    - exon
+batch_size=2:
+    attributes:
+    -   ID: exon:ENST00000782961.1:2
+        Parent: ENST00000782961.1
+        ccdsid: null
+        exon_id: ENSE00004156517.1
+        exon_number: '2'
+        gene_id: ENSG00000229309.3
+        gene_name: ENSG00000229309
+        gene_type: lncRNA
+        havana_gene: OTTHUMG00000017146.2
+        havana_transcript: null
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag:
+        - basic
+        - Ensembl_canonical
+        - TAGENE
+        transcript_id: ENST00000782961.1
+        transcript_name: ENST00000782961
+        transcript_support_level: null
+        transcript_type: lncRNA
+    -   ID: CDS:ENST00000498271.1
+        Parent: ENST00000498271.1
+        ccdsid: CCDS59005.1
+        exon_id: ENSE00001878698.1
+        exon_number: '40'
+        gene_id: ENSG00000244731.10
+        gene_name: C4A
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000031186.6
+        havana_transcript: OTTHUMT00000356896.1
+        hgnc_id: HGNC:1323
+        level: '2'
+        protein_id: ENSP00000420212.1
+        tag:
+        - RNA_Seq_supported_only
+        - basic
+        - GENCODE_Primary
+        - CCDS
+        transcript_id: ENST00000498271.1
+        transcript_name: C4A-246
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    end:
+    - 81326030
+    - 32002399
+    frame:
+    - null
+    - 1
+    score:
+    - null
+    - null
+    seqid:
+    - chr13
+    - chr6
+    source:
+    - HAVANA
+    - HAVANA
+    start:
+    - 81326030
+    - 32002399
+    strand:
+    - +
+    - +
+    type:
+    - exon
+    - CDS
+batch_size=3:
+    attributes:
+    -   ID: exon:ENST00000782961.1:2
+        Parent: ENST00000782961.1
+        ccdsid: null
+        exon_id: ENSE00004156517.1
+        exon_number: '2'
+        gene_id: ENSG00000229309.3
+        gene_name: ENSG00000229309
+        gene_type: lncRNA
+        havana_gene: OTTHUMG00000017146.2
+        havana_transcript: null
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag:
+        - basic
+        - Ensembl_canonical
+        - TAGENE
+        transcript_id: ENST00000782961.1
+        transcript_name: ENST00000782961
+        transcript_support_level: null
+        transcript_type: lncRNA
+    -   ID: CDS:ENST00000498271.1
+        Parent: ENST00000498271.1
+        ccdsid: CCDS59005.1
+        exon_id: ENSE00001878698.1
+        exon_number: '40'
+        gene_id: ENSG00000244731.10
+        gene_name: C4A
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000031186.6
+        havana_transcript: OTTHUMT00000356896.1
+        hgnc_id: HGNC:1323
+        level: '2'
+        protein_id: ENSP00000420212.1
+        tag:
+        - RNA_Seq_supported_only
+        - basic
+        - GENCODE_Primary
+        - CCDS
+        transcript_id: ENST00000498271.1
+        transcript_name: C4A-246
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000334011.10:8
+        Parent: ENST00000334011.10
+        ccdsid: CCDS7318.1
+        exon_id: ENSE00001170094.1
+        exon_number: '8'
+        gene_id: ENSG00000138315.13
+        gene_name: OIT3
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000018444.2
+        havana_transcript: OTTHUMT00000048596.2
+        hgnc_id: HGNC:29953
+        level: '2'
+        protein_id: ENSP00000333900.5
+        tag:
+        - basic
+        - Ensembl_canonical
+        - GENCODE_Primary
+        - MANE_Select
+        - appris_principal_1
+        - CCDS
+        transcript_id: ENST00000334011.10
+        transcript_name: OIT3-201
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    end:
+    - 81326030
+    - 32002399
+    - 72930538
+    frame:
+    - null
+    - 1
+    - null
+    score:
+    - null
+    - null
+    - null
+    seqid:
+    - chr13
+    - chr6
+    - chr10
+    source:
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    start:
+    - 81326030
+    - 32002399
+    - 72930538
+    strand:
+    - +
+    - +
+    - +
+    type:
+    - exon
+    - CDS
+    - exon
+batch_size=4:
+    attributes:
+    -   ID: exon:ENST00000782961.1:2
+        Parent: ENST00000782961.1
+        ccdsid: null
+        exon_id: ENSE00004156517.1
+        exon_number: '2'
+        gene_id: ENSG00000229309.3
+        gene_name: ENSG00000229309
+        gene_type: lncRNA
+        havana_gene: OTTHUMG00000017146.2
+        havana_transcript: null
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag:
+        - basic
+        - Ensembl_canonical
+        - TAGENE
+        transcript_id: ENST00000782961.1
+        transcript_name: ENST00000782961
+        transcript_support_level: null
+        transcript_type: lncRNA
+    -   ID: CDS:ENST00000498271.1
+        Parent: ENST00000498271.1
+        ccdsid: CCDS59005.1
+        exon_id: ENSE00001878698.1
+        exon_number: '40'
+        gene_id: ENSG00000244731.10
+        gene_name: C4A
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000031186.6
+        havana_transcript: OTTHUMT00000356896.1
+        hgnc_id: HGNC:1323
+        level: '2'
+        protein_id: ENSP00000420212.1
+        tag:
+        - RNA_Seq_supported_only
+        - basic
+        - GENCODE_Primary
+        - CCDS
+        transcript_id: ENST00000498271.1
+        transcript_name: C4A-246
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000334011.10:8
+        Parent: ENST00000334011.10
+        ccdsid: CCDS7318.1
+        exon_id: ENSE00001170094.1
+        exon_number: '8'
+        gene_id: ENSG00000138315.13
+        gene_name: OIT3
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000018444.2
+        havana_transcript: OTTHUMT00000048596.2
+        hgnc_id: HGNC:29953
+        level: '2'
+        protein_id: ENSP00000333900.5
+        tag:
+        - basic
+        - Ensembl_canonical
+        - GENCODE_Primary
+        - MANE_Select
+        - appris_principal_1
+        - CCDS
+        transcript_id: ENST00000334011.10
+        transcript_name: OIT3-201
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000641916.1:4
+        Parent: ENST00000641916.1
+        ccdsid: null
+        exon_id: ENSE00003812605.1
+        exon_number: '4'
+        gene_id: ENSG00000290385.2
+        gene_name: ENSG00000290385
+        gene_type: lncRNA
+        havana_gene: null
+        havana_transcript: OTTHUMT00000493599.1
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag: null
+        transcript_id: ENST00000641916.1
+        transcript_name: ENST00000641916
+        transcript_support_level: null
+        transcript_type: lncRNA
+    end:
+    - 81326030
+    - 32002399
+    - 72930538
+    - 497210
+    frame:
+    - null
+    - 1
+    - null
+    - null
+    score:
+    - null
+    - null
+    - null
+    - null
+    seqid:
+    - chr13
+    - chr6
+    - chr10
+    - chr1
+    source:
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    start:
+    - 81326030
+    - 32002399
+    - 72930538
+    - 497210
+    strand:
+    - +
+    - +
+    - +
+    - '-'
+    type:
+    - exon
+    - CDS
+    - exon
+    - exon
