@@ -1,0 +1,21 @@
+FastaFile("data/does-not-exist.fasta"): |-
+    ->  oxbow._core.sequence.FastaFile.__init__("data/does-not-exist.fasta")
+        ->  oxbow._core.sequence.SequenceFile.__init__("data/does-not-exist.fasta", None, None, None, None, False)
+            ->  oxbow._core.base.DataFile.__init__("data/does-not-exist.fasta", None, None)
+            <-  None
+        <-  None
+    <-  None
+FastaFile("data/malformed.fasta"): |-
+    ->  oxbow._core.sequence.FastaFile.__init__("data/malformed.fasta")
+        ->  oxbow._core.sequence.SequenceFile.__init__("data/malformed.fasta", None, None, None, None, False)
+            ->  oxbow._core.base.DataFile.__init__("data/malformed.fasta", None, None)
+            <-  None
+        <-  None
+    <-  None
+FastaFile("data/sample.fasta"): |-
+    ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta")
+        ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fasta", None, None, None, None, False)
+            ->  oxbow._core.base.DataFile.__init__("data/sample.fasta", None, None)
+            <-  None
+        <-  None
+    <-  None

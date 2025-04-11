@@ -1,0 +1,60 @@
+batch_size=1:
+    description:
+    - ''
+    name:
+    - seq1
+    quality:
+    - I?D>8F(7J:G*H/E+K9I<A5L2M0N-O,P;Q]R[S\T`UaVbWcXdYeZf
+    sequence:
+    - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+batch_size=2:
+    description:
+    - ''
+    - ''
+    name:
+    - seq1
+    - seq2
+    quality:
+    - I?D>8F(7J:G*H/E+K9I<A5L2M0N-O,P;Q]R[S\T`UaVbWcXdYeZf
+    - h^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXW
+    sequence:
+    - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+    - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
+batch_size=3:
+    description:
+    - ''
+    - ''
+    - ''
+    name:
+    - seq1
+    - seq2
+    - seq3
+    quality:
+    - I?D>8F(7J:G*H/E+K9I<A5L2M0N-O,P;Q]R[S\T`UaVbWcXdYeZf
+    - h^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXW
+    - 6<J)9G*H/E+K:I?A4L1M-N,O;P]Q[R\StUaVbWcXdYeZf
+    sequence:
+    - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+    - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
+    - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+batch_size=4:
+    description:
+    - ''
+    - ''
+    - ''
+    - ''
+    name:
+    - seq1
+    - seq2
+    - seq3
+    - seq4
+    quality:
+    - I?D>8F(7J:G*H/E+K9I<A5L2M0N-O,P;Q]R[S\T`UaVbWcXdYeZf
+    - h^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXW
+    - 6<J)9G*H/E+K:I?A4L1M-N,O;P]Q[R\StUaVbWcXdYeZf
+    - j`i_h]g\f[eZdYcXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXW
+    sequence:
+    - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+    - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
+    - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+    - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC

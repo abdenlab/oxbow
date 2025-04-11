@@ -5,7 +5,7 @@ import pytest_manifest
 
 import oxbow.oxbow as ox
 
-from utils import Input
+from tests.utils import Input
 
 
 class TestPySamScanner:
@@ -233,3 +233,67 @@ class TestPyVcfScanner:
         stream = scanner.scan_query(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+
+class TestPyFastaScanner:
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(batch_size=1),
+            Input(batch_size=2),
+            Input(batch_size=3),
+            Input(batch_size=4),
+            Input(fields=("name", "seq")),
+        ],
+    )
+    def test_scan(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyFastaScanner("data/sample.fasta")
+        schema = scanner.schema()
+        stream = scanner.scan(*input.args, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(
+            data=stream, schema=pa.schema(schema)
+        )
+        assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+    def test_scan_invalid_field(self, manifest):
+        input = Input(fields=("name", "seq", "foo"))
+        scanner = ox.PyFastaScanner("data/sample.fasta")
+        error = None
+        try:
+            scanner.scan(*input.args, **input.kwargs)
+        except ValueError as e:
+            error = str(e)
+        finally:
+            assert manifest == error
+
+
+class TestPyFastqScanner:
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(batch_size=1),
+            Input(batch_size=2),
+            Input(batch_size=3),
+            Input(batch_size=4),
+            Input(fields=("name", "seq")),
+        ],
+    )
+    def test_scan(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyFastqScanner("data/sample.fastq")
+        schema = scanner.schema()
+        stream = scanner.scan(*input.args, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(
+            data=stream, schema=pa.schema(schema)
+        )
+        assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+    def test_scan_invalid_field(self, manifest):
+        input = Input(fields=("name", "seq", "foo"))
+        scanner = ox.PyFastqScanner("data/sample.fastq")
+        error = None
+        try:
+            scanner.scan(*input.args, **input.kwargs)
+        except ValueError as e:
+            error = str(e)
+        finally:
+            assert manifest == error
