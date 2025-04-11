@@ -1,0 +1,15 @@
+FastqFile("data/does-not-exist.fastq"): |-
+    ->  oxbow._core.sequence.SequenceFile.__init__("data/does-not-exist.fastq")
+        ->  oxbow._core.base.DataFile.__init__("data/does-not-exist.fastq", None, None)
+        <-  None
+    <-  None
+FastqFile("data/malformed.fastq"): |-
+    ->  oxbow._core.sequence.SequenceFile.__init__("data/malformed.fastq")
+        ->  oxbow._core.base.DataFile.__init__("data/malformed.fastq", None, None)
+        <-  None
+    <-  None
+FastqFile("data/sample.fastq"): |-
+    ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fastq")
+        ->  oxbow._core.base.DataFile.__init__("data/sample.fastq", None, None)
+        <-  None
+    <-  None
