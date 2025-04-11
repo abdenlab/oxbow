@@ -1,0 +1,51 @@
+batch_size=1:
+    description:
+    - null
+    name:
+    - seq1
+    sequence:
+    - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+batch_size=2:
+    description:
+    - null
+    - null
+    name:
+    - seq1
+    - seq2
+    sequence:
+    - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+    - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
+batch_size=3:
+    description:
+    - null
+    - null
+    - null
+    name:
+    - seq1
+    - seq2
+    - seq3
+    sequence:
+    - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+    - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
+    - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+batch_size=4:
+    description:
+    - null
+    - null
+    - null
+    - null
+    name:
+    - seq1
+    - seq2
+    - seq3
+    - seq4
+    sequence:
+    - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+    - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
+    - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+    - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC
+fields=("name", "sequence"):
+    name:
+    - seq1
+    sequence:
+    - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC

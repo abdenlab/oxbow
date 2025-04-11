@@ -5,13 +5,14 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 
 import pyarrow as pa
 
-from oxbow._filetypes import FileType
 from oxbow._core.base import DataFile
+from oxbow._filetypes import FileType
+from oxbow.oxbow import PyBamScanner, PySamScanner
 
 
 class AlignmentFile(DataFile):
     if TYPE_CHECKING:
-        _scanner: FileType.BAM.value | FileType.SAM.value
+        _scanner: PyBamScanner | PySamScanner
         from_bam: BamFile
         from_sam: SamFile
 
@@ -107,7 +108,7 @@ class AlignmentFile(DataFile):
 
 class BamFile(AlignmentFile, file_type=FileType.BAM):
     if TYPE_CHECKING:
-        _scanner: FileType.BAM.value
+        _scanner: PyBamScanner
 
     def __init__(self, *args: Any, compressed: bool = True, **kwargs: Any) -> None:
         """
@@ -127,7 +128,7 @@ class BamFile(AlignmentFile, file_type=FileType.BAM):
 
 class SamFile(AlignmentFile, file_type=FileType.SAM):
     if TYPE_CHECKING:
-        _scanner: FileType.SAM.value
+        _scanner: PySamScanner
 
 
 def from_bam(
