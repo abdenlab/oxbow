@@ -318,9 +318,7 @@ class TestPyBedScanner:
         )
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[key] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
@@ -381,18 +379,12 @@ class TestPyBigBedScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(
-                fields=("chrom", "start", "end", "chromStarts"), batch_size=2
-            ),
+            Input(fields=("chrom", "start", "end", "chromStarts"), batch_size=2),
         ],
     )
-    def test_scan_with_autosql(
-        self, input, manifest: pytest_manifest.Manifest
-    ):
+    def test_scan_with_autosql(self, input, manifest: pytest_manifest.Manifest):
         try:
-            scanner = ox.PyBigBedScanner(
-                "data/autosql-sample.bb", schema="autosql"
-            )
+            scanner = ox.PyBigBedScanner("data/autosql-sample.bb", schema="autosql")
             schema = scanner.schema()
             stream = scanner.scan(*input.args, **input.kwargs)
             reader = pa.RecordBatchReader.from_stream(
@@ -437,9 +429,7 @@ class TestPyBigWigScanner:
         scanner = ox.PyBigWigScanner("data/sample.bw")
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
@@ -474,9 +464,7 @@ class TestPyGffScanner:
         scanner = ox.PyGffScanner("data/sample.gff")
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     @pytest.mark.parametrize(
@@ -489,18 +477,12 @@ class TestPyGffScanner:
             Input(fields=("seqid", "start", "end")),
         ],
     )
-    def test_scan_with_attributes(
-        self, input, manifest: pytest_manifest.Manifest
-    ):
+    def test_scan_with_attributes(self, input, manifest: pytest_manifest.Manifest):
         scanner = ox.PyGffScanner("data/sample.gff")
         attr_defs = scanner.attribute_defs(1024)
         schema = scanner.schema(attribute_defs=attr_defs)
-        stream = scanner.scan(
-            *input.args, attribute_defs=attr_defs, **input.kwargs
-        )
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        stream = scanner.scan(*input.args, attribute_defs=attr_defs, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     @pytest.mark.parametrize(
@@ -517,9 +499,7 @@ class TestPyGffScanner:
         scanner = ox.PyGffScanner("data/sample.sorted.gff")
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     @pytest.mark.parametrize(
@@ -532,15 +512,11 @@ class TestPyGffScanner:
             Input(fields=("seqid", "start", "end")),
         ],
     )
-    def test_scan_sorted_compressed(
-        self, input, manifest: pytest_manifest.Manifest
-    ):
+    def test_scan_sorted_compressed(self, input, manifest: pytest_manifest.Manifest):
         scanner = ox.PyGffScanner("data/sample.sorted.gff.gz", compressed=True)
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     @pytest.mark.parametrize(
@@ -558,9 +534,7 @@ class TestPyGffScanner:
         self, input, manifest: pytest_manifest.Manifest
     ):
         try:
-            scanner = ox.PyGffScanner(
-                "data/sample.sorted.gff.gz", compressed=True
-            )
+            scanner = ox.PyGffScanner("data/sample.sorted.gff.gz", compressed=True)
             schema = scanner.schema()
             stream = scanner.scan_query(
                 *input.args,
@@ -592,9 +566,7 @@ class TestPyGtfScanner:
         scanner = ox.PyGtfScanner("data/sample.gtf")
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     @pytest.mark.parametrize(
@@ -611,9 +583,7 @@ class TestPyGtfScanner:
         scanner = ox.PyGtfScanner("data/sample.sorted.gtf")
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     @pytest.mark.parametrize(
@@ -626,15 +596,11 @@ class TestPyGtfScanner:
             Input(fields=("seqid", "start", "end")),
         ],
     )
-    def test_scan_sorted_compressed(
-        self, input, manifest: pytest_manifest.Manifest
-    ):
+    def test_scan_sorted_compressed(self, input, manifest: pytest_manifest.Manifest):
         scanner = ox.PyGtfScanner("data/sample.sorted.gtf.gz", compressed=True)
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     @pytest.mark.parametrize(
@@ -652,9 +618,7 @@ class TestPyGtfScanner:
         self, input, manifest: pytest_manifest.Manifest
     ):
         try:
-            scanner = ox.PyGtfScanner(
-                "data/sample.sorted.gtf.gz", compressed=True
-            )
+            scanner = ox.PyGtfScanner("data/sample.sorted.gtf.gz", compressed=True)
             schema = scanner.schema()
             stream = scanner.scan_query(
                 *input.args,

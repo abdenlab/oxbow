@@ -8,6 +8,7 @@ class FileType(Enum):
     """
     Enum representing different file types and their associated scanners.
     """
+
     BAM = ox.PyBamScanner
     BCF = ox.PyBcfScanner
     BED = ox.PyBedScanner
