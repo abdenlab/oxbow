@@ -5,15 +5,16 @@ from typing import TYPE_CHECKING, Any, Callable, Generator, Literal
 
 import pyarrow as pa
 
-from oxbow._filetypes import FileType
 from oxbow._core.base import DataFile
+from oxbow._filetypes import FileType
+from oxbow.oxbow import PyBcfScanner, PyVcfScanner
 
 
 class VariantFile(DataFile):
     if TYPE_CHECKING:
         from_bcf: BcfFile
         from_vcf: VcfFile
-        _scanner: FileType.BCF.value | FileType.VCF.value
+        _scanner: PyBcfScanner | PyVcfScanner
 
     @property
     def _scan_kwargs(self) -> dict[str, Any]:

@@ -5,17 +5,17 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 
 import pyarrow as pa
 
-from oxbow import FileType
-from oxbow import BatchReaderDataset
 from oxbow._core.base import DataFile
-from oxbow import oxbow as ox
+from oxbow._filetypes import FileType
+from oxbow._pyarrow import BatchReaderDataset
+from oxbow.oxbow import PyFastaScanner, PyFastqScanner
 
 
 class SequenceFile(DataFile):
     if TYPE_CHECKING:
         from_fasta: FastaFile
         from_fastq: FastqFile
-        _scanner: ox.PyFastaScanner | ox.PyFastqScanner
+        _scanner: PyFastaScanner | PyFastqScanner
 
     @property
     def _scan_kwargs(self) -> dict[str, Any]:
