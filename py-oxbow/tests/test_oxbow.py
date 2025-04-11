@@ -250,9 +250,7 @@ class TestPyFastaScanner:
         scanner = ox.PyFastaScanner("data/sample.fasta")
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
@@ -282,9 +280,7 @@ class TestPyFastqScanner:
         scanner = ox.PyFastqScanner("data/sample.fastq")
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
-        reader = pa.RecordBatchReader.from_stream(
-            data=stream, schema=pa.schema(schema)
-        )
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):

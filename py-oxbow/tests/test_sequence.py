@@ -7,7 +7,6 @@ from tests.utils import Input
 
 
 class TestFastaFile:
-
     @pytest.mark.parametrize(
         "filepath",
         [
@@ -24,9 +23,7 @@ class TestFastaFile:
                 pass
             finally:
                 assert (
-                    manifest[
-                        f"{ox.FastaFile.__name__}({Input(filepath)})"
-                    ]
+                    manifest[f"{ox.FastaFile.__name__}({Input(filepath)})"]
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
@@ -46,9 +43,7 @@ class TestFastaFile:
                 pass
             finally:
                 assert (
-                    manifest[
-                        f"{ox.FastaFile.__name__}({Input(filepath)}).select()"
-                    ]
+                    manifest[f"{ox.FastaFile.__name__}({Input(filepath)}).select()"]
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_fragments_callstack(self, wiretap, manifest: Manifest):
@@ -86,9 +81,7 @@ class TestFastaFile:
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
     def test_fragments(self, regions):
-        fragments = ox.FastaFile(
-            "data/sample.fasta", regions=regions
-        ).fragments()
+        fragments = ox.FastaFile("data/sample.fasta", regions=regions).fragments()
         assert len(fragments) == 1
 
     @pytest.mark.parametrize(
@@ -102,13 +95,11 @@ class TestFastaFile:
         ],
     )
     def test_batches(self, fields, batch_size, manifest: Manifest):
-        batches = ox.FastaFile(
-            "data/sample.fasta", fields=fields
-        ).batches(batch_size=batch_size)
+        batches = ox.FastaFile("data/sample.fasta", fields=fields).batches(
+            batch_size=batch_size
+        )
         try:
-            actual = {
-                f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)
-            }
+            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
         except ValueError as e:
             actual = str(e)
 
@@ -116,7 +107,6 @@ class TestFastaFile:
 
 
 class TestFastqFile:
-
     @pytest.mark.parametrize(
         "filepath",
         [
@@ -133,9 +123,7 @@ class TestFastqFile:
                 pass
             finally:
                 assert (
-                    manifest[
-                        f"{ox.FastqFile.__name__}({Input(filepath)})"
-                    ]
+                    manifest[f"{ox.FastqFile.__name__}({Input(filepath)})"]
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
@@ -155,9 +143,7 @@ class TestFastqFile:
                 pass
             finally:
                 assert (
-                    manifest[
-                        f"{ox.FastqFile.__name__}({Input(filepath)}).select()"
-                    ]
+                    manifest[f"{ox.FastqFile.__name__}({Input(filepath)}).select()"]
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_fragments_callstack(self, wiretap, manifest: Manifest):
@@ -205,13 +191,11 @@ class TestFastqFile:
         ],
     )
     def test_batches(self, fields, batch_size, manifest: Manifest):
-        batches = ox.FastqFile(
-            "data/sample.fastq", fields=fields
-        ).batches(batch_size=batch_size)
+        batches = ox.FastqFile("data/sample.fastq", fields=fields).batches(
+            batch_size=batch_size
+        )
         try:
-            actual = {
-                f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)
-            }
+            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
         except ValueError as e:
             actual = str(e)
 
