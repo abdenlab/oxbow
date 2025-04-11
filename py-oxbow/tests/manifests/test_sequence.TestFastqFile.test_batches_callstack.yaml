@@ -1,4 +1,4 @@
-FastqFile("data/sample.fastq", fields=('name', 'seq')).batches(batch_size=5): |-
+FastqFile("data/sample.fastq", fields=('name', 'sequence')).batches(batch_size=5): |-
     ->  oxbow._core.base.DataFile.batches(batch_size=5)
     <-  DataFile.batches.<generator>
     ->  oxbow._core.sequence.FastqFile._batch_readers
@@ -10,4 +10,43 @@ FastqFile("data/sample.fastq", fields=('name', 'seq')).batches(batch_size=5): |-
         <-  {'compressed': 'False'}
     <-  builtins.PyFastqScanner.<object>
     ->  oxbow._core.sequence.FastqFile._batch_readers.<generator>
-    !!  GeneratorExit()
+        ->  oxbow._core.base.DataFile.schema
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/sample.fastq'
+                ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
+                <-  {'compressed': 'False'}
+            <-  builtins.PyFastqScanner.<object>
+            ->  oxbow._core.sequence.SequenceFile._schema_kwargs
+            <-  {'fields': ("'name'", "'sequence'")}
+        <-  name: string
+            sequence: string
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            name: string
+            sequence: string
+            ----
+            name: ["seq1","seq2","seq3","seq4","seq5"]
+            sequence: ["ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC","CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA","GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA","TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC","TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCGAT"]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            name: string
+            sequence: string
+            ----
+            name: ["seq6","seq7","seq8","seq9","seq10"]
+            sequence: ["GCATGCATGCATGCATGCATGCATGCATGCATGCATGCAT","ATCGATCGATCGATCGATCGATCGATCGATCGATCGATC","CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA","GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT","TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC"]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            name: string
+            sequence: string
+            ----
+            name: ["seq11","seq12","seq13","seq14","seq15"]
+            sequence: ["CGATCGATCGATCGATCGATCGATCGATCGATCGATCG","ATGCATGCATGCATGCATGCATGCATGCATGCATGCAT","GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCT","TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAG","TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCG"]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            name: string
+            sequence: string
+            ----
+            name: ["seq16","seq17","seq18","seq19","seq20"]
+            sequence: ["GCATGCATGCATGCATGCATGCATGCATGCATGCATGC","ATCGATCGATCGATCGATCGATCGATCGATCGATCGAT","CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA","GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT","TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC"]
+    <-  oxbow._core.sequence.FastqFile._batch_readers.<locals>.<lambda>

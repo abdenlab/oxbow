@@ -101,7 +101,7 @@ class TestPyBcfScanner:
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("name", "seq", "foo"))
+        input = Input(fields=("name", "sequence", "foo"))
         scanner = ox.PyBcfScanner("data/sample.bcf")
         error = None
         try:
@@ -208,7 +208,7 @@ class TestPyVcfScanner:
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("name", "seq", "foo"))
+        input = Input(fields=("name", "sequence", "foo"))
         scanner = ox.PyVcfScanner("data/sample.vcf")
         error = None
         try:
@@ -243,7 +243,7 @@ class TestPyFastaScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("name", "seq")),
+            Input(fields=("name", "sequence")),
         ],
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
@@ -256,7 +256,7 @@ class TestPyFastaScanner:
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("name", "seq", "foo"))
+        input = Input(fields=("name", "sequence", "foo"))
         scanner = ox.PyFastaScanner("data/sample.fasta")
         error = None
         try:
@@ -275,7 +275,7 @@ class TestPyFastqScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("name", "seq")),
+            Input(fields=("name", "sequence")),
         ],
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
@@ -288,7 +288,7 @@ class TestPyFastqScanner:
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("name", "seq", "foo"))
+        input = Input(fields=("name", "sequence", "foo"))
         scanner = ox.PyFastqScanner("data/sample.fastq")
         error = None
         try:

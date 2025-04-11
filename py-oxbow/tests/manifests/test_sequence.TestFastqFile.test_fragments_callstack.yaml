@@ -1,4 +1,4 @@
-FastqFile("data/sample.fastq", fields=('name', 'seq')).fragments(batch_size=3): |-
+FastqFile("data/sample.fastq", fields=('name', 'sequence')).fragments(batch_size=3): |-
     ->  oxbow._core.base.DataFile.fragments(batch_size=3)
         ->  oxbow._core.sequence.FastqFile._batch_readers
         <-  FastqFile._batch_readers.<generator>
@@ -17,7 +17,8 @@ FastqFile("data/sample.fastq", fields=('name', 'seq')).fragments(batch_size=3): 
                     <-  {'compressed': 'False'}
                 <-  builtins.PyFastqScanner.<object>
                 ->  oxbow._core.sequence.SequenceFile._schema_kwargs
-                <-  {'fields': ("'name'", "'seq'")}
-            !!  OSError('Invalid field name: seq')
-        !!  GeneratorExit()
-    !!  OSError("Invalid field name: seq")
+                <-  {'fields': ("'name'", "'sequence'")}
+            <-  name: string
+                sequence: string
+        <-  oxbow._core.sequence.FastqFile._batch_readers.<locals>.<lambda>
+    <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']

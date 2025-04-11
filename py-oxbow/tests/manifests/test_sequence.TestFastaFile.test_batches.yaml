@@ -1,4 +1,65 @@
-fields=('name', 'seq'), batch_size=3: 'Invalid field name: seq'
+fields=('name', 'sequence'), batch_size=3:
+    batch-00:
+        name:
+        - seq1
+        - seq2
+        - seq3
+        sequence:
+        - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+        - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
+        - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+    batch-01:
+        name:
+        - seq4
+        - seq5
+        - seq6
+        sequence:
+        - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC
+        - TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCGAT
+        - GCATGCATGCATGCATGCATGCATGCATGCATGCATGCAT
+    batch-02:
+        name:
+        - seq7
+        - seq8
+        - seq9
+        sequence:
+        - ATCGATCGATCGATCGATCGATCGATCGATCGATCGATC
+        - CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+        - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+    batch-03:
+        name:
+        - seq10
+        - seq11
+        - seq12
+        sequence:
+        - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+        - CGATCGATCGATCGATCGATCGATCGATCGATCGATCG
+        - ATGCATGCATGCATGCATGCATGCATGCATGCATGCAT
+    batch-04:
+        name:
+        - seq13
+        - seq14
+        - seq15
+        sequence:
+        - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCT
+        - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAG
+        - TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCG
+    batch-05:
+        name:
+        - seq16
+        - seq17
+        - seq18
+        sequence:
+        - GCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+        - ATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+        - CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+    batch-06:
+        name:
+        - seq19
+        - seq20
+        sequence:
+        - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+        - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
 fields=('nonexistent-field',), batch_size=3: 'Invalid field name: nonexistent-field'
 fields=None, batch_size=1:
     batch-00:

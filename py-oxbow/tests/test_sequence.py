@@ -52,7 +52,7 @@ class TestFastaFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_fragments_callstack(self, wiretap, manifest: Manifest):
-        fields, batch_size = ("name", "seq"), 3
+        fields, batch_size = ("name", "sequence"), 3
         file = ox.FastaFile("data/sample.fasta", fields=fields)
         with wiretap(ox.FastaFile) as stack:
             try:
@@ -67,7 +67,7 @@ class TestFastaFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_batches_callstack(self, wiretap, manifest: Manifest, mocker):
-        fields, batch_size = ("name", "seq"), 5
+        fields, batch_size = ("name", "sequence"), 5
         file = ox.FastaFile("data/sample.fasta", fields=fields)
         with wiretap(ox.FastaFile) as stack:
             try:
@@ -97,7 +97,7 @@ class TestFastaFile:
             (None, 1),
             (None, 3),
             (None, None),
-            (("name", "seq"), 3),
+            (("name", "sequence"), 3),
             (("nonexistent-field",), 3),
         ],
     )
@@ -161,7 +161,7 @@ class TestFastqFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_fragments_callstack(self, wiretap, manifest: Manifest):
-        fields, batch_size = ("name", "seq"), 3
+        fields, batch_size = ("name", "sequence"), 3
         file = ox.FastqFile("data/sample.fastq", fields=fields)
         with wiretap(ox.FastqFile) as stack:
             try:
@@ -176,7 +176,7 @@ class TestFastqFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_batches_callstack(self, wiretap, manifest: Manifest, mocker):
-        fields, batch_size = ("name", "seq"), 5
+        fields, batch_size = ("name", "sequence"), 5
         file = ox.FastqFile("data/sample.fastq", fields=fields)
         with wiretap(ox.FastqFile) as stack:
             try:
@@ -200,7 +200,7 @@ class TestFastqFile:
             (None, 1),
             (None, 3),
             (None, None),
-            (("name", "seq"), 3),
+            (("name", "sequence"), 3),
             (("nonexistent-field",), 3),
         ],
     )
