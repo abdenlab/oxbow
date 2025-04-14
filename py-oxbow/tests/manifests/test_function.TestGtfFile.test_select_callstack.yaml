@@ -1,0 +1,123 @@
+GtfFile("data/does-not-exist.gtf").select(): |-
+    ->  oxbow._core.function.GxfFile.__init__("data/does-not-exist.gtf")
+        ->  oxbow._core.base.DataFile.__init__("data/does-not-exist.gtf", None, None)
+        <-  None
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/does-not-exist.gtf'
+            ->  oxbow._core.function.GxfFile._scanner_kwargs
+            <-  {'compressed': 'False'}
+        !!  FileNotFoundError('No such file or directory (os error 2)')
+    !!  FileNotFoundError("No such file or directory (os error 2)")
+GtfFile("data/malformed.gtf").select(): |-
+    ->  oxbow._core.function.GxfFile.__init__("data/malformed.gtf")
+        ->  oxbow._core.base.DataFile.__init__("data/malformed.gtf", None, None)
+        <-  None
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/malformed.gtf'
+            ->  oxbow._core.function.GxfFile._scanner_kwargs
+            <-  {'compressed': 'False'}
+        <-  builtins.PyGtfScanner.<object>
+    <-  None
+    ->  oxbow._core.base.DataFile.select()
+        ->  oxbow._core.function.GxfFile._scan_kwargs
+        <-  {'attribute_defs': [("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), ("'hgnc_id'", "'String'"), ("'level'", "'String'"), '<', '6', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'fields': 'None'}
+        ->  oxbow._core.function.GxfFile._scanner_kwargs
+        <-  {'compressed': 'False'}
+        ->  oxbow._core.function.GxfFile._schema_kwargs
+        <-  {'fields': 'None'}
+        ->  oxbow._core.function.GxfFile.__init__("data/malformed.gtf", None, attribute_defs=[("ccdsid", "String"), ("exon_id", "String"), ("exon_number", "String"), ("gene_id", "String"), ("gene_name", "String"), ("gene_type", "String"), ("havana_gene", "String"), ("havana_transcript", "String"), ("hgnc_id", "String"), ("level", "String"), ("protein_id", "String"), ("tag", "String"), ("transcript_id", "String"), ("transcript_name", "String"), ("transcript_support_level", "String"), ("transcript_type", "String")], fields=None, compressed=False)
+            ->  oxbow._core.base.DataFile.__init__("data/malformed.gtf", None, None)
+            <-  None
+        <-  None
+        ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
+            ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
+                ->  oxbow._core.function.GxfFile._batch_readers
+                <-  GxfFile._batch_readers.<generator>
+                ->  oxbow._core.base.DataFile._scanner
+                    ->  oxbow._core.base.DataFile._source
+                    <-  'data/malformed.gtf'
+                    ->  oxbow._core.function.GxfFile._scanner_kwargs
+                    <-  {'compressed': 'False'}
+                <-  builtins.PyGtfScanner.<object>
+                ->  oxbow._core.function.GxfFile._scan_kwargs
+                <-  {'attribute_defs': [("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), ("'hgnc_id'", "'String'"), ("'level'", "'String'"), '<', '6', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'fields': 'None'}
+                ->  oxbow._core.function.GxfFile._batch_readers.<generator>
+                    ->  oxbow._core.base.DataFile.schema
+                        ->  oxbow._core.base.DataFile._scanner
+                            ->  oxbow._core.base.DataFile._source
+                            <-  'data/malformed.gtf'
+                            ->  oxbow._core.function.GxfFile._scanner_kwargs
+                            <-  {'compressed': 'False'}
+                        <-  builtins.PyGtfScanner.<object>
+                        ->  oxbow._core.function.GxfFile._schema_kwargs
+                        <-  {'fields': 'None'}
+                    <-  seqid: string
+                        source: string
+                        type: string
+                        start: int32
+                        end: int32
+                        score: float
+                        strand: string
+                        frame: uint8
+                <-  oxbow._core.function.GxfFile._batch_readers.<locals>.<lambda>
+            <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
+        <-  oxbow._pyarrow.BatchReaderDataset.<object>
+    <-  oxbow._pyarrow.BatchReaderDataset.<object>
+GtfFile("data/sample.gtf").select(): |-
+    ->  oxbow._core.function.GxfFile.__init__("data/sample.gtf")
+        ->  oxbow._core.base.DataFile.__init__("data/sample.gtf", None, None)
+        <-  None
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/sample.gtf'
+            ->  oxbow._core.function.GxfFile._scanner_kwargs
+            <-  {'compressed': 'False'}
+        <-  builtins.PyGtfScanner.<object>
+    <-  None
+    ->  oxbow._core.base.DataFile.select()
+        ->  oxbow._core.function.GxfFile._scan_kwargs
+        <-  {'attribute_defs': [("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), ("'hgnc_id'", "'String'"), ("'level'", "'String'"), '<', '6', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'fields': 'None'}
+        ->  oxbow._core.function.GxfFile._scanner_kwargs
+        <-  {'compressed': 'False'}
+        ->  oxbow._core.function.GxfFile._schema_kwargs
+        <-  {'fields': 'None'}
+        ->  oxbow._core.function.GxfFile.__init__("data/sample.gtf", None, attribute_defs=[("ccdsid", "String"), ("exon_id", "String"), ("exon_number", "String"), ("gene_id", "String"), ("gene_name", "String"), ("gene_type", "String"), ("havana_gene", "String"), ("havana_transcript", "String"), ("hgnc_id", "String"), ("level", "String"), ("protein_id", "String"), ("tag", "String"), ("transcript_id", "String"), ("transcript_name", "String"), ("transcript_support_level", "String"), ("transcript_type", "String")], fields=None, compressed=False)
+            ->  oxbow._core.base.DataFile.__init__("data/sample.gtf", None, None)
+            <-  None
+        <-  None
+        ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
+            ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
+                ->  oxbow._core.function.GxfFile._batch_readers
+                <-  GxfFile._batch_readers.<generator>
+                ->  oxbow._core.base.DataFile._scanner
+                    ->  oxbow._core.base.DataFile._source
+                    <-  'data/sample.gtf'
+                    ->  oxbow._core.function.GxfFile._scanner_kwargs
+                    <-  {'compressed': 'False'}
+                <-  builtins.PyGtfScanner.<object>
+                ->  oxbow._core.function.GxfFile._scan_kwargs
+                <-  {'attribute_defs': [("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), ("'hgnc_id'", "'String'"), ("'level'", "'String'"), '<', '6', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'fields': 'None'}
+                ->  oxbow._core.function.GxfFile._batch_readers.<generator>
+                    ->  oxbow._core.base.DataFile.schema
+                        ->  oxbow._core.base.DataFile._scanner
+                            ->  oxbow._core.base.DataFile._source
+                            <-  'data/sample.gtf'
+                            ->  oxbow._core.function.GxfFile._scanner_kwargs
+                            <-  {'compressed': 'False'}
+                        <-  builtins.PyGtfScanner.<object>
+                        ->  oxbow._core.function.GxfFile._schema_kwargs
+                        <-  {'fields': 'None'}
+                    <-  seqid: string
+                        source: string
+                        type: string
+                        start: int32
+                        end: int32
+                        score: float
+                        strand: string
+                        frame: uint8
+                <-  oxbow._core.function.GxfFile._batch_readers.<locals>.<lambda>
+            <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
+        <-  oxbow._pyarrow.BatchReaderDataset.<object>
+    <-  oxbow._pyarrow.BatchReaderDataset.<object>

@@ -1,0 +1,29 @@
+GffFile("data/sample.gff", fields=('seqid', 'start', 'end')).batches(batch_size=5): |-
+    ->  oxbow._core.base.DataFile.batches(batch_size=5)
+    <-  DataFile.batches.<generator>
+    ->  oxbow._core.function.GxfFile._batch_readers
+    <-  GxfFile._batch_readers.<generator>
+    ->  oxbow._core.base.DataFile._scanner
+        ->  oxbow._core.base.DataFile._source
+        <-  'data/sample.gff'
+        ->  oxbow._core.function.GxfFile._scanner_kwargs
+        <-  {'compressed': 'False'}
+    <-  builtins.PyGffScanner.<object>
+    ->  oxbow._core.function.GxfFile._scan_kwargs
+    <-  {'attribute_defs': [("'ID'", "'String'"), ("'Parent'", "'String'"), ("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), '<', '8', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'fields': ("'seqid'", "'start'", "'end'")}
+    ->  oxbow._core.function.GxfFile._batch_readers.<generator>
+        ->  oxbow._core.base.DataFile.schema
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/sample.gff'
+                ->  oxbow._core.function.GxfFile._scanner_kwargs
+                <-  {'compressed': 'False'}
+            <-  builtins.PyGffScanner.<object>
+            ->  oxbow._core.function.GxfFile._schema_kwargs
+            <-  {'fields': ("'seqid'", "'start'", "'end'")}
+        <-  seqid: string
+            start: int32
+            end: int32
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        !!  OSError('Io error: Type mismatch: expected builder for String("exp_conf"), got Array(GenericListBuilder { offsets_builder: BufferBuilder { buffer: MutableBuffer { data: 0x7fd51b7a6f80, len: 12, layout: Layout { size: 64, align: 128 (1 << 7) } }, len: 3, _marker: PhantomData<i32> }, null_buffer_builder: NullBufferBuilder { bitmap_builder: Some(BooleanBufferBuilder { buffer: MutableBuffer { data: 0x7fd51b7ab300, len: 1, layout: Layout { size: 64, align: 128 (1 << 7) } }, len: 2 }), len: 1, capacity: 0 }, values_builder: StringBuilder { value_builder: BufferBuilder { buffer: MutableBuffer { data: 0x7fd51b7aaf00, len: 44, layout: Layout { size: 64, align: 128 (1 << 7) } }, len: 44, _marker: PhantomData<u8> }, offsets_builder: BufferBuilder { buffer: MutableBuffer { data: 0x7fd51b7a6e80, len: 20, layout: Layout { size: 64, align: 128 (1 << 7) } }, len: 5, _marker: PhantomData<i32> }, null_buffer_builder: NullBufferBuilder { bitmap_builder: None, len: 4, capacity: 1024 } }, field: None })')
+    !!  GeneratorExit()

@@ -5,6 +5,18 @@ from oxbow._core.alignment import (
     from_bam as from_bam,
     from_sam as from_sam,
 )
+from oxbow._core.function import (
+    from_bed as from_bed,
+    from_bigbed as from_bigbed,
+    from_bigwig as from_bigwig,
+    from_gff as from_gff,
+    from_gtf as from_gtf,
+    BedFile as BedFile,
+    BigBedFile as BigBedFile,
+    BigWigFile as BigWigFile,
+    GffFile as GffFile,
+    GtfFile as GtfFile,
+)
 from oxbow._core.sequence import (
     FastaFile as FastaFile,
     FastqFile as FastqFile,

@@ -1,0 +1,29 @@
+BigWigFile("data/sample.bw", fields=('chrom', 'start', 'end')).batches(batch_size=3): |-
+    ->  oxbow._core.base.DataFile.fragments(batch_size=3)
+        ->  oxbow._core.function.BbiFile._batch_readers
+        <-  BbiFile._batch_readers.<generator>
+        ->  oxbow._core.function.BbiFile._scanner
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/sample.bw'
+                ->  oxbow._core.function.BbiFile._scanner_kwargs
+                <-  {}
+            <-  builtins.PyBigWigScanner.<object>
+        <-  builtins.PyBigWigScanner.<object>
+        ->  oxbow._core.function.BbiFile._batch_readers.<generator>
+            ->  oxbow._core.base.DataFile.schema
+                ->  oxbow._core.function.BbiFile._scanner
+                    ->  oxbow._core.base.DataFile._scanner
+                        ->  oxbow._core.base.DataFile._source
+                        <-  'data/sample.bw'
+                        ->  oxbow._core.function.BbiFile._scanner_kwargs
+                        <-  {}
+                    <-  builtins.PyBigWigScanner.<object>
+                <-  builtins.PyBigWigScanner.<object>
+                ->  oxbow._core.function.BbiFile._schema_kwargs
+                <-  {'fields': ("'chrom'", "'start'", "'end'")}
+            <-  chrom: string
+                start: uint32
+                end: uint32
+        <-  oxbow._core.function.BbiFile._batch_readers.<locals>.<lambda>
+    <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']

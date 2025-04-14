@@ -1,0 +1,1 @@
+fields=('nonexistent-field',), batch_size=3: 'Invalid field name: nonexistent-field'
