@@ -6,6 +6,11 @@
 
 from __future__ import annotations
 
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(".."))
+
 # Warning: do not change the path here. To use autodoc, you need to install the
 # package first.
 
@@ -23,6 +28,7 @@ author = "Oxbow Developers"
 # ones.
 extensions = [
     "myst_parser",
+    "numpydoc",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.mathjax",
@@ -30,9 +36,10 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx_copybutton",
 ]
+autosummary_generate = True
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = []
+templates_path = ["_templates"]
 
 # Include both markdown and rst files
 source_suffix = [".rst", ".md"]
