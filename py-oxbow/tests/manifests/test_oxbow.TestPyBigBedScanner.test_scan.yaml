@@ -1,0 +1,124 @@
+batch_size=1, bed_schema="bed3":
+    chrom:
+    - chr21
+    end:
+    - 14798156
+    start:
+    - 14797911
+batch_size=2, bed_schema="bed3":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3+3":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3+6":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed6":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed9":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, fields=("chrom", "start", "end", "rest"), bed_schema="bed3": Field 'rest'
+    not found in schema
+batch_size=2, fields=("chrom", "start", "end", "rest"), bed_schema="bed3+3": Field
+    'rest' not found in schema
+batch_size=2, fields=("chrom", "start", "end", "rest"), bed_schema="bed3+6": Field
+    'rest' not found in schema
+batch_size=2, fields=("chrom", "start", "end", "rest"), bed_schema="bed6": Field 'rest'
+    not found in schema
+batch_size=2, fields=("chrom", "start", "end", "rest"), bed_schema="bed9": Field 'rest'
+    not found in schema
+batch_size=2, fields=None, bed_schema="bed3":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, fields=None, bed_schema="bed3+3": 'Invalid argument error: all columns
+    in a record batch must have the same length'
+batch_size=2, fields=None, bed_schema="bed3+6": 'Invalid argument error: all columns
+    in a record batch must have the same length'
+batch_size=2, fields=None, bed_schema="bed6": 'Invalid argument error: all columns
+    in a record batch must have the same length'
+batch_size=2, fields=None, bed_schema="bed9": 'Invalid argument error: all columns
+    in a record batch must have the same length'
+batch_size=3, bed_schema="bed3":
+    chrom:
+    - chr21
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    - 31056651
+    start:
+    - 14797911
+    - 17878425
+    - 31056533
+batch_size=4, bed_schema="bed3":
+    chrom:
+    - chr21
+    - chr21
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    - 31056651
+    - 33058008
+    start:
+    - 14797911
+    - 17878425
+    - 31056533
+    - 33057710

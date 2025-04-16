@@ -1,0 +1,70 @@
+batch_size=1:
+    chrom:
+    - chr21
+    end:
+    - 9486520
+    start:
+    - 9486505
+    value:
+    - 40.0
+batch_size=2:
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 9486520
+    - 10392620
+    start:
+    - 9486505
+    - 10392615
+    value:
+    - 40.0
+    - 20.0
+batch_size=3:
+    chrom:
+    - chr21
+    - chr21
+    - chr21
+    end:
+    - 9486520
+    - 10392620
+    - 10971775
+    start:
+    - 9486505
+    - 10392615
+    - 10971770
+    value:
+    - 40.0
+    - 20.0
+    - 40.0
+batch_size=4:
+    chrom:
+    - chr21
+    - chr21
+    - chr21
+    - chr21
+    end:
+    - 9486520
+    - 10392620
+    - 10971775
+    - 14787105
+    start:
+    - 9486505
+    - 10392615
+    - 10971770
+    - 14787100
+    value:
+    - 40.0
+    - 20.0
+    - 40.0
+    - 60.0
+fields=("chrom", "start", "end"), batch_size=2:
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 9486520
+    - 10392620
+    start:
+    - 9486505
+    - 10392615

@@ -293,3 +293,342 @@ class TestPyFastqScanner:
             error = str(e)
         finally:
             assert manifest == error
+
+
+class TestPyBedScanner:
+    @pytest.mark.parametrize(
+        "input",
+        [
+            *Input.permute(batch_size=[1, 2, 3, 4], bed_schema=["bed3"]),
+            *Input.permute(
+                batch_size=[2],
+                fields=[
+                    None,
+                    ("chrom", "start", "end"),
+                ],
+                bed_schema=["bed3", "bed3+3", "bed3+6", "bed6", "bed9"],
+            ),
+        ],
+    )
+    def test_scan(self, input, manifest: pytest_manifest.Manifest):
+        key = str(input)
+        scanner = ox.PyBedScanner(
+            "data/sample.bed", bed_schema=input.kwargs.pop("bed_schema")
+        )
+        schema = scanner.schema()
+        stream = scanner.scan(*input.args, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        assert manifest[key] == reader.read_next_batch().to_pydict()
+
+    def test_scan_invalid_field(self, manifest):
+        input = Input(fields=("nonexistent-field",))
+        error = None
+        try:
+            scanner = ox.PyBedScanner("data/sample.bed", bed_schema="bed9")
+            schema = scanner.schema()
+            stream = scanner.scan(*input.args, **input.kwargs)
+            reader = pa.RecordBatchReader.from_stream(
+                data=stream, schema=pa.schema(schema)
+            )
+            reader.read_next_batch().to_pydict()
+        except ValueError as e:
+            error = str(e)
+        finally:
+            assert manifest == error
+
+
+class TestPyBigBedScanner:
+    @pytest.mark.parametrize(
+        "input",
+        [
+            *Input.permute(batch_size=[1, 2, 3, 4], bed_schema=["bed3"]),
+            *Input.permute(
+                batch_size=[2],
+                fields=[
+                    None,
+                    ("chrom", "start", "end"),
+                    ("chrom", "start", "end", "rest"),
+                ],
+                bed_schema=["bed3", "bed3+3", "bed3+6", "bed6", "bed9"],
+            ),
+        ],
+    )
+    def test_scan(self, input, manifest: pytest_manifest.Manifest):
+        key = str(input)
+        try:
+            scanner = ox.PyBigBedScanner(
+                "data/sample.bb", schema=input.kwargs.pop("bed_schema")
+            )
+            schema = scanner.schema()
+            stream = scanner.scan(*input.args, **input.kwargs)
+            reader = pa.RecordBatchReader.from_stream(
+                data=stream, schema=pa.schema(schema)
+            )
+            batch = reader.read_next_batch()
+        except Exception as e:
+            assert manifest[key] == str(e)
+            pass
+        else:
+            assert manifest[key] == batch.to_pydict()
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(batch_size=1),
+            Input(batch_size=2),
+            Input(batch_size=3),
+            Input(batch_size=4),
+            Input(fields=("chrom", "start", "end", "chromStarts"), batch_size=2),
+        ],
+    )
+    def test_scan_with_autosql(self, input, manifest: pytest_manifest.Manifest):
+        try:
+            scanner = ox.PyBigBedScanner("data/autosql-sample.bb", schema="autosql")
+            schema = scanner.schema()
+            stream = scanner.scan(*input.args, **input.kwargs)
+            reader = pa.RecordBatchReader.from_stream(
+                data=stream, schema=pa.schema(schema)
+            )
+            batch = reader.read_next_batch()
+        except Exception as e:
+            assert manifest[str(input)] == str(e)
+            pass
+        else:
+            assert manifest[str(input)] == batch.to_pydict()
+
+    def test_scan_invalid_field(self, manifest):
+        input = Input(fields=("nonexistent-field",))
+        error = None
+        try:
+            scanner = ox.PyBigBedScanner("data/sample.bb")
+            schema = scanner.schema()
+            stream = scanner.scan(*input.args, **input.kwargs)
+            reader = pa.RecordBatchReader.from_stream(
+                data=stream, schema=pa.schema(schema)
+            )
+            reader.read_next_batch().to_pydict()
+        except ValueError as e:
+            error = e
+        finally:
+            assert manifest == str(error)
+
+
+class TestPyBigWigScanner:
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(batch_size=1),
+            Input(batch_size=2),
+            Input(batch_size=3),
+            Input(batch_size=4),
+            Input(fields=("chrom", "start", "end"), batch_size=2),
+        ],
+    )
+    def test_scan(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyBigWigScanner("data/sample.bw")
+        schema = scanner.schema()
+        stream = scanner.scan(*input.args, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+    def test_scan_invalid_field(self, manifest):
+        input = Input(fields=("nonexistent-field",))
+        error = None
+        try:
+            scanner = ox.PyBigWigScanner("data/sample.bw")
+            schema = scanner.schema()
+            stream = scanner.scan(*input.args, **input.kwargs)
+            reader = pa.RecordBatchReader.from_stream(
+                data=stream, schema=pa.schema(schema)
+            )
+            reader.read_next_batch().to_pydict()
+        except ValueError as e:
+            error = e
+        finally:
+            assert manifest == str(error)
+
+
+class TestPyGffScanner:
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(batch_size=1),
+            Input(batch_size=2),
+            Input(batch_size=3),
+            Input(batch_size=4),
+            Input(fields=("seqid", "start", "end")),
+        ],
+    )
+    def test_scan(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyGffScanner("data/sample.gff")
+        schema = scanner.schema()
+        stream = scanner.scan(*input.args, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(batch_size=1),
+            Input(batch_size=2),
+            Input(batch_size=3),
+            Input(batch_size=4),
+            Input(fields=("seqid", "start", "end")),
+        ],
+    )
+    def test_scan_with_attributes(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyGffScanner("data/sample.gff")
+        attr_defs = scanner.attribute_defs(1024)
+        schema = scanner.schema(attribute_defs=attr_defs)
+        stream = scanner.scan(*input.args, attribute_defs=attr_defs, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(batch_size=1),
+            Input(batch_size=2),
+            Input(batch_size=3),
+            Input(batch_size=4),
+            Input(fields=("seqid", "start", "end")),
+        ],
+    )
+    def test_scan_sorted(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyGffScanner("data/sample.sorted.gff")
+        schema = scanner.schema()
+        stream = scanner.scan(*input.args, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(batch_size=1),
+            Input(batch_size=2),
+            Input(batch_size=3),
+            Input(batch_size=4),
+            Input(fields=("seqid", "start", "end")),
+        ],
+    )
+    def test_scan_sorted_compressed(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyGffScanner("data/sample.sorted.gff.gz", compressed=True)
+        schema = scanner.schema()
+        stream = scanner.scan(*input.args, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            *Input.permute(
+                batch_size=[1, 2, 3, 4],
+                fields=[None, ("seqid", "start", "end")],
+                region=["chr1", "chr2"],
+            ),
+            Input(region="missing"),
+        ],
+    )
+    def test_scan_query_sorted_compressed(
+        self, input, manifest: pytest_manifest.Manifest
+    ):
+        try:
+            scanner = ox.PyGffScanner("data/sample.sorted.gff.gz", compressed=True)
+            schema = scanner.schema()
+            stream = scanner.scan_query(
+                *input.args,
+                index="data/sample.sorted.gff.gz.tbi",
+                **input.kwargs,
+            )
+            reader = pa.RecordBatchReader.from_stream(
+                data=stream, schema=pa.schema(schema)
+            )
+            result = reader.read_next_batch().to_pydict()
+        except Exception as e:
+            result = str(e)
+            pass
+        assert manifest[str(input)] == result
+
+
+class TestPyGtfScanner:
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(batch_size=1),
+            Input(batch_size=2),
+            Input(batch_size=3),
+            Input(batch_size=4),
+            Input(fields=("seqid", "start", "end")),
+        ],
+    )
+    def test_scan(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyGtfScanner("data/sample.gtf")
+        schema = scanner.schema()
+        stream = scanner.scan(*input.args, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(batch_size=1),
+            Input(batch_size=2),
+            Input(batch_size=3),
+            Input(batch_size=4),
+            Input(fields=("seqid", "start", "end")),
+        ],
+    )
+    def test_scan_sorted(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyGtfScanner("data/sample.sorted.gtf")
+        schema = scanner.schema()
+        stream = scanner.scan(*input.args, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(batch_size=1),
+            Input(batch_size=2),
+            Input(batch_size=3),
+            Input(batch_size=4),
+            Input(fields=("seqid", "start", "end")),
+        ],
+    )
+    def test_scan_sorted_compressed(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyGtfScanner("data/sample.sorted.gtf.gz", compressed=True)
+        schema = scanner.schema()
+        stream = scanner.scan(*input.args, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            *Input.permute(
+                batch_size=[1, 2, 3, 4],
+                fields=[None, ("seqid", "start", "end")],
+                region=["chr1", "chr12"],
+            ),
+            Input(region="missing"),
+        ],
+    )
+    def test_scan_query_sorted_compressed(
+        self, input, manifest: pytest_manifest.Manifest
+    ):
+        try:
+            scanner = ox.PyGtfScanner("data/sample.sorted.gtf.gz", compressed=True)
+            schema = scanner.schema()
+            stream = scanner.scan_query(
+                *input.args,
+                index="data/sample.sorted.gtf.gz.tbi",
+                **input.kwargs,
+            )
+            reader = pa.RecordBatchReader.from_stream(
+                data=stream, schema=pa.schema(schema)
+            )
+            result = reader.read_next_batch().to_pydict()
+        except Exception as e:
+            result = str(e)
+            pass
+        assert manifest[str(input)] == result

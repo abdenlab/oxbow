@@ -1,0 +1,209 @@
+BigBedFile("data/sample.bb", fields=('chrom', 'start', 'end')).batches(batch_size=5): |-
+    ->  oxbow._core.base.DataFile.batches(batch_size=5)
+    <-  DataFile.batches.<generator>
+    ->  oxbow._core.function.BbiFile._batch_readers
+    <-  BbiFile._batch_readers.<generator>
+    ->  oxbow._core.function.BbiFile._scanner
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/sample.bb'
+            ->  oxbow._core.function.BbiFile._scanner_kwargs
+            <-  {}
+        <-  builtins.PyBigBedScanner.<object>
+    <-  builtins.PyBigBedScanner.<object>
+    ->  oxbow._core.function.BbiFile._batch_readers.<generator>
+        ->  oxbow._core.base.DataFile.schema
+            ->  oxbow._core.function.BbiFile._scanner
+                ->  oxbow._core.base.DataFile._scanner
+                    ->  oxbow._core.base.DataFile._source
+                    <-  'data/sample.bb'
+                    ->  oxbow._core.function.BbiFile._scanner_kwargs
+                    <-  {}
+                <-  builtins.PyBigBedScanner.<object>
+            <-  builtins.PyBigBedScanner.<object>
+            ->  oxbow._core.function.BbiFile._schema_kwargs
+            <-  {'fields': ("'chrom'", "'start'", "'end'")}
+        <-  chrom: string
+            start: uint32
+            end: uint32
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [14797911,17878425,31056533,33057710,33832166]
+            end: [14798156,17878829,31056651,33058008,33832394]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [33861653,33890755,33916541,33919572,33945636]
+            end: [33861911,33891116,33916917,33919833,33945897]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [33952218,33972905,33981791,34006599,34062749]
+            end: [33953218,33973142,33982018,34006860,34063014]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [34069383,34119583,34128749,34160990,34191353]
+            end: [34069634,34119827,34128970,34161238,34191608]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [34202454,34258545,34268160,34268539,34270935]
+            end: [34202709,34258777,34269171,34268810,34271184]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [34310052,34324039,34335788,34338925,34355185]
+            end: [34311147,34325313,34336017,34339163,34355411]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [34389096,34389696,34414275,34437121,34495204]
+            end: [34390388,34389936,34414524,34437381,34495457]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [34521767,34559581,34581077,34638964,34659098]
+            end: [34523120,34559806,34581334,34639207,34659342]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [34663922,34696426,34725206,34754667,34774855]
+            end: [34665169,34696651,34725432,34754921,34775099]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [34790655,34881450,34884202,34940068,34942629]
+            end: [34790883,34881680,34884432,34940317,34942856]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [34947628,34948917,34954738,35016404,35031745]
+            end: [34947853,34949150,34955005,35017124,35032007]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [35046630,35056897,35106952,35112848,35138681]
+            end: [35046899,35057122,35107211,35113095,35138951]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [35275801,35308807,35315611,35332465,35365866]
+            end: [35275943,35309094,35315838,35332712,35366091]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [35405076,35405290,35408723,35421743,35426936]
+            end: [35405317,35405537,35409680,35421968,35427184]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [35475270,40391551,40398930,40407065,40435898]
+            end: [35475622,40391808,40399140,40407327,40436147]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [40442816,40455048,40479898,40502488,40503890]
+            end: [40443068,40456195,40480164,40502758,40504145]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [40507268,40538104,40545535,40565868,40587116]
+            end: [40508693,40538338,40545764,40566157,40587639]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [40637097,40677070,40751825,40771292,40779913]
+            end: [40637332,40677332,40752073,40772544,40780149]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [43137542,43305220,44731965,45404336,45477251]
+            end: [43137669,43305443,44732335,45404549,45477844]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            chrom: string
+            start: uint32
+            end: uint32
+            ----
+            chrom: ["chr21","chr21","chr21","chr21","chr21"]
+            start: [46073935,46077849,46270819,46442909,46715593]
+            end: [46074545,46078401,46271271,46443662,46715716]
+    <-  oxbow._core.function.BbiFile._batch_readers.<locals>.<lambda>
