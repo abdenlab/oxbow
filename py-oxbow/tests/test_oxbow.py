@@ -473,7 +473,7 @@ class TestPyGffScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            # Input(fields=("seqid", "start", "end")),
+            Input(fields=("seqid", "start", "end")),
         ],
     )
     def test_scan_with_attributes(self, input, manifest: pytest_manifest.Manifest):
