@@ -1,0 +1,1241 @@
+fields=('chrom', 'start', 'end'), batch_size=3:
+    batch-00:
+        chrom:
+        - chr1
+        - chr1
+        - chr1
+        end:
+        - 1200000
+        - 1600000
+        - 2450000
+        start:
+        - 1100001
+        - 1550001
+        - 1900001
+    batch-01:
+        chrom:
+        - chr10
+        - chr10
+        - chr10
+        end:
+        - 250000
+        - 650000
+        - 800000
+        start:
+        - 50001
+        - 250001
+        - 650001
+    batch-02:
+        chrom:
+        - chr11
+        - chr11
+        - chr11
+        end:
+        - 350000
+        - 850000
+        - 1000000
+        start:
+        - 200001
+        - 800001
+        - 900001
+    batch-03:
+        chrom:
+        - chr12
+        - chr12
+        - chr12
+        end:
+        - 650000
+        - 700000
+        - 950000
+        start:
+        - 50001
+        - 650001
+        - 700001
+    batch-04:
+        chrom:
+        - chr13
+        - chr13
+        - chr13
+        end:
+        - 19350000
+        - 19650000
+        - 19750000
+        start:
+        - 19300001
+        - 19550001
+        - 19650001
+    batch-05:
+        chrom:
+        - chr14
+        - chr14
+        - chr14
+        end:
+        - 19950000
+        - 20200000
+        - 20300000
+        start:
+        - 19850001
+        - 20000001
+        - 20250001
+    batch-06:
+        chrom:
+        - chr15
+        - chr15
+        - chr15
+        end:
+        - 20700000
+        - 23100000
+        - 23500000
+        start:
+        - 20650001
+        - 22750001
+        - 23450001
+    batch-07:
+        chrom:
+        - chr16
+        - chr16
+        - chr16
+        end:
+        - 150000
+        - 250000
+        - 400000
+        start:
+        - 50001
+        - 200001
+        - 300001
+    batch-08:
+        chrom:
+        - chr17
+        - chr17
+        - chr17
+        end:
+        - 300000
+        - 450000
+        - 2500000
+        start:
+        - 150001
+        - 350001
+        - 500001
+    batch-09:
+        chrom:
+        - chr18
+        - chr18
+        - chr18
+        end:
+        - 850000
+        - 2650000
+        - 3750000
+        start:
+        - 150001
+        - 850001
+        - 2650001
+    batch-10:
+        chrom:
+        - chr19
+        - chr19
+        - chr19
+        end:
+        - 650000
+        - 950000
+        - 1150000
+        start:
+        - 250001
+        - 900001
+        - 1000001
+    batch-11:
+        chrom:
+        - chr2
+        - chr2
+        - chr2
+        end:
+        - 300000
+        - 450000
+        - 550000
+        start:
+        - 1
+        - 300001
+        - 450001
+    batch-12:
+        chrom:
+        - chr20
+        - chr20
+        - chr20
+        end:
+        - 200000
+        - 300000
+        - 350000
+        start:
+        - 50001
+        - 200001
+        - 300001
+    batch-13:
+        chrom:
+        - chr21
+        - chr21
+        - chr21
+        end:
+        - 14100000
+        - 14250000
+        - 15000000
+        start:
+        - 14050001
+        - 14100001
+        - 14250001
+    batch-14:
+        chrom:
+        - chr22
+        - chr22
+        - chr22
+        end:
+        - 16850000
+        - 17100000
+        - 17550000
+        start:
+        - 16700001
+        - 16900001
+        - 17100001
+    batch-15:
+        chrom:
+        - chr3
+        - chr3
+        - chr3
+        end:
+        - 3100000
+        - 3200000
+        - 4250000
+        start:
+        - 1
+        - 3100001
+        - 3200001
+    batch-16:
+        chrom:
+        - chr4
+        - chr4
+        - chr4
+        end:
+        - 300000
+        - 400000
+        - 500000
+        start:
+        - 50001
+        - 350001
+        - 450001
+    batch-17:
+        chrom:
+        - chr5
+        - chr5
+        - chr5
+        end:
+        - 50000
+        - 150000
+        - 200000
+        start:
+        - 1
+        - 100001
+        - 150001
+    batch-18:
+        chrom:
+        - chr6
+        - chr6
+        - chr6
+        end:
+        - 250000
+        - 400000
+        - 600000
+        start:
+        - 150001
+        - 250001
+        - 400001
+    batch-19:
+        chrom:
+        - chr7
+        - chr7
+        - chr7
+        end:
+        - 200000
+        - 400000
+        - 500000
+        start:
+        - 50001
+        - 250001
+        - 450001
+    batch-20:
+        chrom:
+        - chr8
+        - chr8
+        - chr8
+        end:
+        - 250000
+        - 400000
+        - 750000
+        start:
+        - 200001
+        - 250001
+        - 450001
+    batch-21:
+        chrom:
+        - chr9
+        - chr9
+        - chr9
+        end:
+        - 350000
+        - 500000
+        - 750000
+        start:
+        - 200001
+        - 350001
+        - 500001
+fields=('nonexistent-field',), batch_size=3: 'Invalid field name: nonexistent-field'
+fields=None, batch_size=1:
+    batch-00:
+        chrom:
+        - chr1
+        end:
+        - 1200000
+        start:
+        - 1100001
+    batch-01:
+        chrom:
+        - chr1
+        end:
+        - 1600000
+        start:
+        - 1550001
+    batch-02:
+        chrom:
+        - chr1
+        end:
+        - 2450000
+        start:
+        - 1900001
+    batch-03:
+        chrom:
+        - chr10
+        end:
+        - 250000
+        start:
+        - 50001
+    batch-04:
+        chrom:
+        - chr10
+        end:
+        - 650000
+        start:
+        - 250001
+    batch-05:
+        chrom:
+        - chr10
+        end:
+        - 800000
+        start:
+        - 650001
+    batch-06:
+        chrom:
+        - chr11
+        end:
+        - 350000
+        start:
+        - 200001
+    batch-07:
+        chrom:
+        - chr11
+        end:
+        - 850000
+        start:
+        - 800001
+    batch-08:
+        chrom:
+        - chr11
+        end:
+        - 1000000
+        start:
+        - 900001
+    batch-09:
+        chrom:
+        - chr12
+        end:
+        - 650000
+        start:
+        - 50001
+    batch-10:
+        chrom:
+        - chr12
+        end:
+        - 700000
+        start:
+        - 650001
+    batch-11:
+        chrom:
+        - chr12
+        end:
+        - 950000
+        start:
+        - 700001
+    batch-12:
+        chrom:
+        - chr13
+        end:
+        - 19350000
+        start:
+        - 19300001
+    batch-13:
+        chrom:
+        - chr13
+        end:
+        - 19650000
+        start:
+        - 19550001
+    batch-14:
+        chrom:
+        - chr13
+        end:
+        - 19750000
+        start:
+        - 19650001
+    batch-15:
+        chrom:
+        - chr14
+        end:
+        - 19950000
+        start:
+        - 19850001
+    batch-16:
+        chrom:
+        - chr14
+        end:
+        - 20200000
+        start:
+        - 20000001
+    batch-17:
+        chrom:
+        - chr14
+        end:
+        - 20300000
+        start:
+        - 20250001
+    batch-18:
+        chrom:
+        - chr15
+        end:
+        - 20700000
+        start:
+        - 20650001
+    batch-19:
+        chrom:
+        - chr15
+        end:
+        - 23100000
+        start:
+        - 22750001
+    batch-20:
+        chrom:
+        - chr15
+        end:
+        - 23500000
+        start:
+        - 23450001
+    batch-21:
+        chrom:
+        - chr16
+        end:
+        - 150000
+        start:
+        - 50001
+    batch-22:
+        chrom:
+        - chr16
+        end:
+        - 250000
+        start:
+        - 200001
+    batch-23:
+        chrom:
+        - chr16
+        end:
+        - 400000
+        start:
+        - 300001
+    batch-24:
+        chrom:
+        - chr17
+        end:
+        - 300000
+        start:
+        - 150001
+    batch-25:
+        chrom:
+        - chr17
+        end:
+        - 450000
+        start:
+        - 350001
+    batch-26:
+        chrom:
+        - chr17
+        end:
+        - 2500000
+        start:
+        - 500001
+    batch-27:
+        chrom:
+        - chr18
+        end:
+        - 850000
+        start:
+        - 150001
+    batch-28:
+        chrom:
+        - chr18
+        end:
+        - 2650000
+        start:
+        - 850001
+    batch-29:
+        chrom:
+        - chr18
+        end:
+        - 3750000
+        start:
+        - 2650001
+    batch-30:
+        chrom:
+        - chr19
+        end:
+        - 650000
+        start:
+        - 250001
+    batch-31:
+        chrom:
+        - chr19
+        end:
+        - 950000
+        start:
+        - 900001
+    batch-32:
+        chrom:
+        - chr19
+        end:
+        - 1150000
+        start:
+        - 1000001
+    batch-33:
+        chrom:
+        - chr2
+        end:
+        - 300000
+        start:
+        - 1
+    batch-34:
+        chrom:
+        - chr2
+        end:
+        - 450000
+        start:
+        - 300001
+    batch-35:
+        chrom:
+        - chr2
+        end:
+        - 550000
+        start:
+        - 450001
+    batch-36:
+        chrom:
+        - chr20
+        end:
+        - 200000
+        start:
+        - 50001
+    batch-37:
+        chrom:
+        - chr20
+        end:
+        - 300000
+        start:
+        - 200001
+    batch-38:
+        chrom:
+        - chr20
+        end:
+        - 350000
+        start:
+        - 300001
+    batch-39:
+        chrom:
+        - chr21
+        end:
+        - 14100000
+        start:
+        - 14050001
+    batch-40:
+        chrom:
+        - chr21
+        end:
+        - 14250000
+        start:
+        - 14100001
+    batch-41:
+        chrom:
+        - chr21
+        end:
+        - 15000000
+        start:
+        - 14250001
+    batch-42:
+        chrom:
+        - chr22
+        end:
+        - 16850000
+        start:
+        - 16700001
+    batch-43:
+        chrom:
+        - chr22
+        end:
+        - 17100000
+        start:
+        - 16900001
+    batch-44:
+        chrom:
+        - chr22
+        end:
+        - 17550000
+        start:
+        - 17100001
+    batch-45:
+        chrom:
+        - chr3
+        end:
+        - 3100000
+        start:
+        - 1
+    batch-46:
+        chrom:
+        - chr3
+        end:
+        - 3200000
+        start:
+        - 3100001
+    batch-47:
+        chrom:
+        - chr3
+        end:
+        - 4250000
+        start:
+        - 3200001
+    batch-48:
+        chrom:
+        - chr4
+        end:
+        - 300000
+        start:
+        - 50001
+    batch-49:
+        chrom:
+        - chr4
+        end:
+        - 400000
+        start:
+        - 350001
+    batch-50:
+        chrom:
+        - chr4
+        end:
+        - 500000
+        start:
+        - 450001
+    batch-51:
+        chrom:
+        - chr5
+        end:
+        - 50000
+        start:
+        - 1
+    batch-52:
+        chrom:
+        - chr5
+        end:
+        - 150000
+        start:
+        - 100001
+    batch-53:
+        chrom:
+        - chr5
+        end:
+        - 200000
+        start:
+        - 150001
+    batch-54:
+        chrom:
+        - chr6
+        end:
+        - 250000
+        start:
+        - 150001
+    batch-55:
+        chrom:
+        - chr6
+        end:
+        - 400000
+        start:
+        - 250001
+    batch-56:
+        chrom:
+        - chr6
+        end:
+        - 600000
+        start:
+        - 400001
+    batch-57:
+        chrom:
+        - chr7
+        end:
+        - 200000
+        start:
+        - 50001
+    batch-58:
+        chrom:
+        - chr7
+        end:
+        - 400000
+        start:
+        - 250001
+    batch-59:
+        chrom:
+        - chr7
+        end:
+        - 500000
+        start:
+        - 450001
+    batch-60:
+        chrom:
+        - chr8
+        end:
+        - 250000
+        start:
+        - 200001
+    batch-61:
+        chrom:
+        - chr8
+        end:
+        - 400000
+        start:
+        - 250001
+    batch-62:
+        chrom:
+        - chr8
+        end:
+        - 750000
+        start:
+        - 450001
+    batch-63:
+        chrom:
+        - chr9
+        end:
+        - 350000
+        start:
+        - 200001
+    batch-64:
+        chrom:
+        - chr9
+        end:
+        - 500000
+        start:
+        - 350001
+    batch-65:
+        chrom:
+        - chr9
+        end:
+        - 750000
+        start:
+        - 500001
+fields=None, batch_size=3:
+    batch-00:
+        chrom:
+        - chr1
+        - chr1
+        - chr1
+        end:
+        - 1200000
+        - 1600000
+        - 2450000
+        start:
+        - 1100001
+        - 1550001
+        - 1900001
+    batch-01:
+        chrom:
+        - chr10
+        - chr10
+        - chr10
+        end:
+        - 250000
+        - 650000
+        - 800000
+        start:
+        - 50001
+        - 250001
+        - 650001
+    batch-02:
+        chrom:
+        - chr11
+        - chr11
+        - chr11
+        end:
+        - 350000
+        - 850000
+        - 1000000
+        start:
+        - 200001
+        - 800001
+        - 900001
+    batch-03:
+        chrom:
+        - chr12
+        - chr12
+        - chr12
+        end:
+        - 650000
+        - 700000
+        - 950000
+        start:
+        - 50001
+        - 650001
+        - 700001
+    batch-04:
+        chrom:
+        - chr13
+        - chr13
+        - chr13
+        end:
+        - 19350000
+        - 19650000
+        - 19750000
+        start:
+        - 19300001
+        - 19550001
+        - 19650001
+    batch-05:
+        chrom:
+        - chr14
+        - chr14
+        - chr14
+        end:
+        - 19950000
+        - 20200000
+        - 20300000
+        start:
+        - 19850001
+        - 20000001
+        - 20250001
+    batch-06:
+        chrom:
+        - chr15
+        - chr15
+        - chr15
+        end:
+        - 20700000
+        - 23100000
+        - 23500000
+        start:
+        - 20650001
+        - 22750001
+        - 23450001
+    batch-07:
+        chrom:
+        - chr16
+        - chr16
+        - chr16
+        end:
+        - 150000
+        - 250000
+        - 400000
+        start:
+        - 50001
+        - 200001
+        - 300001
+    batch-08:
+        chrom:
+        - chr17
+        - chr17
+        - chr17
+        end:
+        - 300000
+        - 450000
+        - 2500000
+        start:
+        - 150001
+        - 350001
+        - 500001
+    batch-09:
+        chrom:
+        - chr18
+        - chr18
+        - chr18
+        end:
+        - 850000
+        - 2650000
+        - 3750000
+        start:
+        - 150001
+        - 850001
+        - 2650001
+    batch-10:
+        chrom:
+        - chr19
+        - chr19
+        - chr19
+        end:
+        - 650000
+        - 950000
+        - 1150000
+        start:
+        - 250001
+        - 900001
+        - 1000001
+    batch-11:
+        chrom:
+        - chr2
+        - chr2
+        - chr2
+        end:
+        - 300000
+        - 450000
+        - 550000
+        start:
+        - 1
+        - 300001
+        - 450001
+    batch-12:
+        chrom:
+        - chr20
+        - chr20
+        - chr20
+        end:
+        - 200000
+        - 300000
+        - 350000
+        start:
+        - 50001
+        - 200001
+        - 300001
+    batch-13:
+        chrom:
+        - chr21
+        - chr21
+        - chr21
+        end:
+        - 14100000
+        - 14250000
+        - 15000000
+        start:
+        - 14050001
+        - 14100001
+        - 14250001
+    batch-14:
+        chrom:
+        - chr22
+        - chr22
+        - chr22
+        end:
+        - 16850000
+        - 17100000
+        - 17550000
+        start:
+        - 16700001
+        - 16900001
+        - 17100001
+    batch-15:
+        chrom:
+        - chr3
+        - chr3
+        - chr3
+        end:
+        - 3100000
+        - 3200000
+        - 4250000
+        start:
+        - 1
+        - 3100001
+        - 3200001
+    batch-16:
+        chrom:
+        - chr4
+        - chr4
+        - chr4
+        end:
+        - 300000
+        - 400000
+        - 500000
+        start:
+        - 50001
+        - 350001
+        - 450001
+    batch-17:
+        chrom:
+        - chr5
+        - chr5
+        - chr5
+        end:
+        - 50000
+        - 150000
+        - 200000
+        start:
+        - 1
+        - 100001
+        - 150001
+    batch-18:
+        chrom:
+        - chr6
+        - chr6
+        - chr6
+        end:
+        - 250000
+        - 400000
+        - 600000
+        start:
+        - 150001
+        - 250001
+        - 400001
+    batch-19:
+        chrom:
+        - chr7
+        - chr7
+        - chr7
+        end:
+        - 200000
+        - 400000
+        - 500000
+        start:
+        - 50001
+        - 250001
+        - 450001
+    batch-20:
+        chrom:
+        - chr8
+        - chr8
+        - chr8
+        end:
+        - 250000
+        - 400000
+        - 750000
+        start:
+        - 200001
+        - 250001
+        - 450001
+    batch-21:
+        chrom:
+        - chr9
+        - chr9
+        - chr9
+        end:
+        - 350000
+        - 500000
+        - 750000
+        start:
+        - 200001
+        - 350001
+        - 500001
+fields=None, batch_size=None:
+    batch-00:
+        chrom:
+        - chr1
+        - chr1
+        - chr1
+        - chr10
+        - chr10
+        - chr10
+        - chr11
+        - chr11
+        - chr11
+        - chr12
+        - chr12
+        - chr12
+        - chr13
+        - chr13
+        - chr13
+        - chr14
+        - chr14
+        - chr14
+        - chr15
+        - chr15
+        - chr15
+        - chr16
+        - chr16
+        - chr16
+        - chr17
+        - chr17
+        - chr17
+        - chr18
+        - chr18
+        - chr18
+        - chr19
+        - chr19
+        - chr19
+        - chr2
+        - chr2
+        - chr2
+        - chr20
+        - chr20
+        - chr20
+        - chr21
+        - chr21
+        - chr21
+        - chr22
+        - chr22
+        - chr22
+        - chr3
+        - chr3
+        - chr3
+        - chr4
+        - chr4
+        - chr4
+        - chr5
+        - chr5
+        - chr5
+        - chr6
+        - chr6
+        - chr6
+        - chr7
+        - chr7
+        - chr7
+        - chr8
+        - chr8
+        - chr8
+        - chr9
+        - chr9
+        - chr9
+        end:
+        - 1200000
+        - 1600000
+        - 2450000
+        - 250000
+        - 650000
+        - 800000
+        - 350000
+        - 850000
+        - 1000000
+        - 650000
+        - 700000
+        - 950000
+        - 19350000
+        - 19650000
+        - 19750000
+        - 19950000
+        - 20200000
+        - 20300000
+        - 20700000
+        - 23100000
+        - 23500000
+        - 150000
+        - 250000
+        - 400000
+        - 300000
+        - 450000
+        - 2500000
+        - 850000
+        - 2650000
+        - 3750000
+        - 650000
+        - 950000
+        - 1150000
+        - 300000
+        - 450000
+        - 550000
+        - 200000
+        - 300000
+        - 350000
+        - 14100000
+        - 14250000
+        - 15000000
+        - 16850000
+        - 17100000
+        - 17550000
+        - 3100000
+        - 3200000
+        - 4250000
+        - 300000
+        - 400000
+        - 500000
+        - 50000
+        - 150000
+        - 200000
+        - 250000
+        - 400000
+        - 600000
+        - 200000
+        - 400000
+        - 500000
+        - 250000
+        - 400000
+        - 750000
+        - 350000
+        - 500000
+        - 750000
+        start:
+        - 1100001
+        - 1550001
+        - 1900001
+        - 50001
+        - 250001
+        - 650001
+        - 200001
+        - 800001
+        - 900001
+        - 50001
+        - 650001
+        - 700001
+        - 19300001
+        - 19550001
+        - 19650001
+        - 19850001
+        - 20000001
+        - 20250001
+        - 20650001
+        - 22750001
+        - 23450001
+        - 50001
+        - 200001
+        - 300001
+        - 150001
+        - 350001
+        - 500001
+        - 150001
+        - 850001
+        - 2650001
+        - 250001
+        - 900001
+        - 1000001
+        - 1
+        - 300001
+        - 450001
+        - 50001
+        - 200001
+        - 300001
+        - 14050001
+        - 14100001
+        - 14250001
+        - 16700001
+        - 16900001
+        - 17100001
+        - 1
+        - 3100001
+        - 3200001
+        - 50001
+        - 350001
+        - 450001
+        - 1
+        - 100001
+        - 150001
+        - 150001
+        - 250001
+        - 400001
+        - 50001
+        - 250001
+        - 450001
+        - 200001
+        - 250001
+        - 450001
+        - 200001
+        - 350001
+        - 500001

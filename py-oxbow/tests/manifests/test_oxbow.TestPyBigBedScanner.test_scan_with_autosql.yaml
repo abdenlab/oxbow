@@ -1,0 +1,429 @@
+batch_size=1:
+    blockCount:
+    - 3
+    blockSizes:
+    -   - 359
+        - 109
+        - 1189
+    cdsEndStat:
+    - none
+    cdsStartStat:
+    - none
+    chrom:
+    - chr1
+    chromStarts:
+    -   - 0
+        - 744
+        - 1352
+    end:
+    - 14409
+    exonFrames:
+    -   - -1
+        - -1
+        - -1
+    geneName:
+    - ENST00000456328.2
+    geneName2:
+    - DDX11L1
+    geneType:
+    - none
+    name:
+    - ENST00000456328.2
+    name2:
+    - DDX11L1
+    reserved:
+    - null
+    score:
+    - 1000
+    start:
+    - 11868
+    strand:
+    - +
+    thickEnd:
+    - 11868
+    thickStart:
+    - 11868
+    type:
+    - none
+batch_size=2:
+    blockCount:
+    - 3
+    - 11
+    blockSizes:
+    -   - 359
+        - 109
+        - 1189
+    -   - 98
+        - 34
+        - 152
+        - 159
+        - 198
+        - 136
+        - 137
+        - 147
+        - 99
+        - 154
+        - 37
+    cdsEndStat:
+    - none
+    - none
+    cdsStartStat:
+    - none
+    - none
+    chrom:
+    - chr1
+    - chr1
+    chromStarts:
+    -   - 0
+        - 744
+        - 1352
+    -   - 0
+        - 601
+        - 1392
+        - 2203
+        - 2454
+        - 2829
+        - 3202
+        - 3511
+        - 3864
+        - 10334
+        - 15130
+    end:
+    - 14409
+    - 29570
+    exonFrames:
+    -   - -1
+        - -1
+        - -1
+    -   - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+    geneName:
+    - ENST00000456328.2
+    - ENST00000488147.1
+    geneName2:
+    - DDX11L1
+    - WASH7P
+    geneType:
+    - none
+    - none
+    name:
+    - ENST00000456328.2
+    - ENST00000488147.1
+    name2:
+    - DDX11L1
+    - WASH7P
+    reserved:
+    - null
+    - null
+    score:
+    - 1000
+    - 1000
+    start:
+    - 11868
+    - 14403
+    strand:
+    - +
+    - '-'
+    thickEnd:
+    - 11868
+    - 14403
+    thickStart:
+    - 11868
+    - 14403
+    type:
+    - none
+    - none
+batch_size=3:
+    blockCount:
+    - 3
+    - 11
+    - 1
+    blockSizes:
+    -   - 359
+        - 109
+        - 1189
+    -   - 98
+        - 34
+        - 152
+        - 159
+        - 198
+        - 136
+        - 137
+        - 147
+        - 99
+        - 154
+        - 37
+    -   - 68
+    cdsEndStat:
+    - none
+    - none
+    - none
+    cdsStartStat:
+    - none
+    - none
+    - none
+    chrom:
+    - chr1
+    - chr1
+    - chr1
+    chromStarts:
+    -   - 0
+        - 744
+        - 1352
+    -   - 0
+        - 601
+        - 1392
+        - 2203
+        - 2454
+        - 2829
+        - 3202
+        - 3511
+        - 3864
+        - 10334
+        - 15130
+    -   - 0
+    end:
+    - 14409
+    - 29570
+    - 17436
+    exonFrames:
+    -   - -1
+        - -1
+        - -1
+    -   - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+    -   - -1
+    geneName:
+    - ENST00000456328.2
+    - ENST00000488147.1
+    - ENST00000619216.1
+    geneName2:
+    - DDX11L1
+    - WASH7P
+    - MIR6859-2
+    geneType:
+    - none
+    - none
+    - none
+    name:
+    - ENST00000456328.2
+    - ENST00000488147.1
+    - ENST00000619216.1
+    name2:
+    - DDX11L1
+    - WASH7P
+    - MIR6859-2
+    reserved:
+    - null
+    - null
+    - null
+    score:
+    - 1000
+    - 1000
+    - 1000
+    start:
+    - 11868
+    - 14403
+    - 17368
+    strand:
+    - +
+    - '-'
+    - '-'
+    thickEnd:
+    - 11868
+    - 14403
+    - 17368
+    thickStart:
+    - 11868
+    - 14403
+    - 17368
+    type:
+    - none
+    - none
+    - none
+batch_size=4:
+    blockCount:
+    - 3
+    - 11
+    - 1
+    - 3
+    blockSizes:
+    -   - 359
+        - 109
+        - 1189
+    -   - 98
+        - 34
+        - 152
+        - 159
+        - 198
+        - 136
+        - 137
+        - 147
+        - 99
+        - 154
+        - 37
+    -   - 68
+    -   - 486
+        - 104
+        - 122
+    cdsEndStat:
+    - none
+    - none
+    - none
+    - none
+    cdsStartStat:
+    - none
+    - none
+    - none
+    - none
+    chrom:
+    - chr1
+    - chr1
+    - chr1
+    - chr1
+    chromStarts:
+    -   - 0
+        - 744
+        - 1352
+    -   - 0
+        - 601
+        - 1392
+        - 2203
+        - 2454
+        - 2829
+        - 3202
+        - 3511
+        - 3864
+        - 10334
+        - 15130
+    -   - 0
+    -   - 0
+        - 1010
+        - 1422
+    end:
+    - 14409
+    - 29570
+    - 17436
+    - 31097
+    exonFrames:
+    -   - -1
+        - -1
+        - -1
+    -   - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+        - -1
+    -   - -1
+    -   - -1
+        - -1
+        - -1
+    geneName:
+    - ENST00000456328.2
+    - ENST00000488147.1
+    - ENST00000619216.1
+    - ENST00000473358.1
+    geneName2:
+    - DDX11L1
+    - WASH7P
+    - MIR6859-2
+    - MIR1302-11
+    geneType:
+    - none
+    - none
+    - none
+    - none
+    name:
+    - ENST00000456328.2
+    - ENST00000488147.1
+    - ENST00000619216.1
+    - ENST00000473358.1
+    name2:
+    - DDX11L1
+    - WASH7P
+    - MIR6859-2
+    - MIR1302-11
+    reserved:
+    - null
+    - null
+    - null
+    - null
+    score:
+    - 1000
+    - 1000
+    - 1000
+    - 1000
+    start:
+    - 11868
+    - 14403
+    - 17368
+    - 29553
+    strand:
+    - +
+    - '-'
+    - '-'
+    - +
+    thickEnd:
+    - 11868
+    - 14403
+    - 17368
+    - 29553
+    thickStart:
+    - 11868
+    - 14403
+    - 17368
+    - 29553
+    type:
+    - none
+    - none
+    - none
+    - none
+fields=("chrom", "start", "end", "chromStarts"), batch_size=2:
+    chrom:
+    - chr1
+    - chr1
+    chromStarts:
+    -   - 0
+        - 744
+        - 1352
+    -   - 0
+        - 601
+        - 1392
+        - 2203
+        - 2454
+        - 2829
+        - 3202
+        - 3511
+        - 3864
+        - 10334
+        - 15130
+    end:
+    - 14409
+    - 29570
+    start:
+    - 11868
+    - 14403

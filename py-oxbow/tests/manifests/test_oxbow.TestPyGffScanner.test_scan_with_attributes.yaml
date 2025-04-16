@@ -1,0 +1,815 @@
+batch_size=1:
+    attributes:
+    -   ID: exon:ENST00000782961.1:2
+        Parent: ENST00000782961.1
+        ccdsid: null
+        exon_id: ENSE00004156517.1
+        exon_number: '2'
+        gene_id: ENSG00000229309.3
+        gene_name: ENSG00000229309
+        gene_type: lncRNA
+        havana_gene: OTTHUMG00000017146.2
+        havana_transcript: null
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag:
+        - basic
+        - Ensembl_canonical
+        - TAGENE
+        transcript_id: ENST00000782961.1
+        transcript_name: ENST00000782961
+        transcript_support_level: null
+        transcript_type: lncRNA
+    end:
+    - 81326030
+    frame:
+    - null
+    score:
+    - null
+    seqid:
+    - chr13
+    source:
+    - HAVANA
+    start:
+    - 81326030
+    strand:
+    - +
+    type:
+    - exon
+batch_size=2:
+    attributes:
+    -   ID: exon:ENST00000782961.1:2
+        Parent: ENST00000782961.1
+        ccdsid: null
+        exon_id: ENSE00004156517.1
+        exon_number: '2'
+        gene_id: ENSG00000229309.3
+        gene_name: ENSG00000229309
+        gene_type: lncRNA
+        havana_gene: OTTHUMG00000017146.2
+        havana_transcript: null
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag:
+        - basic
+        - Ensembl_canonical
+        - TAGENE
+        transcript_id: ENST00000782961.1
+        transcript_name: ENST00000782961
+        transcript_support_level: null
+        transcript_type: lncRNA
+    -   ID: CDS:ENST00000498271.1
+        Parent: ENST00000498271.1
+        ccdsid: CCDS59005.1
+        exon_id: ENSE00001878698.1
+        exon_number: '40'
+        gene_id: ENSG00000244731.10
+        gene_name: C4A
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000031186.6
+        havana_transcript: OTTHUMT00000356896.1
+        hgnc_id: HGNC:1323
+        level: '2'
+        protein_id: ENSP00000420212.1
+        tag:
+        - RNA_Seq_supported_only
+        - basic
+        - GENCODE_Primary
+        - CCDS
+        transcript_id: ENST00000498271.1
+        transcript_name: C4A-246
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    end:
+    - 81326030
+    - 32002399
+    frame:
+    - null
+    - 1
+    score:
+    - null
+    - null
+    seqid:
+    - chr13
+    - chr6
+    source:
+    - HAVANA
+    - HAVANA
+    start:
+    - 81326030
+    - 32002399
+    strand:
+    - +
+    - +
+    type:
+    - exon
+    - CDS
+batch_size=3:
+    attributes:
+    -   ID: exon:ENST00000782961.1:2
+        Parent: ENST00000782961.1
+        ccdsid: null
+        exon_id: ENSE00004156517.1
+        exon_number: '2'
+        gene_id: ENSG00000229309.3
+        gene_name: ENSG00000229309
+        gene_type: lncRNA
+        havana_gene: OTTHUMG00000017146.2
+        havana_transcript: null
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag:
+        - basic
+        - Ensembl_canonical
+        - TAGENE
+        transcript_id: ENST00000782961.1
+        transcript_name: ENST00000782961
+        transcript_support_level: null
+        transcript_type: lncRNA
+    -   ID: CDS:ENST00000498271.1
+        Parent: ENST00000498271.1
+        ccdsid: CCDS59005.1
+        exon_id: ENSE00001878698.1
+        exon_number: '40'
+        gene_id: ENSG00000244731.10
+        gene_name: C4A
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000031186.6
+        havana_transcript: OTTHUMT00000356896.1
+        hgnc_id: HGNC:1323
+        level: '2'
+        protein_id: ENSP00000420212.1
+        tag:
+        - RNA_Seq_supported_only
+        - basic
+        - GENCODE_Primary
+        - CCDS
+        transcript_id: ENST00000498271.1
+        transcript_name: C4A-246
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000334011.10:8
+        Parent: ENST00000334011.10
+        ccdsid: CCDS7318.1
+        exon_id: ENSE00001170094.1
+        exon_number: '8'
+        gene_id: ENSG00000138315.13
+        gene_name: OIT3
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000018444.2
+        havana_transcript: OTTHUMT00000048596.2
+        hgnc_id: HGNC:29953
+        level: '2'
+        protein_id: ENSP00000333900.5
+        tag:
+        - basic
+        - Ensembl_canonical
+        - GENCODE_Primary
+        - MANE_Select
+        - appris_principal_1
+        - CCDS
+        transcript_id: ENST00000334011.10
+        transcript_name: OIT3-201
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    end:
+    - 81326030
+    - 32002399
+    - 72930538
+    frame:
+    - null
+    - 1
+    - null
+    score:
+    - null
+    - null
+    - null
+    seqid:
+    - chr13
+    - chr6
+    - chr10
+    source:
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    start:
+    - 81326030
+    - 32002399
+    - 72930538
+    strand:
+    - +
+    - +
+    - +
+    type:
+    - exon
+    - CDS
+    - exon
+batch_size=4:
+    attributes:
+    -   ID: exon:ENST00000782961.1:2
+        Parent: ENST00000782961.1
+        ccdsid: null
+        exon_id: ENSE00004156517.1
+        exon_number: '2'
+        gene_id: ENSG00000229309.3
+        gene_name: ENSG00000229309
+        gene_type: lncRNA
+        havana_gene: OTTHUMG00000017146.2
+        havana_transcript: null
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag:
+        - basic
+        - Ensembl_canonical
+        - TAGENE
+        transcript_id: ENST00000782961.1
+        transcript_name: ENST00000782961
+        transcript_support_level: null
+        transcript_type: lncRNA
+    -   ID: CDS:ENST00000498271.1
+        Parent: ENST00000498271.1
+        ccdsid: CCDS59005.1
+        exon_id: ENSE00001878698.1
+        exon_number: '40'
+        gene_id: ENSG00000244731.10
+        gene_name: C4A
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000031186.6
+        havana_transcript: OTTHUMT00000356896.1
+        hgnc_id: HGNC:1323
+        level: '2'
+        protein_id: ENSP00000420212.1
+        tag:
+        - RNA_Seq_supported_only
+        - basic
+        - GENCODE_Primary
+        - CCDS
+        transcript_id: ENST00000498271.1
+        transcript_name: C4A-246
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000334011.10:8
+        Parent: ENST00000334011.10
+        ccdsid: CCDS7318.1
+        exon_id: ENSE00001170094.1
+        exon_number: '8'
+        gene_id: ENSG00000138315.13
+        gene_name: OIT3
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000018444.2
+        havana_transcript: OTTHUMT00000048596.2
+        hgnc_id: HGNC:29953
+        level: '2'
+        protein_id: ENSP00000333900.5
+        tag:
+        - basic
+        - Ensembl_canonical
+        - GENCODE_Primary
+        - MANE_Select
+        - appris_principal_1
+        - CCDS
+        transcript_id: ENST00000334011.10
+        transcript_name: OIT3-201
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000641916.1:4
+        Parent: ENST00000641916.1
+        ccdsid: null
+        exon_id: ENSE00003812605.1
+        exon_number: '4'
+        gene_id: ENSG00000290385.2
+        gene_name: ENSG00000290385
+        gene_type: lncRNA
+        havana_gene: null
+        havana_transcript: OTTHUMT00000493599.1
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag: null
+        transcript_id: ENST00000641916.1
+        transcript_name: ENST00000641916
+        transcript_support_level: null
+        transcript_type: lncRNA
+    end:
+    - 81326030
+    - 32002399
+    - 72930538
+    - 497210
+    frame:
+    - null
+    - 1
+    - null
+    - null
+    score:
+    - null
+    - null
+    - null
+    - null
+    seqid:
+    - chr13
+    - chr6
+    - chr10
+    - chr1
+    source:
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    start:
+    - 81326030
+    - 32002399
+    - 72930538
+    - 497210
+    strand:
+    - +
+    - +
+    - +
+    - '-'
+    type:
+    - exon
+    - CDS
+    - exon
+    - exon
+fields=("seqid", "start", "end"):
+    attributes:
+    -   ID: exon:ENST00000782961.1:2
+        Parent: ENST00000782961.1
+        ccdsid: null
+        exon_id: ENSE00004156517.1
+        exon_number: '2'
+        gene_id: ENSG00000229309.3
+        gene_name: ENSG00000229309
+        gene_type: lncRNA
+        havana_gene: OTTHUMG00000017146.2
+        havana_transcript: null
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag:
+        - basic
+        - Ensembl_canonical
+        - TAGENE
+        transcript_id: ENST00000782961.1
+        transcript_name: ENST00000782961
+        transcript_support_level: null
+        transcript_type: lncRNA
+    -   ID: CDS:ENST00000498271.1
+        Parent: ENST00000498271.1
+        ccdsid: CCDS59005.1
+        exon_id: ENSE00001878698.1
+        exon_number: '40'
+        gene_id: ENSG00000244731.10
+        gene_name: C4A
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000031186.6
+        havana_transcript: OTTHUMT00000356896.1
+        hgnc_id: HGNC:1323
+        level: '2'
+        protein_id: ENSP00000420212.1
+        tag:
+        - RNA_Seq_supported_only
+        - basic
+        - GENCODE_Primary
+        - CCDS
+        transcript_id: ENST00000498271.1
+        transcript_name: C4A-246
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000334011.10:8
+        Parent: ENST00000334011.10
+        ccdsid: CCDS7318.1
+        exon_id: ENSE00001170094.1
+        exon_number: '8'
+        gene_id: ENSG00000138315.13
+        gene_name: OIT3
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000018444.2
+        havana_transcript: OTTHUMT00000048596.2
+        hgnc_id: HGNC:29953
+        level: '2'
+        protein_id: ENSP00000333900.5
+        tag:
+        - basic
+        - Ensembl_canonical
+        - GENCODE_Primary
+        - MANE_Select
+        - appris_principal_1
+        - CCDS
+        transcript_id: ENST00000334011.10
+        transcript_name: OIT3-201
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000641916.1:4
+        Parent: ENST00000641916.1
+        ccdsid: null
+        exon_id: ENSE00003812605.1
+        exon_number: '4'
+        gene_id: ENSG00000290385.2
+        gene_name: ENSG00000290385
+        gene_type: lncRNA
+        havana_gene: null
+        havana_transcript: OTTHUMT00000493599.1
+        hgnc_id: null
+        level: '2'
+        protein_id: null
+        tag: null
+        transcript_id: ENST00000641916.1
+        transcript_name: ENST00000641916
+        transcript_support_level: null
+        transcript_type: lncRNA
+    -   ID: CDS:ENST00000629018.4
+        Parent: ENST00000629018.4
+        ccdsid: null
+        exon_id: ENSE00000938859.1
+        exon_number: '28'
+        gene_id: ENSG00000172915.20
+        gene_name: NBEA
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000016724.2
+        havana_transcript: null
+        hgnc_id: HGNC:7648
+        level: '2'
+        protein_id: ENSP00000486239.3
+        tag:
+        - RNA_Seq_supported_only
+        - mRNA_start_NF
+        - cds_start_NF
+        transcript_id: ENST00000629018.4
+        transcript_name: NBEA-207
+        transcript_support_level: '5'
+        transcript_type: protein_coding
+    -   ID: UTR5:ENST00000674645.1
+        Parent: ENST00000674645.1
+        ccdsid: CCDS56266.1
+        exon_id: ENSE00000967215.3
+        exon_number: '2'
+        gene_id: ENSG00000114354.15
+        gene_name: TFG
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000159085.4
+        havana_transcript: null
+        hgnc_id: HGNC:11758
+        level: '2'
+        protein_id: ENSP00000501892.1
+        tag:
+        - basic
+        - GENCODE_Primary
+        - appris_alternative_1
+        - CCDS
+        transcript_id: ENST00000674645.1
+        transcript_name: TFG-212
+        transcript_support_level: null
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000497536.1:1
+        Parent: ENST00000497536.1
+        ccdsid: null
+        exon_id: ENSE00003569641.1
+        exon_number: '1'
+        gene_id: ENSG00000130414.13
+        gene_name: NDUFA10
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000133350.5
+        havana_transcript: OTTHUMT00000326145.1
+        hgnc_id: HGNC:7684
+        level: '2'
+        protein_id: null
+        tag: null
+        transcript_id: ENST00000497536.1
+        transcript_name: NDUFA10-213
+        transcript_support_level: '2'
+        transcript_type: retained_intron
+    -   ID: ENST00000558100.1
+        Parent: ENSG00000069956.14
+        ccdsid: null
+        exon_id: null
+        exon_number: null
+        gene_id: ENSG00000069956.14
+        gene_name: MAPK6
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000131891.4
+        havana_transcript: OTTHUMT00000419352.1
+        hgnc_id: HGNC:6879
+        level: '1'
+        protein_id: null
+        tag:
+        - exp_conf
+        transcript_id: ENST00000558100.1
+        transcript_name: MAPK6-203
+        transcript_support_level: '2'
+        transcript_type: protein_coding_CDS_not_defined
+    -   ID: ENST00000728222.1
+        Parent: ENSG00000259225.10
+        ccdsid: null
+        exon_id: null
+        exon_number: null
+        gene_id: ENSG00000259225.10
+        gene_name: LINC02345
+        gene_type: lncRNA
+        havana_gene: OTTHUMG00000172364.6
+        havana_transcript: null
+        hgnc_id: HGNC:53267
+        level: '2'
+        protein_id: null
+        tag:
+        - TAGENE
+        transcript_id: ENST00000728222.1
+        transcript_name: LINC02345-220
+        transcript_support_level: null
+        transcript_type: lncRNA
+    -   ID: CDS:ENST00000606065.3
+        Parent: ENST00000606065.3
+        ccdsid: null
+        exon_id: ENSE00003643788.1
+        exon_number: '1'
+        gene_id: ENSG00000099804.9
+        gene_name: CDC34
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000180558.11
+        havana_transcript: OTTHUMT00000471238.3
+        hgnc_id: HGNC:1734
+        level: '2'
+        protein_id: ENSP00000475610.1
+        tag:
+        - mRNA_start_NF
+        - cds_start_NF
+        transcript_id: ENST00000606065.3
+        transcript_name: CDC34-205
+        transcript_support_level: '5'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000398743.6:2
+        Parent: ENST00000398743.6
+        ccdsid: CCDS13801.1
+        exon_id: ENSE00001534682.1
+        exon_number: '2'
+        gene_id: ENSG00000185686.18
+        gene_name: PRAME
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000151172.4
+        havana_transcript: OTTHUMT00000321642.2
+        hgnc_id: HGNC:9336
+        level: '2'
+        protein_id: ENSP00000381728.2
+        tag:
+        - basic
+        - appris_principal_1
+        - CCDS
+        transcript_id: ENST00000398743.6
+        transcript_name: PRAME-202
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000592304.1:2
+        Parent: ENST00000592304.1
+        ccdsid: null
+        exon_id: ENSE00002735216.1
+        exon_number: '2'
+        gene_id: ENSG00000188554.15
+        gene_name: NBR1
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000180878.2
+        havana_transcript: OTTHUMT00000453462.1
+        hgnc_id: HGNC:6746
+        level: '2'
+        protein_id: null
+        tag: null
+        transcript_id: ENST00000592304.1
+        transcript_name: NBR1-207
+        transcript_support_level: '2'
+        transcript_type: retained_intron
+    -   ID: exon:ENST00000589170.5:5
+        Parent: ENST00000589170.5
+        ccdsid: null
+        exon_id: ENSE00002793715.1
+        exon_number: '5'
+        gene_id: ENSG00000184828.10
+        gene_name: ZBTB7C
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000180322.3
+        havana_transcript: OTTHUMT00000450756.1
+        hgnc_id: HGNC:31700
+        level: '2'
+        protein_id: ENSP00000467338.1
+        tag:
+        - alternative_5_UTR
+        - mRNA_end_NF
+        - cds_end_NF
+        transcript_id: ENST00000589170.5
+        transcript_name: ZBTB7C-215
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000016913.8:3
+        Parent: ENST00000016913.8
+        ccdsid: CCDS7988.1
+        exon_id: ENSE00000720002.1
+        exon_number: '3'
+        gene_id: ENSG00000071203.9
+        gene_name: MS4A12
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000165364.2
+        havana_transcript: OTTHUMT00000383627.1
+        hgnc_id: HGNC:13370
+        level: '2'
+        protein_id: ENSP00000016913.4
+        tag:
+        - basic
+        - Ensembl_canonical
+        - GENCODE_Primary
+        - MANE_Select
+        - appris_principal_1
+        - CCDS
+        transcript_id: ENST00000016913.8
+        transcript_name: MS4A12-201
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000379937.6:17
+        Parent: ENST00000379937.6
+        ccdsid: CCDS55952.1
+        exon_id: ENSE00001883333.1
+        exon_number: '17'
+        gene_id: ENSG00000185024.18
+        gene_name: BRF1
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000029884.9
+        havana_transcript: OTTHUMT00000408726.1
+        hgnc_id: HGNC:11551
+        level: '2'
+        protein_id: ENSP00000369269.2
+        tag:
+        - basic
+        - GENCODE_Primary
+        - CCDS
+        transcript_id: ENST00000379937.6
+        transcript_name: BRF1-202
+        transcript_support_level: '1'
+        transcript_type: protein_coding
+    -   ID: UTR3:ENST00000589807.1
+        Parent: ENST00000589807.1
+        ccdsid: null
+        exon_id: ENSE00003603860.1
+        exon_number: '9'
+        gene_id: ENSG00000267120.3
+        gene_name: ENSG00000267120
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000182065.2
+        havana_transcript: OTTHUMT00000459084.2
+        hgnc_id: null
+        level: '2'
+        protein_id: ENSP00000472696.1
+        tag:
+        - basic
+        - Ensembl_canonical
+        - GENCODE_Primary
+        - appris_principal_1
+        - readthrough_transcript
+        transcript_id: ENST00000589807.1
+        transcript_name: ENST00000589807
+        transcript_support_level: '2'
+        transcript_type: nonsense_mediated_decay
+    -   ID: CDS:ENST00000420138.5
+        Parent: ENST00000420138.5
+        ccdsid: null
+        exon_id: ENSE00003542120.1
+        exon_number: '7'
+        gene_id: ENSG00000063660.9
+        gene_name: GPC1
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000133349.7
+        havana_transcript: OTTHUMT00000325970.2
+        hgnc_id: HGNC:4449
+        level: '2'
+        protein_id: ENSP00000415077.2
+        tag:
+        - basic
+        transcript_id: ENST00000420138.5
+        transcript_name: GPC1-202
+        transcript_support_level: '5'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000626609.2:1
+        Parent: ENST00000626609.2
+        ccdsid: null
+        exon_id: ENSE00001748881.1
+        exon_number: '1'
+        gene_id: ENSG00000293616.2
+        gene_name: PCBP1-AS1
+        gene_type: lncRNA
+        havana_gene: OTTHUMG00000153728.26
+        havana_transcript: OTTHUMT00000480846.2
+        hgnc_id: HGNC:42948
+        level: '2'
+        protein_id: null
+        tag:
+        - nested_454_RNA_Seq_supported
+        transcript_id: ENST00000626609.2
+        transcript_name: PCBP1-AS1-307
+        transcript_support_level: '5'
+        transcript_type: lncRNA
+    -   ID: exon:ENST00000374315.1:4
+        Parent: ENST00000374315.1
+        ccdsid: CCDS41283.1
+        exon_id: ENSE00001508527.1
+        exon_number: '4'
+        gene_id: ENSG00000162430.18
+        gene_name: SELENON
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000007375.5
+        havana_transcript: OTTHUMT00000019315.2
+        hgnc_id: HGNC:15999
+        level: '2'
+        protein_id: ENSP00000363434.1
+        tag:
+        - basic
+        - GENCODE_Primary
+        - appris_principal_1
+        - CCDS
+        - seleno
+        transcript_id: ENST00000374315.1
+        transcript_name: SELENON-203
+        transcript_support_level: '5'
+        transcript_type: protein_coding
+    -   ID: exon:ENST00000376991.6:2
+        Parent: ENST00000376991.6
+        ccdsid: null
+        exon_id: ENSE00001190268.1
+        exon_number: '2'
+        gene_id: ENSG00000175550.8
+        gene_name: DRAP1
+        gene_type: protein_coding
+        havana_gene: OTTHUMG00000166723.5
+        havana_transcript: OTTHUMT00000391203.1
+        hgnc_id: HGNC:3019
+        level: '2'
+        protein_id: ENSP00000366190.2
+        tag:
+        - not_organism_supported
+        - basic
+        - GENCODE_Primary
+        transcript_id: ENST00000376991.6
+        transcript_name: DRAP1-202
+        transcript_support_level: '5'
+        transcript_type: protein_coding
+    end:
+    - 81326030
+    - 32002399
+    - 72930538
+    - 497210
+    - 35655579
+    - 100713643
+    - 240025227
+    - 52019238
+    - 38042948
+    - 535837
+    - 22557545
+    - 43175791
+    - 48338174
+    - 60501045
+    - 105209286
+    - 35740380
+    - 240465077
+    - 70086978
+    - 25808580
+    - 65919780
+    seqid:
+    - chr13
+    - chr6
+    - chr10
+    - chr1
+    - chr13
+    - chr3
+    - chr2
+    - chr15
+    - chr15
+    - chr19
+    - chr22
+    - chr17
+    - chr18
+    - chr11
+    - chr14
+    - chr19
+    - chr2
+    - chr2
+    - chr1
+    - chr11
+    start:
+    - 81326030
+    - 32002399
+    - 72930538
+    - 497210
+    - 35655579
+    - 100713643
+    - 240025227
+    - 52019238
+    - 38042948
+    - 535837
+    - 22557545
+    - 43175791
+    - 48338174
+    - 60501045
+    - 105209286
+    - 35740380
+    - 240465077
+    - 70086978
+    - 25808580
+    - 65919780

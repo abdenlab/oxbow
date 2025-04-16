@@ -1,0 +1,231 @@
+batch_size=1, bed_schema="bed3":
+    chrom:
+    - chr1
+    end:
+    - 1200000
+    start:
+    - 1100001
+batch_size=2, bed_schema="bed3":
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    start:
+    - 1100001
+    - 1550001
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3":
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    start:
+    - 1100001
+    - 1550001
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3+3":
+    BED3+1:
+    - A1
+    - A1
+    BED3+2:
+    - .
+    - .
+    BED3+3:
+    - .
+    - .
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    start:
+    - 1100001
+    - 1550001
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3+6":
+    BED3+1:
+    - A1
+    - A1
+    BED3+2:
+    - .
+    - .
+    BED3+3:
+    - .
+    - .
+    BED3+4:
+    - '1100000'
+    - '1550000'
+    BED3+5:
+    - '1200000'
+    - '1600000'
+    BED3+6:
+    - 226,56,56
+    - 226,56,56
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    start:
+    - 1100001
+    - 1550001
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed6":
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    start:
+    - 1100001
+    - 1550001
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed9":
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    start:
+    - 1100001
+    - 1550001
+batch_size=2, fields=None, bed_schema="bed3":
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    start:
+    - 1100001
+    - 1550001
+batch_size=2, fields=None, bed_schema="bed3+3":
+    BED3+1:
+    - A1
+    - A1
+    BED3+2:
+    - .
+    - .
+    BED3+3:
+    - .
+    - .
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    start:
+    - 1100001
+    - 1550001
+batch_size=2, fields=None, bed_schema="bed3+6":
+    BED3+1:
+    - A1
+    - A1
+    BED3+2:
+    - .
+    - .
+    BED3+3:
+    - .
+    - .
+    BED3+4:
+    - '1100000'
+    - '1550000'
+    BED3+5:
+    - '1200000'
+    - '1600000'
+    BED3+6:
+    - 226,56,56
+    - 226,56,56
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    start:
+    - 1100001
+    - 1550001
+batch_size=2, fields=None, bed_schema="bed6":
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    name:
+    - A1
+    - A1
+    score:
+    - null
+    - null
+    start:
+    - 1100001
+    - 1550001
+    strand:
+    - null
+    - null
+batch_size=2, fields=None, bed_schema="bed9":
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    itemRgb:
+    -   - 226
+        - 56
+        - 56
+    -   - 226
+        - 56
+        - 56
+    name:
+    - A1
+    - A1
+    score:
+    - null
+    - null
+    start:
+    - 1100001
+    - 1550001
+    strand:
+    - null
+    - null
+    thickEnd:
+    - 1200000
+    - 1600000
+    thickStart:
+    - 1100000
+    - 1550000
+batch_size=3, bed_schema="bed3":
+    chrom:
+    - chr1
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    - 2450000
+    start:
+    - 1100001
+    - 1550001
+    - 1900001
+batch_size=4, bed_schema="bed3":
+    chrom:
+    - chr1
+    - chr1
+    - chr1
+    - chr10
+    end:
+    - 1200000
+    - 1600000
+    - 2450000
+    - 250000
+    start:
+    - 1100001
+    - 1550001
+    - 1900001
+    - 50001
