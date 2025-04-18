@@ -13,6 +13,7 @@ Learn more in our recent `blog post <https://open.substack.com/pub/lifeinbytes/p
    :maxdepth: 2
 
    installation
+   quickstart
 
 
 .. toctree::
