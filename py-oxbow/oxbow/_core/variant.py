@@ -35,7 +35,7 @@ class VariantFile(DataFile):
     Base class for variant files.
 
     This class provides common functionality for handling VCF and BCF files.
-    
+
     Functions
     ---------
     from_bcf(uri, opener, fields, index, regions, info_fields, genotype_fields, samples, genotype_by)
@@ -43,6 +43,7 @@ class VariantFile(DataFile):
     from_vcf(uri, opener, fields, index, regions, info_fields, genotype_fields, samples, genotype_by)
         Create a VcfFile instance from a VCF file.
     """
+
     if TYPE_CHECKING:
         from_bcf: BcfFile
         from_vcf: VcfFile
@@ -157,6 +158,7 @@ class BcfFile(VariantFile, file_type=FileType.BCF):
     genotype_by : Literal["sample", "field"], optional
         Determines how genotype data is organized, by default "sample".
     """
+
     if TYPE_CHECKING:
         _scanner: FileType.BCF.value
 
@@ -215,6 +217,7 @@ class VcfFile(VariantFile, file_type=FileType.VCF):
     genotype_by : Literal["sample", "field"], optional
         Determines how genotype data is organized, by default "sample".
     """
+
     if TYPE_CHECKING:
         _scanner: FileType.VCF.value
 

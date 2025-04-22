@@ -43,6 +43,7 @@ class AlignmentFile(DataFile):
     from_sam(uri, opener, fields, index, compressed, regions, tag_defs, tag_scan_rows)
         Create a SamFile instance from a SAM file.
     """
+
     if TYPE_CHECKING:
         _scanner: PyBamScanner | PySamScanner
         from_bam: BamFile
@@ -151,6 +152,7 @@ class BamFile(AlignmentFile, file_type=FileType.BAM):
     **kwargs : Any
         Keyword arguments for the parent class.
     """
+
     if TYPE_CHECKING:
         _scanner: PyBamScanner
 
@@ -174,6 +176,7 @@ class SamFile(AlignmentFile, file_type=FileType.SAM):
     """
     Class for handling SAM files.
     """
+
     if TYPE_CHECKING:
         _scanner: PySamScanner
 

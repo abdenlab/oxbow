@@ -44,6 +44,7 @@ class SequenceFile(DataFile):
     from_fastq(uri, opener, fields, index, gzi, compressed)
         Create a FastqFile instance from a FASTQ file.
     """
+
     if TYPE_CHECKING:
         from_fasta: FastaFile
         from_fastq: FastqFile
@@ -102,6 +103,7 @@ class FastaFile(SequenceFile, file_type=FileType.FASTA):
     regions : list[tuple[int, int]], optional
         Genomic regions to query.
     """
+
     if TYPE_CHECKING:
         _scanner: FileType.FASTA.value
 
@@ -163,6 +165,7 @@ class FastqFile(SequenceFile, file_type=FileType.FASTQ):
     compressed : bool, optional
         Whether the source is compressed, by default False.
     """
+
     if TYPE_CHECKING:
         _scanner: FileType.FASTQ.value
 

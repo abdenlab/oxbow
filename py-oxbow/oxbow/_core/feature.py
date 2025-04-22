@@ -71,6 +71,7 @@ class FeatureFile(DataFile):
     from_gtf(uri, opener, fields, index, compressed, regions, attribute_defs, attribute_scan_rows)
         Create a GtfFile instance.
     """
+
     if TYPE_CHECKING:
         from_bed: BedFile
         from_bigbed: BigBedFile
@@ -90,6 +91,7 @@ class BbiFile(FeatureFile):
     zoom_levels : list[int]
         List of available zoom levels for the file.
     """
+
     if TYPE_CHECKING:
         from_bigbed: BigBedFile
         from_bigwig: BigWigFile
@@ -193,6 +195,7 @@ class BigBedFile(BbiFile, file_type=FileType.BigBed):
     bed_schema : str, optional
         Schema for the BED file format, by default "bed3+".
     """
+
     if TYPE_CHECKING:
         _scanner: FileType.BigBed.value
 
@@ -205,6 +208,7 @@ class BigWigFile(BbiFile, file_type=FileType.BigWig):
     """
     Class for handling BigWig files.
     """
+
     if TYPE_CHECKING:
         _scanner: FileType.BigWig.value
 
@@ -230,6 +234,7 @@ class BedFile(FeatureFile, file_type=FileType.BED):
     compressed : bool, optional
         Whether the source is compressed, by default False.
     """
+
     if TYPE_CHECKING:
         _scanner: FileType.BED.value
 
@@ -294,6 +299,7 @@ class GxfFile(FeatureFile):
     from_gtf(uri, opener, fields, index, compressed, regions, attribute_defs, attribute_scan_rows)
         Create a GtfFile instance.
     """
+
     if TYPE_CHECKING:
         from_gff: GffFile
         from_gtf: GtfFile
@@ -362,6 +368,7 @@ class GffFile(GxfFile, file_type=FileType.GFF):
     """
     Class for handling GFF files.
     """
+
     if TYPE_CHECKING:
         _scanner: FileType.GFF.value
 
@@ -370,6 +377,7 @@ class GtfFile(GxfFile, file_type=FileType.GTF):
     """
     Class for handling GTF files.
     """
+
     if TYPE_CHECKING:
         _scanner: FileType.GTF.value
 
