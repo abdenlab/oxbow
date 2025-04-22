@@ -9,19 +9,19 @@
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
-        <-  builtins.PyVcfScanner.<object>
+        <-  oxbow.PyVcfScanner.<object>
         ->  oxbow._core.base.DataFile._scanner
             ->  oxbow._core.base.DataFile._source
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
-        <-  builtins.PyVcfScanner.<object>
+        <-  oxbow.PyVcfScanner.<object>
         ->  oxbow._core.base.DataFile._scanner
             ->  oxbow._core.base.DataFile._source
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
-        <-  builtins.PyVcfScanner.<object>
+        <-  oxbow.PyVcfScanner.<object>
     <-  None
     ->  oxbow._core.base.DataFile.batches(batch_size=3)
     <-  DataFile.batches.<generator>

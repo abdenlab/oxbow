@@ -8,7 +8,7 @@ FastaFile("data/sample.fasta", fields=('name', 'sequence')).fragments(batch_size
         <-  'data/sample.fasta'
         ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
         <-  {'compressed': 'False'}
-    <-  builtins.PyFastaScanner.<object>
+    <-  oxbow.PyFastaScanner.<object>
     ->  oxbow._core.sequence.FastaFile._batch_readers.<generator>
         ->  oxbow._core.base.DataFile.schema
             ->  oxbow._core.base.DataFile._scanner
@@ -16,7 +16,7 @@ FastaFile("data/sample.fasta", fields=('name', 'sequence')).fragments(batch_size
                 <-  'data/sample.fasta'
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                 <-  {'compressed': 'False'}
-            <-  builtins.PyFastaScanner.<object>
+            <-  oxbow.PyFastaScanner.<object>
             ->  oxbow._core.sequence.SequenceFile._schema_kwargs
             <-  {'fields': ("'name'", "'sequence'")}
         <-  name: string

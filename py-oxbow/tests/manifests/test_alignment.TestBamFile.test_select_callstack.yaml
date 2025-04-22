@@ -21,7 +21,7 @@ BamFile(data/sample.bam).select(): |-
                     <-  'data/sample.bam'
                     ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                     <-  {'compressed': 'True'}
-                <-  builtins.PyBamScanner.<object>
+                <-  oxbow.PyBamScanner.<object>
                 ->  oxbow._core.alignment.AlignmentFile._scan_kwargs
                 <-  {'fields': 'None', 'tag_defs': [("'XX'", "'BS'")]}
                 ->  oxbow._core.alignment.AlignmentFile._batch_readers.<generator>
@@ -31,7 +31,7 @@ BamFile(data/sample.bam).select(): |-
                             <-  'data/sample.bam'
                             ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                             <-  {'compressed': 'True'}
-                        <-  builtins.PyBamScanner.<object>
+                        <-  oxbow.PyBamScanner.<object>
                         ->  oxbow._core.alignment.AlignmentFile._schema_kwargs
                         <-  {'fields': 'None', 'tag_defs': [("'XX'", "'BS'")]}
                     <-  qname: string
@@ -50,6 +50,6 @@ BamFile(data/sample.bam).select(): |-
                           child 0, XX: list<item: uint16>
                               child 0, item: uint16
                 <-  oxbow._core.alignment.AlignmentFile._batch_readers.<locals>.<lambda>
-            <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
-        <-  oxbow._pyarrow.BatchReaderDataset.<object>
-    <-  oxbow._pyarrow.BatchReaderDataset.<object>
+            <-  ['oxbow.BatchReaderFragment.<object>']
+        <-  oxbow.BatchReaderDataset.<object>
+    <-  oxbow.BatchReaderDataset.<object>
