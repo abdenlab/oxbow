@@ -5,7 +5,7 @@ from oxbow._core.alignment import (
     from_bam as from_bam,
     from_sam as from_sam,
 )
-from oxbow._core.function import (
+from oxbow._core.feature import (
     from_bed as from_bed,
     from_bigbed as from_bigbed,
     from_bigwig as from_bigwig,

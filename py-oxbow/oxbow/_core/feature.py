@@ -1,3 +1,39 @@
+"""
+This module defines classes for working with genomic feature files, including BED, BigBed, BigWig, GFF, and GTF formats.
+
+Classes
+-------
+FeatureFile
+    Base class for genomic feature files.
+BbiFile
+    Base class for BigBed and BigWig files.
+BigBedFile
+    Class for handling BigBed files.
+BigWigFile
+    Class for handling BigWig files.
+BedFile
+    Class for handling BED files.
+GxfFile
+    Base class for GFF and GTF files.
+GffFile
+    Class for handling GFF files.
+GtfFile
+    Class for handling GTF files.
+
+Functions
+---------
+from_bed(uri, opener, fields, index, regions, bed_schema, compressed)
+    Create a BedFile instance.
+from_bigbed(uri, opener, fields, regions, resolution, bed_schema)
+    Create a BigBedFile instance.
+from_bigwig(uri, opener, fields, regions, resolution)
+    Create a BigWigFile instance.
+from_gff(uri, opener, fields, index, compressed, regions, attribute_defs, attribute_scan_rows)
+    Create a GffFile instance.
+from_gtf(uri, opener, fields, index, compressed, regions, attribute_defs, attribute_scan_rows)
+    Create a GtfFile instance.
+"""
+
 from __future__ import annotations
 
 from functools import partial
@@ -16,7 +52,25 @@ from oxbow.oxbow import (
 )
 
 
-class FunctionFile(DataFile):
+class FeatureFile(DataFile):
+    """
+    Base class for genomic feature files.
+
+    This class provides common functionality for handling various genomic file formats.
+
+    Functions
+    ---------
+    from_bed(uri, opener, fields, index, regions, bed_schema, compressed)
+        Create a BedFile instance.
+    from_bigbed(uri, opener, fields, regions, resolution, bed_schema)
+        Create a BigBedFile instance.
+    from_bigwig(uri, opener, fields, regions, resolution)
+        Create a BigWigFile instance.
+    from_gff(uri, opener, fields, index, compressed, regions, attribute_defs, attribute_scan_rows)
+        Create a GffFile instance.
+    from_gtf(uri, opener, fields, index, compressed, regions, attribute_defs, attribute_scan_rows)
+        Create a GtfFile instance.
+    """
     if TYPE_CHECKING:
         from_bed: BedFile
         from_bigbed: BigBedFile
@@ -25,7 +79,17 @@ class FunctionFile(DataFile):
         from_gtf: GtfFile
 
 
-class BbiFile(FunctionFile):
+class BbiFile(FeatureFile):
+    """
+    Base class for BigBed and BigWig files.
+
+    This class provides functionality for handling BigBed and BigWig files, including zoom levels and region-based queries.
+
+    Attributes
+    ----------
+    zoom_levels : list[int]
+        List of available zoom levels for the file.
+    """
     if TYPE_CHECKING:
         from_bigbed: BigBedFile
         from_bigwig: BigWigFile
@@ -121,6 +185,14 @@ class BbiFile(FunctionFile):
 
 
 class BigBedFile(BbiFile, file_type=FileType.BigBed):
+    """
+    Class for handling BigBed files.
+
+    Parameters
+    ----------
+    bed_schema : str, optional
+        Schema for the BED file format, by default "bed3+".
+    """
     if TYPE_CHECKING:
         _scanner: FileType.BigBed.value
 
@@ -130,11 +202,34 @@ class BigBedFile(BbiFile, file_type=FileType.BigBed):
 
 
 class BigWigFile(BbiFile, file_type=FileType.BigWig):
+    """
+    Class for handling BigWig files.
+    """
     if TYPE_CHECKING:
         _scanner: FileType.BigWig.value
 
 
-class BedFile(FunctionFile, file_type=FileType.BED):
+class BedFile(FeatureFile, file_type=FileType.BED):
+    """
+    Class for handling BED files.
+
+    Parameters
+    ----------
+    uri : str
+        The URI of the BED file.
+    opener : Callable, optional
+        A callable to open the file.
+    fields : list[str], optional
+        Names of the fields to project.
+    index : str, optional
+        Path to the index file.
+    regions : list[str], optional
+        Genomic regions to query.
+    bed_schema : str, optional
+        Schema for the BED file format, by default "bed3".
+    compressed : bool, optional
+        Whether the source is compressed, by default False.
+    """
     if TYPE_CHECKING:
         _scanner: FileType.BED.value
 
@@ -188,7 +283,17 @@ class BedFile(FunctionFile, file_type=FileType.BED):
         super().__init__(uri, opener, fields)
 
 
-class GxfFile(FunctionFile):
+class GxfFile(FeatureFile):
+    """
+    Base class for GFF and GTF files.
+
+    Functions
+    ----------
+    from_gff(uri, opener, fields, index, compressed, regions, attribute_defs, attribute_scan_rows)
+        Create a GffFile instance.
+    from_gtf(uri, opener, fields, index, compressed, regions, attribute_defs, attribute_scan_rows)
+        Create a GtfFile instance.
+    """
     if TYPE_CHECKING:
         from_gff: GffFile
         from_gtf: GtfFile
@@ -254,11 +359,17 @@ class GxfFile(FunctionFile):
 
 
 class GffFile(GxfFile, file_type=FileType.GFF):
+    """
+    Class for handling GFF files.
+    """
     if TYPE_CHECKING:
         _scanner: FileType.GFF.value
 
 
 class GtfFile(GxfFile, file_type=FileType.GTF):
+    """
+    Class for handling GTF files.
+    """
     if TYPE_CHECKING:
         _scanner: FileType.GTF.value
 
@@ -277,20 +388,20 @@ def from_bed(
 
     Parameters
     ----------
-    uri
+    uri : str
         The URI of the BED file.
-    opener
+    opener : Callable, optional
         A callable to open the file.
-    fields
+    fields : list[str], optional
         Names of the fields to project.
-    index
+    index : str, optional
         Path to the index file.
-    regions
+    regions : list[str], optional
         Genomic regions to query.
-    bed_schema
-        Schema for the BED file format.
-    compressed
-        Whether the source is compressed.
+    bed_schema : str, optional
+        Schema for the BED file format, by default "bed3".
+    compressed : bool, optional
+        Whether the source is compressed, by default False.
 
     Returns
     -------
@@ -321,18 +432,18 @@ def from_bigbed(
 
     Parameters
     ----------
-    uri
+    uri : str
         The URI of the BigBed file.
-    opener
+    opener : Callable, optional
         A callable to open the file.
-    fields
+    fields : list[str], optional
         Names of the fields to project.
-    regions
+    regions : list[str], optional
         Genomic regions to query.
-    resolution
+    resolution : int, optional
         Resolution level for zoomed data.
-    bed_schema
-        Schema for the BED file format.
+    bed_schema : str, optional
+        Schema for the BED file format, by default "bed3+".
 
     Returns
     -------
@@ -361,15 +472,15 @@ def from_bigwig(
 
     Parameters
     ----------
-    uri
+    uri : str
         The URI of the BigWig file.
-    opener
+    opener : Callable, optional
         A callable to open the file.
-    fields
+    fields : list[str], optional
         Names of the fields to project.
-    regions
+    regions : list[str], optional
         Genomic regions to query.
-    resolution
+    resolution : int, optional
         Resolution level for zoomed data.
 
     Returns
@@ -401,22 +512,22 @@ def from_gff(
 
     Parameters
     ----------
-    uri
+    uri : str
         The URI of the GFF file.
-    opener
+    opener : Callable, optional
         A callable to open the file.
-    fields
+    fields : list[str], optional
         Names of the fields to project.
-    index
+    index : str, optional
         Path to the index file.
-    compressed
-        Whether the source is compressed.
-    regions
+    compressed : bool, optional
+        Whether the source is compressed, by default False.
+    regions : list[str], optional
         Genomic regions to query.
-    attribute_defs
+    attribute_defs : dict, optional
         Attribute definitions for the file.
-    attribute_scan_rows
-        Number of rows to scan for attribute definitions.
+    attribute_scan_rows : int, optional
+        Number of rows to scan for attribute definitions, by default 1024.
 
     Returns
     -------
@@ -450,22 +561,22 @@ def from_gtf(
 
     Parameters
     ----------
-    uri
+    uri : str
         The URI of the GTF file.
-    opener
+    opener : Callable, optional
         A callable to open the file.
-    fields
+    fields : list[str], optional
         Names of the fields to project.
-    index
+    index : str, optional
         Path to the index file.
-    compressed
-        Whether the source is compressed.
-    regions
+    compressed : bool, optional
+        Whether the source is compressed, by default False.
+    regions : list[str], optional
         Genomic regions to query.
-    attribute_defs
+    attribute_defs : dict, optional
         Attribute definitions for the file.
-    attribute_scan_rows
-        Number of rows to scan for attribute definitions.
+    attribute_scan_rows : int, optional
+        Number of rows to scan for attribute definitions, by default 1024.
 
     Returns
     -------

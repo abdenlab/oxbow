@@ -1,3 +1,23 @@
+"""
+This module defines classes and functions for working with alignment files, including BAM and SAM formats.
+
+Classes
+-------
+AlignmentFile
+    Base class for alignment files.
+BamFile
+    Class for handling BAM files.
+SamFile
+    Class for handling SAM files.
+
+Functions
+---------
+from_bam(uri, opener, fields, index, compressed, regions, tag_defs, tag_scan_rows)
+    Create a BamFile instance from a BAM file.
+from_sam(uri, opener, fields, index, compressed, regions, tag_defs, tag_scan_rows)
+    Create a SamFile instance from a SAM file.
+"""
+
 from __future__ import annotations
 
 from functools import partial
@@ -11,6 +31,18 @@ from oxbow.oxbow import PyBamScanner, PySamScanner
 
 
 class AlignmentFile(DataFile):
+    """
+    Base class for alignment files.
+
+    This class provides common functionality for handling BAM and SAM files.
+
+    Functions
+    ---------
+    from_bam(uri, opener, fields, index, compressed, regions, tag_defs, tag_scan_rows)
+        Create a BamFile instance from a BAM file.
+    from_sam(uri, opener, fields, index, compressed, regions, tag_defs, tag_scan_rows)
+        Create a SamFile instance from a SAM file.
+    """
     if TYPE_CHECKING:
         _scanner: PyBamScanner | PySamScanner
         from_bam: BamFile
@@ -77,21 +109,21 @@ class AlignmentFile(DataFile):
 
         Parameters
         ----------
-        uri
+        uri : str
             The URI or path to the alignment file.
-        opener
+        opener : Callable, optional
             A callable to open the file, by default None.
-        fields
+        fields : list[str], optional
             Specific fields to extract from the file, by default None.
-        index
+        index : Any, optional
             Index for the file, by default None.
-        compressed
+        compressed : bool, optional
             Whether the file is compressed, by default False.
-        regions
+        regions : str | list[str], optional
             Specific regions to extract from the file, by default None.
-        tag_defs
+        tag_defs : Any, optional
             Definitions for custom tags, by default None.
-        tag_scan_rows
+        tag_scan_rows : int, optional
             Number of rows to scan for tags, by default 1024.
         """
         super().__init__(uri, opener, fields)
@@ -107,6 +139,18 @@ class AlignmentFile(DataFile):
 
 
 class BamFile(AlignmentFile, file_type=FileType.BAM):
+    """
+    Class for handling BAM files.
+
+    Parameters
+    ----------
+    *args : Any
+        Positional arguments for the parent class.
+    compressed : bool, optional
+        Whether the BAM file is compressed, by default True.
+    **kwargs : Any
+        Keyword arguments for the parent class.
+    """
     if TYPE_CHECKING:
         _scanner: PyBamScanner
 
@@ -116,17 +160,20 @@ class BamFile(AlignmentFile, file_type=FileType.BAM):
 
         Parameters
         ----------
-        *args
+        *args : Any
             Positional arguments for the parent class.
-        compressed
+        compressed : bool, optional
             Whether the BAM file is compressed, by default True.
-        **kwargs
+        **kwargs : Any
             Keyword arguments for the parent class.
         """
         super().__init__(*args, compressed=compressed, **kwargs)
 
 
 class SamFile(AlignmentFile, file_type=FileType.SAM):
+    """
+    Class for handling SAM files.
+    """
     if TYPE_CHECKING:
         _scanner: PySamScanner
 
@@ -146,21 +193,21 @@ def from_bam(
 
     Parameters
     ----------
-    uri
+    uri : str
         The URI or path to the BAM file.
-    opener
+    opener : Callable, optional
         A callable to open the file, by default None.
-    fields
+    fields : list[str], optional
         Specific fields to extract from the BAM file, by default None.
-    index
+    index : str, optional
         Index for the BAM file, by default None.
-    compressed
+    compressed : bool, optional
         Whether the BAM file is compressed, by default True.
-    regions
+    regions : str | list[str], optional
         Specific regions to extract from the BAM file, by default None.
-    tag_defs
+    tag_defs : Any, optional
         Definitions for custom tags, by default None.
-    tag_scan_rows
+    tag_scan_rows : int, optional
         Number of rows to scan for tags, by default 1024.
 
     Returns
@@ -199,21 +246,21 @@ def from_sam(
 
     Parameters
     ----------
-    uri
+    uri : str
         The URI or path to the SAM file.
-    opener
+    opener : Callable, optional
         A callable to open the file, by default None.
-    fields
+    fields : list[str], optional
         Specific fields to extract from the SAM file, by default None.
-    index
+    index : Any, optional
         Index for the SAM file, by default None.
-    compressed
+    compressed : bool, optional
         Whether the SAM file is compressed, by default False.
-    regions
+    regions : str | list[str], optional
         Specific regions to extract from the SAM file, by default None.
-    tag_defs
+    tag_defs : Any, optional
         Definitions for custom tags, by default None.
-    tag_scan_rows
+    tag_scan_rows : int, optional
         Number of rows to scan for tags, by default 1024.
 
     Returns
