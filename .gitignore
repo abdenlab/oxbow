@@ -61,6 +61,7 @@ coverage.xml
 
 # Sphinx documentation
 py-oxbow/docs/_build/
+py-oxbow/docs/generated/
 
 # PyCharm
 .idea/
