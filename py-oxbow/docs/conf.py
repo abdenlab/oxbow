@@ -28,7 +28,6 @@ author = "Oxbow Developers"
 # ones.
 extensions = [
     "myst_parser",
-    "numpydoc",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.mathjax",
@@ -57,6 +56,14 @@ exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store", 
 # a list of builtin themes.
 #
 html_theme = "sphinx_book_theme"
+html_theme_options = {
+    "logo": {
+        "image_light": "_static/oxbow-logo-wide-black.svg",
+        "image_dark": "_static/oxbow-logo-wide-white.svg",
+    },
+    "repository_url": "https://github.com/abdenlab/oxbow",
+    "use_repository_button": True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

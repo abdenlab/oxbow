@@ -24,13 +24,15 @@ Learn more in our recent `blog post <https://open.substack.com/pub/lifeinbytes/p
 
       Examples of how to use the library's features.
 
-   .. grid-item-card:: API reference (Python)
+   .. grid-item-card:: API Reference (Python)
       :link: generated/oxbow
       :link-type: doc
 
       API reference for the Python interface.
 
-   .. grid-item-card:: API reference (Rust)
+   .. grid-item-card:: API Reference (Rust)
+      :link: https://docs.rs/oxbow/latest/oxbow/
+      :link-type: url
 
       API reference for the Rust interface.
 
@@ -53,3 +55,9 @@ Learn more in our recent `blog post <https://open.substack.com/pub/lifeinbytes/p
    :titlesonly:
 
    API reference (Python)<generated/oxbow>
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   API reference (Rust)<https://docs.rs/oxbow/latest/oxbow/>
