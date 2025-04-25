@@ -464,3 +464,25 @@ class TestGtfFile:
             actual = str(e)
 
         assert manifest[f"fields={fields}, batch_size={batch_size}"] == actual
+
+    @pytest.mark.parametrize(
+        ("fields", "batch_size"),
+        [
+            (None, 1),
+            (None, 3),
+            (("seqid", "start", "end"), 3),
+            (("nonexistent-field",), 3),
+        ],
+    )
+    def test_select(self, fields, batch_size, manifest: Manifest):
+        try:
+            batches = (
+                ox.GtfFile("data/sample.gtf", fields=fields)
+                .select()
+                .to_batches(batch_size=batch_size)
+            )
+            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
+        except OSError as e:
+            actual = str(e)
+
+        assert manifest[f"fields={fields}, batch_size={batch_size}"] == actual

@@ -245,12 +245,12 @@ class GxfFile(FunctionFile):
     ):
         self._index = index
         self._regions = regions
-        self.__schema_kwargs = dict(fields=fields)
         self.__scanner_kwargs = dict(compressed=compressed)
         super().__init__(uri, opener, fields)
         if attribute_defs is None:
             attribute_defs = self._scanner.attribute_defs(attribute_scan_rows)
         self.__scan_kwargs = dict(attribute_defs=attribute_defs, fields=fields)
+        self.__schema_kwargs = dict(fields=fields, attribute_defs=attribute_defs)
 
 
 class GffFile(GxfFile, file_type=FileType.GFF):
