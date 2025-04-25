@@ -632,3 +632,15 @@ class TestPyGtfScanner:
             result = str(e)
             pass
         assert manifest[str(input)] == result
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(),
+            Input(fields=("seqid", "start", "end")),
+        ],
+    )
+    def test_schema(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyGtfScanner("data/sample.gtf")
+        schema = scanner.schema(**input.kwargs)
+        assert manifest[f"schema({str(input)})"] == schema.names
