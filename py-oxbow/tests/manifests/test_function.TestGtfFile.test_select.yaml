@@ -1,3 +1,4 @@
+fields=('nonexistent-field',), batch_size=3: 'Invalid field name: nonexistent-field'
 fields=('seqid', 'start', 'end'), batch_size=3:
     batch-00:
         attributes:
