@@ -46,45 +46,67 @@ from oxbow._pyarrow import (
 __all__ = [
     "AlignmentFile",
     "BamFile",
-    "SamFile",
-    "from_bam",
-    "from_sam",
+    "BatchReaderDataset",
+    "BatchReaderFragment",
+    "BcfFile",
+    "BedFile",
+    "BigBedFile",
+    "BigWigFile",
+    "FileType",
     "FastaFile",
     "FastqFile",
-    "from_fasta",
-    "from_fastq",
-    "BcfFile",
-    "from_bcf",
-    "VcfFile",
-    "from_vcf",
+    "GffFile",
+    "GtfFile",
     "PyBamScanner",
     "PyBcfScanner",
     "PyFastaScanner",
     "PyFastqScanner",
     "PySamScanner",
     "PyVcfScanner",
-    "BatchReaderDataset",
-    "BatchReaderFragment",
+    "SamFile",
+    "VcfFile",
+    "from_bam",
+    "from_bcf",
+    "from_bed",
+    "from_bigbed",
+    "from_bigwig",
+    "from_fasta",
+    "from_fastq",
+    "from_gff",
+    "from_gtf",
+    "from_sam",
+    "from_vcf",
 ]
 
 AlignmentFile.__module__ = __name__
 BamFile.__module__ = __name__
-SamFile.__module__ = __name__
+BatchReaderDataset.__module__ = __name__
+BatchReaderFragment.__module__ = __name__
+BcfFile.__module__ = __name__
+BedFile.__module__ = __name__
+BigBedFile.__module__ = __name__
+BigWigFile.__module__ = __name__
 FastaFile.__module__ = __name__
 FastqFile.__module__ = __name__
-BcfFile.__module__ = __name__
-VcfFile.__module__ = __name__
-from_bam.__module__ = __name__
-from_sam.__module__ = __name__
-from_fasta.__module__ = __name__
-from_fastq.__module__ = __name__
-from_bcf.__module__ = __name__
-from_vcf.__module__ = __name__
+FileType.__module__ = __name__
+GffFile.__module__ = __name__
+GtfFile.__module__ = __name__
 PyBamScanner.__module__ = __name__
 PyBcfScanner.__module__ = __name__
 PyFastaScanner.__module__ = __name__
 PyFastqScanner.__module__ = __name__
 PySamScanner.__module__ = __name__
 PyVcfScanner.__module__ = __name__
-BatchReaderDataset.__module__ = __name__
-BatchReaderFragment.__module__ = __name__
+SamFile.__module__ = __name__
+VcfFile.__module__ = __name__
+from_bam.__module__ = __name__
+from_bcf.__module__ = __name__
+from_bed.__module__ = __name__
+from_bigbed.__module__ = __name__
+from_bigwig.__module__ = __name__
+from_fasta.__module__ = __name__
+from_fastq.__module__ = __name__
+from_gff.__module__ = __name__
+from_gtf.__module__ = __name__
+from_sam.__module__ = __name__
+from_vcf.__module__ = __name__
