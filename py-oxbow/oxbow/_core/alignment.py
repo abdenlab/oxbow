@@ -102,7 +102,7 @@ class AlignmentFile(DataFile):
         index: Any = None,
         compressed: bool = False,
         regions: str | list[str] | None = None,
-        tag_defs: Any = None,
+        tag_defs: list[tuple[str, str]] | None = None,
         tag_scan_rows: int = 1024,
     ) -> None:
         """
@@ -123,9 +123,11 @@ class AlignmentFile(DataFile):
         regions : str | list[str], optional
             Specific regions to extract from the file, by default None.
         tag_defs : Any, optional
-            Definitions for custom tags, by default None.
+            Definitions for custom tags. If None, the scanner will scan the
+            first `tag_scan_rows` rows to find tag definitions.
         tag_scan_rows : int, optional
-            Number of rows to scan for tags, by default 1024.
+            Number of rows to scan for tag definitions, if tag_defs is None.
+            By default 1024.
         """
         super().__init__(uri, opener, fields)
         self._index = index
@@ -133,7 +135,7 @@ class AlignmentFile(DataFile):
             regions = [regions]
         self._regions = regions
         self.__scanner_kwargs = dict(compressed=compressed)
-        if not tag_defs:
+        if tag_defs is None:
             tag_defs = self._scanner.tag_defs(tag_scan_rows)
         self.__scan_kwargs = dict(fields=fields, tag_defs=tag_defs)
         self.__schema_kwargs = dict(fields=fields, tag_defs=tag_defs)
