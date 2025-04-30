@@ -67,7 +67,7 @@ class TestBcfFile:
                     ]
                 ) == "\n".join([c.serialize() for c in stack])
 
-    def test_batches_callstack(self, wiretap, manifest: Manifest, mocker):
+    def test_batches_callstack(self, wiretap, manifest: Manifest):
         batch_size = 3
         input = Input(
             "data/sample.bcf",
@@ -186,7 +186,7 @@ class TestVcfFile:
                     ]
                 ) == "\n".join([c.serialize() for c in stack])
 
-    def test_batches_callstack(self, wiretap, manifest: Manifest, mocker):
+    def test_batches_callstack(self, wiretap, manifest: Manifest):
         batch_size = 3
         input = Input(
             "data/sample.vcf",

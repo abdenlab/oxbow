@@ -9,12 +9,6 @@ SamFile(data/sample.sam).select(): |-
         ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.sam", None, fields=None, tag_defs=[], compressed=False)
             ->  oxbow._core.base.DataFile.__init__("data/sample.sam", None, None)
             <-  None
-            ->  oxbow._core.base.DataFile._scanner
-                ->  oxbow._core.base.DataFile._source
-                <-  'data/sample.sam'
-                ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
-                <-  {'compressed': 'False'}
-            <-  oxbow.PySamScanner.<object>
         <-  None
         ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
             ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
