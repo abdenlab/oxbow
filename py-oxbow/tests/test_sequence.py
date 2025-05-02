@@ -1,7 +1,7 @@
 import pytest
 from pytest_manifest import Manifest
 
-import oxbow as ox
+import oxbow.core as ox
 
 from tests.utils import Input
 

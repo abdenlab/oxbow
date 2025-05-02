@@ -29,17 +29,17 @@ VcfFile("data/sample.vcf"): |-
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
-        <-  oxbow.PyVcfScanner.<object>
+        <-  oxbow.core.PyVcfScanner.<object>
         ->  oxbow._core.base.DataFile._scanner
             ->  oxbow._core.base.DataFile._source
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
-        <-  oxbow.PyVcfScanner.<object>
+        <-  oxbow.core.PyVcfScanner.<object>
         ->  oxbow._core.base.DataFile._scanner
             ->  oxbow._core.base.DataFile._source
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
-        <-  oxbow.PyVcfScanner.<object>
+        <-  oxbow.core.PyVcfScanner.<object>
     <-  None

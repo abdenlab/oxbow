@@ -93,6 +93,6 @@ BigWigFile("data/sample.bw").select(): |-
                         end: uint32
                         value: float
                 <-  oxbow._core.feature.BbiFile._batch_readers.<locals>.<lambda>
-            <-  ['oxbow.BatchReaderFragment.<object>']
-        <-  oxbow.BatchReaderDataset.<object>
-    <-  oxbow.BatchReaderDataset.<object>
+            <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
+        <-  oxbow._pyarrow.BatchReaderDataset.<object>
+    <-  oxbow._pyarrow.BatchReaderDataset.<object>

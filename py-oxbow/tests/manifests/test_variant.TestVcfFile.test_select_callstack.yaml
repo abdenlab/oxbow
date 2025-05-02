@@ -35,19 +35,19 @@
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
-        <-  oxbow.PyVcfScanner.<object>
+        <-  oxbow.core.PyVcfScanner.<object>
         ->  oxbow._core.base.DataFile._scanner
             ->  oxbow._core.base.DataFile._source
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
-        <-  oxbow.PyVcfScanner.<object>
+        <-  oxbow.core.PyVcfScanner.<object>
         ->  oxbow._core.base.DataFile._scanner
             ->  oxbow._core.base.DataFile._source
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
-        <-  oxbow.PyVcfScanner.<object>
+        <-  oxbow.core.PyVcfScanner.<object>
     <-  None
     ->  oxbow._core.base.DataFile.select()
         ->  oxbow._core.variant.VariantFile._scan_kwargs
@@ -64,19 +64,19 @@
                 <-  'data/sample.vcf'
                 ->  oxbow._core.variant.VariantFile._scanner_kwargs
                 <-  {'compressed': 'False'}
-            <-  oxbow.PyVcfScanner.<object>
+            <-  oxbow.core.PyVcfScanner.<object>
             ->  oxbow._core.base.DataFile._scanner
                 ->  oxbow._core.base.DataFile._source
                 <-  'data/sample.vcf'
                 ->  oxbow._core.variant.VariantFile._scanner_kwargs
                 <-  {'compressed': 'False'}
-            <-  oxbow.PyVcfScanner.<object>
+            <-  oxbow.core.PyVcfScanner.<object>
             ->  oxbow._core.base.DataFile._scanner
                 ->  oxbow._core.base.DataFile._source
                 <-  'data/sample.vcf'
                 ->  oxbow._core.variant.VariantFile._scanner_kwargs
                 <-  {'compressed': 'False'}
-            <-  oxbow.PyVcfScanner.<object>
+            <-  oxbow.core.PyVcfScanner.<object>
         <-  None
         ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
             ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
@@ -87,7 +87,7 @@
                     <-  'data/sample.vcf'
                     ->  oxbow._core.variant.VariantFile._scanner_kwargs
                     <-  {'compressed': 'False'}
-                <-  oxbow.PyVcfScanner.<object>
+                <-  oxbow.core.PyVcfScanner.<object>
                 ->  oxbow._core.variant.VariantFile._scan_kwargs
                 <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
                 ->  oxbow._core.variant.VariantFile._batch_readers.<generator>
@@ -97,7 +97,7 @@
                             <-  'data/sample.vcf'
                             ->  oxbow._core.variant.VariantFile._scanner_kwargs
                             <-  {'compressed': 'False'}
-                        <-  oxbow.PyVcfScanner.<object>
+                        <-  oxbow.core.PyVcfScanner.<object>
                         ->  oxbow._core.variant.VariantFile._schema_kwargs
                         <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
                     <-  chrom: dictionary<values=string, indices=int32, ordered=0>
@@ -131,6 +131,6 @@
                               child 1, phased: list<item: bool>
                                   child 0, item: bool
                 <-  oxbow._core.variant.VariantFile._batch_readers.<locals>.<lambda>
-            <-  ['oxbow.BatchReaderFragment.<object>']
-        <-  oxbow.BatchReaderDataset.<object>
-    <-  oxbow.BatchReaderDataset.<object>
+            <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
+        <-  oxbow._pyarrow.BatchReaderDataset.<object>
+    <-  oxbow._pyarrow.BatchReaderDataset.<object>

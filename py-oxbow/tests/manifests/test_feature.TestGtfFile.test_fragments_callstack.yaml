@@ -41,4 +41,4 @@ GtfFile("data/sample.gtf", fields=('seqid', 'start', 'end')).batches(batch_size=
                   child 14, transcript_support_level: string
                   child 15, transcript_type: string
         <-  oxbow._core.feature.GxfFile._batch_readers.<locals>.<lambda>
-    <-  ['oxbow.BatchReaderFragment.<object>']
+    <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
