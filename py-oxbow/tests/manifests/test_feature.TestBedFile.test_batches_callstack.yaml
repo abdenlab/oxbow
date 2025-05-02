@@ -1,23 +1,23 @@
 BedFile("data/sample.bed", fields=('chrom', 'start', 'end')).batches(batch_size=5): |-
     ->  oxbow._core.base.DataFile.batches(batch_size=5)
     <-  DataFile.batches.<generator>
-    ->  oxbow._core.function.BedFile._batch_readers
+    ->  oxbow._core.feature.BedFile._batch_readers
     <-  BedFile._batch_readers.<generator>
     ->  oxbow._core.base.DataFile._scanner
         ->  oxbow._core.base.DataFile._source
         <-  'data/sample.bed'
-        ->  oxbow._core.function.BedFile._scanner_kwargs
+        ->  oxbow._core.feature.BedFile._scanner_kwargs
         <-  {'bed_schema': "'bed3'", 'compressed': 'False'}
     <-  builtins.PyBedScanner.<object>
-    ->  oxbow._core.function.BedFile._batch_readers.<generator>
+    ->  oxbow._core.feature.BedFile._batch_readers.<generator>
         ->  oxbow._core.base.DataFile.schema
             ->  oxbow._core.base.DataFile._scanner
                 ->  oxbow._core.base.DataFile._source
                 <-  'data/sample.bed'
-                ->  oxbow._core.function.BedFile._scanner_kwargs
+                ->  oxbow._core.feature.BedFile._scanner_kwargs
                 <-  {'bed_schema': "'bed3'", 'compressed': 'False'}
             <-  builtins.PyBedScanner.<object>
-            ->  oxbow._core.function.BedFile._schema_kwargs
+            ->  oxbow._core.feature.BedFile._schema_kwargs
             <-  {'fields': ("'chrom'", "'start'", "'end'")}
         <-  chrom: string
             start: int64
@@ -148,4 +148,4 @@ BedFile("data/sample.bed", fields=('chrom', 'start', 'end')).batches(batch_size=
             chrom: ["chr9"]
             start: [500001]
             end: [750000]
-    <-  oxbow._core.function.BedFile._batch_readers.<locals>.<lambda>
+    <-  oxbow._core.feature.BedFile._batch_readers.<locals>.<lambda>

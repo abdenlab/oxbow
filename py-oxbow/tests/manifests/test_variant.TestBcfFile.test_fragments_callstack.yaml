@@ -7,7 +7,7 @@ BcfFile("data/sample.bcf", samples=('HG00096', 'HG00101', 'HG00103')).fragments(
             <-  'data/sample.bcf'
             ->  oxbow._core.variant.BcfFile._scanner_kwargs
             <-  {}
-        <-  builtins.PyBcfScanner.<object>
+        <-  oxbow.PyBcfScanner.<object>
         ->  oxbow._core.variant.VariantFile._scan_kwargs
         <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'", "'CN'", "'CNL'", "'CNP'", "'CNQ'", "'GP'", "'GQ'", "'FT'", "'PL'"], 'info_fields': ["'DP'", "'END'", "'SVTYPE'", "'AA'", "'AC'", "'AF'", "'NS'", "'AN'", "'SAS_AF'", "'EUR_AF'", '<', '3', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
         ->  oxbow._core.variant.VariantFile._batch_readers.<generator>
@@ -17,7 +17,7 @@ BcfFile("data/sample.bcf", samples=('HG00096', 'HG00101', 'HG00103')).fragments(
                     <-  'data/sample.bcf'
                     ->  oxbow._core.variant.BcfFile._scanner_kwargs
                     <-  {}
-                <-  builtins.PyBcfScanner.<object>
+                <-  oxbow.PyBcfScanner.<object>
                 ->  oxbow._core.variant.VariantFile._schema_kwargs
                 <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'", "'CN'", "'CNL'", "'CNP'", "'CNQ'", "'GP'", "'GQ'", "'FT'", "'PL'"], 'info_fields': ["'DP'", "'END'", "'SVTYPE'", "'AA'", "'AC'", "'AF'", "'NS'", "'AN'", "'SAS_AF'", "'EUR_AF'", '<', '3', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
             <-  chrom: dictionary<values=string, indices=int32, ordered=0>
@@ -106,4 +106,4 @@ BcfFile("data/sample.bcf", samples=('HG00096', 'HG00101', 'HG00103')).fragments(
                   child 8, PL: list<item: int32>
                       child 0, item: int32
         <-  oxbow._core.variant.VariantFile._batch_readers.<locals>.<lambda>
-    <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
+    <-  ['oxbow.BatchReaderFragment.<object>']

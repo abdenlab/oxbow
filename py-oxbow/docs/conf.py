@@ -6,6 +6,11 @@
 
 from __future__ import annotations
 
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(".."))
+
 # Warning: do not change the path here. To use autodoc, you need to install the
 # package first.
 
@@ -29,10 +34,12 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx_copybutton",
+    "sphinx_design",
 ]
+autosummary_generate = True
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = []
+templates_path = ["_templates"]
 
 # Include both markdown and rst files
 source_suffix = [".rst", ".md"]
@@ -48,7 +55,15 @@ exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store", 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "furo"
+html_theme = "sphinx_book_theme"
+html_theme_options = {
+    "logo": {
+        "image_light": "_static/oxbow-logo-wide-black.svg",
+        "image_dark": "_static/oxbow-logo-wide-white.svg",
+    },
+    "repository_url": "https://github.com/abdenlab/oxbow",
+    "use_repository_button": True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

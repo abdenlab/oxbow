@@ -1,3 +1,23 @@
+"""
+This module defines classes and functions for working with sequence files, including FASTA and FASTQ formats.
+
+Classes
+-------
+SequenceFile
+    Base class for sequence files.
+FastaFile
+    Class for handling FASTA files.
+FastqFile
+    Class for handling FASTQ files.
+
+Functions
+---------
+from_fasta(uri, opener, fields, index, gzi, compressed, regions)
+    Create a FastaFile instance from a FASTA file.
+from_fastq(uri, opener, fields, index, gzi, compressed)
+    Create a FastqFile instance from a FASTQ file.
+"""
+
 from __future__ import annotations
 
 from functools import partial
@@ -12,6 +32,19 @@ from oxbow.oxbow import PyFastaScanner, PyFastqScanner
 
 
 class SequenceFile(DataFile):
+    """
+    Base class for sequence files.
+
+    This class provides common functionality for handling FASTA and FASTQ files.
+
+    Functions
+    ---------
+    from_fasta(uri, opener, fields, index, gzi, compressed, regions)
+        Create a FastaFile instance from a FASTA file.
+    from_fastq(uri, opener, fields, index, gzi, compressed)
+        Create a FastqFile instance from a FASTQ file.
+    """
+
     if TYPE_CHECKING:
         from_fasta: FastaFile
         from_fastq: FastqFile
@@ -50,6 +83,27 @@ class SequenceFile(DataFile):
 
 
 class FastaFile(SequenceFile, file_type=FileType.FASTA):
+    """
+    Class for handling FASTA files.
+
+    Parameters
+    ----------
+    uri : str
+        The URI of the FASTA file.
+    opener : Callable, optional
+        A callable to open the file.
+    fields : list[str], optional
+        Names of the fields to project.
+    index : str, optional
+        Path to the FAI index file.
+    gzi : str, optional
+        Path to the GZI index file for compressed sources.
+    compressed : bool, optional
+        Whether the source is compressed, by default False.
+    regions : list[tuple[int, int]], optional
+        Genomic regions to query.
+    """
+
     if TYPE_CHECKING:
         _scanner: FileType.FASTA.value
 
@@ -93,6 +147,25 @@ class FastaFile(SequenceFile, file_type=FileType.FASTA):
 
 
 class FastqFile(SequenceFile, file_type=FileType.FASTQ):
+    """
+    Class for handling FASTQ files.
+
+    Parameters
+    ----------
+    uri : str
+        The URI of the FASTQ file.
+    opener : Callable, optional
+        A callable to open the file.
+    fields : list[str], optional
+        Names of the fields to project.
+    index : str, optional
+        Path to the index file.
+    gzi : str, optional
+        Path to the GZI index file for compressed sources.
+    compressed : bool, optional
+        Whether the source is compressed, by default False.
+    """
+
     if TYPE_CHECKING:
         _scanner: FileType.FASTQ.value
 
@@ -117,23 +190,23 @@ def from_fasta(
     regions: list[tuple[int, int]] | None = None,
 ) -> FastaFile:
     """
-    Create a FastaFile instance.
+    Create a FastaFile instance from a FASTA file.
 
     Parameters
     ----------
-    uri
+    uri : str
         The URI of the FASTA file.
-    opener
+    opener : Callable, optional
         A callable to open the file.
-    fields
+    fields : list[str], optional
         Names of the fields to project.
-    index, optional
+    index : str, optional
         Path to the FAI index file.
-    gzi, optional
+    gzi : str, optional
         Path to the GZI index file for compressed sources.
-    compressed
-        Whether the source is compressed.
-    regions
+    compressed : bool, optional
+        Whether the source is compressed, by default False.
+    regions : list[tuple[int, int]], optional
         Genomic regions to query.
 
     Returns
@@ -161,22 +234,22 @@ def from_fastq(
     compressed: bool = False,
 ) -> FastqFile:
     """
-    Create a FastqFile instance.
+    Create a FastqFile instance from a FASTQ file.
 
     Parameters
     ----------
-    uri
+    uri : str
         The URI of the FASTQ file.
-    opener
+    opener : Callable, optional
         A callable to open the file.
-    fields
+    fields : list[str], optional
         Names of the fields to project.
-    index, optional
+    index : str, optional
         Path to the index file.
-    gzi, optional
+    gzi : str, optional
         Path to the GZI index file for compressed sources.
-    compressed
-        Whether the source is compressed.
+    compressed : bool, optional
+        Whether the source is compressed, by default False.
 
     Returns
     -------
