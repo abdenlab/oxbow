@@ -1,3 +1,23 @@
+"""
+This module defines classes and functions for working with variant files, including VCF and BCF formats.
+
+Classes
+-------
+VariantFile
+    Base class for variant files.
+BcfFile
+    Class for handling BCF files.
+VcfFile
+    Class for handling VCF files.
+
+Functions
+---------
+from_bcf(uri, opener, fields, index, regions, info_fields, genotype_fields, samples, genotype_by)
+    Create a BcfFile instance from a BCF file.
+from_vcf(uri, opener, fields, index, regions, info_fields, genotype_fields, samples, genotype_by)
+    Create a VcfFile instance from a VCF file.
+"""
+
 from __future__ import annotations
 
 from functools import partial
@@ -11,6 +31,19 @@ from oxbow.oxbow import PyBcfScanner, PyVcfScanner
 
 
 class VariantFile(DataFile):
+    """
+    Base class for variant files.
+
+    This class provides common functionality for handling VCF and BCF files.
+
+    Functions
+    ---------
+    from_bcf(uri, opener, fields, index, regions, info_fields, genotype_fields, samples, genotype_by)
+        Create a BcfFile instance from a BCF file.
+    from_vcf(uri, opener, fields, index, regions, info_fields, genotype_fields, samples, genotype_by)
+        Create a VcfFile instance from a VCF file.
+    """
+
     if TYPE_CHECKING:
         from_bcf: BcfFile
         from_vcf: VcfFile
@@ -101,6 +134,31 @@ class VariantFile(DataFile):
 
 
 class BcfFile(VariantFile, file_type=FileType.BCF):
+    """
+    Class for handling BCF files.
+
+    Parameters
+    ----------
+    uri : str
+        The URI or file path to the BCF file.
+    opener : Callable, optional
+        A custom file opener, such as one for handling remote files.
+    fields : list[str], optional
+        Specific fields to include from the BCF file.
+    index : str, optional
+        Path to the index file associated with the BCF file.
+    regions : list[str], optional
+        Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
+    info_fields : list[str], optional
+        INFO fields to extract from the BCF file.
+    genotype_fields : list[str], optional
+        FORMAT fields to extract genotype-specific information.
+    samples : list[str], optional
+        A subset of samples to include.
+    genotype_by : Literal["sample", "field"], optional
+        Determines how genotype data is organized, by default "sample".
+    """
+
     if TYPE_CHECKING:
         _scanner: FileType.BCF.value
 
@@ -135,6 +193,31 @@ class BcfFile(VariantFile, file_type=FileType.BCF):
 
 
 class VcfFile(VariantFile, file_type=FileType.VCF):
+    """
+    Class for handling VCF files.
+
+    Parameters
+    ----------
+    uri : str
+        The URI or file path to the VCF file.
+    opener : Callable, optional
+        A custom file opener, such as one for handling remote files.
+    fields : list[str], optional
+        Specific fields to include from the VCF file.
+    index : str, optional
+        Path to the index file associated with the VCF file.
+    regions : list[str], optional
+        Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
+    info_fields : list[str], optional
+        INFO fields to extract from the VCF file.
+    genotype_fields : list[str], optional
+        FORMAT fields to extract genotype-specific information.
+    samples : list[str], optional
+        A subset of samples to include.
+    genotype_by : Literal["sample", "field"], optional
+        Determines how genotype data is organized, by default "sample".
+    """
+
     if TYPE_CHECKING:
         _scanner: FileType.VCF.value
 
@@ -155,27 +238,24 @@ def from_bcf(
 
     Parameters
     ----------
-    uri
+    uri : str
         The URI or file path to the BCF file.
-    opener
+    opener : Callable, optional
         A custom file opener, such as one for handling remote files.
-    fields
-        Specific fields to include from the BCF file. If None, all fields are included.
-    index
+    fields : list[str], optional
+        Specific fields to include from the BCF file.
+    index : str, optional
         Path to the index file associated with the BCF file.
-    regions
+    regions : list[str], optional
         Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
-    info_fields
-        INFO fields to extract from the BCF file. INFO fields provide metadata about variants,
-        such as allele frequency (AF) or total depth (DP).
-    genotype_fields
-        FORMAT fields to extract genotype-specific information, such as genotype (GT) or
-        genotype quality (GQ).
-    samples
-        A subset of samples to include. If None, all samples in the file are included.
-    genotype_by
-        Determines how genotype data is organized. If 'sample', data is grouped by sample.
-        If 'field', data is grouped by field. Default is 'sample'.
+    info_fields : list[str], optional
+        INFO fields to extract from the BCF file.
+    genotype_fields : list[str], optional
+        FORMAT fields to extract genotype-specific information.
+    samples : list[str], optional
+        A subset of samples to include.
+    genotype_by : Literal["sample", "field"], optional
+        Determines how genotype data is organized, by default "sample".
 
     Returns
     -------
@@ -211,6 +291,7 @@ def from_vcf(
     fields: list[str] | None = None,
     index: str | None = None,
     regions: list[str] | None = None,
+    compressed: bool = False,
     info_fields: list[str] | None = None,
     genotype_fields: list[str] | None = None,
     samples: list[str] | None = None,
@@ -221,27 +302,24 @@ def from_vcf(
 
     Parameters
     ----------
-    uri
+    uri : str
         The URI or file path to the VCF file.
-    opener
+    opener : Callable, optional
         A custom file opener, such as one for handling remote files.
-    fields
-        Specific fields to include from the VCF file. If None, all fields are included.
-    index
+    fields : list[str], optional
+        Specific fields to include from the VCF file.
+    index : str, optional
         Path to the index file associated with the VCF file.
-    regions
+    regions : list[str], optional
         Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
-    info_fields
-        INFO fields to extract from the VCF file. INFO fields provide metadata about variants,
-        such as allele frequency (AF) or total depth (DP).
-    genotype_fields
-        FORMAT fields to extract genotype-specific information, such as genotype (GT) or
-        genotype quality (GQ).
-    samples
-        A subset of samples to include. If None, all samples in the file are included.
-    genotype_by
-        Determines how genotype data is organized. If 'sample', data is grouped by sample.
-        If 'field', data is grouped by field. Default is 'sample'.
+    info_fields : list[str], optional
+        INFO fields to extract from the VCF file.
+    genotype_fields : list[str], optional
+        FORMAT fields to extract genotype-specific information.
+    samples : list[str], optional
+        A subset of samples to include.
+    genotype_by : Literal["sample", "field"], optional
+        Determines how genotype data is organized, by default "sample".
 
     Returns
     -------
@@ -264,6 +342,7 @@ def from_vcf(
         fields=fields,
         index=index,
         regions=regions,
+        compressed=compressed,
         info_fields=info_fields,
         genotype_fields=genotype_fields,
         samples=samples,

@@ -34,6 +34,6 @@ BamFile("data/sample.bam"): |-
                 <-  'data/sample.bam'
                 ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                 <-  {'compressed': 'True'}
-            <-  builtins.PyBamScanner.<object>
+            <-  oxbow.PyBamScanner.<object>
         <-  None
     <-  None

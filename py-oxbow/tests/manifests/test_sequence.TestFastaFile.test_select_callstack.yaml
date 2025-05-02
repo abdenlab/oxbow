@@ -54,7 +54,7 @@ FastaFile("data/malformed.fasta").select(): |-
                             <-  'data/malformed.fasta'
                             ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                             <-  {'compressed': 'False'}
-                        <-  builtins.PyFastaScanner.<object>
+                        <-  oxbow.PyFastaScanner.<object>
                         ->  oxbow._core.sequence.FastaFile._batch_readers.<generator>
                             ->  oxbow._core.base.DataFile.schema
                                 ->  oxbow._core.base.DataFile._scanner
@@ -62,18 +62,18 @@ FastaFile("data/malformed.fasta").select(): |-
                                     <-  'data/malformed.fasta'
                                     ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                                     <-  {'compressed': 'False'}
-                                <-  builtins.PyFastaScanner.<object>
+                                <-  oxbow.PyFastaScanner.<object>
                                 ->  oxbow._core.sequence.SequenceFile._schema_kwargs
                                 <-  {'fields': 'None'}
                             <-  name: string
                                 description: string
                                 sequence: string
                         <-  oxbow._core.sequence.FastaFile._batch_readers.<locals>.<lambda>
-                    <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
-                <-  oxbow._pyarrow.BatchReaderDataset.<object>
-            <-  oxbow._pyarrow.BatchReaderDataset.<object>
-        <-  oxbow._pyarrow.BatchReaderDataset.<object>
-    <-  oxbow._pyarrow.BatchReaderDataset.<object>
+                    <-  ['oxbow.BatchReaderFragment.<object>']
+                <-  oxbow.BatchReaderDataset.<object>
+            <-  oxbow.BatchReaderDataset.<object>
+        <-  oxbow.BatchReaderDataset.<object>
+    <-  oxbow.BatchReaderDataset.<object>
 FastaFile("data/sample.fasta").select(): |-
     ->  oxbow._core.sequence.FastaFile.select()
         ->  oxbow._core.sequence.SequenceFile.select(regions=None)
@@ -99,7 +99,7 @@ FastaFile("data/sample.fasta").select(): |-
                             <-  'data/sample.fasta'
                             ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                             <-  {'compressed': 'False'}
-                        <-  builtins.PyFastaScanner.<object>
+                        <-  oxbow.PyFastaScanner.<object>
                         ->  oxbow._core.sequence.FastaFile._batch_readers.<generator>
                             ->  oxbow._core.base.DataFile.schema
                                 ->  oxbow._core.base.DataFile._scanner
@@ -107,15 +107,15 @@ FastaFile("data/sample.fasta").select(): |-
                                     <-  'data/sample.fasta'
                                     ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                                     <-  {'compressed': 'False'}
-                                <-  builtins.PyFastaScanner.<object>
+                                <-  oxbow.PyFastaScanner.<object>
                                 ->  oxbow._core.sequence.SequenceFile._schema_kwargs
                                 <-  {'fields': 'None'}
                             <-  name: string
                                 description: string
                                 sequence: string
                         <-  oxbow._core.sequence.FastaFile._batch_readers.<locals>.<lambda>
-                    <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
-                <-  oxbow._pyarrow.BatchReaderDataset.<object>
-            <-  oxbow._pyarrow.BatchReaderDataset.<object>
-        <-  oxbow._pyarrow.BatchReaderDataset.<object>
-    <-  oxbow._pyarrow.BatchReaderDataset.<object>
+                    <-  ['oxbow.BatchReaderFragment.<object>']
+                <-  oxbow.BatchReaderDataset.<object>
+            <-  oxbow.BatchReaderDataset.<object>
+        <-  oxbow.BatchReaderDataset.<object>
+    <-  oxbow.BatchReaderDataset.<object>

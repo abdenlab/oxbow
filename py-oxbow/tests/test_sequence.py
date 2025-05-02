@@ -61,7 +61,7 @@ class TestFastaFile:
                     ]
                 ) == "\n".join([c.serialize() for c in stack])
 
-    def test_batches_callstack(self, wiretap, manifest: Manifest, mocker):
+    def test_batches_callstack(self, wiretap, manifest: Manifest):
         fields, batch_size = ("name", "sequence"), 5
         file = ox.FastaFile("data/sample.fasta", fields=fields)
         with wiretap(ox.FastaFile) as stack:
@@ -161,7 +161,7 @@ class TestFastqFile:
                     ]
                 ) == "\n".join([c.serialize() for c in stack])
 
-    def test_batches_callstack(self, wiretap, manifest: Manifest, mocker):
+    def test_batches_callstack(self, wiretap, manifest: Manifest):
         fields, batch_size = ("name", "sequence"), 5
         file = ox.FastqFile("data/sample.fastq", fields=fields)
         with wiretap(ox.FastqFile) as stack:

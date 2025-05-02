@@ -1,25 +1,25 @@
 GffFile("data/sample.gff", fields=('seqid', 'start', 'end')).batches(batch_size=5): |-
     ->  oxbow._core.base.DataFile.batches(batch_size=5)
     <-  DataFile.batches.<generator>
-    ->  oxbow._core.function.GxfFile._batch_readers
+    ->  oxbow._core.feature.GxfFile._batch_readers
     <-  GxfFile._batch_readers.<generator>
     ->  oxbow._core.base.DataFile._scanner
         ->  oxbow._core.base.DataFile._source
         <-  'data/sample.gff'
-        ->  oxbow._core.function.GxfFile._scanner_kwargs
+        ->  oxbow._core.feature.GxfFile._scanner_kwargs
         <-  {'compressed': 'False'}
     <-  builtins.PyGffScanner.<object>
-    ->  oxbow._core.function.GxfFile._scan_kwargs
+    ->  oxbow._core.feature.GxfFile._scan_kwargs
     <-  {'attribute_defs': [("'ID'", "'String'"), ("'Parent'", "'String'"), ("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), '<', '8', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'fields': ("'seqid'", "'start'", "'end'")}
-    ->  oxbow._core.function.GxfFile._batch_readers.<generator>
+    ->  oxbow._core.feature.GxfFile._batch_readers.<generator>
         ->  oxbow._core.base.DataFile.schema
             ->  oxbow._core.base.DataFile._scanner
                 ->  oxbow._core.base.DataFile._source
                 <-  'data/sample.gff'
-                ->  oxbow._core.function.GxfFile._scanner_kwargs
+                ->  oxbow._core.feature.GxfFile._scanner_kwargs
                 <-  {'compressed': 'False'}
             <-  builtins.PyGffScanner.<object>
-            ->  oxbow._core.function.GxfFile._schema_kwargs
+            ->  oxbow._core.feature.GxfFile._schema_kwargs
             <-  {'fields': ("'seqid'", "'start'", "'end'"), 'attribute_defs': [("'ID'", "'String'"), ("'Parent'", "'String'"), ("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), '<', '8', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>']}
         <-  seqid: string
             start: int32
@@ -308,4 +308,4 @@ GffFile("data/sample.gff", fields=('seqid', 'start', 'end')).batches(batch_size=
             ["2","5","5","5","5"]
             -- child 17 type: string
             ["nonsense_mediated_decay","protein_coding","lncRNA","protein_coding","protein_coding"]
-    <-  oxbow._core.function.GxfFile._batch_readers.<locals>.<lambda>
+    <-  oxbow._core.feature.GxfFile._batch_readers.<locals>.<lambda>

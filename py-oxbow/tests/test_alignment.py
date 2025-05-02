@@ -49,7 +49,7 @@ class TestBamFile:
                     ]
                 ) == "\n".join([c.serialize() for c in stack])
 
-    def test_batches_callstack(self, wiretap, manifest: Manifest, mocker):
+    def test_batches_callstack(self, wiretap, manifest: Manifest):
         fields, batch_size = ("qname", "rname", "mapq"), 3
         bam_file = ox.BamFile("data/sample.bam", fields=fields)
         with wiretap(ox.BamFile) as stack:
@@ -139,7 +139,7 @@ class TestSamFile:
                     ]
                 ) == "\n".join([c.serialize() for c in stack])
 
-    def test_batches_callstack(self, wiretap, manifest: Manifest, mocker):
+    def test_batches_callstack(self, wiretap, manifest: Manifest):
         fields, batch_size = ("qname", "rname", "mapq"), 3
         bam_file = ox.SamFile("data/sample.sam", fields=fields)
         with wiretap(ox.SamFile) as stack:
