@@ -3,8 +3,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use arrow::array::{
-    ArrayRef, Float32Builder, GenericStringBuilder, Int32Builder, ListBuilder, StringArray,
-    StringDictionaryBuilder,
+    ArrayRef, DictionaryArray, Float32Builder, GenericStringBuilder, Int32Builder, ListBuilder,
+    StringArray, StringDictionaryBuilder,
 };
 use arrow::datatypes::{DataType, Field as ArrowField, Int32Type};
 use arrow::error::ArrowError;
@@ -145,7 +145,10 @@ impl FieldBuilder {
 
     pub fn finish(&mut self) -> ArrayRef {
         match self {
-            Self::Chrom(builder) => Arc::new(builder.finish()),
+            Self::Chrom(builder) => {
+                let array = finish_dict_array_builder(builder);
+                Arc::new(array)
+            }
             Self::Pos(builder) => Arc::new(builder.finish()),
             Self::Id(builder) => Arc::new(builder.finish()),
             Self::Ref(builder) => Arc::new(builder.finish()),
@@ -154,6 +157,21 @@ impl FieldBuilder {
             Self::Filter(builder) => Arc::new(builder.finish()),
         }
     }
+}
+
+fn finish_dict_array_builder(
+    builder: &mut StringDictionaryBuilder<Int32Type>,
+) -> DictionaryArray<Int32Type> {
+    let array = builder.finish();
+    let dict_values = array
+        .values()
+        .as_any()
+        .downcast_ref::<StringArray>()
+        .expect("Failed to downcast to StringArray")
+        .clone();
+    *builder = StringDictionaryBuilder::<Int32Type>::new_with_dictionary(array.len(), &dict_values)
+        .unwrap();
+    array
 }
 
 pub trait Push<T> {

@@ -3,7 +3,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use arrow::array::{
-    Float64Builder, StringArray, StringDictionaryBuilder, UInt32Builder, UInt64Builder,
+    DictionaryArray, Float64Builder, StringArray, StringDictionaryBuilder, UInt32Builder,
+    UInt64Builder,
 };
 use arrow::datatypes::{DataType, Int32Type};
 use arrow::error::ArrowError;
@@ -126,7 +127,10 @@ impl FieldBuilder {
 
     pub fn finish(&mut self) -> arrow::array::ArrayRef {
         match self {
-            Self::Chrom(builder) => Arc::new(builder.finish()),
+            Self::Chrom(builder) => {
+                let array = finish_dict_array_builder(builder);
+                Arc::new(array)
+            }
             Self::Start(builder) => Arc::new(builder.finish()),
             Self::End(builder) => Arc::new(builder.finish()),
             Self::BasesCovered(builder) => Arc::new(builder.finish()),
@@ -136,6 +140,21 @@ impl FieldBuilder {
             Self::SumSquares(builder) => Arc::new(builder.finish()),
         }
     }
+}
+
+fn finish_dict_array_builder(
+    builder: &mut StringDictionaryBuilder<Int32Type>,
+) -> DictionaryArray<Int32Type> {
+    let array = builder.finish();
+    let dict_values = array
+        .values()
+        .as_any()
+        .downcast_ref::<StringArray>()
+        .expect("Failed to downcast to StringArray")
+        .clone();
+    *builder = StringDictionaryBuilder::<Int32Type>::new_with_dictionary(array.len(), &dict_values)
+        .unwrap();
+    array
 }
 
 #[cfg(test)]

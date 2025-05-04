@@ -3,8 +3,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use arrow::array::{
-    ArrayRef, GenericStringBuilder, Int32Builder, StringArray, StringDictionaryBuilder,
-    UInt16Builder, UInt8Builder,
+    ArrayRef, DictionaryArray, GenericStringBuilder, Int32Builder, StringArray,
+    StringDictionaryBuilder, UInt16Builder, UInt8Builder,
 };
 use arrow::datatypes::{DataType, Int32Type};
 use arrow::error::ArrowError;
@@ -174,11 +174,17 @@ impl FieldBuilder {
         match self {
             Self::Qname(builder) => Arc::new(builder.finish()),
             Self::Flag(builder) => Arc::new(builder.finish()),
-            Self::Rname(builder) => Arc::new(builder.finish()),
+            Self::Rname(builder) => {
+                let array = finish_dict_array_builder(builder);
+                Arc::new(array)
+            }
             Self::Pos(builder) => Arc::new(builder.finish()),
             Self::Mapq(builder) => Arc::new(builder.finish()),
             Self::Cigar(builder) => Arc::new(builder.finish()),
-            Self::Rnext(builder) => Arc::new(builder.finish()),
+            Self::Rnext(builder) => {
+                let array = finish_dict_array_builder(builder);
+                Arc::new(array)
+            }
             Self::Pnext(builder) => Arc::new(builder.finish()),
             Self::Tlen(builder) => Arc::new(builder.finish()),
             Self::Seq(builder) => Arc::new(builder.finish()),
@@ -186,6 +192,21 @@ impl FieldBuilder {
             Self::End(builder) => Arc::new(builder.finish()),
         }
     }
+}
+
+fn finish_dict_array_builder(
+    builder: &mut StringDictionaryBuilder<Int32Type>,
+) -> DictionaryArray<Int32Type> {
+    let array = builder.finish();
+    let dict_values = array
+        .values()
+        .as_any()
+        .downcast_ref::<StringArray>()
+        .expect("Failed to downcast to StringArray")
+        .clone();
+    *builder = StringDictionaryBuilder::<Int32Type>::new_with_dictionary(array.len(), &dict_values)
+        .unwrap();
+    array
 }
 
 pub trait Push<T> {
