@@ -2,12 +2,14 @@ use std::io;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use arrow::array::{
-    DictionaryArray, Float64Builder, GenericStringBuilder, Int64Builder, StringArray,
-    StringDictionaryBuilder, UInt16Builder, UInt8Builder,
-};
 use arrow::array::{FixedSizeListBuilder, ListBuilder};
+use arrow::array::{
+    Float64Builder, GenericStringBuilder, Int64Builder, StringArray, StringDictionaryBuilder,
+    UInt16Builder, UInt8Builder,
+};
 use arrow::datatypes::{DataType, Field as ArrowField, UInt8Type};
+
+use crate::util::reset_dictarray_builder;
 
 pub const DEFAULT_FIELD_NAMES: [&str; 12] = [
     "chrom",
@@ -197,7 +199,7 @@ impl FieldBuilder {
             Self::Name(builder) => Arc::new(builder.finish()),
             Self::Score(builder) => Arc::new(builder.finish()),
             Self::Strand(builder) => {
-                let array = finish_dict_array_builder(builder);
+                let array = reset_dictarray_builder(builder);
                 Arc::new(array)
             }
             Self::ThickStart(builder) => Arc::new(builder.finish()),
@@ -210,24 +212,6 @@ impl FieldBuilder {
             Self::Value(builder) => Arc::new(builder.finish()),
         }
     }
-}
-
-fn finish_dict_array_builder(
-    builder: &mut StringDictionaryBuilder<arrow::datatypes::UInt8Type>,
-) -> DictionaryArray<arrow::datatypes::UInt8Type> {
-    let array = builder.finish();
-    let dict_values = array
-        .values()
-        .as_any()
-        .downcast_ref::<StringArray>()
-        .expect("Failed to downcast to StringArray")
-        .clone();
-    *builder = StringDictionaryBuilder::<arrow::datatypes::UInt8Type>::new_with_dictionary(
-        array.len(),
-        &dict_values,
-    )
-    .unwrap();
-    array
 }
 
 pub trait Push<T> {

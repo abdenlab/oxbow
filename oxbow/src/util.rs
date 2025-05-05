@@ -1,4 +1,5 @@
-use arrow::array::RecordBatchReader;
+use arrow::array::{DictionaryArray, RecordBatchReader, StringArray, StringDictionaryBuilder};
+use arrow::datatypes::ArrowDictionaryKeyType;
 use arrow::error::ArrowError;
 use arrow::ipc::writer::FileWriter;
 
@@ -14,6 +15,22 @@ pub fn batches_to_ipc(batches: impl RecordBatchReader) -> Result<Vec<u8>, ArrowE
     }
     writer.finish()?;
     writer.into_inner()
+}
+
+// Build a DictionaryArray and reinitialize the builder with the same dictionary values.
+pub(crate) fn reset_dictarray_builder<T: ArrowDictionaryKeyType>(
+    builder: &mut StringDictionaryBuilder<T>,
+) -> DictionaryArray<T> {
+    let array = builder.finish();
+    let dict_values = array
+        .values()
+        .as_any()
+        .downcast_ref::<StringArray>()
+        .expect("Failed to downcast to StringArray")
+        .clone();
+    *builder =
+        StringDictionaryBuilder::<T>::new_with_dictionary(array.len(), &dict_values).unwrap();
+    array
 }
 
 #[cfg(test)]
