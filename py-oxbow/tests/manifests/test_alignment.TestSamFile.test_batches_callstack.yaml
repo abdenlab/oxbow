@@ -8,7 +8,7 @@ SamFile("data/sample.sam", fields=('qname', 'rname', 'mapq')).batches(batch_size
         <-  'data/sample.sam'
         ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
         <-  {'compressed': 'False'}
-    <-  oxbow.PySamScanner.<object>
+    <-  oxbow.core.PySamScanner.<object>
     ->  oxbow._core.alignment.AlignmentFile._scan_kwargs
     <-  {'fields': ("'qname'", "'rname'", "'mapq'"), 'tag_defs': []}
     ->  oxbow._core.alignment.AlignmentFile._batch_readers.<generator>
@@ -18,7 +18,7 @@ SamFile("data/sample.sam", fields=('qname', 'rname', 'mapq')).batches(batch_size
                 <-  'data/sample.sam'
                 ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                 <-  {'compressed': 'False'}
-            <-  oxbow.PySamScanner.<object>
+            <-  oxbow.core.PySamScanner.<object>
             ->  oxbow._core.alignment.AlignmentFile._schema_kwargs
             <-  {'fields': ("'qname'", "'rname'", "'mapq'"), 'tag_defs': []}
         <-  qname: string

@@ -22,4 +22,4 @@ BedFile("data/sample.bed", fields=('chrom', 'start', 'end')).batches(batch_size=
                 start: int64
                 end: int64
         <-  oxbow._core.feature.BedFile._batch_readers.<locals>.<lambda>
-    <-  ['oxbow.BatchReaderFragment.<object>']
+    <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
