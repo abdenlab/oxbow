@@ -12,6 +12,8 @@ use arrow::error::ArrowError;
 use noodles::sam::alignment::record::{Cigar, QualityScores, Sequence};
 use noodles::sam::alignment::Record;
 
+use crate::util::reset_dictarray_builder;
+
 pub const DEFAULT_FIELD_NAMES: [&str; 12] = [
     "qname", "flag", "rname", "pos", "mapq", "cigar", "rnext", "pnext", "tlen", "seq", "qual",
     "end",
@@ -174,11 +176,17 @@ impl FieldBuilder {
         match self {
             Self::Qname(builder) => Arc::new(builder.finish()),
             Self::Flag(builder) => Arc::new(builder.finish()),
-            Self::Rname(builder) => Arc::new(builder.finish()),
+            Self::Rname(builder) => {
+                let array = reset_dictarray_builder(builder);
+                Arc::new(array)
+            }
             Self::Pos(builder) => Arc::new(builder.finish()),
             Self::Mapq(builder) => Arc::new(builder.finish()),
             Self::Cigar(builder) => Arc::new(builder.finish()),
-            Self::Rnext(builder) => Arc::new(builder.finish()),
+            Self::Rnext(builder) => {
+                let array = reset_dictarray_builder(builder);
+                Arc::new(array)
+            }
             Self::Pnext(builder) => Arc::new(builder.finish()),
             Self::Tlen(builder) => Arc::new(builder.finish()),
             Self::Seq(builder) => Arc::new(builder.finish()),
