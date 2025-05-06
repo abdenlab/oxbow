@@ -4,3 +4,5 @@
    :recursive:
 
    oxbow
+   oxbow.core
+   oxbow.arrow

@@ -10,19 +10,19 @@
                 <-  'data/sample.bcf'
                 ->  oxbow._core.variant.BcfFile._scanner_kwargs
                 <-  {}
-            <-  oxbow.PyBcfScanner.<object>
+            <-  oxbow.core.PyBcfScanner.<object>
             ->  oxbow._core.base.DataFile._scanner
                 ->  oxbow._core.base.DataFile._source
                 <-  'data/sample.bcf'
                 ->  oxbow._core.variant.BcfFile._scanner_kwargs
                 <-  {}
-            <-  oxbow.PyBcfScanner.<object>
+            <-  oxbow.core.PyBcfScanner.<object>
             ->  oxbow._core.base.DataFile._scanner
                 ->  oxbow._core.base.DataFile._source
                 <-  'data/sample.bcf'
                 ->  oxbow._core.variant.BcfFile._scanner_kwargs
                 <-  {}
-            <-  oxbow.PyBcfScanner.<object>
+            <-  oxbow.core.PyBcfScanner.<object>
         <-  None
     <-  None
     ->  oxbow._core.base.DataFile.batches(batch_size=3)

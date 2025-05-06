@@ -26,4 +26,4 @@ BigBedFile("data/sample.bb", fields=('chrom', 'start', 'end')).batches(batch_siz
                 start: uint32
                 end: uint32
         <-  oxbow._core.feature.BbiFile._batch_readers.<locals>.<lambda>
-    <-  ['oxbow.BatchReaderFragment.<object>']
+    <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']

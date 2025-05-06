@@ -47,7 +47,7 @@ FastqFile("data/malformed.fastq").select(): |-
                         <-  'data/malformed.fastq'
                         ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                         <-  {'compressed': 'False'}
-                    <-  oxbow.PyFastqScanner.<object>
+                    <-  oxbow.core.PyFastqScanner.<object>
                     ->  oxbow._core.sequence.FastqFile._batch_readers.<generator>
                         ->  oxbow._core.base.DataFile.schema
                             ->  oxbow._core.base.DataFile._scanner
@@ -55,7 +55,7 @@ FastqFile("data/malformed.fastq").select(): |-
                                 <-  'data/malformed.fastq'
                                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                                 <-  {'compressed': 'False'}
-                            <-  oxbow.PyFastqScanner.<object>
+                            <-  oxbow.core.PyFastqScanner.<object>
                             ->  oxbow._core.sequence.SequenceFile._schema_kwargs
                             <-  {'fields': 'None'}
                         <-  name: string
@@ -63,10 +63,10 @@ FastqFile("data/malformed.fastq").select(): |-
                             sequence: string
                             quality: string
                     <-  oxbow._core.sequence.FastqFile._batch_readers.<locals>.<lambda>
-                <-  ['oxbow.BatchReaderFragment.<object>']
-            <-  oxbow.BatchReaderDataset.<object>
-        <-  oxbow.BatchReaderDataset.<object>
-    <-  oxbow.BatchReaderDataset.<object>
+                <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
+            <-  oxbow._pyarrow.BatchReaderDataset.<object>
+        <-  oxbow._pyarrow.BatchReaderDataset.<object>
+    <-  oxbow._pyarrow.BatchReaderDataset.<object>
 FastqFile("data/sample.fastq").select(): |-
     ->  oxbow._core.sequence.SequenceFile.select()
         ->  oxbow._core.base.DataFile.select(gzi=None, index=None)
@@ -89,7 +89,7 @@ FastqFile("data/sample.fastq").select(): |-
                         <-  'data/sample.fastq'
                         ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                         <-  {'compressed': 'False'}
-                    <-  oxbow.PyFastqScanner.<object>
+                    <-  oxbow.core.PyFastqScanner.<object>
                     ->  oxbow._core.sequence.FastqFile._batch_readers.<generator>
                         ->  oxbow._core.base.DataFile.schema
                             ->  oxbow._core.base.DataFile._scanner
@@ -97,7 +97,7 @@ FastqFile("data/sample.fastq").select(): |-
                                 <-  'data/sample.fastq'
                                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                                 <-  {'compressed': 'False'}
-                            <-  oxbow.PyFastqScanner.<object>
+                            <-  oxbow.core.PyFastqScanner.<object>
                             ->  oxbow._core.sequence.SequenceFile._schema_kwargs
                             <-  {'fields': 'None'}
                         <-  name: string
@@ -105,7 +105,7 @@ FastqFile("data/sample.fastq").select(): |-
                             sequence: string
                             quality: string
                     <-  oxbow._core.sequence.FastqFile._batch_readers.<locals>.<lambda>
-                <-  ['oxbow.BatchReaderFragment.<object>']
-            <-  oxbow.BatchReaderDataset.<object>
-        <-  oxbow.BatchReaderDataset.<object>
-    <-  oxbow.BatchReaderDataset.<object>
+                <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
+            <-  oxbow._pyarrow.BatchReaderDataset.<object>
+        <-  oxbow._pyarrow.BatchReaderDataset.<object>
+    <-  oxbow._pyarrow.BatchReaderDataset.<object>

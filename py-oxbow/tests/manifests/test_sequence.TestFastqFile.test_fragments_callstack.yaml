@@ -7,7 +7,7 @@ FastqFile("data/sample.fastq", fields=('name', 'sequence')).fragments(batch_size
             <-  'data/sample.fastq'
             ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
             <-  {'compressed': 'False'}
-        <-  oxbow.PyFastqScanner.<object>
+        <-  oxbow.core.PyFastqScanner.<object>
         ->  oxbow._core.sequence.FastqFile._batch_readers.<generator>
             ->  oxbow._core.base.DataFile.schema
                 ->  oxbow._core.base.DataFile._scanner
@@ -15,10 +15,10 @@ FastqFile("data/sample.fastq", fields=('name', 'sequence')).fragments(batch_size
                     <-  'data/sample.fastq'
                     ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                     <-  {'compressed': 'False'}
-                <-  oxbow.PyFastqScanner.<object>
+                <-  oxbow.core.PyFastqScanner.<object>
                 ->  oxbow._core.sequence.SequenceFile._schema_kwargs
                 <-  {'fields': ("'name'", "'sequence'")}
             <-  name: string
                 sequence: string
         <-  oxbow._core.sequence.FastqFile._batch_readers.<locals>.<lambda>
-    <-  ['oxbow.BatchReaderFragment.<object>']
+    <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
