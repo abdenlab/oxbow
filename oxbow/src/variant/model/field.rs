@@ -13,6 +13,8 @@ use noodles::vcf::variant::record::AlternateBases;
 use noodles::vcf::variant::record::Filters;
 use noodles::vcf::variant::record::Ids;
 
+use crate::util::reset_dictarray_builder;
+
 pub const DEFAULT_FIELD_NAMES: [&str; 7] = ["chrom", "pos", "id", "ref", "alt", "qual", "filter"];
 
 /// A variant (VCF/BCF) standard field.
@@ -145,7 +147,10 @@ impl FieldBuilder {
 
     pub fn finish(&mut self) -> ArrayRef {
         match self {
-            Self::Chrom(builder) => Arc::new(builder.finish()),
+            Self::Chrom(builder) => {
+                let array = reset_dictarray_builder(builder);
+                Arc::new(array)
+            }
             Self::Pos(builder) => Arc::new(builder.finish()),
             Self::Id(builder) => Arc::new(builder.finish()),
             Self::Ref(builder) => Arc::new(builder.finish()),

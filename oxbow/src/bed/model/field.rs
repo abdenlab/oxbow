@@ -9,6 +9,8 @@ use arrow::array::{
 };
 use arrow::datatypes::{DataType, Field as ArrowField, UInt8Type};
 
+use crate::util::reset_dictarray_builder;
+
 pub const DEFAULT_FIELD_NAMES: [&str; 12] = [
     "chrom",
     "start",
@@ -196,7 +198,10 @@ impl FieldBuilder {
             Self::End(builder) => Arc::new(builder.finish()),
             Self::Name(builder) => Arc::new(builder.finish()),
             Self::Score(builder) => Arc::new(builder.finish()),
-            Self::Strand(builder) => Arc::new(builder.finish()),
+            Self::Strand(builder) => {
+                let array = reset_dictarray_builder(builder);
+                Arc::new(array)
+            }
             Self::ThickStart(builder) => Arc::new(builder.finish()),
             Self::ThickEnd(builder) => Arc::new(builder.finish()),
             Self::ItemRgb(builder) => Arc::new(builder.finish()),
