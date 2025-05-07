@@ -12,4 +12,5 @@ extendr-api = '*'
 
 oxbow = { workspace = true }
 noodles = { workspace = true }
+bigtools = { workspace = true }
 flate2 = { workspace = true }
