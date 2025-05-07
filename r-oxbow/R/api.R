@@ -52,14 +52,14 @@ read_bed <- function(path, bed_schema, region = NULL, index = NULL, fields = NUL
   read_bed_impl(path, bed_schema, region, index, fields)
 }
 
-# #' Return Arrow IPC format from a BigWig file.
-# #' @export
-# read_bigwig <- function(path, region = NULL, fields = NULL) {
-#   read_bigwig_impl(path, region, fields)
-# }
+#' Return Arrow IPC format from a BigWig file.
+#' @export
+read_bigwig <- function(path, region = NULL, fields = NULL) {
+  read_bigwig_impl(path, region, fields)
+}
 
-# #' Return Arrow IPC format from a BigBed file.
-# #' @export
-# read_bigbed <- function(path, bed_schema = "bed3+", region = NULL, fields = NULL) {
-#   read_bigbed_impl(path, bed_schema, region, fields)
-# }
+#' Return Arrow IPC format from a BigBed file.
+#' @export
+read_bigbed <- function(path, bed_schema = "bed3+", region = NULL, fields = NULL) {
+  read_bigbed_impl(path, bed_schema, region, fields)
+}

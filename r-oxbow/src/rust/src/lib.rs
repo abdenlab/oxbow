@@ -2,11 +2,13 @@ use std::io::BufReader;
 
 use extendr_api::prelude::*;
 
+use bigtools;
 use flate2::bufread::MultiGzDecoder;
 use noodles::bgzf::IndexedReader as IndexedBgzfReader;
 use noodles::core::Region;
 
 use oxbow::alignment::{BamScanner, SamScanner};
+use oxbow::bbi::{BigBedScanner, BigWigScanner};
 use oxbow::bed::BedScanner;
 use oxbow::gxf::{GffScanner, GtfScanner};
 use oxbow::sequence::{FastaScanner, FastqScanner};
@@ -158,7 +160,7 @@ pub fn read_bam_impl(
     fields: Option<Vec<String>>,
     scan_rows: Option<usize>,
 ) -> Vec<u8> {
-    let compressed = path.ends_with(".gz");
+    let compressed = true;
     let scan_rows = Some(scan_rows.unwrap_or(1024));
     let reader = std::fs::File::open(path)
         .map(|f| BufReader::with_capacity(BUFFER_SIZE_BYTES, f))
@@ -310,7 +312,7 @@ pub fn read_bcf_impl(
     samples: Option<Vec<String>>,
     genotype_by: Option<String>,
 ) -> Vec<u8> {
-    let compressed = path.ends_with(".gz");
+    let compressed = true;
     let reader = std::fs::File::open(path)
         .map(|f| BufReader::with_capacity(BUFFER_SIZE_BYTES, f))
         .unwrap();
@@ -547,6 +549,70 @@ pub fn read_bed_impl(
     ipc.unwrap()
 }
 
+/// Return Arrow IPC format from a BigWig file.
+#[extendr]
+pub fn read_bigwig_impl(
+    path: &str,
+    region: Option<String>,
+    fields: Option<Vec<String>>,
+) -> Vec<u8> {
+    let reader = std::fs::File::open(path)
+        .map(|f| BufReader::with_capacity(BUFFER_SIZE_BYTES, f))
+        .unwrap();
+
+    let ipc = if let Some(region) = region {
+        let region = region.parse::<Region>().unwrap();
+        let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
+        let info = fmt_reader.info().clone();
+        let scanner = BigWigScanner::new(info);
+        let batches = scanner
+            .scan_query(fmt_reader, region, fields, None, None)
+            .unwrap();
+        batches_to_ipc(batches)
+    } else {
+        let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
+        let info = fmt_reader.info().clone();
+        let scanner = BigWigScanner::new(info);
+        let batches = scanner.scan(fmt_reader, fields, None, None).unwrap();
+        batches_to_ipc(batches)
+    };
+
+    ipc.unwrap()
+}
+
+/// Return Arrow IPC format from a BigBed file.
+#[extendr]
+pub fn read_bigbed_impl(
+    path: &str,
+    bed_schema: &str,
+    region: Option<String>,
+    fields: Option<Vec<String>>,
+) -> Vec<u8> {
+    let bed_schema = bed_schema.parse().unwrap();
+    let reader = std::fs::File::open(path)
+        .map(|f| BufReader::with_capacity(BUFFER_SIZE_BYTES, f))
+        .unwrap();
+
+    let ipc = if let Some(region) = region {
+        let region = region.parse::<Region>().unwrap();
+        let fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
+        let info = fmt_reader.info().clone();
+        let scanner = BigBedScanner::new(bed_schema, info);
+        let batches = scanner
+            .scan_query(fmt_reader, region, fields, None, None)
+            .unwrap();
+        batches_to_ipc(batches)
+    } else {
+        let fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
+        let info = fmt_reader.info().clone();
+        let scanner = BigBedScanner::new(bed_schema, info);
+        let batches = scanner.scan(fmt_reader, fields, None, None).unwrap();
+        batches_to_ipc(batches)
+    };
+
+    ipc.unwrap()
+}
+
 // Macro to generate exports.
 // This ensures exported functions are registered with R.
 // See corresponding C code in `entrypoint.c`.
@@ -561,4 +627,6 @@ extendr_module! {
     fn read_gtf_impl;
     fn read_gff_impl;
     fn read_bed_impl;
+    fn read_bigwig_impl;
+    fn read_bigbed_impl;
 }

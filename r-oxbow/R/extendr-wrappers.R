@@ -37,5 +37,11 @@ read_gff_impl <- function(path, region, index, fields, scan_rows) .Call(wrap__re
 #' Return Arrow IPC format from a BED file.
 read_bed_impl <- function(path, bed_schema, region, index, fields) .Call(wrap__read_bed_impl, path, bed_schema, region, index, fields)
 
+#' Return Arrow IPC format from a BigWig file.
+read_bigwig_impl <- function(path, region, fields) .Call(wrap__read_bigwig_impl, path, region, fields)
+
+#' Return Arrow IPC format from a BigBed file.
+read_bigbed_impl <- function(path, bed_schema, region, fields) .Call(wrap__read_bigbed_impl, path, bed_schema, region, fields)
+
 
 # nolint end
