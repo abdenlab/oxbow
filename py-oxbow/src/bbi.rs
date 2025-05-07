@@ -12,6 +12,7 @@ use noodles::core::Region;
 use crate::util::{pyobject_to_bufreader, Reader};
 use oxbow::bbi::model::base::field::FieldDef;
 use oxbow::bbi::{BBIFileType, BBIReader, BBIZoomScanner, BedSchema, BigBedScanner, BigWigScanner};
+use oxbow::util::batches_to_ipc;
 
 /// A BigWig file scanner.
 ///
@@ -561,4 +562,108 @@ impl PyBBIZoomScanner {
             }
         }
     }
+}
+
+/// Return Arrow IPC format from a BigWig file.
+///
+/// Parameters
+/// ----------
+/// src : str or file-like
+///     The path to the source file or a file-like object.
+/// fields : list[str], optional
+///     Names of the fixed fields to project.
+///
+/// Returns
+/// -------
+/// bytes
+///     Arrow IPC
+#[pyfunction]
+#[pyo3(signature = (src, region=None, fields=None))]
+pub fn read_bigwig(
+    py: Python,
+    src: PyObject,
+    region: Option<String>,
+    fields: Option<Vec<String>>,
+) -> PyResult<Vec<u8>> {
+    let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
+
+    let ipc = if let Some(region) = region {
+        let region = region
+            .parse::<Region>()
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+
+        let fmt_reader = bigtools::BigWigRead::open(reader)
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let info = fmt_reader.info().clone();
+        let scanner = BigWigScanner::new(info);
+        let batches = scanner
+            .scan_query(fmt_reader, region, fields, None, None)
+            .map_err(PyErr::new::<PyValueError, _>)?;
+        batches_to_ipc(batches)
+    } else {
+        let fmt_reader = bigtools::BigWigRead::open(reader)
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let info = fmt_reader.info().clone();
+        let scanner = BigWigScanner::new(info);
+        let batches = scanner
+            .scan(fmt_reader, fields, None, None)
+            .map_err(PyErr::new::<PyValueError, _>)?;
+        batches_to_ipc(batches)
+    };
+
+    ipc.map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
+}
+
+/// Return Arrow IPC format from a BigBed file.
+///
+/// Parameters
+/// ----------
+/// src : str or file-like
+///     The path to the source file or a file-like object.
+/// bed_schema : str
+///     The BED schema to use for parsing BigBed records.
+/// fields : list[str], optional
+///     Names of the fixed fields to project.
+///
+/// Returns
+/// -------
+/// bytes
+///     Arrow IPC
+#[pyfunction]
+#[pyo3(signature = (src, bed_schema="bed3+", region=None, fields=None))]
+pub fn read_bigbed(
+    py: Python,
+    src: PyObject,
+    bed_schema: &str,
+    region: Option<String>,
+    fields: Option<Vec<String>>,
+) -> PyResult<Vec<u8>> {
+    let bed_schema = bed_schema.parse()?;
+    let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
+
+    let ipc = if let Some(region) = region {
+        let region = region
+            .parse::<Region>()
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+
+        let fmt_reader = bigtools::BigBedRead::open(reader)
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let info = fmt_reader.info().clone();
+        let scanner = BigBedScanner::new(bed_schema, info);
+        let batches = scanner
+            .scan_query(fmt_reader, region, fields, None, None)
+            .map_err(PyErr::new::<PyValueError, _>)?;
+        batches_to_ipc(batches)
+    } else {
+        let fmt_reader = bigtools::BigBedRead::open(reader)
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let info = fmt_reader.info().clone();
+        let scanner = BigBedScanner::new(bed_schema, info);
+        let batches = scanner
+            .scan(fmt_reader, fields, None, None)
+            .map_err(PyErr::new::<PyValueError, _>)?;
+        batches_to_ipc(batches)
+    };
+
+    ipc.map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
 }

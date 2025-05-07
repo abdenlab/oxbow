@@ -10,7 +10,7 @@ mod gxf;
 mod sequence;
 mod variant;
 use crate::alignment::{read_bam, read_sam, PyBamScanner, PySamScanner};
-use crate::bbi::{PyBBIZoomScanner, PyBigBedScanner, PyBigWigScanner};
+use crate::bbi::{read_bigbed, read_bigwig, PyBBIZoomScanner, PyBigBedScanner, PyBigWigScanner};
 use crate::bed::{read_bed, PyBedScanner};
 use crate::gxf::{read_gff, read_gtf, PyGffScanner, PyGtfScanner};
 use crate::sequence::{read_fasta, read_fastq, PyFastaScanner, PyFastqScanner};
@@ -44,6 +44,8 @@ fn oxbow_sandbox(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_vcf, m)?)?;
     m.add_function(wrap_pyfunction!(read_bcf, m)?)?;
     m.add_function(wrap_pyfunction!(read_bed, m)?)?;
+    m.add_function(wrap_pyfunction!(read_bigbed, m)?)?;
+    m.add_function(wrap_pyfunction!(read_bigwig, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }
