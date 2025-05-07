@@ -1,0 +1,173 @@
+batch_size=1:
+    cigar:
+    - 8M4I4M1D3M
+    end:
+    - 22
+    flag:
+    - 163
+    mapq:
+    - 30
+    pnext:
+    - 37
+    pos:
+    - 7
+    qname:
+    - r001
+    qual:
+    - null
+    rname:
+    - chr1
+    rnext:
+    - chr1
+    seq:
+    - TTAGATAAAGAGGATACTG
+    tlen:
+    - 39
+batch_size=2:
+    cigar:
+    - 8M4I4M1D3M
+    - 1S2I6M1P1I1P1I4M2I
+    end:
+    - 22
+    - 18
+    flag:
+    - 163
+    - 0
+    mapq:
+    - 30
+    - 30
+    pnext:
+    - 37
+    - null
+    pos:
+    - 7
+    - 9
+    qname:
+    - r001
+    - r002
+    qual:
+    - null
+    - null
+    rname:
+    - chr1
+    - chr1
+    rnext:
+    - chr1
+    - null
+    seq:
+    - TTAGATAAAGAGGATACTG
+    - AAAAGATAAGGGATAAA
+    tlen:
+    - 39
+    - 0
+batch_size=3:
+    cigar:
+    - 8M4I4M1D3M
+    - 1S2I6M1P1I1P1I4M2I
+    - 5H6M
+    end:
+    - 22
+    - 18
+    - 14
+    flag:
+    - 163
+    - 0
+    - 0
+    mapq:
+    - 30
+    - 30
+    - 30
+    pnext:
+    - 37
+    - null
+    - null
+    pos:
+    - 7
+    - 9
+    - 9
+    qname:
+    - r001
+    - r002
+    - r003
+    qual:
+    - null
+    - null
+    - null
+    rname:
+    - chr1
+    - chr1
+    - chr1
+    rnext:
+    - chr1
+    - null
+    - null
+    seq:
+    - TTAGATAAAGAGGATACTG
+    - AAAAGATAAGGGATAAA
+    - AGCTAA
+    tlen:
+    - 39
+    - 0
+    - 0
+batch_size=4:
+    cigar:
+    - 8M4I4M1D3M
+    - 1S2I6M1P1I1P1I4M2I
+    - 5H6M
+    end:
+    - 22
+    - 18
+    - 14
+    flag:
+    - 163
+    - 0
+    - 0
+    mapq:
+    - 30
+    - 30
+    - 30
+    pnext:
+    - 37
+    - null
+    - null
+    pos:
+    - 7
+    - 9
+    - 9
+    qname:
+    - r001
+    - r002
+    - r003
+    qual:
+    - null
+    - null
+    - null
+    rname:
+    - chr1
+    - chr1
+    - chr1
+    rnext:
+    - chr1
+    - null
+    - null
+    seq:
+    - TTAGATAAAGAGGATACTG
+    - AAAAGATAAGGGATAAA
+    - AGCTAA
+    tlen:
+    - 39
+    - 0
+    - 0
+fields=("qname", "rname", "mapq"):
+    mapq:
+    - 30
+    - 30
+    - 30
+    qname:
+    - r001
+    - r002
+    - r003
+    rname:
+    - chr1
+    - chr1
+    - chr1

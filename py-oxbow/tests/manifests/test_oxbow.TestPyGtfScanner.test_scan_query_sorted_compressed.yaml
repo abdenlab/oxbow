@@ -1,0 +1,281 @@
+batch_size=1, fields=("seqid", "start", "end"), region="chr1":
+    end:
+    - 40988710
+    seqid:
+    - chr1
+    start:
+    - 40988594
+batch_size=1, fields=("seqid", "start", "end"), region="chr12":
+    end:
+    - 19261021
+    seqid:
+    - chr12
+    start:
+    - 19260949
+batch_size=1, fields=None, region="chr1":
+    end:
+    - 40988710
+    frame:
+    - null
+    score:
+    - null
+    seqid:
+    - chr1
+    source:
+    - HAVANA
+    start:
+    - 40988594
+    strand:
+    - +
+    type:
+    - exon
+batch_size=1, fields=None, region="chr12":
+    end:
+    - 19261021
+    frame:
+    - null
+    score:
+    - null
+    seqid:
+    - chr12
+    source:
+    - HAVANA
+    start:
+    - 19260949
+    strand:
+    - +
+    type:
+    - exon
+batch_size=2, fields=("seqid", "start", "end"), region="chr1":
+    end:
+    - 40988710
+    - 120952785
+    seqid:
+    - chr1
+    - chr1
+    start:
+    - 40988594
+    - 120952303
+batch_size=2, fields=("seqid", "start", "end"), region="chr12":
+    end:
+    - 19261021
+    - 95257239
+    seqid:
+    - chr12
+    - chr12
+    start:
+    - 19260949
+    - 95257150
+batch_size=2, fields=None, region="chr1":
+    end:
+    - 40988710
+    - 120952785
+    frame:
+    - null
+    - null
+    score:
+    - null
+    - null
+    seqid:
+    - chr1
+    - chr1
+    source:
+    - HAVANA
+    - HAVANA
+    start:
+    - 40988594
+    - 120952303
+    strand:
+    - +
+    - +
+    type:
+    - exon
+    - exon
+batch_size=2, fields=None, region="chr12":
+    end:
+    - 19261021
+    - 95257239
+    frame:
+    - null
+    - null
+    score:
+    - null
+    - null
+    seqid:
+    - chr12
+    - chr12
+    source:
+    - HAVANA
+    - HAVANA
+    start:
+    - 19260949
+    - 95257150
+    strand:
+    - +
+    - +
+    type:
+    - exon
+    - exon
+batch_size=3, fields=("seqid", "start", "end"), region="chr1":
+    end:
+    - 40988710
+    - 120952785
+    - 208245879
+    seqid:
+    - chr1
+    - chr1
+    - chr1
+    start:
+    - 40988594
+    - 120952303
+    - 208244506
+batch_size=3, fields=("seqid", "start", "end"), region="chr12":
+    end:
+    - 19261021
+    - 95257239
+    seqid:
+    - chr12
+    - chr12
+    start:
+    - 19260949
+    - 95257150
+batch_size=3, fields=None, region="chr1":
+    end:
+    - 40988710
+    - 120952785
+    - 208245879
+    frame:
+    - null
+    - null
+    - null
+    score:
+    - null
+    - null
+    - null
+    seqid:
+    - chr1
+    - chr1
+    - chr1
+    source:
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    start:
+    - 40988594
+    - 120952303
+    - 208244506
+    strand:
+    - +
+    - +
+    - +
+    type:
+    - exon
+    - exon
+    - transcript
+batch_size=3, fields=None, region="chr12":
+    end:
+    - 19261021
+    - 95257239
+    frame:
+    - null
+    - null
+    score:
+    - null
+    - null
+    seqid:
+    - chr12
+    - chr12
+    source:
+    - HAVANA
+    - HAVANA
+    start:
+    - 19260949
+    - 95257150
+    strand:
+    - +
+    - +
+    type:
+    - exon
+    - exon
+batch_size=4, fields=("seqid", "start", "end"), region="chr1":
+    end:
+    - 40988710
+    - 120952785
+    - 208245879
+    seqid:
+    - chr1
+    - chr1
+    - chr1
+    start:
+    - 40988594
+    - 120952303
+    - 208244506
+batch_size=4, fields=("seqid", "start", "end"), region="chr12":
+    end:
+    - 19261021
+    - 95257239
+    seqid:
+    - chr12
+    - chr12
+    start:
+    - 19260949
+    - 95257150
+batch_size=4, fields=None, region="chr1":
+    end:
+    - 40988710
+    - 120952785
+    - 208245879
+    frame:
+    - null
+    - null
+    - null
+    score:
+    - null
+    - null
+    - null
+    seqid:
+    - chr1
+    - chr1
+    - chr1
+    source:
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    start:
+    - 40988594
+    - 120952303
+    - 208244506
+    strand:
+    - +
+    - +
+    - +
+    type:
+    - exon
+    - exon
+    - transcript
+batch_size=4, fields=None, region="chr12":
+    end:
+    - 19261021
+    - 95257239
+    frame:
+    - null
+    - null
+    score:
+    - null
+    - null
+    seqid:
+    - chr12
+    - chr12
+    source:
+    - HAVANA
+    - HAVANA
+    start:
+    - 19260949
+    - 95257150
+    strand:
+    - +
+    - +
+    type:
+    - exon
+    - exon
+region="missing": Reference sequence missing not found in index header.

@@ -1,0 +1,47 @@
+BamFile("data/sample.bam", fields=('qname', 'rname', 'mapq')).batches(batch_size=3): |-
+    ->  oxbow._core.base.DataFile.batches(batch_size=3)
+    <-  DataFile.batches.<generator>
+    ->  oxbow._core.alignment.AlignmentFile._batch_readers
+    <-  AlignmentFile._batch_readers.<generator>
+    ->  oxbow._core.base.DataFile._scanner
+        ->  oxbow._core.base.DataFile._source
+        <-  'data/sample.bam'
+        ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
+        <-  {'compressed': 'True'}
+    <-  oxbow.core.PyBamScanner.<object>
+    ->  oxbow._core.alignment.AlignmentFile._scan_kwargs
+    <-  {'fields': ("'qname'", "'rname'", "'mapq'"), 'tag_defs': [("'XX'", "'BS'")]}
+    ->  oxbow._core.alignment.AlignmentFile._batch_readers.<generator>
+        ->  oxbow._core.base.DataFile.schema
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/sample.bam'
+                ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
+                <-  {'compressed': 'True'}
+            <-  oxbow.core.PyBamScanner.<object>
+            ->  oxbow._core.alignment.AlignmentFile._schema_kwargs
+            <-  {'fields': ("'qname'", "'rname'", "'mapq'"), 'tag_defs': [("'XX'", "'BS'")]}
+        <-  qname: string
+            rname: dictionary<values=string, indices=int32, ordered=0>
+            mapq: uint8
+            tags: struct<XX: list<item: uint16>>
+              child 0, XX: list<item: uint16>
+                  child 0, item: uint16
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            qname: string
+            rname: dictionary<values=string, indices=int32, ordered=0>
+            mapq: uint8
+            tags: struct<XX: list<item: uint16>>
+              child 0, XX: list<item: uint16>
+                  child 0, item: uint16
+            ----
+            qname: ["r001","r002","r003"]
+            rname: -- dictionary:
+            ["chr1","chr2"]-- indices:
+            [0,0,0]
+            mapq: [30,30,30]
+            tags: -- is_valid: all not null
+            -- child 0 type: list<item: uint16>
+            [[12561,2,20,112],null,null]
+    <-  oxbow._core.alignment.AlignmentFile._batch_readers.<locals>.<lambda>

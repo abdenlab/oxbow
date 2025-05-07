@@ -1,0 +1,33 @@
+GffFile("data/does-not-exist.gff"): |-
+    ->  oxbow._core.feature.GxfFile.__init__("data/does-not-exist.gff")
+        ->  oxbow._core.base.DataFile.__init__("data/does-not-exist.gff", None, None)
+        <-  None
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/does-not-exist.gff'
+            ->  oxbow._core.feature.GxfFile._scanner_kwargs
+            <-  {'compressed': 'False'}
+        !!  PanicException('called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: "No such file or directory" }')
+    !!  PanicException("called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: 'No such file or directory' }")
+GffFile("data/malformed.gff"): |-
+    ->  oxbow._core.feature.GxfFile.__init__("data/malformed.gff")
+        ->  oxbow._core.base.DataFile.__init__("data/malformed.gff", None, None)
+        <-  None
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/malformed.gff'
+            ->  oxbow._core.feature.GxfFile._scanner_kwargs
+            <-  {'compressed': 'False'}
+        <-  builtins.PyGffScanner.<object>
+    !!  OSError("unexpected end of file")
+GffFile("data/sample.gff"): |-
+    ->  oxbow._core.feature.GxfFile.__init__("data/sample.gff")
+        ->  oxbow._core.base.DataFile.__init__("data/sample.gff", None, None)
+        <-  None
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/sample.gff'
+            ->  oxbow._core.feature.GxfFile._scanner_kwargs
+            <-  {'compressed': 'False'}
+        <-  builtins.PyGffScanner.<object>
+    <-  None

@@ -126,13 +126,11 @@ impl AttributeBuilder {
                     builder.append(true);
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
-                    ),
-                )),
+                AttributeValue::String(v) => {
+                    builder.values().append_value(v);
+                    builder.append(true);
+                    Ok(())
+                }
             },
         }
     }

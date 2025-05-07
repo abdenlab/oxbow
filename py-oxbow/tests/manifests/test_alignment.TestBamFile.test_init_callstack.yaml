@@ -1,0 +1,39 @@
+BamFile("data/does-not-exist.bam"): |-
+    ->  oxbow._core.alignment.BamFile.__init__("data/does-not-exist.bam")
+        ->  oxbow._core.alignment.AlignmentFile.__init__("data/does-not-exist.bam", compressed=True)
+            ->  oxbow._core.base.DataFile.__init__("data/does-not-exist.bam", None, None)
+            <-  None
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/does-not-exist.bam'
+                ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
+                <-  {'compressed': 'True'}
+            !!  PanicException('called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: "No such file or directory" }')
+        !!  PanicException("called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: 'No such file or directory' }")
+    !!  PanicException("called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: 'No such file or directory' }")
+BamFile("data/malformed.bam"): |-
+    ->  oxbow._core.alignment.BamFile.__init__("data/malformed.bam")
+        ->  oxbow._core.alignment.AlignmentFile.__init__("data/malformed.bam", compressed=True)
+            ->  oxbow._core.base.DataFile.__init__("data/malformed.bam", None, None)
+            <-  None
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/malformed.bam'
+                ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
+                <-  {'compressed': 'True'}
+            !!  PanicException('called `Result::unwrap()` on an `Err` value: Error { kind: UnexpectedEof, message: "failed to fill whole buffer" }')
+        !!  PanicException("called `Result::unwrap()` on an `Err` value: Error { kind: UnexpectedEof, message: 'failed to fill whole buffer' }")
+    !!  PanicException("called `Result::unwrap()` on an `Err` value: Error { kind: UnexpectedEof, message: 'failed to fill whole buffer' }")
+BamFile("data/sample.bam"): |-
+    ->  oxbow._core.alignment.BamFile.__init__("data/sample.bam")
+        ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.bam", compressed=True)
+            ->  oxbow._core.base.DataFile.__init__("data/sample.bam", None, None)
+            <-  None
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/sample.bam'
+                ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
+                <-  {'compressed': 'True'}
+            <-  oxbow.core.PyBamScanner.<object>
+        <-  None
+    <-  None

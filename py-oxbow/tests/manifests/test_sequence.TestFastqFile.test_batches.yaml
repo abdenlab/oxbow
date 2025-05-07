@@ -1,0 +1,446 @@
+fields=('name', 'sequence'), batch_size=3:
+    batch-00:
+        name:
+        - seq1
+        - seq2
+        - seq3
+        sequence:
+        - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+        - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
+        - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+    batch-01:
+        name:
+        - seq4
+        - seq5
+        - seq6
+        sequence:
+        - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC
+        - TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCGAT
+        - GCATGCATGCATGCATGCATGCATGCATGCATGCATGCAT
+    batch-02:
+        name:
+        - seq7
+        - seq8
+        - seq9
+        sequence:
+        - ATCGATCGATCGATCGATCGATCGATCGATCGATCGATC
+        - CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+        - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+    batch-03:
+        name:
+        - seq10
+        - seq11
+        - seq12
+        sequence:
+        - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+        - CGATCGATCGATCGATCGATCGATCGATCGATCGATCG
+        - ATGCATGCATGCATGCATGCATGCATGCATGCATGCAT
+    batch-04:
+        name:
+        - seq13
+        - seq14
+        - seq15
+        sequence:
+        - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCT
+        - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAG
+        - TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCG
+    batch-05:
+        name:
+        - seq16
+        - seq17
+        - seq18
+        sequence:
+        - GCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+        - ATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+        - CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+    batch-06:
+        name:
+        - seq19
+        - seq20
+        sequence:
+        - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+        - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+fields=('nonexistent-field',), batch_size=3: 'Invalid field name: nonexistent-field'
+fields=None, batch_size=1:
+    batch-00:
+        description:
+        - ''
+        name:
+        - seq1
+        quality:
+        - I?D>8F(7J:G*H/E+K9I<A5L2M0N-O,P;Q]R[S\T`UaVbWcXdYeZf
+        sequence:
+        - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+    batch-01:
+        description:
+        - ''
+        name:
+        - seq2
+        quality:
+        - h^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXW
+        sequence:
+        - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
+    batch-02:
+        description:
+        - ''
+        name:
+        - seq3
+        quality:
+        - 6<J)9G*H/E+K:I?A4L1M-N,O;P]Q[R\StUaVbWcXdYeZf
+        sequence:
+        - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+    batch-03:
+        description:
+        - ''
+        name:
+        - seq4
+        quality:
+        - j`i_h]g\f[eZdYcXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXW
+        sequence:
+        - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC
+    batch-04:
+        description:
+        - ''
+        name:
+        - seq5
+        quality:
+        - B7L0M-N,O;P]Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5
+        sequence:
+        - TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCGAT
+    batch-05:
+        description:
+        - ''
+        name:
+        - seq6
+        quality:
+        - vUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXW
+        sequence:
+        - GCATGCATGCATGCATGCATGCATGCATGCATGCATGCAT
+    batch-06:
+        description:
+        - ''
+        name:
+        - seq7
+        quality:
+        - /E+K:I?A4L1M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H
+        sequence:
+        - ATCGATCGATCGATCGATCGATCGATCGATCGATCGATC
+    batch-07:
+        description:
+        - ''
+        name:
+        - seq8
+        quality:
+        - e\d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[
+        sequence:
+        - CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+    batch-08:
+        description:
+        - ''
+        name:
+        - seq9
+        quality:
+        - -N,O;P]Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5B7L0M
+        sequence:
+        - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+    batch-09:
+        description:
+        - ''
+        name:
+        - seq10
+        quality:
+        - LlKjIhGfEeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXWvUtSrQpOnMm
+        sequence:
+        - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+    batch-10:
+        description:
+        - ''
+        name:
+        - seq11
+        quality:
+        - :I?A4L1M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H/E+K
+        sequence:
+        - CGATCGATCGATCGATCGATCGATCGATCGATCGATCG
+    batch-11:
+        description:
+        - ''
+        name:
+        - seq12
+        quality:
+        - d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[e\
+        sequence:
+        - ATGCATGCATGCATGCATGCATGCATGCATGCATGCAT
+    batch-12:
+        description:
+        - ''
+        name:
+        - seq13
+        quality:
+        - O;P]Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5B7L0M-N,
+        sequence:
+        - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCT
+    batch-13:
+        description:
+        - ''
+        name:
+        - seq14
+        quality:
+        - IhGfEeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKj
+        sequence:
+        - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAG
+    batch-14:
+        description:
+        - ''
+        name:
+        - seq15
+        quality:
+        - 4L1M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H/E+K:I?A
+        sequence:
+        - TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCG
+    batch-15:
+        description:
+        - ''
+        name:
+        - seq16
+        quality:
+        - ZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[e\d[c
+        sequence:
+        - GCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+    batch-16:
+        description:
+        - ''
+        name:
+        - seq17
+        quality:
+        - ']Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5B7L0M-N,O;P'
+        sequence:
+        - ATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+    batch-17:
+        description:
+        - ''
+        name:
+        - seq18
+        quality:
+        - EeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKjIhGf
+        sequence:
+        - CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+    batch-18:
+        description:
+        - ''
+        name:
+        - seq19
+        quality:
+        - M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H/E+K:I?A4L1
+        sequence:
+        - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+    batch-19:
+        description:
+        - ''
+        name:
+        - seq20
+        quality:
+        - aXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[e\d[cZbY
+        sequence:
+        - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+fields=None, batch_size=3:
+    batch-00:
+        description:
+        - ''
+        - ''
+        - ''
+        name:
+        - seq1
+        - seq2
+        - seq3
+        quality:
+        - I?D>8F(7J:G*H/E+K9I<A5L2M0N-O,P;Q]R[S\T`UaVbWcXdYeZf
+        - h^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXW
+        - 6<J)9G*H/E+K:I?A4L1M-N,O;P]Q[R\StUaVbWcXdYeZf
+        sequence:
+        - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+        - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
+        - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+    batch-01:
+        description:
+        - ''
+        - ''
+        - ''
+        name:
+        - seq4
+        - seq5
+        - seq6
+        quality:
+        - j`i_h]g\f[eZdYcXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXW
+        - B7L0M-N,O;P]Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5
+        - vUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXW
+        sequence:
+        - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC
+        - TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCGAT
+        - GCATGCATGCATGCATGCATGCATGCATGCATGCATGCAT
+    batch-02:
+        description:
+        - ''
+        - ''
+        - ''
+        name:
+        - seq7
+        - seq8
+        - seq9
+        quality:
+        - /E+K:I?A4L1M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H
+        - e\d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[
+        - -N,O;P]Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5B7L0M
+        sequence:
+        - ATCGATCGATCGATCGATCGATCGATCGATCGATCGATC
+        - CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+        - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+    batch-03:
+        description:
+        - ''
+        - ''
+        - ''
+        name:
+        - seq10
+        - seq11
+        - seq12
+        quality:
+        - LlKjIhGfEeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXWvUtSrQpOnMm
+        - :I?A4L1M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H/E+K
+        - d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[e\
+        sequence:
+        - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+        - CGATCGATCGATCGATCGATCGATCGATCGATCGATCG
+        - ATGCATGCATGCATGCATGCATGCATGCATGCATGCAT
+    batch-04:
+        description:
+        - ''
+        - ''
+        - ''
+        name:
+        - seq13
+        - seq14
+        - seq15
+        quality:
+        - O;P]Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5B7L0M-N,
+        - IhGfEeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKj
+        - 4L1M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H/E+K:I?A
+        sequence:
+        - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCT
+        - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAG
+        - TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCG
+    batch-05:
+        description:
+        - ''
+        - ''
+        - ''
+        name:
+        - seq16
+        - seq17
+        - seq18
+        quality:
+        - ZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[e\d[c
+        - ']Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5B7L0M-N,O;P'
+        - EeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKjIhGf
+        sequence:
+        - GCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+        - ATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+        - CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+    batch-06:
+        description:
+        - ''
+        - ''
+        name:
+        - seq19
+        - seq20
+        quality:
+        - M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H/E+K:I?A4L1
+        - aXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[e\d[cZbY
+        sequence:
+        - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+        - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+fields=None, batch_size=None:
+    batch-00:
+        description:
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        - ''
+        name:
+        - seq1
+        - seq2
+        - seq3
+        - seq4
+        - seq5
+        - seq6
+        - seq7
+        - seq8
+        - seq9
+        - seq10
+        - seq11
+        - seq12
+        - seq13
+        - seq14
+        - seq15
+        - seq16
+        - seq17
+        - seq18
+        - seq19
+        - seq20
+        quality:
+        - I?D>8F(7J:G*H/E+K9I<A5L2M0N-O,P;Q]R[S\T`UaVbWcXdYeZf
+        - h^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXW
+        - 6<J)9G*H/E+K:I?A4L1M-N,O;P]Q[R\StUaVbWcXdYeZf
+        - j`i_h]g\f[eZdYcXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXW
+        - B7L0M-N,O;P]Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5
+        - vUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXW
+        - /E+K:I?A4L1M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H
+        - e\d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[
+        - -N,O;P]Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5B7L0M
+        - LlKjIhGfEeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXWvUtSrQpOnMm
+        - :I?A4L1M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H/E+K
+        - d[cZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[e\
+        - O;P]Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5B7L0M-N,
+        - IhGfEeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKj
+        - 4L1M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H/E+K:I?A
+        - ZbYaXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[e\d[c
+        - ']Q[R\StUaVbWcXdYeZfI?D>8F(7J:G*H/E+K9I<A5B7L0M-N,O;P'
+        - EeDdCcBbAa`_]\[ZYXWh^g_f]e\d[cZbYaXWvUtSrQpOnMmLlKjIhGf
+        - M-N,O;P]Q[R\StUaVbWcXdYeZf6<J)9G*H/E+K:I?A4L1
+        - aXWvUtSrQpOnMmLlKjIhGfEeDdCcBbAa`_]\[ZYXWj`i_h]g\f[e\d[cZbY
+        sequence:
+        - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+        - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
+        - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+        - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC
+        - TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCGAT
+        - GCATGCATGCATGCATGCATGCATGCATGCATGCATGCAT
+        - ATCGATCGATCGATCGATCGATCGATCGATCGATCGATC
+        - CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+        - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+        - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+        - CGATCGATCGATCGATCGATCGATCGATCGATCGATCG
+        - ATGCATGCATGCATGCATGCATGCATGCATGCATGCAT
+        - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCT
+        - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAG
+        - TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCG
+        - GCATGCATGCATGCATGCATGCATGCATGCATGCATGC
+        - ATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+        - CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
+        - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
+        - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC

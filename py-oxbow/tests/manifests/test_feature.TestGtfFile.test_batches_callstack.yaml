@@ -1,0 +1,280 @@
+GtfFile("data/sample.gtf", fields=('seqid', 'start', 'end')).batches(batch_size=5): |-
+    ->  oxbow._core.base.DataFile.batches(batch_size=5)
+    <-  DataFile.batches.<generator>
+    ->  oxbow._core.feature.GxfFile._batch_readers
+    <-  GxfFile._batch_readers.<generator>
+    ->  oxbow._core.base.DataFile._scanner
+        ->  oxbow._core.base.DataFile._source
+        <-  'data/sample.gtf'
+        ->  oxbow._core.feature.GxfFile._scanner_kwargs
+        <-  {'compressed': 'False'}
+    <-  builtins.PyGtfScanner.<object>
+    ->  oxbow._core.feature.GxfFile._scan_kwargs
+    <-  {'attribute_defs': [("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), ("'hgnc_id'", "'String'"), ("'level'", "'String'"), '<', '6', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'fields': ("'seqid'", "'start'", "'end'")}
+    ->  oxbow._core.feature.GxfFile._batch_readers.<generator>
+        ->  oxbow._core.base.DataFile.schema
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/sample.gtf'
+                ->  oxbow._core.feature.GxfFile._scanner_kwargs
+                <-  {'compressed': 'False'}
+            <-  builtins.PyGtfScanner.<object>
+            ->  oxbow._core.feature.GxfFile._schema_kwargs
+            <-  {'fields': ("'seqid'", "'start'", "'end'"), 'attribute_defs': [("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), ("'hgnc_id'", "'String'"), ("'level'", "'String'"), '<', '6', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>']}
+        <-  seqid: string
+            start: int32
+            end: int32
+            attributes: struct<ccdsid: string, exon_id: string, exon_number: string, gene_id: string, gene_name: string, gene_type: string, havana_gene: string, havana_transcript: string, hgnc_id: string, level: string, protein_id: string, tag: string, transcript_id: string, transcript_name: string, transcript_support_level: string, transcript_type: string>
+              child 0, ccdsid: string
+              child 1, exon_id: string
+              child 2, exon_number: string
+              child 3, gene_id: string
+              child 4, gene_name: string
+              child 5, gene_type: string
+              child 6, havana_gene: string
+              child 7, havana_transcript: string
+              child 8, hgnc_id: string
+              child 9, level: string
+              child 10, protein_id: string
+              child 11, tag: string
+              child 12, transcript_id: string
+              child 13, transcript_name: string
+              child 14, transcript_support_level: string
+              child 15, transcript_type: string
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            seqid: string
+            start: int32
+            end: int32
+            attributes: struct<ccdsid: string, exon_id: string, exon_number: string, gene_id: string, gene_name: string, gene_type: string, havana_gene: string, havana_transcript: string, hgnc_id: string, level: string, protein_id: string, tag: string, transcript_id: string, transcript_name: string, transcript_support_level: string, transcript_type: string>
+              child 0, ccdsid: string
+              child 1, exon_id: string
+              child 2, exon_number: string
+              child 3, gene_id: string
+              child 4, gene_name: string
+              child 5, gene_type: string
+              child 6, havana_gene: string
+              child 7, havana_transcript: string
+              child 8, hgnc_id: string
+              child 9, level: string
+              child 10, protein_id: string
+              child 11, tag: string
+              child 12, transcript_id: string
+              child 13, transcript_name: string
+              child 14, transcript_support_level: string
+              child 15, transcript_type: string
+            ----
+            seqid: ["chr6","chr12","chr6","chr6","chr5"]
+            start: [17808768,95257150,135465814,47016617,91193513]
+            end: [17808930,95257239,135466373,47016768,91314390]
+            attributes: -- is_valid: all not null
+            -- child 0 type: string
+            [null,null,null,null,null]
+            -- child 1 type: string
+            ["ENSE00000688402.1","ENSE00003554096.1","ENSE00001350331.1","ENSE00003612242.1",null]
+            -- child 2 type: string
+            ["2","4","4","2",null]
+            -- child 3 type: string
+            ["ENSG00000137177.20","ENSG00000028203.19","ENSG00000135541.22","ENSG00000153292.16","ENSG00000248323.9"]
+            -- child 4 type: string
+            ["KIF13A","VEZT","AHI1","ADGRF1","LUCAT1"]
+            -- child 5 type: string
+            ["protein_coding","protein_coding","protein_coding","protein_coding","lncRNA"]
+            -- child 6 type: string
+            ["OTTHUMG00000014313.9","OTTHUMG00000170182.4","OTTHUMG00000015631.9","OTTHUMG00000014795.3","OTTHUMG00000162611.16"]
+            -- child 7 type: string
+            ["OTTHUMT00000039956.2","OTTHUMT00000407816.2",null,null,null]
+            -- child 8 type: string
+            ["HGNC:14566","HGNC:18258","HGNC:21575","HGNC:18990","HGNC:48498"]
+            -- child 9 type: string
+            ["2","2","2","3","2"]
+            -- child 10 type: string
+            ["ENSP00000351150.6","ENSP00000380894.4","ENSP00000505809.1","ENSP00000283297.5",null]
+            -- child 11 type: string
+            ["mRNA_start_NF","mRNA_end_NF","alternative_3_UTR","basic","basic"]
+            -- child 12 type: string
+            ["ENST00000358380.10","ENST00000397792.8","ENST00000680840.1","ENST00000283297.5","ENST00000730025.1"]
+            -- child 13 type: string
+            ["KIF13A-202","VEZT-202","AHI1-242","ADGRF1-201","LUCAT1-267"]
+            -- child 14 type: string
+            ["1","1",null,"1",null]
+            -- child 15 type: string
+            ["protein_coding","protein_coding","nonsense_mediated_decay","protein_coding","lncRNA"]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            seqid: string
+            start: int32
+            end: int32
+            attributes: struct<ccdsid: string, exon_id: string, exon_number: string, gene_id: string, gene_name: string, gene_type: string, havana_gene: string, havana_transcript: string, hgnc_id: string, level: string, protein_id: string, tag: string, transcript_id: string, transcript_name: string, transcript_support_level: string, transcript_type: string>
+              child 0, ccdsid: string
+              child 1, exon_id: string
+              child 2, exon_number: string
+              child 3, gene_id: string
+              child 4, gene_name: string
+              child 5, gene_type: string
+              child 6, havana_gene: string
+              child 7, havana_transcript: string
+              child 8, hgnc_id: string
+              child 9, level: string
+              child 10, protein_id: string
+              child 11, tag: string
+              child 12, transcript_id: string
+              child 13, transcript_name: string
+              child 14, transcript_support_level: string
+              child 15, transcript_type: string
+            ----
+            seqid: ["chr1","chr20","chr7","chr19","chr1"]
+            start: [208244506,31934692,42932159,55063948,120952303]
+            end: [208245879,31934888,42932174,55064412,120952785]
+            attributes: -- is_valid: all not null
+            -- child 0 type: string
+            [null,null,"CCDS5467.1",null,null]
+            -- child 1 type: string
+            [null,"ENSE00003729115.1","ENSE00003556589.1","ENSE00002791736.1","ENSE00004130809.1"]
+            -- child 2 type: string
+            [null,"12","1","2","1"]
+            -- child 3 type: string
+            ["ENSG00000304011.1","ENSG00000131044.19","ENSG00000256646.8","ENSG00000160439.16","ENSG00000226067.8"]
+            -- child 4 type: string
+            ["ENSG00000304011","TTLL9","ENSG00000256646","RDH13","LINC00623"]
+            -- child 5 type: string
+            ["lncRNA","protein_coding","protein_coding","protein_coding","lncRNA"]
+            -- child 6 type: string
+            [null,"OTTHUMG00000186843.3","OTTHUMG00000168259.1","OTTHUMG00000180478.4","OTTHUMG00000185016.4"]
+            -- child 7 type: string
+            [null,"OTTHUMT00000473883.1","OTTHUMT00000398997.1","OTTHUMT00000451484.2",null]
+            -- child 8 type: string
+            [null,"HGNC:16118",null,"HGNC:19978","HGNC:44252"]
+            -- child 9 type: string
+            ["2","2","2","2","2"]
+            -- child 10 type: string
+            [null,"ENSP00000365086.3","ENSP00000455744.1",null,null]
+            -- child 11 type: string
+            ["TAGENE",null,"not_organism_supported",null,"TAGENE"]
+            -- child 12 type: string
+            ["ENST00000798830.1","ENST00000375921.6","ENST00000442788.5","ENST00000593134.1","ENST00000769594.1"]
+            -- child 13 type: string
+            ["ENST00000798830","TTLL9-202","ENST00000442788","RDH13-222","LINC00623-343"]
+            -- child 14 type: string
+            [null,"1","5","4",null]
+            -- child 15 type: string
+            ["lncRNA","nonsense_mediated_decay","nonsense_mediated_decay","protein_coding_CDS_not_defined","lncRNA"]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            seqid: string
+            start: int32
+            end: int32
+            attributes: struct<ccdsid: string, exon_id: string, exon_number: string, gene_id: string, gene_name: string, gene_type: string, havana_gene: string, havana_transcript: string, hgnc_id: string, level: string, protein_id: string, tag: string, transcript_id: string, transcript_name: string, transcript_support_level: string, transcript_type: string>
+              child 0, ccdsid: string
+              child 1, exon_id: string
+              child 2, exon_number: string
+              child 3, gene_id: string
+              child 4, gene_name: string
+              child 5, gene_type: string
+              child 6, havana_gene: string
+              child 7, havana_transcript: string
+              child 8, hgnc_id: string
+              child 9, level: string
+              child 10, protein_id: string
+              child 11, tag: string
+              child 12, transcript_id: string
+              child 13, transcript_name: string
+              child 14, transcript_support_level: string
+              child 15, transcript_type: string
+            ----
+            seqid: ["chrX","chr17","chr18","chr1","chr5"]
+            start: [72495156,69302718,58357194,40988594,131635031]
+            end: [72495268,69302906,58357252,40988710,131635213]
+            attributes: -- is_valid: all not null
+            -- child 0 type: string
+            ["CCDS94631.1","CCDS11685.1",null,null,null]
+            -- child 1 type: string
+            ["ENSE00003612797.1","ENSE00001373572.1","ENSE00003673013.1","ENSE00003966028.1","ENSE00002070419.1"]
+            -- child 2 type: string
+            ["5","8","19","5","1"]
+            -- child 3 type: string
+            ["ENSG00000147099.21","ENSG00000154265.16","ENSG00000049759.20","ENSG00000171793.17","ENSG00000158987.22"]
+            -- child 4 type: string
+            ["HDAC8","ABCA5","NEDD4L","CTPS1","RAPGEF6"]
+            -- child 5 type: string
+            ["protein_coding","protein_coding","protein_coding","protein_coding","protein_coding"]
+            -- child 6 type: string
+            ["OTTHUMG00000021814.18","OTTHUMG00000180303.4","OTTHUMG00000179875.12","OTTHUMG00000005712.13","OTTHUMG00000162683.7"]
+            -- child 7 type: string
+            ["OTTHUMT00000057204.3","OTTHUMT00000450654.3","OTTHUMT00000448908.1",null,"OTTHUMT00000370060.1"]
+            -- child 8 type: string
+            ["HGNC:13315","HGNC:35","HGNC:7728","HGNC:2519","HGNC:20655"]
+            -- child 9 type: string
+            ["2","2","2","2","2"]
+            -- child 10 type: string
+            ["ENSP00000362685.2","ENSP00000376443.2","ENSP00000502309.1","ENSP00000512402.1","ENSP00000425772.1"]
+            -- child 11 type: string
+            ["basic","basic","RNA_Seq_supported_only","RNA_Seq_supported_only",null]
+            -- child 12 type: string
+            ["ENST00000373583.6","ENST00000392676.8","ENST00000674845.1","ENST00000696108.1","ENST00000515170.5"]
+            -- child 13 type: string
+            ["HDAC8-208","ABCA5-201","NEDD4L-242","CTPS1-221","RAPGEF6-214"]
+            -- child 14 type: string
+            ["5","1",null,null,"2"]
+            -- child 15 type: string
+            ["protein_coding","protein_coding","nonsense_mediated_decay","nonsense_mediated_decay","nonsense_mediated_decay"]
+        ->  oxbow._core.base.DataFile.batches.<generator>
+        <-  pyarrow.RecordBatch
+            seqid: string
+            start: int32
+            end: int32
+            attributes: struct<ccdsid: string, exon_id: string, exon_number: string, gene_id: string, gene_name: string, gene_type: string, havana_gene: string, havana_transcript: string, hgnc_id: string, level: string, protein_id: string, tag: string, transcript_id: string, transcript_name: string, transcript_support_level: string, transcript_type: string>
+              child 0, ccdsid: string
+              child 1, exon_id: string
+              child 2, exon_number: string
+              child 3, gene_id: string
+              child 4, gene_name: string
+              child 5, gene_type: string
+              child 6, havana_gene: string
+              child 7, havana_transcript: string
+              child 8, hgnc_id: string
+              child 9, level: string
+              child 10, protein_id: string
+              child 11, tag: string
+              child 12, transcript_id: string
+              child 13, transcript_name: string
+              child 14, transcript_support_level: string
+              child 15, transcript_type: string
+            ----
+            seqid: ["chr12","chr3","chr9","chr6","chr19"]
+            start: [19260949,75435252,122855184,52479037,16235231]
+            end: [19261021,75435413,122855397,52479250,16235345]
+            attributes: -- is_valid: all not null
+            -- child 0 type: string
+            [null,null,"CCDS43874.1",null,null]
+            -- child 1 type: string
+            ["ENSE00003980557.1","ENSE00004218036.1","ENSE00003692738.1","ENSE00003527710.1","ENSE00002899123.1"]
+            -- child 2 type: string
+            ["7","1","14","8","5"]
+            -- child 3 type: string
+            ["ENSG00000052126.17","ENSG00000272690.7","ENSG00000056586.16","ENSG00000096093.16","ENSG00000072958.9"]
+            -- child 4 type: string
+            ["PLEKHA5","LINC02018","RC3H2","EFHC1","AP1M1"]
+            -- child 5 type: string
+            ["protein_coding","lncRNA","protein_coding","protein_coding","protein_coding"]
+            -- child 6 type: string
+            ["OTTHUMG00000167921.3","OTTHUMG00000185852.36","OTTHUMG00000020632.4","OTTHUMG00000014848.14","OTTHUMG00000182323.4"]
+            -- child 7 type: string
+            [null,null,"OTTHUMT00000053966.1","OTTHUMT00000489944.1","OTTHUMT00000460505.1"]
+            -- child 8 type: string
+            ["HGNC:30036","HGNC:52853","HGNC:21461","HGNC:16406","HGNC:13667"]
+            -- child 9 type: string
+            ["2","2","2","2","2"]
+            -- child 10 type: string
+            [null,null,"ENSP00000362774.1","ENSP00000489854.1","ENSP00000468015.1"]
+            -- child 11 type: string
+            ["RNA_Seq_supported_only","TAGENE","basic","RNA_Seq_supported_only","mRNA_start_NF"]
+            -- child 12 type: string
+            ["ENST00000706617.1","ENST00000815791.1","ENST00000373670.5","ENST00000637089.1","ENST00000586543.1"]
+            -- child 13 type: string
+            ["PLEKHA5-236","LINC02018-313","RC3H2-203","EFHC1-227","AP1M1-205"]
+            -- child 14 type: string
+            [null,null,"5","5","5"]
+            -- child 15 type: string
+            ["retained_intron","lncRNA","protein_coding","protein_coding","protein_coding"]
+    <-  oxbow._core.feature.GxfFile._batch_readers.<locals>.<lambda>

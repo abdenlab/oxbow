@@ -1276,11 +1276,18 @@ wheels = [
 [[package]]
 name = "oxbow"
 source = { editable = "." }
+dependencies = [
+    { name = "pandas" },
+    { name = "polars" },
+    { name = "pyarrow" },
+]
 
 [package.dev-dependencies]
 dev = [
-    { name = "polars" },
+    { name = "debugpy" },
     { name = "pytest" },
+    { name = "pytest-manifest" },
+    { name = "pytest-mock" },
     { name = "ruff" },
 ]
 docs = [
@@ -1293,17 +1300,22 @@ docs = [
 ]
 notebooks = [
     { name = "jupyterlab" },
-    { name = "pandas" },
-    { name = "pyarrow" },
     { name = "pysam" },
 ]
 
 [package.metadata]
+requires-dist = [
+    { name = "pandas", specifier = ">=2.2.3" },
+    { name = "polars", specifier = ">=1.26.0" },
+    { name = "pyarrow", specifier = ">=19.0.1" },
+]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "polars", specifier = ">=1.26.0" },
+    { name = "debugpy", specifier = "==1.8.13" },
     { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-manifest", specifier = "==0.1" },
+    { name = "pytest-mock" },
     { name = "ruff", specifier = ">=0.11.2" },
 ]
 docs = [
@@ -1316,8 +1328,6 @@ docs = [
 ]
 notebooks = [
     { name = "jupyterlab", specifier = ">=4.3.6" },
-    { name = "pandas", specifier = ">=2.2.3" },
-    { name = "pyarrow", specifier = ">=19.0.1" },
     { name = "pysam", specifier = ">=0.23.0" },
 ]
 
@@ -1633,6 +1643,31 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ae/3c/c9d525a414d506893f0cd8a8d0de7706446213181570cdbd766691164e40/pytest-8.3.5.tar.gz", hash = "sha256:f4efe70cc14e511565ac476b57c279e12a855b11f48f212af1080ef2263d3845", size = 1450891 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/30/3d/64ad57c803f1fa1e963a7946b6e0fea4a70df53c1a7fed304586539c2bac/pytest-8.3.5-py3-none-any.whl", hash = "sha256:c69214aa47deac29fad6c2a4f590b9c4a9fdb16a403176fe154b79c0b4d4d820", size = 343634 },
+]
+
+[[package]]
+name = "pytest-manifest"
+version = "0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1f/a9/91b80fd45195c43df51e3c42163321cb485652a7a81cbb4dfd336b119689/pytest_manifest-0.1.tar.gz", hash = "sha256:4a2695153eb068c19c8cc406c7229f486615d8888666e65794ee401129266279", size = 4644 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/29/e0/817bc9b206c08775ff08e019fbe4f7cf428131d5761565331835d33ac7ab/pytest_manifest-0.1-py3-none-any.whl", hash = "sha256:be63aa6e777ebb40f479e4b896c322c567cafa3cc39fe2d04f208fd1627b2ac5", size = 3485 },
+]
+
+[[package]]
+name = "pytest-mock"
+version = "3.14.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c6/90/a955c3ab35ccd41ad4de556596fa86685bf4fc5ffcc62d22d856cfd4e29a/pytest-mock-3.14.0.tar.gz", hash = "sha256:2719255a1efeceadbc056d6bf3df3d1c5015530fb40cf347c0f9afac88410bd0", size = 32814 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f2/3b/b26f90f74e2986a82df6e7ac7e319b8ea7ccece1caec9f8ab6104dc70603/pytest_mock-3.14.0-py3-none-any.whl", hash = "sha256:0b72c38033392a5f4621342fe11e9219ac11ec9d375f8e2a0c164539e0d70f6f", size = 9863 },
 ]
 
 [[package]]

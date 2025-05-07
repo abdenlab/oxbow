@@ -1,0 +1,45 @@
+VcfFile("data/does-not-exist.vcf"): |-
+    ->  oxbow._core.variant.VariantFile.__init__("data/does-not-exist.vcf")
+        ->  oxbow._core.base.DataFile.__init__("data/does-not-exist.vcf", None, None)
+        <-  None
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/does-not-exist.vcf'
+            ->  oxbow._core.variant.VariantFile._scanner_kwargs
+            <-  {'compressed': 'False'}
+        !!  FileNotFoundError('No such file or directory (os error 2)')
+    !!  FileNotFoundError("No such file or directory (os error 2)")
+VcfFile("data/malformed.vcf"): |-
+    ->  oxbow._core.variant.VariantFile.__init__("data/malformed.vcf")
+        ->  oxbow._core.base.DataFile.__init__("data/malformed.vcf", None, None)
+        <-  None
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/malformed.vcf'
+            ->  oxbow._core.variant.VariantFile._scanner_kwargs
+            <-  {'compressed': 'False'}
+        !!  FileNotFoundError('No such file or directory (os error 2)')
+    !!  FileNotFoundError("No such file or directory (os error 2)")
+VcfFile("data/sample.vcf"): |-
+    ->  oxbow._core.variant.VariantFile.__init__("data/sample.vcf")
+        ->  oxbow._core.base.DataFile.__init__("data/sample.vcf", None, None)
+        <-  None
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/sample.vcf'
+            ->  oxbow._core.variant.VariantFile._scanner_kwargs
+            <-  {'compressed': 'False'}
+        <-  oxbow.core.PyVcfScanner.<object>
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/sample.vcf'
+            ->  oxbow._core.variant.VariantFile._scanner_kwargs
+            <-  {'compressed': 'False'}
+        <-  oxbow.core.PyVcfScanner.<object>
+        ->  oxbow._core.base.DataFile._scanner
+            ->  oxbow._core.base.DataFile._source
+            <-  'data/sample.vcf'
+            ->  oxbow._core.variant.VariantFile._scanner_kwargs
+            <-  {'compressed': 'False'}
+        <-  oxbow.core.PyVcfScanner.<object>
+    <-  None

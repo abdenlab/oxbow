@@ -1,0 +1,180 @@
+batch_size=1:
+    end:
+    - 17808930
+    frame:
+    - null
+    score:
+    - null
+    seqid:
+    - chr6
+    source:
+    - HAVANA
+    start:
+    - 17808768
+    strand:
+    - '-'
+    type:
+    - exon
+batch_size=2:
+    end:
+    - 17808930
+    - 95257239
+    frame:
+    - null
+    - null
+    score:
+    - null
+    - null
+    seqid:
+    - chr6
+    - chr12
+    source:
+    - HAVANA
+    - HAVANA
+    start:
+    - 17808768
+    - 95257150
+    strand:
+    - '-'
+    - +
+    type:
+    - exon
+    - exon
+batch_size=3:
+    end:
+    - 17808930
+    - 95257239
+    - 135466373
+    frame:
+    - null
+    - null
+    - 0
+    score:
+    - null
+    - null
+    - null
+    seqid:
+    - chr6
+    - chr12
+    - chr6
+    source:
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    start:
+    - 17808768
+    - 95257150
+    - 135465814
+    strand:
+    - '-'
+    - +
+    - '-'
+    type:
+    - exon
+    - exon
+    - CDS
+batch_size=4:
+    end:
+    - 17808930
+    - 95257239
+    - 135466373
+    - 47016768
+    frame:
+    - null
+    - null
+    - 0
+    - 1
+    score:
+    - null
+    - null
+    - null
+    - null
+    seqid:
+    - chr6
+    - chr12
+    - chr6
+    - chr6
+    source:
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    - ENSEMBL
+    start:
+    - 17808768
+    - 95257150
+    - 135465814
+    - 47016617
+    strand:
+    - '-'
+    - +
+    - '-'
+    - '-'
+    type:
+    - exon
+    - exon
+    - CDS
+    - CDS
+fields=("seqid", "start", "end"):
+    end:
+    - 17808930
+    - 95257239
+    - 135466373
+    - 47016768
+    - 91314390
+    - 208245879
+    - 31934888
+    - 42932174
+    - 55064412
+    - 120952785
+    - 72495268
+    - 69302906
+    - 58357252
+    - 40988710
+    - 131635213
+    - 19261021
+    - 75435413
+    - 122855397
+    - 52479250
+    - 16235345
+    seqid:
+    - chr6
+    - chr12
+    - chr6
+    - chr6
+    - chr5
+    - chr1
+    - chr20
+    - chr7
+    - chr19
+    - chr1
+    - chrX
+    - chr17
+    - chr18
+    - chr1
+    - chr5
+    - chr12
+    - chr3
+    - chr9
+    - chr6
+    - chr19
+    start:
+    - 17808768
+    - 95257150
+    - 135465814
+    - 47016617
+    - 91193513
+    - 208244506
+    - 31934692
+    - 42932159
+    - 55063948
+    - 120952303
+    - 72495156
+    - 69302718
+    - 58357194
+    - 40988594
+    - 131635031
+    - 19260949
+    - 75435252
+    - 122855184
+    - 52479037
+    - 16235231

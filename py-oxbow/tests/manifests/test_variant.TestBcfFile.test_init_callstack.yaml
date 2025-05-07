@@ -1,0 +1,51 @@
+BcfFile("data/does-not-exist.bcf"): |-
+    ->  oxbow._core.variant.BcfFile.__init__("data/does-not-exist.bcf")
+        ->  oxbow._core.variant.VariantFile.__init__(uri="data/does-not-exist.bcf", opener=None, fields=None, index=None, compressed=True, regions=None, info_fields=None, genotype_fields=None, samples=None, genotype_by="sample")
+            ->  oxbow._core.base.DataFile.__init__("data/does-not-exist.bcf", None, None)
+            <-  None
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/does-not-exist.bcf'
+                ->  oxbow._core.variant.BcfFile._scanner_kwargs
+                <-  {}
+            !!  FileNotFoundError('No such file or directory (os error 2)')
+        !!  FileNotFoundError("No such file or directory (os error 2)")
+    !!  FileNotFoundError("No such file or directory (os error 2)")
+BcfFile("data/malformed.bcf"): |-
+    ->  oxbow._core.variant.BcfFile.__init__("data/malformed.bcf")
+        ->  oxbow._core.variant.VariantFile.__init__(uri="data/malformed.bcf", opener=None, fields=None, index=None, compressed=True, regions=None, info_fields=None, genotype_fields=None, samples=None, genotype_by="sample")
+            ->  oxbow._core.base.DataFile.__init__("data/malformed.bcf", None, None)
+            <-  None
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/malformed.bcf'
+                ->  oxbow._core.variant.BcfFile._scanner_kwargs
+                <-  {}
+            !!  OSError('invalid BGZF header')
+        !!  OSError("invalid BGZF header")
+    !!  OSError("invalid BGZF header")
+BcfFile("data/sample.bcf"): |-
+    ->  oxbow._core.variant.BcfFile.__init__("data/sample.bcf")
+        ->  oxbow._core.variant.VariantFile.__init__(uri="data/sample.bcf", opener=None, fields=None, index=None, compressed=True, regions=None, info_fields=None, genotype_fields=None, samples=None, genotype_by="sample")
+            ->  oxbow._core.base.DataFile.__init__("data/sample.bcf", None, None)
+            <-  None
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/sample.bcf'
+                ->  oxbow._core.variant.BcfFile._scanner_kwargs
+                <-  {}
+            <-  oxbow.core.PyBcfScanner.<object>
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/sample.bcf'
+                ->  oxbow._core.variant.BcfFile._scanner_kwargs
+                <-  {}
+            <-  oxbow.core.PyBcfScanner.<object>
+            ->  oxbow._core.base.DataFile._scanner
+                ->  oxbow._core.base.DataFile._source
+                <-  'data/sample.bcf'
+                ->  oxbow._core.variant.BcfFile._scanner_kwargs
+                <-  {}
+            <-  oxbow.core.PyBcfScanner.<object>
+        <-  None
+    <-  None

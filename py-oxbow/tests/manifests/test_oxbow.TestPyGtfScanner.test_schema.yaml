@@ -1,0 +1,13 @@
+schema():
+- seqid
+- source
+- type
+- start
+- end
+- score
+- strand
+- frame
+schema(fields=("seqid", "start", "end")):
+- seqid
+- start
+- end

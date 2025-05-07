@@ -8,6 +8,8 @@ use arrow::array::{
 use arrow::datatypes::{DataType, Int32Type};
 use arrow::error::ArrowError;
 
+use crate::util::reset_dictarray_builder;
+
 pub const DEFAULT_FIELD_NAMES: [&str; 8] = [
     "chrom",
     "start",
@@ -126,7 +128,10 @@ impl FieldBuilder {
 
     pub fn finish(&mut self) -> arrow::array::ArrayRef {
         match self {
-            Self::Chrom(builder) => Arc::new(builder.finish()),
+            Self::Chrom(builder) => {
+                let array = reset_dictarray_builder(builder);
+                Arc::new(array)
+            }
             Self::Start(builder) => Arc::new(builder.finish()),
             Self::End(builder) => Arc::new(builder.finish()),
             Self::BasesCovered(builder) => Arc::new(builder.finish()),
