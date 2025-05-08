@@ -1,0 +1,24 @@
+? FastaFile("data/sample.fasta", index="data/sample.fai", regions=["seq1:10-20", "seq10",
+    "seq2:1-30", "seq20:30-"], compressed=False)
+: |-
+    ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta", index="data/sample.fai", regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], compressed=False)
+        ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fasta", None, None, "data/sample.fai", None, False)
+            ->  oxbow._core.base.DataFile.__init__("data/sample.fasta", None, None)
+            <-  None
+        <-  None
+    <-  None
+FastaFile("data/sample.fasta", index=None, regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], compressed=False): |-
+    ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta", index=None, regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], compressed=False)
+    !!  ValueError("Index file is required when regions are specified.")
+? FastaFile("data/sample.fasta.gz", index="data/sample.fai.gz", regions=["seq1:10-20",
+    "seq10", "seq2:1-30", "seq20:30-"], compressed=True)
+: |-
+    ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta.gz", index="data/sample.fai.gz", regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], compressed=True)
+        ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fasta.gz", None, None, "data/sample.fai.gz", None, True)
+            ->  oxbow._core.base.DataFile.__init__("data/sample.fasta.gz", None, None)
+            <-  None
+        <-  None
+    <-  None
+FastaFile("data/sample.fasta.gz", index=None, regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], compressed=True): |-
+    ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta.gz", index=None, regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], compressed=True)
+    !!  ValueError("Index file is required when regions are specified.")
