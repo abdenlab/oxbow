@@ -251,6 +251,20 @@ class TestPyFastaScanner:
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
+    @pytest.mark.parametrize(
+        "input",
+        [
+            Input(regions=["seq1:10-20", "seq10"], index="data/sample.fai"),
+            Input(regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], index="data/sample.fai"),
+        ],
+    )
+    def test_scan_query(self, input, manifest: pytest_manifest.Manifest):
+        scanner = ox.PyFastaScanner("data/sample.fasta")
+        schema = scanner.schema()
+        stream = scanner.scan_query(*input.args, **input.kwargs)
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
     def test_scan_invalid_field(self, manifest):
         input = Input(fields=("name", "sequence", "foo"))
         scanner = ox.PyFastaScanner("data/sample.fasta")
