@@ -255,7 +255,10 @@ class TestPyFastaScanner:
         "input",
         [
             Input(regions=["seq1:10-20", "seq10"], index="data/sample.fai"),
-            Input(regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], index="data/sample.fai"),
+            Input(
+                regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"],
+                index="data/sample.fai",
+            ),
         ],
     )
     def test_scan_query(self, input, manifest: pytest_manifest.Manifest):
