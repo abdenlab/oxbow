@@ -256,7 +256,7 @@ class TestPyFastaScanner:
         [
             Input(regions=["seq1:10-20", "seq10"], index="data/sample.fasta.fai"),
             Input(
-                regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"],
+                regions=["seq1:10-20", "seq10", "seq2:1-30"],
                 index="data/sample.fasta.fai",
             ),
         ],

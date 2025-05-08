@@ -169,28 +169,28 @@ class TestFastaFile:
         [
             (
                 "data/sample.fasta",
-                "data/sample.fai",
+                "data/sample.fasta.fai",
                 None,
                 False,
                 ["seq1:10-20", "seq10"],
             ),
             (
                 "data/sample.fasta",
-                "data/sample.fai",
+                "data/sample.fasta.fai",
                 None,
                 False,
                 ["seq1:10-20", "seq10", "seq2:1-30"],
             ),
             (
                 "data/sample.fasta.gz",
-                "data/sample.fai",
+                "data/sample.fasta.fai",
                 "data/sample.fasta.gz.gzi",
                 True,
                 ["seq1:10-20", "seq10"],
             ),
             (
                 "data/sample.fasta.gz",
-                "data/sample.fai",
+                "data/sample.fasta.fai",
                 "data/sample.fasta.gz.gzi",
                 True,
                 ["seq1:10-20", "seq10", "seq2:1-30"],
