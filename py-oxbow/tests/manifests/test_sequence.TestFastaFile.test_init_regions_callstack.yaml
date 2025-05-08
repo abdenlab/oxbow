@@ -7,23 +7,9 @@
             <-  None
         <-  None
     <-  None
-FastaFile("data/sample.fasta", index="data/sample.fai", regions=["seq1:10-20", "seq10", "seq2:1-30"], compressed=False): |-
-    ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta", index="data/sample.fai", regions=["seq1:10-20", "seq10", "seq2:1-30"], compressed=False)
-        ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fasta", None, None, "data/sample.fai", None, False)
-            ->  oxbow._core.base.DataFile.__init__("data/sample.fasta", None, None)
-            <-  None
-        <-  None
-    <-  None
 FastaFile("data/sample.fasta", index=None, gzi=None, regions=["seq1:10-20", "seq10", "seq2:1-30"], compressed=False): |-
     ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta", index=None, gzi=None, regions=["seq1:10-20", "seq10", "seq2:1-30"], compressed=False)
-    !!  ValueError("Index file is required for FASTA when regions are specified.")
-FastaFile("data/sample.fasta.gz", gzi="data/sample.fai.gz", regions=["seq1:10-20", "seq10", "seq2:1-30"], compressed=True): |-
-    ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta.gz", gzi="data/sample.fai.gz", regions=["seq1:10-20", "seq10", "seq2:1-30"], compressed=True)
-        ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fasta.gz", None, None, None, "data/sample.fai.gz", True)
-            ->  oxbow._core.base.DataFile.__init__("data/sample.fasta.gz", None, None)
-            <-  None
-        <-  None
-    <-  None
+    !!  ValueError("A FAI index file is required for FASTA when regions are specified.")
 ? FastaFile("data/sample.fasta.gz", index="data/sample.fai", gzi="data/sample.fasta.gzi",
     regions=["seq1:10-20", "seq10", "seq2:1-30"], compressed=True)
 : |-
@@ -37,4 +23,12 @@ FastaFile("data/sample.fasta.gz", gzi="data/sample.fai.gz", regions=["seq1:10-20
     "seq10", "seq2:1-30"], compressed=True)
 : |-
     ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta.gz", index="data/sample.fai", gzi=None, regions=["seq1:10-20", "seq10", "seq2:1-30"], compressed=True)
-    !!  ValueError("GZI index is required for compressed FASTA when regions are specified.")
+    !!  ValueError("A GZI index file is required for BGZF-compressed FASTA when regions are specified.")
+? FastaFile("data/sample.fasta.gz", index=None, gzi="data/sample.fasta.gzi", regions=["seq1:10-20",
+    "seq10", "seq2:1-30"], compressed=True)
+: |-
+    ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta.gz", index=None, gzi="data/sample.fasta.gzi", regions=["seq1:10-20", "seq10", "seq2:1-30"], compressed=True)
+    !!  ValueError("A FAI index file is required for FASTA when regions are specified.")
+FastaFile("data/sample.fasta.gz", index=None, gzi=None, regions=["seq1:10-20", "seq10", "seq2:1-30"], compressed=True): |-
+    ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta.gz", index=None, gzi=None, regions=["seq1:10-20", "seq10", "seq2:1-30"], compressed=True)
+    !!  ValueError("A FAI index file is required for FASTA when regions are specified.")

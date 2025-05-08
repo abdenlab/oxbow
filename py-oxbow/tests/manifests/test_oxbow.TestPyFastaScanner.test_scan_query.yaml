@@ -1,0 +1,23 @@
+regions=["seq1:10-20", "seq10", "seq2:1-30"], index="data/sample.fasta.fai":
+    description:
+    - null
+    - null
+    - null
+    name:
+    - seq1:10-20
+    - seq10
+    - seq2:1-30
+    sequence:
+    - TGCATGCATGC
+    - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+    - CGTACGTACGTACGTACGTACGTACGTACG
+regions=["seq1:10-20", "seq10"], index="data/sample.fasta.fai":
+    description:
+    - null
+    - null
+    name:
+    - seq1:10-20
+    - seq10
+    sequence:
+    - TGCATGCATGC
+    - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
