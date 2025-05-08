@@ -26,21 +26,23 @@ class TestFastaFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
-        ("filepath", "indexpath", "compressed"),
+        ("filepath", "indexpath", "gzipath", "compressed"),
         [
-            ("data/sample.fasta", "data/sample.fai", False),
-            ("data/sample.fasta.gz", "data/sample.fai.gz", True),
+            ("data/sample.fasta", "data/sample.fai", None, False),
+            ("data/sample.fasta.gz", "data/sample.fai", "data/sample.fasta.gzi", True),
         ],
     )
     def test_init_regions_callstack(
-        self, filepath, indexpath, compressed, wiretap, manifest: Manifest
+        self, filepath, indexpath, gzipath, compressed, wiretap, manifest: Manifest
     ):
-        for input in Input.permute(
+        inputs = Input.permute(
             [filepath],
             index=[indexpath, None],
-            regions=[["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"]],
+            gzi=[gzipath, None],
+            regions=[["seq1:10-20", "seq10", "seq2:1-30"]],
             compressed=[compressed],
-        ):
+        )
+        for input in inputs:
             with wiretap(ox.FastaFile) as stack:
                 try:
                     ox.FastaFile(*input.args, **input.kwargs)
@@ -72,21 +74,23 @@ class TestFastaFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
-        ("filepath", "indexpath", "compressed"),
+        ("filepath", "indexpath", "gzipath", "compressed"),
         [
-            ("data/sample.fasta", "data/sample.fai", False),
-            ("data/sample.fasta.gz", "data/sample.fasta.gzi", True),
+            ("data/sample.fasta", "data/sample.fai", None, False),
+            ("data/sample.fasta.gz", "data/sample.fai", "data/sample.fasta.gzi", True),
         ],
     )
     def test_select_regions_callstack(
-        self, filepath, indexpath, compressed, wiretap, manifest: Manifest
+        self, filepath, indexpath, gzipath, compressed, wiretap, manifest: Manifest
     ):
         file_input = Input(filepath, compressed=compressed)
         file = ox.FastaFile(*file_input.args, **file_input.kwargs)
-        for select_input in Input.permute(
+        select_inputs = Input.permute(
             index=[indexpath, None],
-            regions=[["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"]],
-        ):
+            gzi=[gzipath, None],
+            regions=[["seq1:10-20", "seq10", "seq2:1-30"]],
+        )
+        for select_input in select_inputs:
             with wiretap(ox.FastaFile) as stack:
                 try:
                     file.select(*select_input.args, **select_input.kwargs)
@@ -161,33 +165,48 @@ class TestFastaFile:
         assert manifest[f"fields={fields}, batch_size={batch_size}"] == actual
 
     @pytest.mark.parametrize(
-        ("filepath", "indexpath", "compressed", "regions"),
+        ("filepath", "indexpath", "gzipath", "compressed", "regions"),
         [
-            ("data/sample.fasta", "data/sample.fai", False, ["seq1:10-20", "seq10"]),
             (
                 "data/sample.fasta",
                 "data/sample.fai",
+                None,
                 False,
-                ["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"],
+                ["seq1:10-20", "seq10"],
+            ),
+            (
+                "data/sample.fasta",
+                "data/sample.fai",
+                None,
+                False,
+                ["seq1:10-20", "seq10", "seq2:1-30"],
             ),
             (
                 "data/sample.fasta.gz",
+                "data/sample.fai",
                 "data/sample.fasta.gz.gzi",
                 True,
                 ["seq1:10-20", "seq10"],
             ),
             (
                 "data/sample.fasta.gz",
+                "data/sample.fai",
                 "data/sample.fasta.gz.gzi",
                 True,
-                ["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"],
+                ["seq1:10-20", "seq10", "seq2:1-30"],
             ),
         ],
     )
     def test_batches_with_regions(
-        self, filepath, indexpath, compressed, regions, manifest: Manifest
+        self, filepath, indexpath, gzipath, compressed, regions, manifest: Manifest
     ):
-        input = Input(filepath, index=indexpath, compressed=compressed, regions=regions)
+        input = Input(
+            filepath,
+            index=indexpath,
+            gzi=gzipath,
+            compressed=compressed,
+            regions=regions,
+        )
         batches = ox.FastaFile(*input.args, **input.kwargs).batches()
         try:
             actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}

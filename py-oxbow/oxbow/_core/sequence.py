@@ -78,9 +78,9 @@ class SequenceFile(DataSource):
         self.__scanner_kwargs = dict(compressed=compressed)
         super().__init__(uri, opener, fields)
 
-    def select(self, *args, index=None, **kwargs) -> BatchReaderDataset:
+    def select(self, *args, gzi=None, index=None, **kwargs) -> BatchReaderDataset:
         return super().select(
-            *args, gzi=self._gzi, index=index or self._index, **kwargs
+            *args, gzi=gzi or self._gzi, index=index or self._index, **kwargs
         )
 
 
@@ -142,9 +142,12 @@ class FastaFile(SequenceFile, file_type=FileType.FASTA):
         regions=None,
     ):
         if regions and not index:
-            raise ValueError("Index file is required when regions are specified.")
-        else:
-            self._regions = regions
+            raise ValueError("Index file is required for FASTA when regions are specified.")
+        if gzi and not compressed:
+            raise ValueError("GZI index requires compressed source.")
+        if regions and compressed and not gzi:
+            raise ValueError("GZI index is required for compressed FASTA when regions are specified.")
+        self._regions = regions
         super().__init__(uri, opener, fields, index, gzi, compressed)
 
     def select(self, *args, regions=None, **kwargs) -> BatchReaderDataset:
