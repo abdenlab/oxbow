@@ -27,6 +27,30 @@ class TestFastaFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
+        ("filepath", "indexpath", "compressed"),
+        [
+            ("data/sample.fasta", "data/sample.fai", False),
+            ("data/sample.fasta.gz", "data/sample.fai.gz", True),
+        ],
+    )
+    def test_init_regions_callstack(self, filepath, indexpath, compressed, wiretap, manifest: Manifest):
+        for input in Input.permute(
+            [filepath],
+            index=[indexpath, None],
+            regions=[["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"]],
+            compressed=[compressed],
+        ):
+            with wiretap(ox.FastaFile) as stack:
+                try:
+                    ox.FastaFile(*input.args, **input.kwargs)
+                except BaseException:
+                    pass
+                finally:
+                    assert (manifest[f"{ox.FastaFile.__name__}({input})"]) == "\n".join(
+                        [c.serialize() for c in stack]
+                    )
+
+    @pytest.mark.parametrize(
         "filepath",
         [
             "data/sample.fasta",
@@ -45,6 +69,32 @@ class TestFastaFile:
                 assert (
                     manifest[f"{ox.FastaFile.__name__}({Input(filepath)}).select()"]
                 ) == "\n".join([c.serialize() for c in stack])
+
+    @pytest.mark.parametrize(
+        ("filepath", "indexpath", "compressed"),
+        [
+            ("data/sample.fasta", "data/sample.fai", False),
+            ("data/sample.fasta.gz", "data/sample.fai.gz", True),
+        ],
+    )
+    def test_select_regions_callstack(self, filepath, indexpath, compressed, wiretap, manifest: Manifest):
+        file_input = Input(filepath, compressed=compressed)
+        file = ox.FastaFile(*file_input.args, **file_input.kwargs)
+        for select_input in Input.permute(
+            index=[indexpath, None],
+            regions=[["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"]],
+        ):
+            with wiretap(ox.FastaFile) as stack:
+                try:
+                    file.select(*select_input.args, **select_input.kwargs)
+                except BaseException:
+                    pass
+                finally:
+                    assert (
+                        manifest[
+                            f"{ox.FastaFile.__name__}({file_input}).select({select_input})"
+                        ]
+                    ) == "\n".join([c.serialize() for c in stack])
 
     def test_fragments_callstack(self, wiretap, manifest: Manifest):
         fields, batch_size = ("name", "sequence"), 3
@@ -81,7 +131,9 @@ class TestFastaFile:
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
     def test_fragments(self, regions):
-        fragments = ox.FastaFile("data/sample.fasta", regions=regions).fragments()
+        fragments = ox.FastaFile(
+            "data/sample.fasta", index="data/sample.fai", regions=regions
+        ).fragments()
         assert len(fragments) == 1
 
     @pytest.mark.parametrize(
