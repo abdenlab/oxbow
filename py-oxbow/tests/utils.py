@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Generator, Sequence
 from itertools import product
+from typing import Generator, Sequence
 
 
 def swap_quotes(string):

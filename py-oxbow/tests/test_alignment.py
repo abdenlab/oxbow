@@ -1,9 +1,8 @@
 import pytest
 from pytest_manifest import Manifest
+from utils import Input
 
 import oxbow.core as ox
-
-from utils import Input
 
 
 class TestBamFile:

@@ -1,10 +1,8 @@
 import pyarrow as pa
-
 import pytest
 import pytest_manifest
 
 import oxbow.oxbow as ox
-
 from tests.utils import Input
 
 
