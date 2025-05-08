@@ -2,7 +2,6 @@ import pytest
 from pytest_manifest import Manifest
 
 import oxbow.core as ox
-
 from tests.utils import Input
 
 

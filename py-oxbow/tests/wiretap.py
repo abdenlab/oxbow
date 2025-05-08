@@ -1,10 +1,9 @@
 import asyncio
-import inspect
 import functools
+import inspect
 import pprint
-from unittest import mock
 from typing import Any, Final, Literal
-
+from unittest import mock
 
 CALLED: Final[str] = "-> "
 RETURNED: Final[str] = "<- "

@@ -1,8 +1,7 @@
-import debugpy
 import inspect
 
+import debugpy
 import pytest
-
 from wiretap import WireTap
 
 
