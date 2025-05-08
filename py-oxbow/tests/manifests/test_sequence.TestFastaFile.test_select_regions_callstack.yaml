@@ -45,37 +45,20 @@
             <-  oxbow._pyarrow.BatchReaderDataset.<object>
         <-  oxbow._pyarrow.BatchReaderDataset.<object>
     <-  oxbow._pyarrow.BatchReaderDataset.<object>
-? FastaFile("data/sample.fasta", compressed=False).select(index=None, regions=["seq1:10-20",
-    "seq10", "seq2:1-30", "seq20:30-"])
-: |-
-    ->  oxbow._core.sequence.FastaFile.select(index=None, regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
-        ->  oxbow._core.sequence.SequenceFile.select(regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], index=None)
-            ->  oxbow._core.base.DataFile.select(gzi=None, index=None, regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
-                ->  oxbow._core.sequence.SequenceFile._scan_kwargs
-                <-  {'fields': 'None'}
-                ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
-                <-  {'compressed': 'False'}
-                ->  oxbow._core.sequence.SequenceFile._schema_kwargs
-                <-  {'fields': 'None'}
-                ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta", None, fields=None, compressed=False, gzi=None, index=None, regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
-                !!  ValueError("Index file is required when regions are specified.")
-            !!  ValueError("Index file is required when regions are specified.")
-        !!  ValueError("Index file is required when regions are specified.")
-    !!  ValueError("Index file is required when regions are specified.")
-? FastaFile("data/sample.fasta.gz", compressed=True).select(index="data/sample.fai.gz",
+? FastaFile("data/sample.fasta.gz", compressed=True).select(index="data/sample.fasta.gzi",
     regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
 : |-
-    ->  oxbow._core.sequence.FastaFile.select(index="data/sample.fai.gz", regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
-        ->  oxbow._core.sequence.SequenceFile.select(regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], index="data/sample.fai.gz")
-            ->  oxbow._core.base.DataFile.select(gzi=None, index="data/sample.fai.gz", regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
+    ->  oxbow._core.sequence.FastaFile.select(index="data/sample.fasta.gzi", regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
+        ->  oxbow._core.sequence.SequenceFile.select(regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], index="data/sample.fasta.gzi")
+            ->  oxbow._core.base.DataFile.select(gzi=None, index="data/sample.fasta.gzi", regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
                 ->  oxbow._core.sequence.SequenceFile._scan_kwargs
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                 <-  {'compressed': 'True'}
                 ->  oxbow._core.sequence.SequenceFile._schema_kwargs
                 <-  {'fields': 'None'}
-                ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta.gz", None, fields=None, compressed=True, gzi=None, index="data/sample.fai.gz", regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
-                    ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fasta.gz", None, None, "data/sample.fai.gz", None, True)
+                ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta.gz", None, fields=None, compressed=True, gzi=None, index="data/sample.fasta.gzi", regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
+                    ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fasta.gz", None, None, "data/sample.fasta.gzi", None, True)
                         ->  oxbow._core.base.DataFile.__init__("data/sample.fasta.gz", None, None)
                         <-  None
                     <-  None
@@ -109,20 +92,3 @@
             <-  oxbow._pyarrow.BatchReaderDataset.<object>
         <-  oxbow._pyarrow.BatchReaderDataset.<object>
     <-  oxbow._pyarrow.BatchReaderDataset.<object>
-? FastaFile("data/sample.fasta.gz", compressed=True).select(index=None, regions=["seq1:10-20",
-    "seq10", "seq2:1-30", "seq20:30-"])
-: |-
-    ->  oxbow._core.sequence.FastaFile.select(index=None, regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
-        ->  oxbow._core.sequence.SequenceFile.select(regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"], index=None)
-            ->  oxbow._core.base.DataFile.select(gzi=None, index=None, regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
-                ->  oxbow._core.sequence.SequenceFile._scan_kwargs
-                <-  {'fields': 'None'}
-                ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
-                <-  {'compressed': 'True'}
-                ->  oxbow._core.sequence.SequenceFile._schema_kwargs
-                <-  {'fields': 'None'}
-                ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta.gz", None, fields=None, compressed=True, gzi=None, index=None, regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"])
-                !!  ValueError("Index file is required when regions are specified.")
-            !!  ValueError("Index file is required when regions are specified.")
-        !!  ValueError("Index file is required when regions are specified.")
-    !!  ValueError("Index file is required when regions are specified.")
