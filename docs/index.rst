@@ -9,23 +9,29 @@ Data I/O is handled in Rust with features exposed to Python and R via Apache Arr
 
 Learn more in our recent `blog post <https://open.substack.com/pub/lifeinbytes/p/breaking-out-of-bioinformatic-data-silos?r=jue12&utm_campaign=post&utm_medium=web>`_.
 
-.. grid:: 1 1 2 2
+.. grid:: 1 1 2 3
    :gutter: 2
 
-   .. grid-item-card:: Installation
+   .. grid-item-card:: How to install
       :link: installation
       :link-type: doc
 
       Installation instructions for Rust and Python.
 
-   .. grid-item-card:: Quickstart
-      :link: quickstart
+   .. grid-item-card:: For users
+      :link: userguide
       :link-type: doc
 
       Examples of how to use the library's features.
 
+   .. grid-item-card:: For developers
+      :link: userguide
+      :link-type: doc
+
+      How to contribute to Oxbow.
+
    .. grid-item-card:: API Reference (Python)
-      :link: generated/oxbow
+      :link: api-python
       :link-type: doc
 
       API reference for the Python interface.
@@ -35,6 +41,12 @@ Learn more in our recent `blog post <https://open.substack.com/pub/lifeinbytes/p
       :link-type: url
 
       API reference for the Rust interface.
+
+   .. grid-item-card:: API Reference (R)
+      :link: api-r
+      :link-type: url
+
+      API reference for the R interface.
 
 
 .. toctree::
@@ -47,17 +59,28 @@ Learn more in our recent `blog post <https://open.substack.com/pub/lifeinbytes/p
    :maxdepth: 2
    :hidden:
 
-   quickstart
+   userguide
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   contributorguide
 
 .. toctree::
    :maxdepth: 3
    :hidden:
-   :titlesonly:
 
-   API reference (Python)<generated/oxbow>
+   API reference (Python)<api-python>
 
 .. toctree::
    :maxdepth: 1
    :hidden:
 
    API reference (Rust)<https://docs.rs/oxbow/latest/oxbow/>
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   API reference (R)<api-r>

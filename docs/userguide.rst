@@ -1,4 +1,4 @@
-Quickstart
+User guide
 ==========
 
 This is a quickstart guide to using Oxbow. It provides several examples of how to use the library's features.

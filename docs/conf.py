@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import sys
+from datetime import datetime
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -17,7 +18,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "oxbow"
-copyright = "2023, Oxbow Developers"
+copyright = f"2023-{datetime.now().year}, Oxbow Developers"
 author = "Oxbow Developers"
 
 
