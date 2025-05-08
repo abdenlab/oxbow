@@ -24,6 +24,7 @@ from oxbow._core.variant import (
     BcfFile,
     VcfFile,
 )
+from oxbow._filetypes import FileType as FileType
 from oxbow.oxbow import (
     PyBamScanner,
     PyBcfScanner,
