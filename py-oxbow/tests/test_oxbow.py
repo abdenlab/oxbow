@@ -254,10 +254,10 @@ class TestPyFastaScanner:
     @pytest.mark.parametrize(
         "input",
         [
-            Input(regions=["seq1:10-20", "seq10"], index="data/sample.fai"),
+            Input(regions=["seq1:10-20", "seq10"], index="data/sample.fasta.fai"),
             Input(
                 regions=["seq1:10-20", "seq10", "seq2:1-30", "seq20:30-"],
-                index="data/sample.fai",
+                index="data/sample.fasta.fai",
             ),
         ],
     )
