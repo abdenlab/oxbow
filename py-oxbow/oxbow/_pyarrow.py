@@ -25,13 +25,13 @@ RecordBatchIter : Union[pyarrow.RecordBatchReader, Iterator[pyarrow.RecordBatch]
 
 from __future__ import annotations
 
-from itertools import chain
 from functools import partial
-from typing import Iterator, Callable, Final
+from itertools import chain
+from typing import Callable, Final, Iterator
 
 import pyarrow as pa
 import pyarrow.dataset as ds
-from pyarrow.dataset import Fragment, Dataset, Scanner
+from pyarrow.dataset import Dataset, Fragment, Scanner
 
 DEFAULT_BATCH_SIZE: Final = 2**17
 DEFAULT_BATCH_READAHEAD: Final = 16

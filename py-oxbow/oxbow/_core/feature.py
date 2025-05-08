@@ -44,9 +44,9 @@ import pyarrow as pa
 from oxbow._filetypes import FileType
 from oxbow._core.base import DataSource
 from oxbow.oxbow import (
+    PyBBIZoomScanner,
     PyBigBedScanner,
     PyBigWigScanner,
-    PyBBIZoomScanner,
     PyGffScanner,
     PyGtfScanner,
 )
