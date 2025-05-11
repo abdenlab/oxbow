@@ -25,12 +25,12 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 
 import pyarrow as pa
 
-from oxbow._core.base import DataFile
+from oxbow._core.base import DataSource
 from oxbow._filetypes import FileType
 from oxbow.oxbow import PyBamScanner, PySamScanner
 
 
-class AlignmentFile(DataFile):
+class AlignmentFile(DataSource):
     """
     Base class for alignment files.
 

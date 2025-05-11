@@ -3,8 +3,8 @@ Streamable PyArrow dataset and fragment implementations.
 """
 
 from oxbow._pyarrow import (
-    BatchReaderDataset as BatchReaderDataset,
-    BatchReaderFragment as BatchReaderFragment,
+    BatchReaderDataset,
+    BatchReaderFragment,
 )
 
 __all__ = [

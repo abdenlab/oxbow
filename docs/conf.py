@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import sys
+from datetime import datetime
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -17,7 +18,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "oxbow"
-copyright = "2023, Oxbow Developers"
+copyright = f"2023-{datetime.now().year}, Oxbow Developers"
 author = "Oxbow Developers"
 
 
@@ -68,7 +69,8 @@ html_theme_options = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path: list[str] = []
+html_static_path: list[str] = ["_static"]
+html_css_files: list[str] = ["style.css"]
 
 
 # -- Extension configuration -------------------------------------------------
