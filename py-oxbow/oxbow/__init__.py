@@ -1,21 +1,35 @@
 from oxbow._core.alignment import (
-    from_bam as from_bam,
-    from_sam as from_sam,
+    from_bam,
+    from_sam,
 )
 from oxbow._core.feature import (
-    from_bed as from_bed,
-    from_bigbed as from_bigbed,
-    from_bigwig as from_bigwig,
-    from_gff as from_gff,
-    from_gtf as from_gtf,
+    from_bed,
+    from_bigbed,
+    from_bigwig,
+    from_gff,
+    from_gtf,
 )
 from oxbow._core.sequence import (
-    from_fasta as from_fasta,
-    from_fastq as from_fastq,
+    from_fasta,
+    from_fastq,
 )
 from oxbow._core.variant import (
-    from_bcf as from_bcf,
-    from_vcf as from_vcf,
+    from_bcf,
+    from_vcf,
+)
+
+from oxbow.oxbow import (
+    read_fasta,
+    read_fastq,
+    read_sam,
+    read_bam,
+    read_bcf,
+    read_vcf,
+    read_bed,
+    read_bigbed,
+    read_bigwig,
+    read_gff,
+    read_gtf,
 )
 
 __all__ = [
@@ -30,6 +44,17 @@ __all__ = [
     "from_gtf",
     "from_sam",
     "from_vcf",
+    "read_fasta",
+    "read_fastq",
+    "read_sam",
+    "read_bam",
+    "read_bcf",
+    "read_vcf",
+    "read_bed",
+    "read_bigbed",
+    "read_bigwig",
+    "read_gff",
+    "read_gtf",
 ]
 
 from_bam.__module__ = __name__

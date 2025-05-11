@@ -1,5 +1,5 @@
 BamFile(data/sample.bam).select(): |-
-    ->  oxbow._core.base.DataFile.select()
+    ->  oxbow._core.base.DataSource.select()
         ->  oxbow._core.alignment.AlignmentFile._scan_kwargs
         <-  {'fields': 'None', 'tag_defs': [("'XX'", "'BS'")]}
         ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
@@ -8,16 +8,16 @@ BamFile(data/sample.bam).select(): |-
         <-  {'fields': 'None', 'tag_defs': [("'XX'", "'BS'")]}
         ->  oxbow._core.alignment.BamFile.__init__("data/sample.bam", None, fields=None, tag_defs=[("XX", "BS")], compressed=True)
             ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.bam", None, compressed=True, fields=None, tag_defs=[("XX", "BS")])
-                ->  oxbow._core.base.DataFile.__init__("data/sample.bam", None, None)
+                ->  oxbow._core.base.DataSource.__init__("data/sample.bam", None, None)
                 <-  None
             <-  None
         <-  None
-        ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
-            ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
+        ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
+            ->  oxbow._core.base.DataSource.fragments(batch_size=131072)
                 ->  oxbow._core.alignment.AlignmentFile._batch_readers
                 <-  AlignmentFile._batch_readers.<generator>
-                ->  oxbow._core.base.DataFile._scanner
-                    ->  oxbow._core.base.DataFile._source
+                ->  oxbow._core.base.DataSource._scanner
+                    ->  oxbow._core.base.DataSource._source
                     <-  'data/sample.bam'
                     ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                     <-  {'compressed': 'True'}
@@ -25,9 +25,9 @@ BamFile(data/sample.bam).select(): |-
                 ->  oxbow._core.alignment.AlignmentFile._scan_kwargs
                 <-  {'fields': 'None', 'tag_defs': [("'XX'", "'BS'")]}
                 ->  oxbow._core.alignment.AlignmentFile._batch_readers.<generator>
-                    ->  oxbow._core.base.DataFile.schema
-                        ->  oxbow._core.base.DataFile._scanner
-                            ->  oxbow._core.base.DataFile._source
+                    ->  oxbow._core.base.DataSource.schema
+                        ->  oxbow._core.base.DataSource._scanner
+                            ->  oxbow._core.base.DataSource._source
                             <-  'data/sample.bam'
                             ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                             <-  {'compressed': 'True'}

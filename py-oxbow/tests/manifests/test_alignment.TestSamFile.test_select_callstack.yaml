@@ -1,5 +1,5 @@
 SamFile(data/sample.sam).select(): |-
-    ->  oxbow._core.base.DataFile.select()
+    ->  oxbow._core.base.DataSource.select()
         ->  oxbow._core.alignment.AlignmentFile._scan_kwargs
         <-  {'fields': 'None', 'tag_defs': []}
         ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
@@ -7,15 +7,15 @@ SamFile(data/sample.sam).select(): |-
         ->  oxbow._core.alignment.AlignmentFile._schema_kwargs
         <-  {'fields': 'None', 'tag_defs': []}
         ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.sam", None, fields=None, tag_defs=[], compressed=False)
-            ->  oxbow._core.base.DataFile.__init__("data/sample.sam", None, None)
+            ->  oxbow._core.base.DataSource.__init__("data/sample.sam", None, None)
             <-  None
         <-  None
-        ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
-            ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
+        ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
+            ->  oxbow._core.base.DataSource.fragments(batch_size=131072)
                 ->  oxbow._core.alignment.AlignmentFile._batch_readers
                 <-  AlignmentFile._batch_readers.<generator>
-                ->  oxbow._core.base.DataFile._scanner
-                    ->  oxbow._core.base.DataFile._source
+                ->  oxbow._core.base.DataSource._scanner
+                    ->  oxbow._core.base.DataSource._source
                     <-  'data/sample.sam'
                     ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                     <-  {'compressed': 'False'}
@@ -23,9 +23,9 @@ SamFile(data/sample.sam).select(): |-
                 ->  oxbow._core.alignment.AlignmentFile._scan_kwargs
                 <-  {'fields': 'None', 'tag_defs': []}
                 ->  oxbow._core.alignment.AlignmentFile._batch_readers.<generator>
-                    ->  oxbow._core.base.DataFile.schema
-                        ->  oxbow._core.base.DataFile._scanner
-                            ->  oxbow._core.base.DataFile._source
+                    ->  oxbow._core.base.DataSource.schema
+                        ->  oxbow._core.base.DataSource._scanner
+                            ->  oxbow._core.base.DataSource._source
                             <-  'data/sample.sam'
                             ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                             <-  {'compressed': 'False'}

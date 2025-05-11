@@ -1,7 +1,7 @@
 FastaFile("data/does-not-exist.fasta").select(): |-
     ->  oxbow._core.sequence.FastaFile.select()
         ->  oxbow._core.sequence.SequenceFile.select(regions=None)
-            ->  oxbow._core.base.DataFile.select(gzi=None, index=None, regions=None)
+            ->  oxbow._core.base.DataSource.select(gzi=None, index=None, regions=None)
                 ->  oxbow._core.sequence.SequenceFile._scan_kwargs
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
@@ -10,16 +10,16 @@ FastaFile("data/does-not-exist.fasta").select(): |-
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.FastaFile.__init__("data/does-not-exist.fasta", None, fields=None, compressed=False, gzi=None, index=None, regions=None)
                     ->  oxbow._core.sequence.SequenceFile.__init__("data/does-not-exist.fasta", None, None, None, None, False)
-                        ->  oxbow._core.base.DataFile.__init__("data/does-not-exist.fasta", None, None)
+                        ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.fasta", None, None)
                         <-  None
                     <-  None
                 <-  None
-                ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
-                    ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
+                ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
+                    ->  oxbow._core.base.DataSource.fragments(batch_size=131072)
                         ->  oxbow._core.sequence.FastaFile._batch_readers
                         <-  FastaFile._batch_readers.<generator>
-                        ->  oxbow._core.base.DataFile._scanner
-                            ->  oxbow._core.base.DataFile._source
+                        ->  oxbow._core.base.DataSource._scanner
+                            ->  oxbow._core.base.DataSource._source
                             <-  'data/does-not-exist.fasta'
                             ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                             <-  {'compressed': 'False'}
@@ -32,7 +32,7 @@ FastaFile("data/does-not-exist.fasta").select(): |-
 FastaFile("data/malformed.fasta").select(): |-
     ->  oxbow._core.sequence.FastaFile.select()
         ->  oxbow._core.sequence.SequenceFile.select(regions=None)
-            ->  oxbow._core.base.DataFile.select(gzi=None, index=None, regions=None)
+            ->  oxbow._core.base.DataSource.select(gzi=None, index=None, regions=None)
                 ->  oxbow._core.sequence.SequenceFile._scan_kwargs
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
@@ -41,24 +41,24 @@ FastaFile("data/malformed.fasta").select(): |-
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.FastaFile.__init__("data/malformed.fasta", None, fields=None, compressed=False, gzi=None, index=None, regions=None)
                     ->  oxbow._core.sequence.SequenceFile.__init__("data/malformed.fasta", None, None, None, None, False)
-                        ->  oxbow._core.base.DataFile.__init__("data/malformed.fasta", None, None)
+                        ->  oxbow._core.base.DataSource.__init__("data/malformed.fasta", None, None)
                         <-  None
                     <-  None
                 <-  None
-                ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
-                    ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
+                ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
+                    ->  oxbow._core.base.DataSource.fragments(batch_size=131072)
                         ->  oxbow._core.sequence.FastaFile._batch_readers
                         <-  FastaFile._batch_readers.<generator>
-                        ->  oxbow._core.base.DataFile._scanner
-                            ->  oxbow._core.base.DataFile._source
+                        ->  oxbow._core.base.DataSource._scanner
+                            ->  oxbow._core.base.DataSource._source
                             <-  'data/malformed.fasta'
                             ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                             <-  {'compressed': 'False'}
                         <-  oxbow.core.PyFastaScanner.<object>
                         ->  oxbow._core.sequence.FastaFile._batch_readers.<generator>
-                            ->  oxbow._core.base.DataFile.schema
-                                ->  oxbow._core.base.DataFile._scanner
-                                    ->  oxbow._core.base.DataFile._source
+                            ->  oxbow._core.base.DataSource.schema
+                                ->  oxbow._core.base.DataSource._scanner
+                                    ->  oxbow._core.base.DataSource._source
                                     <-  'data/malformed.fasta'
                                     ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                                     <-  {'compressed': 'False'}
@@ -77,7 +77,7 @@ FastaFile("data/malformed.fasta").select(): |-
 FastaFile("data/sample.fasta").select(): |-
     ->  oxbow._core.sequence.FastaFile.select()
         ->  oxbow._core.sequence.SequenceFile.select(regions=None)
-            ->  oxbow._core.base.DataFile.select(gzi=None, index=None, regions=None)
+            ->  oxbow._core.base.DataSource.select(gzi=None, index=None, regions=None)
                 ->  oxbow._core.sequence.SequenceFile._scan_kwargs
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
@@ -86,24 +86,24 @@ FastaFile("data/sample.fasta").select(): |-
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta", None, fields=None, compressed=False, gzi=None, index=None, regions=None)
                     ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fasta", None, None, None, None, False)
-                        ->  oxbow._core.base.DataFile.__init__("data/sample.fasta", None, None)
+                        ->  oxbow._core.base.DataSource.__init__("data/sample.fasta", None, None)
                         <-  None
                     <-  None
                 <-  None
-                ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
-                    ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
+                ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
+                    ->  oxbow._core.base.DataSource.fragments(batch_size=131072)
                         ->  oxbow._core.sequence.FastaFile._batch_readers
                         <-  FastaFile._batch_readers.<generator>
-                        ->  oxbow._core.base.DataFile._scanner
-                            ->  oxbow._core.base.DataFile._source
+                        ->  oxbow._core.base.DataSource._scanner
+                            ->  oxbow._core.base.DataSource._source
                             <-  'data/sample.fasta'
                             ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                             <-  {'compressed': 'False'}
                         <-  oxbow.core.PyFastaScanner.<object>
                         ->  oxbow._core.sequence.FastaFile._batch_readers.<generator>
-                            ->  oxbow._core.base.DataFile.schema
-                                ->  oxbow._core.base.DataFile._scanner
-                                    ->  oxbow._core.base.DataFile._source
+                            ->  oxbow._core.base.DataSource.schema
+                                ->  oxbow._core.base.DataSource._scanner
+                                    ->  oxbow._core.base.DataSource._source
                                     <-  'data/sample.fasta'
                                     ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                                     <-  {'compressed': 'False'}

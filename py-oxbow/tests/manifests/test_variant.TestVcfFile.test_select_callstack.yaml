@@ -2,10 +2,10 @@
     info_fields=("DP",)).select()
 : |-
     ->  oxbow._core.variant.VariantFile.__init__("data/does-not-exist.vcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",), info_fields=("DP",))
-        ->  oxbow._core.base.DataFile.__init__("data/does-not-exist.vcf", None, None)
+        ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.vcf", None, None)
         <-  None
-        ->  oxbow._core.base.DataFile._scanner
-            ->  oxbow._core.base.DataFile._source
+        ->  oxbow._core.base.DataSource._scanner
+            ->  oxbow._core.base.DataSource._source
             <-  'data/does-not-exist.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
@@ -15,10 +15,10 @@
     info_fields=("DP",)).select()
 : |-
     ->  oxbow._core.variant.VariantFile.__init__("data/malformed.vcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",), info_fields=("DP",))
-        ->  oxbow._core.base.DataFile.__init__("data/malformed.vcf", None, None)
+        ->  oxbow._core.base.DataSource.__init__("data/malformed.vcf", None, None)
         <-  None
-        ->  oxbow._core.base.DataFile._scanner
-            ->  oxbow._core.base.DataFile._source
+        ->  oxbow._core.base.DataSource._scanner
+            ->  oxbow._core.base.DataSource._source
             <-  'data/malformed.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
@@ -28,28 +28,28 @@
     info_fields=("DP",)).select()
 : |-
     ->  oxbow._core.variant.VariantFile.__init__("data/sample.vcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",), info_fields=("DP",))
-        ->  oxbow._core.base.DataFile.__init__("data/sample.vcf", None, None)
+        ->  oxbow._core.base.DataSource.__init__("data/sample.vcf", None, None)
         <-  None
-        ->  oxbow._core.base.DataFile._scanner
-            ->  oxbow._core.base.DataFile._source
+        ->  oxbow._core.base.DataSource._scanner
+            ->  oxbow._core.base.DataSource._source
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
         <-  oxbow.core.PyVcfScanner.<object>
-        ->  oxbow._core.base.DataFile._scanner
-            ->  oxbow._core.base.DataFile._source
+        ->  oxbow._core.base.DataSource._scanner
+            ->  oxbow._core.base.DataSource._source
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
         <-  oxbow.core.PyVcfScanner.<object>
-        ->  oxbow._core.base.DataFile._scanner
-            ->  oxbow._core.base.DataFile._source
+        ->  oxbow._core.base.DataSource._scanner
+            ->  oxbow._core.base.DataSource._source
             <-  'data/sample.vcf'
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
         <-  oxbow.core.PyVcfScanner.<object>
     <-  None
-    ->  oxbow._core.base.DataFile.select()
+    ->  oxbow._core.base.DataSource.select()
         ->  oxbow._core.variant.VariantFile._scan_kwargs
         <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
         ->  oxbow._core.variant.VariantFile._scanner_kwargs
@@ -57,33 +57,33 @@
         ->  oxbow._core.variant.VariantFile._schema_kwargs
         <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
         ->  oxbow._core.variant.VariantFile.__init__("data/sample.vcf", None, fields=None, genotype_by="sample", genotype_fields=["GT"], info_fields=["DP"], samples=["HG00096", "HG00101", "HG00103"], compressed=False)
-            ->  oxbow._core.base.DataFile.__init__("data/sample.vcf", None, None)
+            ->  oxbow._core.base.DataSource.__init__("data/sample.vcf", None, None)
             <-  None
-            ->  oxbow._core.base.DataFile._scanner
-                ->  oxbow._core.base.DataFile._source
+            ->  oxbow._core.base.DataSource._scanner
+                ->  oxbow._core.base.DataSource._source
                 <-  'data/sample.vcf'
                 ->  oxbow._core.variant.VariantFile._scanner_kwargs
                 <-  {'compressed': 'False'}
             <-  oxbow.core.PyVcfScanner.<object>
-            ->  oxbow._core.base.DataFile._scanner
-                ->  oxbow._core.base.DataFile._source
+            ->  oxbow._core.base.DataSource._scanner
+                ->  oxbow._core.base.DataSource._source
                 <-  'data/sample.vcf'
                 ->  oxbow._core.variant.VariantFile._scanner_kwargs
                 <-  {'compressed': 'False'}
             <-  oxbow.core.PyVcfScanner.<object>
-            ->  oxbow._core.base.DataFile._scanner
-                ->  oxbow._core.base.DataFile._source
+            ->  oxbow._core.base.DataSource._scanner
+                ->  oxbow._core.base.DataSource._source
                 <-  'data/sample.vcf'
                 ->  oxbow._core.variant.VariantFile._scanner_kwargs
                 <-  {'compressed': 'False'}
             <-  oxbow.core.PyVcfScanner.<object>
         <-  None
-        ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
-            ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
+        ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
+            ->  oxbow._core.base.DataSource.fragments(batch_size=131072)
                 ->  oxbow._core.variant.VariantFile._batch_readers
                 <-  VariantFile._batch_readers.<generator>
-                ->  oxbow._core.base.DataFile._scanner
-                    ->  oxbow._core.base.DataFile._source
+                ->  oxbow._core.base.DataSource._scanner
+                    ->  oxbow._core.base.DataSource._source
                     <-  'data/sample.vcf'
                     ->  oxbow._core.variant.VariantFile._scanner_kwargs
                     <-  {'compressed': 'False'}
@@ -91,9 +91,9 @@
                 ->  oxbow._core.variant.VariantFile._scan_kwargs
                 <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
                 ->  oxbow._core.variant.VariantFile._batch_readers.<generator>
-                    ->  oxbow._core.base.DataFile.schema
-                        ->  oxbow._core.base.DataFile._scanner
-                            ->  oxbow._core.base.DataFile._source
+                    ->  oxbow._core.base.DataSource.schema
+                        ->  oxbow._core.base.DataSource._scanner
+                            ->  oxbow._core.base.DataSource._source
                             <-  'data/sample.vcf'
                             ->  oxbow._core.variant.VariantFile._scanner_kwargs
                             <-  {'compressed': 'False'}

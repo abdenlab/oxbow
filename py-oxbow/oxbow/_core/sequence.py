@@ -25,13 +25,13 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 
 import pyarrow as pa
 
-from oxbow._core.base import DataFile
+from oxbow._core.base import DataSource
 from oxbow._filetypes import FileType
 from oxbow._pyarrow import BatchReaderDataset
 from oxbow.oxbow import PyFastaScanner, PyFastqScanner
 
 
-class SequenceFile(DataFile):
+class SequenceFile(DataSource):
     """
     Base class for sequence files.
 
