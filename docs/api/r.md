@@ -1,6 +1,8 @@
-# R API documentation
+# R API Reference
 
-The following functions return blobs of data in Arrow IPC format (formerly known as Feather). To read the output into a `tibble` or Arrow table and interface with `dplyr` use the R [arrow](https://arrow.apache.org/docs/r/) package. For example:
+## Arrow IPC readers
+
+The following functions return binary blobs of data in Arrow IPC format (formerly known as Feather). To read the output into a `tibble` or Arrow table and interface with `dplyr` use the R [arrow](https://arrow.apache.org/docs/r/) package. For example:
 
 ```r
 library(oxbow)
@@ -10,7 +12,9 @@ ipc <- oxbow::read_bam("example.bam", region="chr1:1-10000")
 df <- arrow::read_feather(ipc)
 ```
 
-## `read_fastq`
+### Sequence formats
+
+#### `read_fastq`
 
 Return Arrow IPC format from a FASTQ file.
 
@@ -18,7 +22,7 @@ Return Arrow IPC format from a FASTQ file.
 oxbow::read_fastq(path, fields = NULL)
 ```
 
-## `read_fasta`
+#### `read_fasta`
 
 Return Arrow IPC format from a FASTA file.
 
@@ -26,7 +30,9 @@ Return Arrow IPC format from a FASTA file.
 oxbow::read_fasta(path, regions = NULL, index = NULL, gzi = NULL, fields = NULL)
 ```
 
-## `read_sam`
+### Alignment formats
+
+#### `read_sam`
 
 Return Arrow IPC format from a SAM file.
 
@@ -34,7 +40,7 @@ Return Arrow IPC format from a SAM file.
 oxbow::read_sam(path, region = NULL, index = NULL, fields = NULL, scan_rows = NULL)
 ```
 
-## `read_bam`
+#### `read_bam`
 
 Return Arrow IPC format from a BAM file.
 
@@ -42,7 +48,9 @@ Return Arrow IPC format from a BAM file.
 oxbow::read_bam(path, region = NULL, index = NULL, fields = NULL, scan_rows = NULL)
 ```
 
-## `read_vcf`
+### Variant call formats
+
+#### `read_vcf`
 
 Return Arrow IPC format from a VCF file.
 
@@ -50,7 +58,7 @@ Return Arrow IPC format from a VCF file.
 oxbow::read_vcf(path, region = NULL, index = NULL, fields = NULL, info_field = NULL, genotype_fields = NULL, genotype_by = "sample")
 ```
 
-## `read_bcf`
+#### `read_bcf`
 
 Return Arrow IPC format from a BCF file.
 
@@ -58,7 +66,9 @@ Return Arrow IPC format from a BCF file.
 oxbow::read_bcf(path, region = NULL, index = NULL, fields = NULL, info_fields = NULL, genotype_fields = NULL, genotype_by = "sample")
 ```
 
-## `read_gtf`
+### Interval feature formats
+
+#### `read_gtf`
 
 Return Arrow IPC format from a GTF file.
 
@@ -66,7 +76,7 @@ Return Arrow IPC format from a GTF file.
 oxbow::read_gtf(path, region = NULL, index = NULL, fields = NULL, scan_rows = NULL)
 ```
 
-## `read_gff`
+#### `read_gff`
 
 Return Arrow IPC format from a GFF file.
 
@@ -74,7 +84,7 @@ Return Arrow IPC format from a GFF file.
 oxbow::read_gff(path, region = NULL, index = NULL, fields = NULL, scan_rows = NULL)
 ```
 
-## `read_bed`
+#### `read_bed`
 
 Return Arrow IPC format from a BED file.
 
@@ -82,7 +92,9 @@ Return Arrow IPC format from a BED file.
 oxbow::read_bed(path, bed_schema, region = NULL, index = NULL, fields = NULL)
 ```
 
-## `read_bigwig`
+### UCSC BBI formats
+
+#### `read_bigwig`
 
 Return Arrow IPC format from a BigWig file.
 
@@ -90,7 +102,7 @@ Return Arrow IPC format from a BigWig file.
 oxbow::read_bigwig(path, region = NULL, fields = NULL)
 ```
 
-## `read_bigbed`
+#### `read_bigbed`
 
 Return Arrow IPC format from a BigBed file.
 

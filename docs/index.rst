@@ -1,86 +1,74 @@
-oxbow
+Oxbow
 =====
 
-Read specialized bioinformatic file formats as data frames in R, Python, and more.
+**Oxbow makes genomic data accessible for high-performance analytics.**
 
-File formats create a lot of friction for computational biologists. Oxbow is a data unification layer that aims to improve data accessibility and ease of high-performance analytics.
+Bioinformatic file formats are a major source of friction and headache for computational biologists. 
+Oxbow is a data unification layer that leverages the `Apache Arrow <https://arrow.apache.org/>`_ in-memory format to improve accessibility and interoperability of genomic data with the modern data ecosystem.
+Learn more in our `blog post <https://open.substack.com/pub/lifeinbytes/p/breaking-out-of-bioinformatic-data-silos?r=jue12&utm_campaign=post&utm_medium=web>`_.
 
-Data I/O is handled in Rust with features exposed to Python and R via Apache Arrow.
 
-Learn more in our recent `blog post <https://open.substack.com/pub/lifeinbytes/p/breaking-out-of-bioinformatic-data-silos?r=jue12&utm_campaign=post&utm_medium=web>`_.
+.. card::
+   :img-background: _static/oxbow-arrow-diagram.svg
+   :shadow: none
 
-.. grid:: 1 1 2 3
+
+.. grid:: 1 1 2 2
    :gutter: 2
 
-   .. grid-item-card:: How to install
-      :link: installation
+   .. grid-item-card:: Get started
+      :img-bottom: _static/oxbow-logo.svg
+      :class-img-bottom: card-icon dark-light
+      :link: getting-started/index
       :link-type: doc
 
-      Installation instructions for Rust and Python.
+      Install and get started with Oxbow.
 
-   .. grid-item-card:: For users
-      :link: userguide
+   .. grid-item-card:: User guide
+      :img-bottom: _static/icon_book.svg
+      :class-img-bottom: card-icon dark-light
+      :link: user-guide/index
       :link-type: doc
 
-      Examples of how to use the library's features.
+      Learn more about how to use Oxbow.
 
-   .. grid-item-card:: For developers
-      :link: userguide
+   .. grid-item-card:: Contribute
+      :img-bottom: _static/icon_branch.svg
+      :class-img-bottom: card-icon dark-light
+      :link: contributing-guide/index
       :link-type: doc
 
       How to contribute to Oxbow.
 
-   .. grid-item-card:: API Reference (Python)
-      :link: api-python
+   .. grid-item-card:: API Reference
+      :img-bottom: _static/icon_code.svg
+      :class-img-bottom: card-icon dark-light
+      :link: api/index
       :link-type: doc
 
-      API reference for the Python interface.
-
-   .. grid-item-card:: API Reference (Rust)
-      :link: https://docs.rs/oxbow/latest/oxbow/
-      :link-type: url
-
-      API reference for the Rust interface.
-
-   .. grid-item-card:: API Reference (R)
-      :link: api-r
-      :link-type: url
-
-      API reference for the R interface.
+      API references for Python, Rust, and R interfaces.
 
 
 .. toctree::
    :maxdepth: 2
    :hidden:
 
-   installation
+   getting-started/index
 
 .. toctree::
    :maxdepth: 2
    :hidden:
 
-   userguide
+   user-guide/index
 
 .. toctree::
    :maxdepth: 2
    :hidden:
 
-   contributorguide
+   contributing-guide/index
 
 .. toctree::
    :maxdepth: 3
    :hidden:
 
-   API reference (Python)<api-python>
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-
-   API reference (Rust)<https://docs.rs/oxbow/latest/oxbow/>
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-
-   API reference (R)<api-r>
+   api/index
