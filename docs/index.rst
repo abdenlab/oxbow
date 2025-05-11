@@ -3,14 +3,14 @@ Oxbow
 
 **Oxbow makes genomic data accessible for high-performance analytics.**
 
-Bioinformatic file formats are a major source of friction and headache for computational biologists. 
-Oxbow is a data unification layer that leverages the `Apache Arrow <https://arrow.apache.org/>`_ in-memory format to improve accessibility and interoperability of genomic data with the modern data ecosystem.
-Learn more in our `blog post <https://open.substack.com/pub/lifeinbytes/p/breaking-out-of-bioinformatic-data-silos?r=jue12&utm_campaign=post&utm_medium=web>`_.
-
-
 .. card::
    :img-background: _static/oxbow-arrow-diagram.svg
    :shadow: none
+   :margin: 4
+
+Bioinformatic file formats are a major source of friction and headache for computational biologists. 
+Oxbow is a data unification layer that leverages the `Apache Arrow <https://arrow.apache.org/>`_ in-memory format to improve accessibility and interoperability of tabular genomic data with the modern data ecosystem.
+Learn more in our `blog post <https://open.substack.com/pub/lifeinbytes/p/breaking-out-of-bioinformatic-data-silos?r=jue12&utm_campaign=post&utm_medium=web>`_.
 
 
 .. grid:: 1 1 2 2
