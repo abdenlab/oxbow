@@ -13,7 +13,7 @@ from oxbow._pyarrow import (
 )
 
 
-class DataFileMeta(ABCMeta):
+class DataSourceMeta(ABCMeta):
     _registry = {}
 
     def __getattr__(cls, key):
@@ -28,7 +28,7 @@ class DataFileMeta(ABCMeta):
                 raise KeyError(key) from e
 
 
-class DataFile(metaclass=DataFileMeta):
+class DataSource(metaclass=DataSourceMeta):
     _schema = None
 
     @property

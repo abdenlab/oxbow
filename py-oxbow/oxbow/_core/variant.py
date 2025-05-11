@@ -25,12 +25,12 @@ from typing import TYPE_CHECKING, Any, Callable, Generator, Literal
 
 import pyarrow as pa
 
-from oxbow._core.base import DataFile
+from oxbow._core.base import DataSource
 from oxbow._filetypes import FileType
 from oxbow.oxbow import PyBcfScanner, PyVcfScanner
 
 
-class VariantFile(DataFile):
+class VariantFile(DataSource):
     """
     Base class for variant files.
 

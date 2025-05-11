@@ -42,7 +42,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 import pyarrow as pa
 
 from oxbow._filetypes import FileType
-from oxbow._core.base import DataFile
+from oxbow._core.base import DataSource
 from oxbow.oxbow import (
     PyBigBedScanner,
     PyBigWigScanner,
@@ -52,7 +52,7 @@ from oxbow.oxbow import (
 )
 
 
-class FeatureFile(DataFile):
+class FeatureFile(DataSource):
     """
     Base class for genomic feature files.
 
