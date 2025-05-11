@@ -1,10 +1,10 @@
 BamFile("data/does-not-exist.bam"): |-
     ->  oxbow._core.alignment.BamFile.__init__("data/does-not-exist.bam")
         ->  oxbow._core.alignment.AlignmentFile.__init__("data/does-not-exist.bam", compressed=True)
-            ->  oxbow._core.base.DataFile.__init__("data/does-not-exist.bam", None, None)
+            ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.bam", None, None)
             <-  None
-            ->  oxbow._core.base.DataFile._scanner
-                ->  oxbow._core.base.DataFile._source
+            ->  oxbow._core.base.DataSource._scanner
+                ->  oxbow._core.base.DataSource._source
                 <-  'data/does-not-exist.bam'
                 ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                 <-  {'compressed': 'True'}
@@ -14,10 +14,10 @@ BamFile("data/does-not-exist.bam"): |-
 BamFile("data/malformed.bam"): |-
     ->  oxbow._core.alignment.BamFile.__init__("data/malformed.bam")
         ->  oxbow._core.alignment.AlignmentFile.__init__("data/malformed.bam", compressed=True)
-            ->  oxbow._core.base.DataFile.__init__("data/malformed.bam", None, None)
+            ->  oxbow._core.base.DataSource.__init__("data/malformed.bam", None, None)
             <-  None
-            ->  oxbow._core.base.DataFile._scanner
-                ->  oxbow._core.base.DataFile._source
+            ->  oxbow._core.base.DataSource._scanner
+                ->  oxbow._core.base.DataSource._source
                 <-  'data/malformed.bam'
                 ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                 <-  {'compressed': 'True'}
@@ -27,10 +27,10 @@ BamFile("data/malformed.bam"): |-
 BamFile("data/sample.bam"): |-
     ->  oxbow._core.alignment.BamFile.__init__("data/sample.bam")
         ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.bam", compressed=True)
-            ->  oxbow._core.base.DataFile.__init__("data/sample.bam", None, None)
+            ->  oxbow._core.base.DataSource.__init__("data/sample.bam", None, None)
             <-  None
-            ->  oxbow._core.base.DataFile._scanner
-                ->  oxbow._core.base.DataFile._source
+            ->  oxbow._core.base.DataSource._scanner
+                ->  oxbow._core.base.DataSource._source
                 <-  'data/sample.bam'
                 ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                 <-  {'compressed': 'True'}

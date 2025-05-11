@@ -1,9 +1,9 @@
 GtfFile("data/sample.gtf", fields=('seqid', 'start', 'end')).batches(batch_size=3): |-
-    ->  oxbow._core.base.DataFile.fragments(batch_size=3)
+    ->  oxbow._core.base.DataSource.fragments(batch_size=3)
         ->  oxbow._core.feature.GxfFile._batch_readers
         <-  GxfFile._batch_readers.<generator>
-        ->  oxbow._core.base.DataFile._scanner
-            ->  oxbow._core.base.DataFile._source
+        ->  oxbow._core.base.DataSource._scanner
+            ->  oxbow._core.base.DataSource._source
             <-  'data/sample.gtf'
             ->  oxbow._core.feature.GxfFile._scanner_kwargs
             <-  {'compressed': 'False'}
@@ -11,9 +11,9 @@ GtfFile("data/sample.gtf", fields=('seqid', 'start', 'end')).batches(batch_size=
         ->  oxbow._core.feature.GxfFile._scan_kwargs
         <-  {'attribute_defs': [("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), ("'hgnc_id'", "'String'"), ("'level'", "'String'"), '<', '6', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'fields': ("'seqid'", "'start'", "'end'")}
         ->  oxbow._core.feature.GxfFile._batch_readers.<generator>
-            ->  oxbow._core.base.DataFile.schema
-                ->  oxbow._core.base.DataFile._scanner
-                    ->  oxbow._core.base.DataFile._source
+            ->  oxbow._core.base.DataSource.schema
+                ->  oxbow._core.base.DataSource._scanner
+                    ->  oxbow._core.base.DataSource._source
                     <-  'data/sample.gtf'
                     ->  oxbow._core.feature.GxfFile._scanner_kwargs
                     <-  {'compressed': 'False'}

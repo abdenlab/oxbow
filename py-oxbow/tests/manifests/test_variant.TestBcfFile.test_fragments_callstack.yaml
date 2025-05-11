@@ -1,9 +1,9 @@
 BcfFile("data/sample.bcf", samples=('HG00096', 'HG00101', 'HG00103')).fragments(batch_size=3): |-
-    ->  oxbow._core.base.DataFile.fragments(batch_size=3)
+    ->  oxbow._core.base.DataSource.fragments(batch_size=3)
         ->  oxbow._core.variant.VariantFile._batch_readers
         <-  VariantFile._batch_readers.<generator>
-        ->  oxbow._core.base.DataFile._scanner
-            ->  oxbow._core.base.DataFile._source
+        ->  oxbow._core.base.DataSource._scanner
+            ->  oxbow._core.base.DataSource._source
             <-  'data/sample.bcf'
             ->  oxbow._core.variant.BcfFile._scanner_kwargs
             <-  {}
@@ -11,9 +11,9 @@ BcfFile("data/sample.bcf", samples=('HG00096', 'HG00101', 'HG00103')).fragments(
         ->  oxbow._core.variant.VariantFile._scan_kwargs
         <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'", "'CN'", "'CNL'", "'CNP'", "'CNQ'", "'GP'", "'GQ'", "'FT'", "'PL'"], 'info_fields': ["'DP'", "'END'", "'SVTYPE'", "'AA'", "'AC'", "'AF'", "'NS'", "'AN'", "'SAS_AF'", "'EUR_AF'", '<', '3', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
         ->  oxbow._core.variant.VariantFile._batch_readers.<generator>
-            ->  oxbow._core.base.DataFile.schema
-                ->  oxbow._core.base.DataFile._scanner
-                    ->  oxbow._core.base.DataFile._source
+            ->  oxbow._core.base.DataSource.schema
+                ->  oxbow._core.base.DataSource._scanner
+                    ->  oxbow._core.base.DataSource._source
                     <-  'data/sample.bcf'
                     ->  oxbow._core.variant.BcfFile._scanner_kwargs
                     <-  {}

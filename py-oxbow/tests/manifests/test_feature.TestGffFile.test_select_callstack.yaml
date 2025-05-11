@@ -1,9 +1,9 @@
 GffFile("data/does-not-exist.gff").select(): |-
     ->  oxbow._core.feature.GxfFile.__init__("data/does-not-exist.gff")
-        ->  oxbow._core.base.DataFile.__init__("data/does-not-exist.gff", None, None)
+        ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.gff", None, None)
         <-  None
-        ->  oxbow._core.base.DataFile._scanner
-            ->  oxbow._core.base.DataFile._source
+        ->  oxbow._core.base.DataSource._scanner
+            ->  oxbow._core.base.DataSource._source
             <-  'data/does-not-exist.gff'
             ->  oxbow._core.feature.GxfFile._scanner_kwargs
             <-  {'compressed': 'False'}
@@ -11,10 +11,10 @@ GffFile("data/does-not-exist.gff").select(): |-
     !!  PanicException("called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: 'No such file or directory' }")
 GffFile("data/malformed.gff").select(): |-
     ->  oxbow._core.feature.GxfFile.__init__("data/malformed.gff")
-        ->  oxbow._core.base.DataFile.__init__("data/malformed.gff", None, None)
+        ->  oxbow._core.base.DataSource.__init__("data/malformed.gff", None, None)
         <-  None
-        ->  oxbow._core.base.DataFile._scanner
-            ->  oxbow._core.base.DataFile._source
+        ->  oxbow._core.base.DataSource._scanner
+            ->  oxbow._core.base.DataSource._source
             <-  'data/malformed.gff'
             ->  oxbow._core.feature.GxfFile._scanner_kwargs
             <-  {'compressed': 'False'}
@@ -22,16 +22,16 @@ GffFile("data/malformed.gff").select(): |-
     !!  OSError("unexpected end of file")
 GffFile("data/sample.gff").select(): |-
     ->  oxbow._core.feature.GxfFile.__init__("data/sample.gff")
-        ->  oxbow._core.base.DataFile.__init__("data/sample.gff", None, None)
+        ->  oxbow._core.base.DataSource.__init__("data/sample.gff", None, None)
         <-  None
-        ->  oxbow._core.base.DataFile._scanner
-            ->  oxbow._core.base.DataFile._source
+        ->  oxbow._core.base.DataSource._scanner
+            ->  oxbow._core.base.DataSource._source
             <-  'data/sample.gff'
             ->  oxbow._core.feature.GxfFile._scanner_kwargs
             <-  {'compressed': 'False'}
         <-  builtins.PyGffScanner.<object>
     <-  None
-    ->  oxbow._core.base.DataFile.select()
+    ->  oxbow._core.base.DataSource.select()
         ->  oxbow._core.feature.GxfFile._scan_kwargs
         <-  {'attribute_defs': [("'ID'", "'String'"), ("'Parent'", "'String'"), ("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), '<', '8', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'fields': 'None'}
         ->  oxbow._core.feature.GxfFile._scanner_kwargs
@@ -39,15 +39,15 @@ GffFile("data/sample.gff").select(): |-
         ->  oxbow._core.feature.GxfFile._schema_kwargs
         <-  {'fields': 'None', 'attribute_defs': [("'ID'", "'String'"), ("'Parent'", "'String'"), ("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), '<', '8', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>']}
         ->  oxbow._core.feature.GxfFile.__init__("data/sample.gff", None, attribute_defs=[("ID", "String"), ("Parent", "String"), ("ccdsid", "String"), ("exon_id", "String"), ("exon_number", "String"), ("gene_id", "String"), ("gene_name", "String"), ("gene_type", "String"), ("havana_gene", "String"), ("havana_transcript", "String"), ("hgnc_id", "String"), ("level", "String"), ("protein_id", "String"), ("tag", "Array"), ("transcript_id", "String"), ("transcript_name", "String"), ("transcript_support_level", "String"), ("transcript_type", "String")], fields=None, compressed=False)
-            ->  oxbow._core.base.DataFile.__init__("data/sample.gff", None, None)
+            ->  oxbow._core.base.DataSource.__init__("data/sample.gff", None, None)
             <-  None
         <-  None
-        ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
-            ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
+        ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
+            ->  oxbow._core.base.DataSource.fragments(batch_size=131072)
                 ->  oxbow._core.feature.GxfFile._batch_readers
                 <-  GxfFile._batch_readers.<generator>
-                ->  oxbow._core.base.DataFile._scanner
-                    ->  oxbow._core.base.DataFile._source
+                ->  oxbow._core.base.DataSource._scanner
+                    ->  oxbow._core.base.DataSource._source
                     <-  'data/sample.gff'
                     ->  oxbow._core.feature.GxfFile._scanner_kwargs
                     <-  {'compressed': 'False'}
@@ -55,9 +55,9 @@ GffFile("data/sample.gff").select(): |-
                 ->  oxbow._core.feature.GxfFile._scan_kwargs
                 <-  {'attribute_defs': [("'ID'", "'String'"), ("'Parent'", "'String'"), ("'ccdsid'", "'String'"), ("'exon_id'", "'String'"), ("'exon_number'", "'String'"), ("'gene_id'", "'String'"), ("'gene_name'", "'String'"), ("'gene_type'", "'String'"), ("'havana_gene'", "'String'"), ("'havana_transcript'", "'String'"), '<', '8', ' ', 'm', 'o', 'r', 'e', ' ', 'i', 't', 'e', 'm', 's', '>'], 'fields': 'None'}
                 ->  oxbow._core.feature.GxfFile._batch_readers.<generator>
-                    ->  oxbow._core.base.DataFile.schema
-                        ->  oxbow._core.base.DataFile._scanner
-                            ->  oxbow._core.base.DataFile._source
+                    ->  oxbow._core.base.DataSource.schema
+                        ->  oxbow._core.base.DataSource._scanner
+                            ->  oxbow._core.base.DataSource._source
                             <-  'data/sample.gff'
                             ->  oxbow._core.feature.GxfFile._scanner_kwargs
                             <-  {'compressed': 'False'}

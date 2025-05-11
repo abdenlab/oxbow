@@ -1,18 +1,18 @@
 FastqFile("data/sample.fastq", fields=('name', 'sequence')).batches(batch_size=5): |-
-    ->  oxbow._core.base.DataFile.batches(batch_size=5)
-    <-  DataFile.batches.<generator>
+    ->  oxbow._core.base.DataSource.batches(batch_size=5)
+    <-  DataSource.batches.<generator>
     ->  oxbow._core.sequence.FastqFile._batch_readers
     <-  FastqFile._batch_readers.<generator>
-    ->  oxbow._core.base.DataFile._scanner
-        ->  oxbow._core.base.DataFile._source
+    ->  oxbow._core.base.DataSource._scanner
+        ->  oxbow._core.base.DataSource._source
         <-  'data/sample.fastq'
         ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
         <-  {'compressed': 'False'}
     <-  oxbow.core.PyFastqScanner.<object>
     ->  oxbow._core.sequence.FastqFile._batch_readers.<generator>
-        ->  oxbow._core.base.DataFile.schema
-            ->  oxbow._core.base.DataFile._scanner
-                ->  oxbow._core.base.DataFile._source
+        ->  oxbow._core.base.DataSource.schema
+            ->  oxbow._core.base.DataSource._scanner
+                ->  oxbow._core.base.DataSource._source
                 <-  'data/sample.fastq'
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                 <-  {'compressed': 'False'}
@@ -21,28 +21,28 @@ FastqFile("data/sample.fastq", fields=('name', 'sequence')).batches(batch_size=5
             <-  {'fields': ("'name'", "'sequence'")}
         <-  name: string
             sequence: string
-        ->  oxbow._core.base.DataFile.batches.<generator>
+        ->  oxbow._core.base.DataSource.batches.<generator>
         <-  pyarrow.RecordBatch
             name: string
             sequence: string
             ----
             name: ["seq1","seq2","seq3","seq4","seq5"]
             sequence: ["ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC","CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA","GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA","TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC","TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCGAT"]
-        ->  oxbow._core.base.DataFile.batches.<generator>
+        ->  oxbow._core.base.DataSource.batches.<generator>
         <-  pyarrow.RecordBatch
             name: string
             sequence: string
             ----
             name: ["seq6","seq7","seq8","seq9","seq10"]
             sequence: ["GCATGCATGCATGCATGCATGCATGCATGCATGCATGCAT","ATCGATCGATCGATCGATCGATCGATCGATCGATCGATC","CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA","GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT","TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC"]
-        ->  oxbow._core.base.DataFile.batches.<generator>
+        ->  oxbow._core.base.DataSource.batches.<generator>
         <-  pyarrow.RecordBatch
             name: string
             sequence: string
             ----
             name: ["seq11","seq12","seq13","seq14","seq15"]
             sequence: ["CGATCGATCGATCGATCGATCGATCGATCGATCGATCG","ATGCATGCATGCATGCATGCATGCATGCATGCATGCAT","GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCT","TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAG","TCGATCGACTCGATCGACTCGATCGACTCGATCGACTCG"]
-        ->  oxbow._core.base.DataFile.batches.<generator>
+        ->  oxbow._core.base.DataSource.batches.<generator>
         <-  pyarrow.RecordBatch
             name: string
             sequence: string
