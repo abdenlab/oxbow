@@ -5,7 +5,9 @@ build:
   tools:
     python: "3.13"
   commands:
-    - pip install uv
+    - asdf plugin add uv
+    - asdf install uv latest
+    - asdf global uv latest
     - cd py-oxbow && uv sync --group=docs && uv run --group=docs sphinx-build ../docs $READTHEDOCS_OUTPUT/html
 
 sphinx:
