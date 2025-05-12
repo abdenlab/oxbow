@@ -1,25 +1,17 @@
 # oxbow <a href="https://github.com/abdenlab/oxbow"><img align="right" src="./assets/logo.svg" height="38"></img></a>
 [![DOI](https://zenodo.org/badge/641466193.svg)](https://zenodo.org/doi/10.5281/zenodo.10573864)
 
-Read specialized bioinformatic file formats as data frames in R, Python, and more.
+Oxbow makes genomic data accessible for high-performance analytics.
 
-File formats create a lot of friction for computational biologists.
-Oxbow is a data unification layer that aims to improve data accessibility and
-ease of high-performance analytics.
+Oxbow is a data unification layer that leverages the widely-adopted Apache 
+Arrow in-memory format to improve accessibility and interoperability of 
+tabular genomic data with the modern data ecosystem. Read specialized 
+bioinformatic file formats as in-memory or larger-than-memory data frames in 
+Python, R, and more. Data I/O is handled in Rust. Learn more from our 
+[blog post](https://open.substack.com/pub/lifeinbytes/p/breaking-out-of-bioinformatic-data-silos?r=jue12&utm_campaign=post&utm_medium=web).
 
-Data I/O is handled in Rust with features exposed to Python and R via Apache Arrow.
-
-Learn more in our recent [blog post](https://open.substack.com/pub/lifeinbytes/p/breaking-out-of-bioinformatic-data-silos?r=jue12&utm_campaign=post&utm_medium=web).
-
-## Docs
-
-Read the latest [Python](https://abdenlab.org/oxbow/) and [Rust](https://docs.rs/oxbow/latest/oxbow/) API documentation.
+Read the latest [documentation](https://oxbow.readthedocs.io/).
 
 ## Contributing
 
-Want to contribute? [Join us](https://oxbow.zulipchat.com)!
-
-## Development
-
-The **oxbow** project is split into separate [Rust](./oxbow), [Python](./py-oxbow), and [R](./r-oxbow) packages.
-You can download sample data by [following these instructions](./fixtures/README.md).
+Want to contribute? See the [contributing guide](https://oxbow.readthedocs.io/en/latest/contributing-guide/). Chat with us on [Zulip](https://oxbow.zulipchat.com).
