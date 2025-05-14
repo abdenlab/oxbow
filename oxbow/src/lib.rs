@@ -6,6 +6,8 @@
 //! , stream larger-than-memory files as Arrow [RecordBatches](https://docs.rs/arrow/latest/arrow/record_batch/struct.RecordBatch.html)
 //! with zero-copy over FFI, and more!
 //!
+//! ⚠️ The Rust API is under active development and is not yet stable. The API may change in future releases.
+//!
 //! [Source on GitHub](https://github.com/abdenlab/oxbow).
 //!
 //!
@@ -15,13 +17,13 @@
 //!   [UCSC](https://genome.ucsc.edu/FAQ/FAQformat.html) ecosystems.
 //! - 🔍 Support for compression, indexing, column projection, and genomic range querying.
 //! - 🔧 Support for nested fields and complex, typed schemas (e.g., SAM tags,
-//!   VCF `INFO` and `FORMAT` fields).
+//!   VCF `INFO` and `FORMAT` fields, AutoSql, etc.).
 //!
 //!
 //! ## Scanners
 //!
-//! The main interface to read files are the scanners. Each scanner is a specialized parser for a
-//! specific format and provides scanning methods that an iterator implementing the
+//! The main interface to read files are the scanners. Each scanner is a parser for a specific
+//! format and provides scanning methods that return an iterator implementing the
 //! [`arrow::record_batch::RecordBatchReader`] trait.
 //!
 //! ### Sequence formats
