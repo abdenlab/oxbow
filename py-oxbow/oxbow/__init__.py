@@ -1,3 +1,5 @@
+from importlib.metadata import PackageNotFoundError, version
+
 from oxbow._core.alignment import (
     from_bam,
     from_sam,
@@ -32,7 +34,13 @@ from oxbow.oxbow import (
     read_gtf,
 )
 
+try:
+    __version__ = version("oxbow")
+except PackageNotFoundError:
+    __version__ = "unknown"
+
 __all__ = [
+    "__version__",
     "from_bam",
     "from_bcf",
     "from_bed",
@@ -68,3 +76,5 @@ from_gff.__module__ = __name__
 from_gtf.__module__ = __name__
 from_sam.__module__ = __name__
 from_vcf.__module__ = __name__
+
+del version, PackageNotFoundError
