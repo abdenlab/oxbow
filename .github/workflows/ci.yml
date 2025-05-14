@@ -31,7 +31,9 @@ jobs:
       - name: Run Clippy
         run: cargo clippy -p oxbow -p py-oxbow --all-features -- -D warnings
 
-      # Assert Formatting
+        # Assert Formatting
+      - name: Install rustfmt
+        run: rustup component add rustfmt
       - name: Check Formatting
         run: cargo fmt --all --check
 
