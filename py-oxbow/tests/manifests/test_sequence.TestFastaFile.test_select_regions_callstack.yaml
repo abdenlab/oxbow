@@ -3,7 +3,7 @@
 : |-
     ->  oxbow._core.sequence.FastaFile.select(index="data/sample.fai", gzi=None, regions=["seq1:10-20", "seq10", "seq2:1-30"])
         ->  oxbow._core.sequence.SequenceFile.select(regions=["seq1:10-20", "seq10", "seq2:1-30"], index="data/sample.fai", gzi=None)
-            ->  oxbow._core.base.DataFile.select(gzi=None, index="data/sample.fai", regions=["seq1:10-20", "seq10", "seq2:1-30"])
+            ->  oxbow._core.base.DataSource.select(gzi=None, index="data/sample.fai", regions=["seq1:10-20", "seq10", "seq2:1-30"])
                 ->  oxbow._core.sequence.SequenceFile._scan_kwargs
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
@@ -12,24 +12,24 @@
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta", None, fields=None, compressed=False, gzi=None, index="data/sample.fai", regions=["seq1:10-20", "seq10", "seq2:1-30"])
                     ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fasta", None, None, "data/sample.fai", None, False)
-                        ->  oxbow._core.base.DataFile.__init__("data/sample.fasta", None, None)
+                        ->  oxbow._core.base.DataSource.__init__("data/sample.fasta", None, None)
                         <-  None
                     <-  None
                 <-  None
-                ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
-                    ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
+                ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
+                    ->  oxbow._core.base.DataSource.fragments(batch_size=131072)
                         ->  oxbow._core.sequence.FastaFile._batch_readers
                         <-  FastaFile._batch_readers.<generator>
-                        ->  oxbow._core.base.DataFile._scanner
-                            ->  oxbow._core.base.DataFile._source
+                        ->  oxbow._core.base.DataSource._scanner
+                            ->  oxbow._core.base.DataSource._source
                             <-  'data/sample.fasta'
                             ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                             <-  {'compressed': 'False'}
                         <-  oxbow.core.PyFastaScanner.<object>
                         ->  oxbow._core.sequence.FastaFile._batch_readers.<generator>
-                            ->  oxbow._core.base.DataFile.schema
-                                ->  oxbow._core.base.DataFile._scanner
-                                    ->  oxbow._core.base.DataFile._source
+                            ->  oxbow._core.base.DataSource.schema
+                                ->  oxbow._core.base.DataSource._scanner
+                                    ->  oxbow._core.base.DataSource._source
                                     <-  'data/sample.fasta'
                                     ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                                     <-  {'compressed': 'False'}
@@ -50,7 +50,7 @@
 : |-
     ->  oxbow._core.sequence.FastaFile.select(index=None, gzi=None, regions=["seq1:10-20", "seq10", "seq2:1-30"])
         ->  oxbow._core.sequence.SequenceFile.select(regions=["seq1:10-20", "seq10", "seq2:1-30"], index=None, gzi=None)
-            ->  oxbow._core.base.DataFile.select(gzi=None, index=None, regions=["seq1:10-20", "seq10", "seq2:1-30"])
+            ->  oxbow._core.base.DataSource.select(gzi=None, index=None, regions=["seq1:10-20", "seq10", "seq2:1-30"])
                 ->  oxbow._core.sequence.SequenceFile._scan_kwargs
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
@@ -67,7 +67,7 @@
 : |-
     ->  oxbow._core.sequence.FastaFile.select(index="data/sample.fai", gzi="data/sample.fasta.gzi", regions=["seq1:10-20", "seq10", "seq2:1-30"])
         ->  oxbow._core.sequence.SequenceFile.select(regions=["seq1:10-20", "seq10", "seq2:1-30"], index="data/sample.fai", gzi="data/sample.fasta.gzi")
-            ->  oxbow._core.base.DataFile.select(gzi="data/sample.fasta.gzi", index="data/sample.fai", regions=["seq1:10-20", "seq10", "seq2:1-30"])
+            ->  oxbow._core.base.DataSource.select(gzi="data/sample.fasta.gzi", index="data/sample.fai", regions=["seq1:10-20", "seq10", "seq2:1-30"])
                 ->  oxbow._core.sequence.SequenceFile._scan_kwargs
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
@@ -76,24 +76,24 @@
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta.gz", None, fields=None, compressed=True, gzi="data/sample.fasta.gzi", index="data/sample.fai", regions=["seq1:10-20", "seq10", "seq2:1-30"])
                     ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fasta.gz", None, None, "data/sample.fai", "data/sample.fasta.gzi", True)
-                        ->  oxbow._core.base.DataFile.__init__("data/sample.fasta.gz", None, None)
+                        ->  oxbow._core.base.DataSource.__init__("data/sample.fasta.gz", None, None)
                         <-  None
                     <-  None
                 <-  None
-                ->  oxbow._core.base.DataFile.dataset(batch_size=131072)
-                    ->  oxbow._core.base.DataFile.fragments(batch_size=131072)
+                ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
+                    ->  oxbow._core.base.DataSource.fragments(batch_size=131072)
                         ->  oxbow._core.sequence.FastaFile._batch_readers
                         <-  FastaFile._batch_readers.<generator>
-                        ->  oxbow._core.base.DataFile._scanner
-                            ->  oxbow._core.base.DataFile._source
+                        ->  oxbow._core.base.DataSource._scanner
+                            ->  oxbow._core.base.DataSource._source
                             <-  'data/sample.fasta.gz'
                             ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                             <-  {'compressed': 'True'}
                         <-  oxbow.core.PyFastaScanner.<object>
                         ->  oxbow._core.sequence.FastaFile._batch_readers.<generator>
-                            ->  oxbow._core.base.DataFile.schema
-                                ->  oxbow._core.base.DataFile._scanner
-                                    ->  oxbow._core.base.DataFile._source
+                            ->  oxbow._core.base.DataSource.schema
+                                ->  oxbow._core.base.DataSource._scanner
+                                    ->  oxbow._core.base.DataSource._source
                                     <-  'data/sample.fasta.gz'
                                     ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                                     <-  {'compressed': 'True'}
@@ -114,7 +114,7 @@
 : |-
     ->  oxbow._core.sequence.FastaFile.select(index="data/sample.fai", gzi=None, regions=["seq1:10-20", "seq10", "seq2:1-30"])
         ->  oxbow._core.sequence.SequenceFile.select(regions=["seq1:10-20", "seq10", "seq2:1-30"], index="data/sample.fai", gzi=None)
-            ->  oxbow._core.base.DataFile.select(gzi=None, index="data/sample.fai", regions=["seq1:10-20", "seq10", "seq2:1-30"])
+            ->  oxbow._core.base.DataSource.select(gzi=None, index="data/sample.fai", regions=["seq1:10-20", "seq10", "seq2:1-30"])
                 ->  oxbow._core.sequence.SequenceFile._scan_kwargs
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
@@ -131,7 +131,7 @@
 : |-
     ->  oxbow._core.sequence.FastaFile.select(index=None, gzi="data/sample.fasta.gzi", regions=["seq1:10-20", "seq10", "seq2:1-30"])
         ->  oxbow._core.sequence.SequenceFile.select(regions=["seq1:10-20", "seq10", "seq2:1-30"], index=None, gzi="data/sample.fasta.gzi")
-            ->  oxbow._core.base.DataFile.select(gzi="data/sample.fasta.gzi", index=None, regions=["seq1:10-20", "seq10", "seq2:1-30"])
+            ->  oxbow._core.base.DataSource.select(gzi="data/sample.fasta.gzi", index=None, regions=["seq1:10-20", "seq10", "seq2:1-30"])
                 ->  oxbow._core.sequence.SequenceFile._scan_kwargs
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
@@ -148,7 +148,7 @@
 : |-
     ->  oxbow._core.sequence.FastaFile.select(index=None, gzi=None, regions=["seq1:10-20", "seq10", "seq2:1-30"])
         ->  oxbow._core.sequence.SequenceFile.select(regions=["seq1:10-20", "seq10", "seq2:1-30"], index=None, gzi=None)
-            ->  oxbow._core.base.DataFile.select(gzi=None, index=None, regions=["seq1:10-20", "seq10", "seq2:1-30"])
+            ->  oxbow._core.base.DataSource.select(gzi=None, index=None, regions=["seq1:10-20", "seq10", "seq2:1-30"])
                 ->  oxbow._core.sequence.SequenceFile._scan_kwargs
                 <-  {'fields': 'None'}
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
