@@ -2,7 +2,6 @@ use std::io::BufReader;
 
 use extendr_api::prelude::*;
 
-use bigtools;
 use flate2::bufread::MultiGzDecoder;
 use noodles::bgzf::IndexedReader as IndexedBgzfReader;
 use noodles::core::Region;
@@ -125,27 +124,25 @@ pub fn read_sam_impl(
             )
             .unwrap();
         batches_to_ipc(batches)
+    } else if compressed {
+        let bgzf_reader = noodles::bgzf::Reader::new(reader);
+        let mut fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
+        let header = fmt_reader.read_header().unwrap();
+        let scanner = SamScanner::new(header);
+        let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
+        let batches = scanner
+            .scan(fmt_reader, fields, Some(tag_defs), None, None)
+            .unwrap();
+        batches_to_ipc(batches)
     } else {
-        if compressed {
-            let bgzf_reader = noodles::bgzf::Reader::new(reader);
-            let mut fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
-            let header = fmt_reader.read_header().unwrap();
-            let scanner = SamScanner::new(header);
-            let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
-            let batches = scanner
-                .scan(fmt_reader, fields, Some(tag_defs), None, None)
-                .unwrap();
-            batches_to_ipc(batches)
-        } else {
-            let mut fmt_reader = noodles::sam::io::Reader::new(reader);
-            let header = fmt_reader.read_header().unwrap();
-            let scanner = SamScanner::new(header);
-            let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
-            let batches = scanner
-                .scan(fmt_reader, fields, Some(tag_defs), None, None)
-                .unwrap();
-            batches_to_ipc(batches)
-        }
+        let mut fmt_reader = noodles::sam::io::Reader::new(reader);
+        let header = fmt_reader.read_header().unwrap();
+        let scanner = SamScanner::new(header);
+        let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
+        let batches = scanner
+            .scan(fmt_reader, fields, Some(tag_defs), None, None)
+            .unwrap();
+        batches_to_ipc(batches)
     };
 
     ipc.unwrap()
@@ -187,27 +184,25 @@ pub fn read_bam_impl(
             )
             .unwrap();
         batches_to_ipc(batches)
+    } else if compressed {
+        let bgzf_reader = noodles::bgzf::Reader::new(reader);
+        let mut fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
+        let header = fmt_reader.read_header().unwrap();
+        let scanner = BamScanner::new(header);
+        let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
+        let batches = scanner
+            .scan(fmt_reader, fields, Some(tag_defs), None, None)
+            .unwrap();
+        batches_to_ipc(batches)
     } else {
-        if compressed {
-            let bgzf_reader = noodles::bgzf::Reader::new(reader);
-            let mut fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
-            let header = fmt_reader.read_header().unwrap();
-            let scanner = BamScanner::new(header);
-            let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
-            let batches = scanner
-                .scan(fmt_reader, fields, Some(tag_defs), None, None)
-                .unwrap();
-            batches_to_ipc(batches)
-        } else {
-            let mut fmt_reader = noodles::bam::io::Reader::from(reader);
-            let header = fmt_reader.read_header().unwrap();
-            let scanner = BamScanner::new(header);
-            let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
-            let batches = scanner
-                .scan(fmt_reader, fields, Some(tag_defs), None, None)
-                .unwrap();
-            batches_to_ipc(batches)
-        }
+        let mut fmt_reader = noodles::bam::io::Reader::from(reader);
+        let header = fmt_reader.read_header().unwrap();
+        let scanner = BamScanner::new(header);
+        let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
+        let batches = scanner
+            .scan(fmt_reader, fields, Some(tag_defs), None, None)
+            .unwrap();
+        batches_to_ipc(batches)
     };
 
     ipc.unwrap()
@@ -215,6 +210,7 @@ pub fn read_bam_impl(
 
 /// Return Arrow IPC format from a VCF file.
 #[extendr]
+#[allow(clippy::too_many_arguments)]
 pub fn read_vcf_impl(
     path: &str,
     region: Option<String>,
@@ -258,43 +254,41 @@ pub fn read_vcf_impl(
             )
             .unwrap();
         batches_to_ipc(batches)
+    } else if compressed {
+        let bgzf_reader = noodles::bgzf::Reader::new(reader);
+        let mut fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
+        let header = fmt_reader.read_header().unwrap();
+        let scanner = VcfScanner::new(header);
+        let batches = scanner
+            .scan(
+                fmt_reader,
+                fields,
+                info_fields,
+                genotype_fields,
+                samples,
+                Some(genotype_by),
+                None,
+                None,
+            )
+            .unwrap();
+        batches_to_ipc(batches)
     } else {
-        if compressed {
-            let bgzf_reader = noodles::bgzf::Reader::new(reader);
-            let mut fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
-            let header = fmt_reader.read_header().unwrap();
-            let scanner = VcfScanner::new(header);
-            let batches = scanner
-                .scan(
-                    fmt_reader,
-                    fields,
-                    info_fields,
-                    genotype_fields,
-                    samples,
-                    Some(genotype_by),
-                    None,
-                    None,
-                )
-                .unwrap();
-            batches_to_ipc(batches)
-        } else {
-            let mut fmt_reader = noodles::vcf::io::Reader::new(reader);
-            let header = fmt_reader.read_header().unwrap();
-            let scanner = VcfScanner::new(header);
-            let batches = scanner
-                .scan(
-                    fmt_reader,
-                    fields,
-                    info_fields,
-                    genotype_fields,
-                    samples,
-                    Some(genotype_by),
-                    None,
-                    None,
-                )
-                .unwrap();
-            batches_to_ipc(batches)
-        }
+        let mut fmt_reader = noodles::vcf::io::Reader::new(reader);
+        let header = fmt_reader.read_header().unwrap();
+        let scanner = VcfScanner::new(header);
+        let batches = scanner
+            .scan(
+                fmt_reader,
+                fields,
+                info_fields,
+                genotype_fields,
+                samples,
+                Some(genotype_by),
+                None,
+                None,
+            )
+            .unwrap();
+        batches_to_ipc(batches)
     };
 
     ipc.unwrap()
@@ -302,6 +296,7 @@ pub fn read_vcf_impl(
 
 /// Return Arrow IPC format from a BCF file.
 #[extendr]
+#[allow(clippy::too_many_arguments)]
 pub fn read_bcf_impl(
     path: &str,
     region: Option<String>,
@@ -345,43 +340,41 @@ pub fn read_bcf_impl(
             )
             .unwrap();
         batches_to_ipc(batches)
+    } else if compressed {
+        let bgzf_reader = noodles::bgzf::Reader::new(reader);
+        let mut fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
+        let header = fmt_reader.read_header().unwrap();
+        let scanner = BcfScanner::new(header);
+        let batches = scanner
+            .scan(
+                fmt_reader,
+                fields,
+                info_fields,
+                genotype_fields,
+                samples,
+                Some(genotype_by),
+                None,
+                None,
+            )
+            .unwrap();
+        batches_to_ipc(batches)
     } else {
-        if compressed {
-            let bgzf_reader = noodles::bgzf::Reader::new(reader);
-            let mut fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
-            let header = fmt_reader.read_header().unwrap();
-            let scanner = BcfScanner::new(header);
-            let batches = scanner
-                .scan(
-                    fmt_reader,
-                    fields,
-                    info_fields,
-                    genotype_fields,
-                    samples,
-                    Some(genotype_by),
-                    None,
-                    None,
-                )
-                .unwrap();
-            batches_to_ipc(batches)
-        } else {
-            let mut fmt_reader = noodles::bcf::io::Reader::from(reader);
-            let header = fmt_reader.read_header().unwrap();
-            let scanner = BcfScanner::new(header);
-            let batches = scanner
-                .scan(
-                    fmt_reader,
-                    fields,
-                    info_fields,
-                    genotype_fields,
-                    samples,
-                    Some(genotype_by),
-                    None,
-                    None,
-                )
-                .unwrap();
-            batches_to_ipc(batches)
-        }
+        let mut fmt_reader = noodles::bcf::io::Reader::from(reader);
+        let header = fmt_reader.read_header().unwrap();
+        let scanner = BcfScanner::new(header);
+        let batches = scanner
+            .scan(
+                fmt_reader,
+                fields,
+                info_fields,
+                genotype_fields,
+                samples,
+                Some(genotype_by),
+                None,
+                None,
+            )
+            .unwrap();
+        batches_to_ipc(batches)
     };
 
     ipc.unwrap()
@@ -422,25 +415,23 @@ pub fn read_gtf_impl(
             )
             .unwrap();
         batches_to_ipc(batches)
+    } else if compressed {
+        let bgzf_reader = noodles::bgzf::Reader::new(reader);
+        let mut fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
+        let scanner = GtfScanner::new(None);
+        let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
+        let batches = scanner
+            .scan(fmt_reader, fields, Some(attr_defs), None, None)
+            .unwrap();
+        batches_to_ipc(batches)
     } else {
-        if compressed {
-            let bgzf_reader = noodles::bgzf::Reader::new(reader);
-            let mut fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
-            let scanner = GtfScanner::new(None);
-            let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
-            let batches = scanner
-                .scan(fmt_reader, fields, Some(attr_defs), None, None)
-                .unwrap();
-            batches_to_ipc(batches)
-        } else {
-            let mut fmt_reader = noodles::gtf::io::Reader::new(reader);
-            let scanner = GtfScanner::new(None);
-            let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
-            let batches = scanner
-                .scan(fmt_reader, fields, Some(attr_defs), None, None)
-                .unwrap();
-            batches_to_ipc(batches)
-        }
+        let mut fmt_reader = noodles::gtf::io::Reader::new(reader);
+        let scanner = GtfScanner::new(None);
+        let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
+        let batches = scanner
+            .scan(fmt_reader, fields, Some(attr_defs), None, None)
+            .unwrap();
+        batches_to_ipc(batches)
     };
 
     ipc.unwrap()
@@ -481,25 +472,23 @@ pub fn read_gff_impl(
             )
             .unwrap();
         batches_to_ipc(batches)
+    } else if compressed {
+        let bgzf_reader = noodles::bgzf::Reader::new(reader);
+        let mut fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
+        let scanner = GffScanner::new(None);
+        let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
+        let batches = scanner
+            .scan(fmt_reader, fields, Some(attr_defs), None, None)
+            .unwrap();
+        batches_to_ipc(batches)
     } else {
-        if compressed {
-            let bgzf_reader = noodles::bgzf::Reader::new(reader);
-            let mut fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
-            let scanner = GffScanner::new(None);
-            let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
-            let batches = scanner
-                .scan(fmt_reader, fields, Some(attr_defs), None, None)
-                .unwrap();
-            batches_to_ipc(batches)
-        } else {
-            let mut fmt_reader = noodles::gff::io::Reader::new(reader);
-            let scanner = GffScanner::new(None);
-            let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
-            let batches = scanner
-                .scan(fmt_reader, fields, Some(attr_defs), None, None)
-                .unwrap();
-            batches_to_ipc(batches)
-        }
+        let mut fmt_reader = noodles::gff::io::Reader::new(reader);
+        let scanner = GffScanner::new(None);
+        let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
+        let batches = scanner
+            .scan(fmt_reader, fields, Some(attr_defs), None, None)
+            .unwrap();
+        batches_to_ipc(batches)
     };
 
     ipc.unwrap()
@@ -531,19 +520,17 @@ pub fn read_bed_impl(
             .scan_query(fmt_reader, region, index, fields, None, None)
             .unwrap();
         batches_to_ipc(batches)
+    } else if compressed {
+        let bgzf_reader = noodles::bgzf::Reader::new(reader);
+        let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
+        let scanner = BedScanner::new(bed_schema);
+        let batches = scanner.scan(fmt_reader, fields, None, None).unwrap();
+        batches_to_ipc(batches)
     } else {
-        if compressed {
-            let bgzf_reader = noodles::bgzf::Reader::new(reader);
-            let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
-            let scanner = BedScanner::new(bed_schema);
-            let batches = scanner.scan(fmt_reader, fields, None, None).unwrap();
-            batches_to_ipc(batches)
-        } else {
-            let fmt_reader = noodles::bed::io::Reader::new(reader);
-            let scanner = BedScanner::new(bed_schema);
-            let batches = scanner.scan(fmt_reader, fields, None, None).unwrap();
-            batches_to_ipc(batches)
-        }
+        let fmt_reader = noodles::bed::io::Reader::new(reader);
+        let scanner = BedScanner::new(bed_schema);
+        let batches = scanner.scan(fmt_reader, fields, None, None).unwrap();
+        batches_to_ipc(batches)
     };
 
     ipc.unwrap()
