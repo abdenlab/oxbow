@@ -39,7 +39,6 @@ from oxbow.oxbow import (
     PyGtfScanner,
     PyBBIZoomScanner,
 )
-from oxbow._filetypes import FileType
 
 __all__ = [
     "AlignmentFile",
