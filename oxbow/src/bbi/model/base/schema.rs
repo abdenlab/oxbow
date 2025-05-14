@@ -7,8 +7,7 @@ use super::field::{bed_standard_fields, FieldDef, FieldType};
 ///
 /// A BED schema be created in several ways:
 ///
-/// * Defined from `n` standard fields and an optional list of custom fields typed using
-///   [`AutosqlField`].
+/// * Defined from `n` standard fields and a vec of custom [`FieldDef`].
 /// * Defined from `n` and `Option<m>` parameters.
 /// * Parsing a `BED`*n\[+\[m\]\]* or `bedGraph` specifier.
 ///

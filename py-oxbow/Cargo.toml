@@ -8,6 +8,7 @@ license = "MIT OR Apache-2.0"
 [lib]
 name = "oxbow"
 crate-type = ["cdylib"]
+doc = false
 
 [dependencies]
 oxbow = { workspace = true }
