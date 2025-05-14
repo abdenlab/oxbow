@@ -141,12 +141,13 @@ class FastaFile(SequenceFile, file_type=FileType.FASTA):
         compressed=False,
         regions=None,
     ):
-        if regions and not index:
-            raise ValueError("Index file is required for FASTA when regions are specified.")
-        if gzi and not compressed:
-            raise ValueError("GZI index requires compressed source.")
-        if regions and compressed and not gzi:
-            raise ValueError("GZI index is required for compressed FASTA when regions are specified.")
+        if not compressed and gzi:
+            raise ValueError("Got a GZI index for an uncompressed FASTA file")
+        if regions:
+            if not index:
+                raise ValueError("A FAI index file is required for FASTA when regions are specified.")
+            if compressed and not gzi:
+                raise ValueError("A GZI index file is required for BGZF-compressed FASTA when regions are specified.")
         self._regions = regions
         super().__init__(uri, opener, fields, index, gzi, compressed)
 
