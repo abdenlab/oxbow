@@ -26,6 +26,8 @@ jobs:
         run: cargo check -p oxbow -p py-oxbow --all-features
 
       # Linting
+      - name: Install Clippy
+        run: rustup component add clippy
       - name: Run Clippy
         run: cargo clippy -p oxbow -p py-oxbow --all-features -- -D warnings
 
