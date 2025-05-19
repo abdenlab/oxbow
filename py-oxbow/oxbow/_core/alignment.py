@@ -81,7 +81,7 @@ class AlignmentFile(DataSource):
                         **self._scan_kwargs,
                     )
                 yield self._make_batch_reader(stream)
-                
+
         else:
             stream = partial(
                 self._scanner.scan,

@@ -84,8 +84,12 @@ class TestBedFile:
             fragment.iter_batches()
         assert len(fragments) == expected_count
         if regions is not None and regions != ("*",):
-            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
-            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+            assert (
+                mock_scanner_type.return_value.scan_query.call_count == expected_count
+            )
+            for call, region in zip(
+                mock_scanner_type.return_value.scan_query.mock_calls, regions
+            ):
                 assert call.kwargs["region"] == region
 
     @pytest.mark.parametrize(
@@ -187,8 +191,12 @@ class TestBigBedFile:
             fragment.iter_batches()
         assert len(fragments) == expected_count
         if regions is not None and regions != ("*",):
-            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
-            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+            assert (
+                mock_scanner_type.return_value.scan_query.call_count == expected_count
+            )
+            for call, region in zip(
+                mock_scanner_type.return_value.scan_query.mock_calls, regions
+            ):
                 assert call.kwargs["region"] == region
 
     @pytest.mark.parametrize(
@@ -290,8 +298,12 @@ class TestBigWigFile:
             fragment.iter_batches()
         assert len(fragments) == expected_count
         if regions is not None and regions != ("*",):
-            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
-            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+            assert (
+                mock_scanner_type.return_value.scan_query.call_count == expected_count
+            )
+            for call, region in zip(
+                mock_scanner_type.return_value.scan_query.mock_calls, regions
+            ):
                 assert call.kwargs["region"] == region
 
     @pytest.mark.parametrize(
@@ -393,8 +405,12 @@ class TestGffFile:
             fragment.iter_batches()
         assert len(fragments) == expected_count
         if regions is not None and regions != ("*",):
-            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
-            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+            assert (
+                mock_scanner_type.return_value.scan_query.call_count == expected_count
+            )
+            for call, region in zip(
+                mock_scanner_type.return_value.scan_query.mock_calls, regions
+            ):
                 assert call.kwargs["region"] == region
 
     @pytest.mark.parametrize(
@@ -496,8 +512,12 @@ class TestGtfFile:
             fragment.iter_batches()
         assert len(fragments) == expected_count
         if regions is not None and regions != ("*",):
-            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
-            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+            assert (
+                mock_scanner_type.return_value.scan_query.call_count == expected_count
+            )
+            for call, region in zip(
+                mock_scanner_type.return_value.scan_query.mock_calls, regions
+            ):
                 assert call.kwargs["region"] == region
 
     @pytest.mark.parametrize(

@@ -302,7 +302,6 @@ class TestFastqFile:
     def test_fragments(self):
         fragments = ox.FastqFile("data/sample.fastq").fragments()
         assert len(fragments) == 1
-    
 
     @pytest.mark.parametrize(
         ("fields", "batch_size"),

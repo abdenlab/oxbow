@@ -55,6 +55,7 @@ class DataSource(metaclass=DataSourceMeta):
                 data=stream(fields=fields, batch_size=batch_size),
                 schema=self.schema,
             )
+
         return _batch_reader
 
     def __init_subclass__(cls, file_type: FileType | None = None) -> None:
