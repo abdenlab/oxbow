@@ -120,16 +120,10 @@ class FastaFile(SequenceFile, file_type=FileType.FASTA):
                 index=self._index,
                 gzi=self._gzi,
             )
-            yield lambda fields, batch_size: pa.RecordBatchReader.from_stream(
-                data=stream(fields=fields, batch_size=batch_size),
-                schema=self.schema,
-            )
+            yield self._make_batch_reader(stream)
         else:
             stream = self._scanner.scan
-            yield lambda fields, batch_size: pa.RecordBatchReader.from_stream(
-                data=stream(fields=fields, batch_size=batch_size),
-                schema=self.schema,
-            )
+            yield self._make_batch_reader(stream)
 
     def __init__(
         self,
@@ -189,10 +183,7 @@ class FastqFile(SequenceFile, file_type=FileType.FASTQ):
         self,
     ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
         stream = self._scanner.scan
-        yield lambda fields, batch_size: pa.RecordBatchReader.from_stream(
-            data=stream(fields=fields, batch_size=batch_size),
-            schema=self.schema,
-        )
+        yield self._make_batch_reader(stream)
 
 
 def from_fasta(
