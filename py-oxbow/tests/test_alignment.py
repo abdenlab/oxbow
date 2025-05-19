@@ -1,6 +1,7 @@
 import pytest
 from pytest_manifest import Manifest
 from utils import Input
+from unittest import mock
 
 import oxbow.core as ox
 
@@ -67,9 +68,20 @@ class TestBamFile:
         "regions",
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
-    def test_fragments(self, regions):
-        fragments = ox.BamFile("data/sample.bam", regions=regions).fragments()
-        assert len(fragments) == len(regions) if regions else 1
+    @mock.patch("oxbow._core.base.pa.RecordBatchReader")
+    def test_fragments(self, _, regions, mocker):
+        expected_count = 1 if regions is None else len(regions)
+        ds = ox.BamFile("data/sample.bam", regions=regions)
+        mock_scanner_type = mocker.patch.object(ds, "_scanner_type")
+        mock_scanner_type.return_value.scan_query.side_effect = regions
+        fragments = ds.fragments()
+        for fragment in fragments:
+            fragment.iter_batches()
+        assert len(fragments) == expected_count
+        if regions is not None and regions != ("*",):
+            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
+            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+                assert call.kwargs["region"] == region
 
     @pytest.mark.parametrize(
         ("fields", "batch_size"),
@@ -157,9 +169,21 @@ class TestSamFile:
         "regions",
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
-    def test_fragments(self, regions):
-        fragments = ox.SamFile("data/sample.sam", regions=regions).fragments()
-        assert len(fragments) == len(regions) if regions else 1
+    @mock.patch("oxbow._core.base.pa.RecordBatchReader")
+    def test_fragments(self, _, regions, mocker):
+        expected_count = 1 if regions is None else len(regions)
+        ds = ox.SamFile("data/sample.sam", regions=regions)
+        mock_scanner_type = mocker.patch.object(ds, "_scanner_type")
+        mock_scanner_type.return_value.scan_query.side_effect = regions
+        fragments = ds.fragments()
+        for fragment in fragments:
+            fragment.iter_batches()
+        assert len(fragments) == expected_count
+        if regions is not None and regions != ("*",):
+            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
+            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+                assert call.kwargs["region"] == region
+
 
     @pytest.mark.parametrize(
         ("fields", "batch_size"),

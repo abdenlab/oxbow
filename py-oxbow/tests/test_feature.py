@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pytest
 from pytest_manifest import Manifest
 
@@ -71,9 +73,20 @@ class TestBedFile:
         "regions",
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
-    def test_fragments(self, regions):
-        fragments = ox.BedFile("data/sample.bed", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+    @mock.patch("oxbow._core.base.pa.RecordBatchReader")
+    def test_fragments(self, _, regions, mocker):
+        expected_count = 1 if regions is None else len(regions)
+        ds = ox.BedFile("data/sample.bed", regions=regions)
+        mock_scanner_type = mocker.patch.object(ds, "_scanner_type")
+        mock_scanner_type.return_value.scan_query.side_effect = regions
+        fragments = ds.fragments()
+        for fragment in fragments:
+            fragment.iter_batches()
+        assert len(fragments) == expected_count
+        if regions is not None and regions != ("*",):
+            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
+            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+                assert call.kwargs["region"] == region
 
     @pytest.mark.parametrize(
         ("fields", "batch_size"),
@@ -163,9 +176,20 @@ class TestBigBedFile:
         "regions",
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
-    def test_fragments(self, regions):
-        fragments = ox.BigBedFile("data/sample.bb", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+    @mock.patch("oxbow._core.base.pa.RecordBatchReader")
+    def test_fragments(self, _, regions, mocker):
+        expected_count = 1 if regions is None else len(regions)
+        ds = ox.BigBedFile("data/sample.bb", regions=regions)
+        mock_scanner_type = mocker.patch.object(ds, "_scanner_type")
+        mock_scanner_type.return_value.scan_query.side_effect = regions
+        fragments = ds.fragments()
+        for fragment in fragments:
+            fragment.iter_batches()
+        assert len(fragments) == expected_count
+        if regions is not None and regions != ("*",):
+            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
+            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+                assert call.kwargs["region"] == region
 
     @pytest.mark.parametrize(
         ("fields", "batch_size"),
@@ -255,9 +279,20 @@ class TestBigWigFile:
         "regions",
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
-    def test_fragments(self, regions):
-        fragments = ox.BigWigFile("data/sample.bw", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+    @mock.patch("oxbow._core.base.pa.RecordBatchReader")
+    def test_fragments(self, _, regions, mocker):
+        expected_count = 1 if regions is None else len(regions)
+        ds = ox.BigWigFile("data/sample.bw", regions=regions)
+        mock_scanner_type = mocker.patch.object(ds, "_scanner_type")
+        mock_scanner_type.return_value.scan_query.side_effect = regions
+        fragments = ds.fragments()
+        for fragment in fragments:
+            fragment.iter_batches()
+        assert len(fragments) == expected_count
+        if regions is not None and regions != ("*",):
+            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
+            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+                assert call.kwargs["region"] == region
 
     @pytest.mark.parametrize(
         ("fields", "batch_size"),
@@ -347,9 +382,20 @@ class TestGffFile:
         "regions",
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
-    def test_fragments(self, regions):
-        fragments = ox.GffFile("data/sample.gff", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+    @mock.patch("oxbow._core.base.pa.RecordBatchReader")
+    def test_fragments(self, _, regions, mocker):
+        expected_count = 1 if regions is None else len(regions)
+        ds = ox.GffFile("data/sample.gff", regions=regions)
+        mock_scanner_type = mocker.patch.object(ds, "_scanner_type")
+        mock_scanner_type.return_value.scan_query.side_effect = regions
+        fragments = ds.fragments()
+        for fragment in fragments:
+            fragment.iter_batches()
+        assert len(fragments) == expected_count
+        if regions is not None and regions != ("*",):
+            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
+            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+                assert call.kwargs["region"] == region
 
     @pytest.mark.parametrize(
         ("fields", "batch_size"),
@@ -439,9 +485,20 @@ class TestGtfFile:
         "regions",
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
-    def test_fragments(self, regions):
-        fragments = ox.GtfFile("data/sample.gtf", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+    @mock.patch("oxbow._core.base.pa.RecordBatchReader")
+    def test_fragments(self, _, regions, mocker):
+        expected_count = 1 if regions is None else len(regions)
+        ds = ox.GtfFile("data/sample.gtf", regions=regions)
+        mock_scanner_type = mocker.patch.object(ds, "_scanner_type")
+        mock_scanner_type.return_value.scan_query.side_effect = regions
+        fragments = ds.fragments()
+        for fragment in fragments:
+            fragment.iter_batches()
+        assert len(fragments) == expected_count
+        if regions is not None and regions != ("*",):
+            assert mock_scanner_type.return_value.scan_query.call_count == expected_count
+            for call, region in zip(mock_scanner_type.return_value.scan_query.mock_calls, regions):
+                assert call.kwargs["region"] == region
 
     @pytest.mark.parametrize(
         ("fields", "batch_size"),

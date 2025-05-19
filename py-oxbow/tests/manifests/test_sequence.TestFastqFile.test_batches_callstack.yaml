@@ -5,20 +5,22 @@ FastqFile("data/sample.fastq", fields=('name', 'sequence')).batches(batch_size=5
     <-  FastqFile._batch_readers.<generator>
     ->  oxbow._core.base.DataSource._scanner
         ->  oxbow._core.base.DataSource._source
-        <-  'data/sample.fastq'
+        <-  data/sample.fastq
         ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
         <-  {'compressed': 'False'}
     <-  oxbow.core.PyFastqScanner.<object>
+    ->  oxbow._core.base.DataSource._make_batch_reader(builtins.builtin_function_or_method.<object>)
+    <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
     ->  oxbow._core.sequence.FastqFile._batch_readers.<generator>
         ->  oxbow._core.base.DataSource.schema
             ->  oxbow._core.base.DataSource._scanner
                 ->  oxbow._core.base.DataSource._source
-                <-  'data/sample.fastq'
+                <-  data/sample.fastq
                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                 <-  {'compressed': 'False'}
             <-  oxbow.core.PyFastqScanner.<object>
             ->  oxbow._core.sequence.SequenceFile._schema_kwargs
-            <-  {'fields': ("'name'", "'sequence'")}
+            <-  {'fields': ('name', 'sequence')}
         <-  name: string
             sequence: string
         ->  oxbow._core.base.DataSource.batches.<generator>
@@ -49,4 +51,4 @@ FastqFile("data/sample.fastq", fields=('name', 'sequence')).batches(batch_size=5
             ----
             name: ["seq16","seq17","seq18","seq19","seq20"]
             sequence: ["GCATGCATGCATGCATGCATGCATGCATGCATGCATGC","ATCGATCGATCGATCGATCGATCGATCGATCGATCGAT","CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA","GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT","TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC"]
-    <-  oxbow._core.sequence.FastqFile._batch_readers.<locals>.<lambda>
+    <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader

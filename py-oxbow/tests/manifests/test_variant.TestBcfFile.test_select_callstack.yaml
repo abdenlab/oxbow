@@ -1,49 +1,49 @@
 BcfFile("data/does-not-exist.bcf").select(): |-
-    ->  oxbow._core.variant.BcfFile.__init__("data/does-not-exist.bcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",), info_fields=("DP",))
-        ->  oxbow._core.variant.VariantFile.__init__(uri="data/does-not-exist.bcf", opener=None, fields=None, index=None, compressed=True, regions=None, info_fields=("DP",), genotype_fields=("GT",), samples=("HG00096", "HG00101", "HG00103"), genotype_by="sample")
-            ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.bcf", None, None)
+    ->  oxbow._core.variant.BcfFile.__init__(data/does-not-exist.bcf, samples=('HG00096', 'HG00101', 'HG00103'), genotype_fields=('GT',), info_fields=('DP',))
+        ->  oxbow._core.variant.VariantFile.__init__(uri=data/does-not-exist.bcf, opener=None, fields=None, index=None, compressed=True, regions=None, info_fields=('DP',), genotype_fields=('GT',), samples=('HG00096', 'HG00101', 'HG00103'), genotype_by=sample)
+            ->  oxbow._core.base.DataSource.__init__(data/does-not-exist.bcf, None, None)
             <-  None
             ->  oxbow._core.base.DataSource._scanner
                 ->  oxbow._core.base.DataSource._source
-                <-  'data/does-not-exist.bcf'
+                <-  data/does-not-exist.bcf
                 ->  oxbow._core.variant.BcfFile._scanner_kwargs
                 <-  {}
             !!  FileNotFoundError('No such file or directory (os error 2)')
         !!  FileNotFoundError("No such file or directory (os error 2)")
     !!  FileNotFoundError("No such file or directory (os error 2)")
 BcfFile("data/malformed.bcf").select(): |-
-    ->  oxbow._core.variant.BcfFile.__init__("data/malformed.bcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",), info_fields=("DP",))
-        ->  oxbow._core.variant.VariantFile.__init__(uri="data/malformed.bcf", opener=None, fields=None, index=None, compressed=True, regions=None, info_fields=("DP",), genotype_fields=("GT",), samples=("HG00096", "HG00101", "HG00103"), genotype_by="sample")
-            ->  oxbow._core.base.DataSource.__init__("data/malformed.bcf", None, None)
+    ->  oxbow._core.variant.BcfFile.__init__(data/malformed.bcf, samples=('HG00096', 'HG00101', 'HG00103'), genotype_fields=('GT',), info_fields=('DP',))
+        ->  oxbow._core.variant.VariantFile.__init__(uri=data/malformed.bcf, opener=None, fields=None, index=None, compressed=True, regions=None, info_fields=('DP',), genotype_fields=('GT',), samples=('HG00096', 'HG00101', 'HG00103'), genotype_by=sample)
+            ->  oxbow._core.base.DataSource.__init__(data/malformed.bcf, None, None)
             <-  None
             ->  oxbow._core.base.DataSource._scanner
                 ->  oxbow._core.base.DataSource._source
-                <-  'data/malformed.bcf'
+                <-  data/malformed.bcf
                 ->  oxbow._core.variant.BcfFile._scanner_kwargs
                 <-  {}
             !!  OSError('invalid BGZF header')
         !!  OSError("invalid BGZF header")
     !!  OSError("invalid BGZF header")
 BcfFile("data/sample.bcf").select(): |-
-    ->  oxbow._core.variant.BcfFile.__init__("data/sample.bcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",), info_fields=("DP",))
-        ->  oxbow._core.variant.VariantFile.__init__(uri="data/sample.bcf", opener=None, fields=None, index=None, compressed=True, regions=None, info_fields=("DP",), genotype_fields=("GT",), samples=("HG00096", "HG00101", "HG00103"), genotype_by="sample")
-            ->  oxbow._core.base.DataSource.__init__("data/sample.bcf", None, None)
+    ->  oxbow._core.variant.BcfFile.__init__(data/sample.bcf, samples=('HG00096', 'HG00101', 'HG00103'), genotype_fields=('GT',), info_fields=('DP',))
+        ->  oxbow._core.variant.VariantFile.__init__(uri=data/sample.bcf, opener=None, fields=None, index=None, compressed=True, regions=None, info_fields=('DP',), genotype_fields=('GT',), samples=('HG00096', 'HG00101', 'HG00103'), genotype_by=sample)
+            ->  oxbow._core.base.DataSource.__init__(data/sample.bcf, None, None)
             <-  None
             ->  oxbow._core.base.DataSource._scanner
                 ->  oxbow._core.base.DataSource._source
-                <-  'data/sample.bcf'
+                <-  data/sample.bcf
                 ->  oxbow._core.variant.BcfFile._scanner_kwargs
                 <-  {}
             <-  oxbow.core.PyBcfScanner.<object>
             ->  oxbow._core.base.DataSource._scanner
                 ->  oxbow._core.base.DataSource._source
-                <-  'data/sample.bcf'
+                <-  data/sample.bcf
                 ->  oxbow._core.variant.BcfFile._scanner_kwargs
                 <-  {}
             <-  oxbow.core.PyBcfScanner.<object>
             ->  oxbow._core.base.DataSource._scanner
                 ->  oxbow._core.base.DataSource._source
-                <-  'data/sample.bcf'
+                <-  data/sample.bcf
                 ->  oxbow._core.variant.BcfFile._scanner_kwargs
                 <-  {}
             <-  oxbow.core.PyBcfScanner.<object>
@@ -51,30 +51,30 @@ BcfFile("data/sample.bcf").select(): |-
     <-  None
     ->  oxbow._core.base.DataSource.select()
         ->  oxbow._core.variant.VariantFile._scan_kwargs
-        <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
+        <-  {'fields': 'None', 'genotype_by': 'sample', 'genotype_fields': ['GT'], 'info_fields': ['DP'], 'samples': ['HG00096', 'HG00101', 'HG00103']}
         ->  oxbow._core.variant.BcfFile._scanner_kwargs
         <-  {}
         ->  oxbow._core.variant.VariantFile._schema_kwargs
-        <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
-        ->  oxbow._core.variant.BcfFile.__init__("data/sample.bcf", None, fields=None, genotype_by="sample", genotype_fields=["GT"], info_fields=["DP"], samples=["HG00096", "HG00101", "HG00103"])
-            ->  oxbow._core.variant.VariantFile.__init__(uri="data/sample.bcf", opener=None, fields=None, index=None, compressed=True, regions=None, info_fields=["DP"], genotype_fields=["GT"], samples=["HG00096", "HG00101", "HG00103"], genotype_by="sample")
-                ->  oxbow._core.base.DataSource.__init__("data/sample.bcf", None, None)
+        <-  {'fields': 'None', 'genotype_by': 'sample', 'genotype_fields': ['GT'], 'info_fields': ['DP'], 'samples': ['HG00096', 'HG00101', 'HG00103']}
+        ->  oxbow._core.variant.BcfFile.__init__(data/sample.bcf, None, fields=None, genotype_by=sample, genotype_fields=['GT'], info_fields=['DP'], samples=['HG00096', 'HG00101', 'HG00103'])
+            ->  oxbow._core.variant.VariantFile.__init__(uri=data/sample.bcf, opener=None, fields=None, index=None, compressed=True, regions=None, info_fields=['DP'], genotype_fields=['GT'], samples=['HG00096', 'HG00101', 'HG00103'], genotype_by=sample)
+                ->  oxbow._core.base.DataSource.__init__(data/sample.bcf, None, None)
                 <-  None
                 ->  oxbow._core.base.DataSource._scanner
                     ->  oxbow._core.base.DataSource._source
-                    <-  'data/sample.bcf'
+                    <-  data/sample.bcf
                     ->  oxbow._core.variant.BcfFile._scanner_kwargs
                     <-  {}
                 <-  oxbow.core.PyBcfScanner.<object>
                 ->  oxbow._core.base.DataSource._scanner
                     ->  oxbow._core.base.DataSource._source
-                    <-  'data/sample.bcf'
+                    <-  data/sample.bcf
                     ->  oxbow._core.variant.BcfFile._scanner_kwargs
                     <-  {}
                 <-  oxbow.core.PyBcfScanner.<object>
                 ->  oxbow._core.base.DataSource._scanner
                     ->  oxbow._core.base.DataSource._source
-                    <-  'data/sample.bcf'
+                    <-  data/sample.bcf
                     ->  oxbow._core.variant.BcfFile._scanner_kwargs
                     <-  {}
                 <-  oxbow.core.PyBcfScanner.<object>
@@ -86,22 +86,24 @@ BcfFile("data/sample.bcf").select(): |-
                 <-  VariantFile._batch_readers.<generator>
                 ->  oxbow._core.base.DataSource._scanner
                     ->  oxbow._core.base.DataSource._source
-                    <-  'data/sample.bcf'
+                    <-  data/sample.bcf
                     ->  oxbow._core.variant.BcfFile._scanner_kwargs
                     <-  {}
                 <-  oxbow.core.PyBcfScanner.<object>
                 ->  oxbow._core.variant.VariantFile._scan_kwargs
-                <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
+                <-  {'fields': 'None', 'genotype_by': 'sample', 'genotype_fields': ['GT'], 'info_fields': ['DP'], 'samples': ['HG00096', 'HG00101', 'HG00103']}
+                ->  oxbow._core.base.DataSource._make_batch_reader(functools.partial(builtins.PyBcfScanner.scan, fields=None, genotype_by=sample, genotype_fields=["GT"], info_fields=["DP"], samples=["HG00096", "HG00101", "HG00103"])>)
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
                 ->  oxbow._core.variant.VariantFile._batch_readers.<generator>
                     ->  oxbow._core.base.DataSource.schema
                         ->  oxbow._core.base.DataSource._scanner
                             ->  oxbow._core.base.DataSource._source
-                            <-  'data/sample.bcf'
+                            <-  data/sample.bcf
                             ->  oxbow._core.variant.BcfFile._scanner_kwargs
                             <-  {}
                         <-  oxbow.core.PyBcfScanner.<object>
                         ->  oxbow._core.variant.VariantFile._schema_kwargs
-                        <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
+                        <-  {'fields': 'None', 'genotype_by': 'sample', 'genotype_fields': ['GT'], 'info_fields': ['DP'], 'samples': ['HG00096', 'HG00101', 'HG00103']}
                     <-  chrom: dictionary<values=string, indices=int32, ordered=0>
                         pos: int32
                         id: list<item: string>
@@ -132,7 +134,7 @@ BcfFile("data/sample.bcf").select(): |-
                                   child 0, item: int32
                               child 1, phased: list<item: bool>
                                   child 0, item: bool
-                <-  oxbow._core.variant.VariantFile._batch_readers.<locals>.<lambda>
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
             <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
         <-  oxbow._pyarrow.BatchReaderDataset.<object>
     <-  oxbow._pyarrow.BatchReaderDataset.<object>

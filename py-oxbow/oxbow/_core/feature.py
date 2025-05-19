@@ -37,7 +37,7 @@ from_gtf(uri, opener, fields, index, compressed, regions, attribute_defs, attrib
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Generator
+from typing import TYPE_CHECKING, Any, Callable, Generator, cast
 
 import pyarrow as pa
 
@@ -124,8 +124,7 @@ class BbiFile(FeatureFile):
     def _scanner(
         self,
     ) -> PyBigBedScanner | PyBigWigScanner | PyBBIZoomScanner:
-        scanner = super()._scanner
-        assert isinstance(scanner, (PyBigBedScanner, PyBigWigScanner))
+        scanner = cast(PyBigBedScanner | PyBigWigScanner, super()._scanner)
         if self._resolution:
             return scanner.get_zoom(self._resolution)
         else:

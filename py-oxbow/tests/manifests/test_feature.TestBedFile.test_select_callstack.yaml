@@ -3,11 +3,11 @@ BedFile("data/does-not-exist.bed").select(): |-
         ->  oxbow._core.feature.BedFile._scan_kwargs
         <-  {'fields': 'None'}
         ->  oxbow._core.feature.BedFile._scanner_kwargs
-        <-  {'bed_schema': "'bed3'", 'compressed': 'False'}
+        <-  {'bed_schema': 'bed3', 'compressed': 'False'}
         ->  oxbow._core.feature.BedFile._schema_kwargs
         <-  {'fields': 'None'}
-        ->  oxbow._core.feature.BedFile.__init__("data/does-not-exist.bed", None, fields=None, bed_schema="bed3", compressed=False)
-            ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.bed", None, None)
+        ->  oxbow._core.feature.BedFile.__init__(data/does-not-exist.bed, None, fields=None, bed_schema=bed3, compressed=False)
+            ->  oxbow._core.base.DataSource.__init__(data/does-not-exist.bed, None, None)
             <-  None
         <-  None
         ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
@@ -16,9 +16,9 @@ BedFile("data/does-not-exist.bed").select(): |-
                 <-  BedFile._batch_readers.<generator>
                 ->  oxbow._core.base.DataSource._scanner
                     ->  oxbow._core.base.DataSource._source
-                    <-  'data/does-not-exist.bed'
+                    <-  data/does-not-exist.bed
                     ->  oxbow._core.feature.BedFile._scanner_kwargs
-                    <-  {'bed_schema': "'bed3'", 'compressed': 'False'}
+                    <-  {'bed_schema': 'bed3', 'compressed': 'False'}
                 !!  FileNotFoundError('No such file or directory (os error 2)')
             !!  UnboundLocalError('cannot access local variable "previous" where it is not associated with a value')
         !!  UnboundLocalError('cannot access local variable "previous" where it is not associated with a value')
@@ -28,11 +28,11 @@ BedFile("data/malformed.bed").select(): |-
         ->  oxbow._core.feature.BedFile._scan_kwargs
         <-  {'fields': 'None'}
         ->  oxbow._core.feature.BedFile._scanner_kwargs
-        <-  {'bed_schema': "'bed3'", 'compressed': 'False'}
+        <-  {'bed_schema': 'bed3', 'compressed': 'False'}
         ->  oxbow._core.feature.BedFile._schema_kwargs
         <-  {'fields': 'None'}
-        ->  oxbow._core.feature.BedFile.__init__("data/malformed.bed", None, fields=None, bed_schema="bed3", compressed=False)
-            ->  oxbow._core.base.DataSource.__init__("data/malformed.bed", None, None)
+        ->  oxbow._core.feature.BedFile.__init__(data/malformed.bed, None, fields=None, bed_schema=bed3, compressed=False)
+            ->  oxbow._core.base.DataSource.__init__(data/malformed.bed, None, None)
             <-  None
         <-  None
         ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
@@ -41,24 +41,26 @@ BedFile("data/malformed.bed").select(): |-
                 <-  BedFile._batch_readers.<generator>
                 ->  oxbow._core.base.DataSource._scanner
                     ->  oxbow._core.base.DataSource._source
-                    <-  'data/malformed.bed'
+                    <-  data/malformed.bed
                     ->  oxbow._core.feature.BedFile._scanner_kwargs
-                    <-  {'bed_schema': "'bed3'", 'compressed': 'False'}
+                    <-  {'bed_schema': 'bed3', 'compressed': 'False'}
                 <-  builtins.PyBedScanner.<object>
+                ->  oxbow._core.base.DataSource._make_batch_reader(builtins.builtin_function_or_method.<object>)
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
                 ->  oxbow._core.feature.BedFile._batch_readers.<generator>
                     ->  oxbow._core.base.DataSource.schema
                         ->  oxbow._core.base.DataSource._scanner
                             ->  oxbow._core.base.DataSource._source
-                            <-  'data/malformed.bed'
+                            <-  data/malformed.bed
                             ->  oxbow._core.feature.BedFile._scanner_kwargs
-                            <-  {'bed_schema': "'bed3'", 'compressed': 'False'}
+                            <-  {'bed_schema': 'bed3', 'compressed': 'False'}
                         <-  builtins.PyBedScanner.<object>
                         ->  oxbow._core.feature.BedFile._schema_kwargs
                         <-  {'fields': 'None'}
                     <-  chrom: string
                         start: int64
                         end: int64
-                <-  oxbow._core.feature.BedFile._batch_readers.<locals>.<lambda>
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
             <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
         <-  oxbow._pyarrow.BatchReaderDataset.<object>
     <-  oxbow._pyarrow.BatchReaderDataset.<object>
@@ -67,11 +69,11 @@ BedFile("data/sample.bed").select(): |-
         ->  oxbow._core.feature.BedFile._scan_kwargs
         <-  {'fields': 'None'}
         ->  oxbow._core.feature.BedFile._scanner_kwargs
-        <-  {'bed_schema': "'bed3'", 'compressed': 'False'}
+        <-  {'bed_schema': 'bed3', 'compressed': 'False'}
         ->  oxbow._core.feature.BedFile._schema_kwargs
         <-  {'fields': 'None'}
-        ->  oxbow._core.feature.BedFile.__init__("data/sample.bed", None, fields=None, bed_schema="bed3", compressed=False)
-            ->  oxbow._core.base.DataSource.__init__("data/sample.bed", None, None)
+        ->  oxbow._core.feature.BedFile.__init__(data/sample.bed, None, fields=None, bed_schema=bed3, compressed=False)
+            ->  oxbow._core.base.DataSource.__init__(data/sample.bed, None, None)
             <-  None
         <-  None
         ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
@@ -80,24 +82,26 @@ BedFile("data/sample.bed").select(): |-
                 <-  BedFile._batch_readers.<generator>
                 ->  oxbow._core.base.DataSource._scanner
                     ->  oxbow._core.base.DataSource._source
-                    <-  'data/sample.bed'
+                    <-  data/sample.bed
                     ->  oxbow._core.feature.BedFile._scanner_kwargs
-                    <-  {'bed_schema': "'bed3'", 'compressed': 'False'}
+                    <-  {'bed_schema': 'bed3', 'compressed': 'False'}
                 <-  builtins.PyBedScanner.<object>
+                ->  oxbow._core.base.DataSource._make_batch_reader(builtins.builtin_function_or_method.<object>)
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
                 ->  oxbow._core.feature.BedFile._batch_readers.<generator>
                     ->  oxbow._core.base.DataSource.schema
                         ->  oxbow._core.base.DataSource._scanner
                             ->  oxbow._core.base.DataSource._source
-                            <-  'data/sample.bed'
+                            <-  data/sample.bed
                             ->  oxbow._core.feature.BedFile._scanner_kwargs
-                            <-  {'bed_schema': "'bed3'", 'compressed': 'False'}
+                            <-  {'bed_schema': 'bed3', 'compressed': 'False'}
                         <-  builtins.PyBedScanner.<object>
                         ->  oxbow._core.feature.BedFile._schema_kwargs
                         <-  {'fields': 'None'}
                     <-  chrom: string
                         start: int64
                         end: int64
-                <-  oxbow._core.feature.BedFile._batch_readers.<locals>.<lambda>
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
             <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
         <-  oxbow._pyarrow.BatchReaderDataset.<object>
     <-  oxbow._pyarrow.BatchReaderDataset.<object>
