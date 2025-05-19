@@ -1,5 +1,5 @@
 """
-This module provides classes and utilities for working with PyArrow datasets and fragments.
+Utilities for exposing custom Arrow RecordBatch streams as PyArrow fragments and datasets.
 
 Classes
 -------
@@ -383,6 +383,7 @@ class BatchReaderDataset(Dataset):
         fragment_scan_options: ds.FragmentScanOptions | None = None,
         use_threads: bool | None = True,
         memory_pool: ds.MemoryPool | None = None,
+        **kwargs,
     ) -> ds.Scanner:
         """
         Build a scan operation against the dataset.
@@ -438,6 +439,7 @@ class BatchReaderDataset(Dataset):
             fragment_scan_options=fragment_scan_options,
             use_threads=use_threads,
             memory_pool=memory_pool,
+            **kwargs,
         )
 
     def to_batches(
@@ -450,6 +452,7 @@ class BatchReaderDataset(Dataset):
         fragment_scan_options: ds.FragmentScanOptions | None = None,
         use_threads: bool | None = True,
         memory_pool: ds.MemoryPool | None = None,
+        **kwargs,
     ) -> Iterator[pa.RecordBatch]:
         """
         Read the dataset as materialized record batches.
@@ -487,6 +490,7 @@ class BatchReaderDataset(Dataset):
             fragment_scan_options=fragment_scan_options,
             use_threads=use_threads,
             memory_pool=memory_pool,
+            **kwargs,
         ).to_batches()
 
     def iter_batches(self, columns=None, batch_size=DEFAULT_BATCH_SIZE):
@@ -613,102 +617,3 @@ class BatchReaderDataset(Dataset):
             This method is not yet implemented.
         """
         raise NotImplementedError
-
-    def to_polars(self):
-        """
-        Convert the dataset to a Polars LazyFrame.
-
-        Returns
-        -------
-        polars.LazyFrame
-            A Polars LazyFrame representation of the dataset.
-        """
-        import polars as pl
-
-        return pl.scan_pyarrow_dataset(self)
-
-    def to_duckdb(self, conn):
-        """
-        Convert the dataset to a DuckDB Relation.
-
-        Parameters
-        ----------
-        conn : duckdb.DuckDBPyConnection
-            The DuckDB connection.
-
-        Returns
-        -------
-        duckdb.DuckDBPyRelation
-            A DuckDB Relation representation of the dataset.
-        """
-        return conn.from_arrow(self)
-
-    def to_dask(self, find_divisions=False):
-        """
-        Convert the dataset to a Dask DataFrame.
-
-        Parameters
-        ----------
-        find_divisions : bool, optional
-            If True, find divisions for the Dask DataFrame, by default False.
-
-        Returns
-        -------
-        dask.dataframe.DataFrame
-            A Dask DataFrame representation of the dataset.
-        """
-        import dask.dataframe as dd
-        import pandas as pd
-
-        def create_partition(fragment, row_offset=None, columns=None):
-            df = fragment.to_table(columns=columns).to_pandas()
-            if row_offset is not None:
-                df = df.set_index(pd.RangeIndex(row_offset, row_offset + len(df)))
-            return df
-
-        # TODO: A less hacky way to generate a "meta" pandas DataFrame for dask
-        # without having to materialize a full fragment.
-        meta = next(self._fragments[0]._make_batchreader(batch_size=1)).to_pandas()
-
-        # This does a full pass scan over all record batches to find the row
-        # offsets of each fragment. While a costly first step, it will endow
-        # the Dask DataFrame with "known divisions" which can be exploited for
-        # more efficient computations.
-        if find_divisions:
-            fragment_lengths = [frag.count_rows() for frag in self._fragments]
-            row_offsets = [0, *fragment_lengths[:-1]]
-            return dd.from_map(
-                create_partition,
-                self._fragments,
-                row_offsets,
-                divisions=fragment_lengths,
-                meta=meta,
-            )
-
-        return dd.from_map(create_partition, self._fragments, meta=meta)
-
-    def to_pandas(self):
-        """
-        Convert the dataset to a Pandas DataFrame.
-
-        Returns
-        -------
-        pandas.DataFrame
-            A Pandas DataFrame representation of the dataset.
-        """
-        return self.to_table().to_pandas()
-
-    def to_ipc(self) -> bytes:
-        """
-        Serialize the dataset as Arrow IPC.
-
-        Returns
-        -------
-        bytes
-            The serialized dataset in Arrow IPC format.
-        """
-        s = pa.BufferOutputStream()
-        with pa.ipc.new_stream(s, self.schema) as writer:
-            writer.write_table(self.to_table())
-        buffer = s.getvalue()
-        return buffer.to_pybytes()

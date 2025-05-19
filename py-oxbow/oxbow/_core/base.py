@@ -14,8 +14,9 @@ from oxbow._pyarrow import (
 
 
 class DataSourceMeta(ABCMeta):
-    _registry = {}
+    _registry: dict[FileType, type] = {}
 
+    # Invoked when an attribute is not found on the class object
     def __getattr__(cls, key):
         if key.startswith("from_"):
             try:
@@ -26,6 +27,7 @@ class DataSourceMeta(ABCMeta):
                 ]
             except Exception as e:
                 raise KeyError(key) from e
+        raise AttributeError(f"'{cls.__name__}' object has no attribute '{key}'")
 
 
 class DataSource(metaclass=DataSourceMeta):
@@ -85,19 +87,22 @@ class DataSource(metaclass=DataSourceMeta):
 
     def select(
         self,
-        *,
+        *regions: str | list[str],
         batch_size: int = DEFAULT_BATCH_SIZE,
         **kwargs,
     ) -> BatchReaderDataset:
         """
-        Select a subset of the data file.
+        Select a subset of the data source.
 
-        This method creates a new instance of the data file with the same
+        This method creates a new instance of the data source with the same
         parameters, applies any overrides specified by keyword arguments,
         and returns it as a dataset.
 
         Parameters
         ----------
+        *regions
+            The regions to select from the data source. This can be a single
+            region or a list of regions.
         batch_size
             The size of each batch to be read. Default is DEFAULT_BATCH_SIZE.
         **kwargs
@@ -107,11 +112,12 @@ class DataSource(metaclass=DataSourceMeta):
         Returns
         -------
         BatchReaderDataset
-            A dataset containing the selected subset of the data file.
+            A dataset containing the selected subset of the data source.
         """
         return type(self)(
             self._uri,
             self._opener,
+            regions=regions,
             **{
                 **self._scan_kwargs,
                 **self._scanner_kwargs,
@@ -124,9 +130,9 @@ class DataSource(metaclass=DataSourceMeta):
         self, *, batch_size: int = DEFAULT_BATCH_SIZE
     ) -> Generator[pa.RecordBatch]:
         """
-        Generate record batches from the data file.
+        Generate record batches from the data source.
 
-        This method iterates over the data file and yields record batches
+        This method iterates over the data source and yields record batches
         of the specified size.
 
         Parameters
@@ -137,7 +143,7 @@ class DataSource(metaclass=DataSourceMeta):
         Yields
         ------
         pa.RecordBatch
-            A record batch from the data file.
+            A record batch from the data source.
         """
         for reader_factory in self._batch_readers:
             reader = reader_factory(self._fields, batch_size)
@@ -151,9 +157,9 @@ class DataSource(metaclass=DataSourceMeta):
         self, *, batch_size: int = DEFAULT_BATCH_SIZE
     ) -> list[BatchReaderFragment]:
         """
-        Get fragments of the data file.
+        Get fragments of the data source.
 
-        Fragments represent parts of the data file that can be processed
+        Fragments represent parts of the data source that can be processed
         independently. Each fragment is associated with a schema and batch size.
 
         Parameters
@@ -164,7 +170,7 @@ class DataSource(metaclass=DataSourceMeta):
         Returns
         -------
         list of BatchReaderFragment
-            A list of fragments representing parts of the data file.
+            A list of fragments representing parts of the data source.
         """
         return [
             BatchReaderFragment(r, self.schema, batch_size=batch_size)
@@ -173,7 +179,7 @@ class DataSource(metaclass=DataSourceMeta):
 
     def dataset(self, *, batch_size=DEFAULT_BATCH_SIZE) -> BatchReaderDataset:
         """
-        Convert the data file into a dataset.
+        Convert the data source into a dataset.
 
         A dataset is a collection of fragments that can be processed
         as a single logical entity.
@@ -186,6 +192,119 @@ class DataSource(metaclass=DataSourceMeta):
         Returns
         -------
         BatchReaderDataset
-            A dataset representation of the data file.
+            A dataset representation of the data source.
         """
         return BatchReaderDataset(self.fragments(batch_size=batch_size))
+
+    def to_pandas(self):
+        """
+        Convert the dataset to a Pandas DataFrame.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A Pandas DataFrame representation of the dataset.
+        """
+        return self.dataset().to_table().to_pandas()
+
+    pd = to_pandas
+
+    def to_polars(self, lazy=False):
+        """
+        Convert the data source to a Polars DataFrame or LazyFrame.
+
+        Parameters
+        ----------
+        lazy : bool, optional [default: False]
+            If True, returns a LazyFrame.
+
+        Returns
+        -------
+        polars.DataFrame | polars.LazyFrame
+            A polars representation of the data source.
+        """
+        import polars as pl
+
+        if lazy:
+            return pl.scan_pyarrow_dataset(self.dataset())
+        else:
+            return pl.from_arrow(self.dataset().iter_batches())
+
+    pl = to_polars
+
+    def to_dask(self, find_divisions=False):
+        """
+        Convert the data source to a Dask DataFrame.
+
+        Parameters
+        ----------
+        find_divisions : bool, optional
+            If True, find divisions for the Dask DataFrame, by default False.
+
+        Returns
+        -------
+        dask.dataframe.DataFrame
+            A Dask DataFrame representation of the data source.
+        """
+        import dask.dataframe as dd
+        import pandas as pd
+
+        def create_partition(fragment, row_offset=None, columns=None):
+            df = fragment.to_table(columns=columns).to_pandas()
+            if row_offset is not None:
+                df = df.set_index(pd.RangeIndex(row_offset, row_offset + len(df)))
+            return df
+
+        # TODO: A less hacky way to generate a "meta" pandas DataFrame for dask
+        # without having to materialize a full fragment.
+        meta = next(self._fragments[0]._make_batchreader(batch_size=1)).to_pandas()
+
+        # This does a full pass scan over all record batches to find the row
+        # offsets of each fragment. While a costly first step, it will endow
+        # the Dask DataFrame with "known divisions" which can be exploited for
+        # more efficient computations.
+        if find_divisions:
+            fragment_lengths = [frag.count_rows() for frag in self._fragments]
+            row_offsets = [0, *fragment_lengths[:-1]]
+            return dd.from_map(
+                create_partition,
+                self._fragments,
+                row_offsets,
+                divisions=fragment_lengths,
+                meta=meta,
+            )
+
+        return dd.from_map(create_partition, self._fragments, meta=meta)
+
+    dd = to_dask
+
+    def to_duckdb(self, conn):
+        """
+        Convert the data source into a DuckDB Relation.
+
+        Parameters
+        ----------
+        conn : duckdb.DuckDBPyConnection
+            The DuckDB connection.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            A DuckDB Relation representation of the data source.
+        """
+        return conn.from_arrow(self.dataset())
+
+    def to_ipc(self) -> bytes:
+        """
+        Serialize the dataset as Arrow IPC.
+
+        Returns
+        -------
+        bytes
+            The serialized dataset in Arrow IPC format.
+        """
+        s = pa.BufferOutputStream()
+        with pa.ipc.new_stream(s, self.schema) as writer:
+            writer.write_table(self.dataset().to_table())
+        buffer = s.getvalue()
+        return buffer.to_pybytes()
