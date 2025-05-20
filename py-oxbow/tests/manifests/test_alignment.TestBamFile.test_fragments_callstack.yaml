@@ -4,27 +4,29 @@ BamFile("data/sample.bam", fields=('qname', 'rname', 'mapq')).batches(batch_size
         <-  AlignmentFile._batch_readers.<generator>
         ->  oxbow._core.base.DataSource._scanner
             ->  oxbow._core.base.DataSource._source
-            <-  'data/sample.bam'
+            <-  data/sample.bam
             ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
             <-  {'compressed': 'True'}
         <-  oxbow.core.PyBamScanner.<object>
         ->  oxbow._core.alignment.AlignmentFile._scan_kwargs
-        <-  {'fields': ("'qname'", "'rname'", "'mapq'"), 'tag_defs': [("'XX'", "'BS'")]}
+        <-  {'fields': ('qname', 'rname', 'mapq'), 'tag_defs': [('XX', 'BS')]}
+        ->  oxbow._core.base.DataSource._make_batch_reader(functools.partial(builtins.PyBamScanner.scan, fields=("qname", "rname", "mapq"), tag_defs=[("XX", "BS")])>)
+        <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
         ->  oxbow._core.alignment.AlignmentFile._batch_readers.<generator>
             ->  oxbow._core.base.DataSource.schema
                 ->  oxbow._core.base.DataSource._scanner
                     ->  oxbow._core.base.DataSource._source
-                    <-  'data/sample.bam'
+                    <-  data/sample.bam
                     ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                     <-  {'compressed': 'True'}
                 <-  oxbow.core.PyBamScanner.<object>
                 ->  oxbow._core.alignment.AlignmentFile._schema_kwargs
-                <-  {'fields': ("'qname'", "'rname'", "'mapq'"), 'tag_defs': [("'XX'", "'BS'")]}
+                <-  {'fields': ('qname', 'rname', 'mapq'), 'tag_defs': [('XX', 'BS')]}
             <-  qname: string
                 rname: dictionary<values=string, indices=int32, ordered=0>
                 mapq: uint8
                 tags: struct<XX: list<item: uint16>>
                   child 0, XX: list<item: uint16>
                       child 0, item: uint16
-        <-  oxbow._core.alignment.AlignmentFile._batch_readers.<locals>.<lambda>
+        <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
     <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']

@@ -1,14 +1,14 @@
 BamFile(data/sample.bam).select(): |-
     ->  oxbow._core.base.DataSource.select()
         ->  oxbow._core.alignment.AlignmentFile._scan_kwargs
-        <-  {'fields': 'None', 'tag_defs': [("'XX'", "'BS'")]}
+        <-  {'fields': 'None', 'tag_defs': [('XX', 'BS')]}
         ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
         <-  {'compressed': 'True'}
         ->  oxbow._core.alignment.AlignmentFile._schema_kwargs
-        <-  {'fields': 'None', 'tag_defs': [("'XX'", "'BS'")]}
-        ->  oxbow._core.alignment.BamFile.__init__("data/sample.bam", None, fields=None, tag_defs=[("XX", "BS")], compressed=True)
-            ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.bam", None, compressed=True, fields=None, tag_defs=[("XX", "BS")])
-                ->  oxbow._core.base.DataSource.__init__("data/sample.bam", None, None)
+        <-  {'fields': 'None', 'tag_defs': [('XX', 'BS')]}
+        ->  oxbow._core.alignment.BamFile.__init__(data/sample.bam, None, fields=None, tag_defs=[('XX', 'BS')], compressed=True)
+            ->  oxbow._core.alignment.AlignmentFile.__init__(data/sample.bam, None, compressed=True, fields=None, tag_defs=[('XX', 'BS')])
+                ->  oxbow._core.base.DataSource.__init__(data/sample.bam, None, None)
                 <-  None
             <-  None
         <-  None
@@ -18,22 +18,24 @@ BamFile(data/sample.bam).select(): |-
                 <-  AlignmentFile._batch_readers.<generator>
                 ->  oxbow._core.base.DataSource._scanner
                     ->  oxbow._core.base.DataSource._source
-                    <-  'data/sample.bam'
+                    <-  data/sample.bam
                     ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                     <-  {'compressed': 'True'}
                 <-  oxbow.core.PyBamScanner.<object>
                 ->  oxbow._core.alignment.AlignmentFile._scan_kwargs
-                <-  {'fields': 'None', 'tag_defs': [("'XX'", "'BS'")]}
+                <-  {'fields': 'None', 'tag_defs': [('XX', 'BS')]}
+                ->  oxbow._core.base.DataSource._make_batch_reader(functools.partial(builtins.PyBamScanner.scan, fields=None, tag_defs=[("XX", "BS")])>)
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
                 ->  oxbow._core.alignment.AlignmentFile._batch_readers.<generator>
                     ->  oxbow._core.base.DataSource.schema
                         ->  oxbow._core.base.DataSource._scanner
                             ->  oxbow._core.base.DataSource._source
-                            <-  'data/sample.bam'
+                            <-  data/sample.bam
                             ->  oxbow._core.alignment.AlignmentFile._scanner_kwargs
                             <-  {'compressed': 'True'}
                         <-  oxbow.core.PyBamScanner.<object>
                         ->  oxbow._core.alignment.AlignmentFile._schema_kwargs
-                        <-  {'fields': 'None', 'tag_defs': [("'XX'", "'BS'")]}
+                        <-  {'fields': 'None', 'tag_defs': [('XX', 'BS')]}
                     <-  qname: string
                         flag: uint16
                         rname: dictionary<values=string, indices=int32, ordered=0>
@@ -49,7 +51,7 @@ BamFile(data/sample.bam).select(): |-
                         tags: struct<XX: list<item: uint16>>
                           child 0, XX: list<item: uint16>
                               child 0, item: uint16
-                <-  oxbow._core.alignment.AlignmentFile._batch_readers.<locals>.<lambda>
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
             <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
         <-  oxbow._pyarrow.BatchReaderDataset.<object>
     <-  oxbow._pyarrow.BatchReaderDataset.<object>

@@ -80,19 +80,14 @@ class AlignmentFile(DataSource):
                         index=self._index,
                         **self._scan_kwargs,
                     )
-                yield lambda fields, batch_size: pa.RecordBatchReader.from_stream(
-                    data=stream(fields=fields, batch_size=batch_size),
-                    schema=self.schema,
-                )
+                yield self._make_batch_reader(stream)
+
         else:
             stream = partial(
                 self._scanner.scan,
                 **self._scan_kwargs,
             )
-            yield lambda fields, batch_size: pa.RecordBatchReader.from_stream(
-                data=stream(fields=fields, batch_size=batch_size),
-                schema=self.schema,
-            )
+            yield self._make_batch_reader(stream)
 
     def __init__(
         self,

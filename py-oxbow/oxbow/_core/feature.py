@@ -37,7 +37,7 @@ from_gtf(uri, opener, fields, index, compressed, regions, attribute_defs, attrib
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Generator
+from typing import TYPE_CHECKING, Any, Callable, Generator, cast
 
 import pyarrow as pa
 
@@ -115,23 +115,16 @@ class BbiFile(FeatureFile):
         if self._regions:
             for region in self._regions:
                 stream = partial(self._scanner.scan_query, region=region)
-                yield lambda fields, batch_size: pa.RecordBatchReader.from_stream(
-                    data=stream(fields=fields, batch_size=batch_size),
-                    schema=self.schema,
-                )
+                yield self._make_batch_reader(stream)
         else:
             stream = self._scanner.scan
-            yield lambda fields, batch_size: pa.RecordBatchReader.from_stream(
-                data=stream(fields=fields, batch_size=batch_size),
-                schema=self.schema,
-            )
+            yield self._make_batch_reader(stream)
 
     @property
     def _scanner(
         self,
     ) -> PyBigBedScanner | PyBigWigScanner | PyBBIZoomScanner:
-        scanner = super()._scanner
-        assert isinstance(scanner, (PyBigBedScanner, PyBigWigScanner))
+        scanner = cast(PyBigBedScanner | PyBigWigScanner, super()._scanner)
         if self._resolution:
             return scanner.get_zoom(self._resolution)
         else:
@@ -259,16 +252,10 @@ class BedFile(FeatureFile, file_type=FileType.BED):
                 stream = partial(
                     self._scanner.scan_query, region=region, index=self._index
                 )
-                yield lambda fields, batch_size: pa.RecordBatchReader.from_stream(
-                    data=stream(fields=fields, batch_size=batch_size),
-                    schema=self.schema,
-                )
+                yield self._make_batch_reader(stream)
         else:
             stream = self._scanner.scan
-            yield lambda fields, batch_size: pa.RecordBatchReader.from_stream(
-                data=stream(fields=fields, batch_size=batch_size),
-                schema=self.schema,
-            )
+            yield self._make_batch_reader(stream)
 
     def __init__(
         self,
@@ -329,19 +316,13 @@ class GxfFile(FeatureFile):
                     index=self._index,
                     **self._scan_kwargs,
                 )
-                yield lambda fields, batch_size: pa.RecordBatchReader.from_stream(
-                    data=stream(fields=fields, batch_size=batch_size),
-                    schema=self.schema,
-                )
+                yield self._make_batch_reader(stream)
         else:
             stream = partial(
                 self._scanner.scan,
                 **self._scan_kwargs,
             )
-            yield lambda fields, batch_size: pa.RecordBatchReader.from_stream(
-                data=stream(fields=fields, batch_size=batch_size),
-                schema=self.schema,
-            )
+            yield self._make_batch_reader(stream)
 
     def __init__(
         self,

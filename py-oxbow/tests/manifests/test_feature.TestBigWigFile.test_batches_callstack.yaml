@@ -6,23 +6,25 @@ BigWigFile("data/sample.bw", fields=('chrom', 'start', 'end')).batches(batch_siz
     ->  oxbow._core.feature.BbiFile._scanner
         ->  oxbow._core.base.DataSource._scanner
             ->  oxbow._core.base.DataSource._source
-            <-  'data/sample.bw'
+            <-  data/sample.bw
             ->  oxbow._core.feature.BbiFile._scanner_kwargs
             <-  {}
         <-  builtins.PyBigWigScanner.<object>
     <-  builtins.PyBigWigScanner.<object>
+    ->  oxbow._core.base.DataSource._make_batch_reader(builtins.builtin_function_or_method.<object>)
+    <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
     ->  oxbow._core.feature.BbiFile._batch_readers.<generator>
         ->  oxbow._core.base.DataSource.schema
             ->  oxbow._core.feature.BbiFile._scanner
                 ->  oxbow._core.base.DataSource._scanner
                     ->  oxbow._core.base.DataSource._source
-                    <-  'data/sample.bw'
+                    <-  data/sample.bw
                     ->  oxbow._core.feature.BbiFile._scanner_kwargs
                     <-  {}
                 <-  builtins.PyBigWigScanner.<object>
             <-  builtins.PyBigWigScanner.<object>
             ->  oxbow._core.feature.BbiFile._schema_kwargs
-            <-  {'fields': ("'chrom'", "'start'", "'end'")}
+            <-  {'fields': ('chrom', 'start', 'end')}
         <-  chrom: string
             start: uint32
             end: uint32
@@ -206,4 +208,4 @@ BigWigFile("data/sample.bw", fields=('chrom', 'start', 'end')).batches(batch_siz
             chrom: ["chr21","chr21","chr21","chr21","chr21"]
             start: [46804590,47098130,47167470,47424830,47650460]
             end: [46804595,47098140,47167475,47424835,47650465]
-    <-  oxbow._core.feature.BbiFile._batch_readers.<locals>.<lambda>
+    <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader

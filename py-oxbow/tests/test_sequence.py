@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pytest
 from pytest_manifest import Manifest
 
@@ -137,11 +139,22 @@ class TestFastaFile:
         "regions",
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
-    def test_fragments(self, regions):
-        fragments = ox.FastaFile(
-            "data/sample.fasta", index="data/sample.fai", regions=regions
-        ).fragments()
-        assert len(fragments) == 1
+    @mock.patch("oxbow._core.base.pa.RecordBatchReader")
+    def test_fragments(self, _, regions, mocker):
+        expected_count = 1
+        ds = ox.FastaFile("data/sample.fasta", index="data/sample.fai", regions=regions)
+        mock_scanner_type = mocker.patch.object(ds, "_scanner_type")
+        mock_scanner_type.return_value.scan_query.side_effect = regions
+        fragments = ds.fragments()
+        for fragment in fragments:
+            fragment.iter_batches()
+        assert len(fragments) == expected_count
+        if regions is not None and regions != ("*",):
+            assert (
+                mock_scanner_type.return_value.scan_query.call_count == expected_count
+            )
+            for call in mock_scanner_type.return_value.scan_query.mock_calls:
+                assert call.kwargs["regions"] == regions
 
     @pytest.mark.parametrize(
         ("fields", "batch_size"),

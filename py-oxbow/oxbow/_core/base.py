@@ -49,6 +49,15 @@ class DataSource(metaclass=DataSourceMeta):
         self,
     ) -> Iterable[Callable[[list[str] | None, int], pa.RecordBatchReader]]: ...
 
+    def _make_batch_reader(self, stream):
+        def _batch_reader(fields, batch_size):
+            return pa.RecordBatchReader.from_stream(
+                data=stream(fields=fields, batch_size=batch_size),
+                schema=self.schema,
+            )
+
+        return _batch_reader
+
     def __init_subclass__(cls, file_type: FileType | None = None) -> None:
         if file_type:
             assert file_type not in cls._registry

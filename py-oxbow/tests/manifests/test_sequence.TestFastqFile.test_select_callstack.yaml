@@ -7,8 +7,8 @@ FastqFile("data/does-not-exist.fastq").select(): |-
             <-  {'compressed': 'False'}
             ->  oxbow._core.sequence.SequenceFile._schema_kwargs
             <-  {'fields': 'None'}
-            ->  oxbow._core.sequence.SequenceFile.__init__("data/does-not-exist.fastq", None, fields=None, compressed=False, gzi=None, index=None)
-                ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.fastq", None, None)
+            ->  oxbow._core.sequence.SequenceFile.__init__(data/does-not-exist.fastq, None, fields=None, compressed=False, gzi=None, index=None)
+                ->  oxbow._core.base.DataSource.__init__(data/does-not-exist.fastq, None, None)
                 <-  None
             <-  None
             ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
@@ -17,7 +17,7 @@ FastqFile("data/does-not-exist.fastq").select(): |-
                     <-  FastqFile._batch_readers.<generator>
                     ->  oxbow._core.base.DataSource._scanner
                         ->  oxbow._core.base.DataSource._source
-                        <-  'data/does-not-exist.fastq'
+                        <-  data/does-not-exist.fastq
                         ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                         <-  {'compressed': 'False'}
                     !!  FileNotFoundError('No such file or directory (os error 2)')
@@ -34,8 +34,8 @@ FastqFile("data/malformed.fastq").select(): |-
             <-  {'compressed': 'False'}
             ->  oxbow._core.sequence.SequenceFile._schema_kwargs
             <-  {'fields': 'None'}
-            ->  oxbow._core.sequence.SequenceFile.__init__("data/malformed.fastq", None, fields=None, compressed=False, gzi=None, index=None)
-                ->  oxbow._core.base.DataSource.__init__("data/malformed.fastq", None, None)
+            ->  oxbow._core.sequence.SequenceFile.__init__(data/malformed.fastq, None, fields=None, compressed=False, gzi=None, index=None)
+                ->  oxbow._core.base.DataSource.__init__(data/malformed.fastq, None, None)
                 <-  None
             <-  None
             ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
@@ -44,15 +44,17 @@ FastqFile("data/malformed.fastq").select(): |-
                     <-  FastqFile._batch_readers.<generator>
                     ->  oxbow._core.base.DataSource._scanner
                         ->  oxbow._core.base.DataSource._source
-                        <-  'data/malformed.fastq'
+                        <-  data/malformed.fastq
                         ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                         <-  {'compressed': 'False'}
                     <-  oxbow.core.PyFastqScanner.<object>
+                    ->  oxbow._core.base.DataSource._make_batch_reader(builtins.builtin_function_or_method.<object>)
+                    <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
                     ->  oxbow._core.sequence.FastqFile._batch_readers.<generator>
                         ->  oxbow._core.base.DataSource.schema
                             ->  oxbow._core.base.DataSource._scanner
                                 ->  oxbow._core.base.DataSource._source
-                                <-  'data/malformed.fastq'
+                                <-  data/malformed.fastq
                                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                                 <-  {'compressed': 'False'}
                             <-  oxbow.core.PyFastqScanner.<object>
@@ -62,7 +64,7 @@ FastqFile("data/malformed.fastq").select(): |-
                             description: string
                             sequence: string
                             quality: string
-                    <-  oxbow._core.sequence.FastqFile._batch_readers.<locals>.<lambda>
+                    <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
                 <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
             <-  oxbow._pyarrow.BatchReaderDataset.<object>
         <-  oxbow._pyarrow.BatchReaderDataset.<object>
@@ -76,8 +78,8 @@ FastqFile("data/sample.fastq").select(): |-
             <-  {'compressed': 'False'}
             ->  oxbow._core.sequence.SequenceFile._schema_kwargs
             <-  {'fields': 'None'}
-            ->  oxbow._core.sequence.SequenceFile.__init__("data/sample.fastq", None, fields=None, compressed=False, gzi=None, index=None)
-                ->  oxbow._core.base.DataSource.__init__("data/sample.fastq", None, None)
+            ->  oxbow._core.sequence.SequenceFile.__init__(data/sample.fastq, None, fields=None, compressed=False, gzi=None, index=None)
+                ->  oxbow._core.base.DataSource.__init__(data/sample.fastq, None, None)
                 <-  None
             <-  None
             ->  oxbow._core.base.DataSource.dataset(batch_size=131072)
@@ -86,15 +88,17 @@ FastqFile("data/sample.fastq").select(): |-
                     <-  FastqFile._batch_readers.<generator>
                     ->  oxbow._core.base.DataSource._scanner
                         ->  oxbow._core.base.DataSource._source
-                        <-  'data/sample.fastq'
+                        <-  data/sample.fastq
                         ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                         <-  {'compressed': 'False'}
                     <-  oxbow.core.PyFastqScanner.<object>
+                    ->  oxbow._core.base.DataSource._make_batch_reader(builtins.builtin_function_or_method.<object>)
+                    <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
                     ->  oxbow._core.sequence.FastqFile._batch_readers.<generator>
                         ->  oxbow._core.base.DataSource.schema
                             ->  oxbow._core.base.DataSource._scanner
                                 ->  oxbow._core.base.DataSource._source
-                                <-  'data/sample.fastq'
+                                <-  data/sample.fastq
                                 ->  oxbow._core.sequence.SequenceFile._scanner_kwargs
                                 <-  {'compressed': 'False'}
                             <-  oxbow.core.PyFastqScanner.<object>
@@ -104,7 +108,7 @@ FastqFile("data/sample.fastq").select(): |-
                             description: string
                             sequence: string
                             quality: string
-                    <-  oxbow._core.sequence.FastqFile._batch_readers.<locals>.<lambda>
+                    <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
                 <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
             <-  oxbow._pyarrow.BatchReaderDataset.<object>
         <-  oxbow._pyarrow.BatchReaderDataset.<object>

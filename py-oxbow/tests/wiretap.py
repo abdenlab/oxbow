@@ -34,15 +34,15 @@ class Input:
     def __str__(self):
         return ", ".join(
             (
-                *(swap_quotes(repr(v)) for v in self.args),
-                *(f"{k}={swap_quotes(repr(v))}" for k, v in self.kwargs.items()),
+                *(swap_quotes(Call.format(v)) for v in self.args),
+                *(f"{k}={swap_quotes(Call.format(v))}" for k, v in self.kwargs.items()),
             )
         )
 
 
 def obj_to_str(obj):
     try:
-        return f"{obj.__module__ or ''}.{obj.__class__.__qualname__}.<object>"
+        return f"{obj.__module__ or 'builtins'}.{obj.__class__.__qualname__}.<object>"
     except AttributeError:
         return pprint.pformat(obj)
 
@@ -76,7 +76,7 @@ class Call:
     def serialize(self) -> str:
         return "\n".join(
             (
-                f"{CALLED} {self.func.__module__}.{self.func.__qualname__}({self.input})",
+                f"{CALLED} {self.func.__module__ or 'builtins'}.{self.func.__qualname__}({self.input})",
                 *(
                     f"    {line}"
                     for c in self.calls
@@ -88,7 +88,9 @@ class Call:
 
     @classmethod
     def format(cls, obj):
-        if isinstance(obj, (list, tuple)):
+        if isinstance(obj, str):
+            string = swap_quotes(obj)
+        elif isinstance(obj, (list, tuple)):
             string = type(obj)(cls.format(o) for o in obj[:10])
             if len(obj) > 10:
                 string += f"<{len(obj) - 10} more items>"
@@ -114,6 +116,12 @@ def serialize_exception(obj):
     return repr(obj)
 
 
+@Call.register_serializer(functools.partial)
+def serialize_partial(obj):
+    call = Call(obj.func, *obj.args, **obj.keywords)
+    return f"functools.partial({call.func.__module__ or 'builtins'}.{call.func.__qualname__}, {call.input})>"
+
+
 def generator():
     yield
 
@@ -134,7 +142,7 @@ class PropertyCall(Call):
             return super().serialize()
         return "\n".join(
             (
-                f"{CALLED} {self.func.__module__}.{self.func.__qualname__}",
+                f"{CALLED} {self.func.__module__ or 'builtins'}.{self.func.__qualname__}",
                 *(
                     f"    {line}"
                     for c in self.calls
@@ -151,7 +159,7 @@ class GeneratorCall(Call):
             return super().serialize()
         return "\n".join(
             (
-                f"{CALLED} {self.func.__module__}.{self.func.__qualname__}.<generator>",
+                f"{CALLED} {self.func.__module__ or 'builtins'}.{self.func.__qualname__}.<generator>",
                 *(
                     f"    {line}"
                     for c in self.calls

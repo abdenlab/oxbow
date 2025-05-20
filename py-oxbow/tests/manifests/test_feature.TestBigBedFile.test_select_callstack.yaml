@@ -6,9 +6,9 @@ BigBedFile("data/does-not-exist.bb").select(): |-
         <-  {}
         ->  oxbow._core.feature.BbiFile._schema_kwargs
         <-  {'fields': 'None'}
-        ->  oxbow._core.feature.BigBedFile.__init__("data/does-not-exist.bb", None, fields=None)
-            ->  oxbow._core.feature.BbiFile.__init__("data/does-not-exist.bb", None, fields=None)
-                ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.bb", None, None)
+        ->  oxbow._core.feature.BigBedFile.__init__(data/does-not-exist.bb, None, fields=None)
+            ->  oxbow._core.feature.BbiFile.__init__(data/does-not-exist.bb, None, fields=None)
+                ->  oxbow._core.base.DataSource.__init__(data/does-not-exist.bb, None, None)
                 <-  None
             <-  None
         <-  None
@@ -19,7 +19,7 @@ BigBedFile("data/does-not-exist.bb").select(): |-
                 ->  oxbow._core.feature.BbiFile._scanner
                     ->  oxbow._core.base.DataSource._scanner
                         ->  oxbow._core.base.DataSource._source
-                        <-  'data/does-not-exist.bb'
+                        <-  data/does-not-exist.bb
                         ->  oxbow._core.feature.BbiFile._scanner_kwargs
                         <-  {}
                     !!  FileNotFoundError('No such file or directory (os error 2)')
@@ -35,9 +35,9 @@ BigBedFile("data/malformed.bb").select(): |-
         <-  {}
         ->  oxbow._core.feature.BbiFile._schema_kwargs
         <-  {'fields': 'None'}
-        ->  oxbow._core.feature.BigBedFile.__init__("data/malformed.bb", None, fields=None)
-            ->  oxbow._core.feature.BbiFile.__init__("data/malformed.bb", None, fields=None)
-                ->  oxbow._core.base.DataSource.__init__("data/malformed.bb", None, None)
+        ->  oxbow._core.feature.BigBedFile.__init__(data/malformed.bb, None, fields=None)
+            ->  oxbow._core.feature.BbiFile.__init__(data/malformed.bb, None, fields=None)
+                ->  oxbow._core.base.DataSource.__init__(data/malformed.bb, None, None)
                 <-  None
             <-  None
         <-  None
@@ -48,7 +48,7 @@ BigBedFile("data/malformed.bb").select(): |-
                 ->  oxbow._core.feature.BbiFile._scanner
                     ->  oxbow._core.base.DataSource._scanner
                         ->  oxbow._core.base.DataSource._source
-                        <-  'data/malformed.bb'
+                        <-  data/malformed.bb
                         ->  oxbow._core.feature.BbiFile._scanner_kwargs
                         <-  {}
                     !!  PanicException('called `Result::unwrap()` on an `Err` value: NotABigBed')
@@ -64,9 +64,9 @@ BigBedFile("data/sample.bb").select(): |-
         <-  {}
         ->  oxbow._core.feature.BbiFile._schema_kwargs
         <-  {'fields': 'None'}
-        ->  oxbow._core.feature.BigBedFile.__init__("data/sample.bb", None, fields=None)
-            ->  oxbow._core.feature.BbiFile.__init__("data/sample.bb", None, fields=None)
-                ->  oxbow._core.base.DataSource.__init__("data/sample.bb", None, None)
+        ->  oxbow._core.feature.BigBedFile.__init__(data/sample.bb, None, fields=None)
+            ->  oxbow._core.feature.BbiFile.__init__(data/sample.bb, None, fields=None)
+                ->  oxbow._core.base.DataSource.__init__(data/sample.bb, None, None)
                 <-  None
             <-  None
         <-  None
@@ -77,17 +77,19 @@ BigBedFile("data/sample.bb").select(): |-
                 ->  oxbow._core.feature.BbiFile._scanner
                     ->  oxbow._core.base.DataSource._scanner
                         ->  oxbow._core.base.DataSource._source
-                        <-  'data/sample.bb'
+                        <-  data/sample.bb
                         ->  oxbow._core.feature.BbiFile._scanner_kwargs
                         <-  {}
                     <-  builtins.PyBigBedScanner.<object>
                 <-  builtins.PyBigBedScanner.<object>
+                ->  oxbow._core.base.DataSource._make_batch_reader(builtins.builtin_function_or_method.<object>)
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
                 ->  oxbow._core.feature.BbiFile._batch_readers.<generator>
                     ->  oxbow._core.base.DataSource.schema
                         ->  oxbow._core.feature.BbiFile._scanner
                             ->  oxbow._core.base.DataSource._scanner
                                 ->  oxbow._core.base.DataSource._source
-                                <-  'data/sample.bb'
+                                <-  data/sample.bb
                                 ->  oxbow._core.feature.BbiFile._scanner_kwargs
                                 <-  {}
                             <-  builtins.PyBigBedScanner.<object>
@@ -98,7 +100,7 @@ BigBedFile("data/sample.bb").select(): |-
                         start: uint32
                         end: uint32
                         rest: string
-                <-  oxbow._core.feature.BbiFile._batch_readers.<locals>.<lambda>
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
             <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
         <-  oxbow._pyarrow.BatchReaderDataset.<object>
     <-  oxbow._pyarrow.BatchReaderDataset.<object>

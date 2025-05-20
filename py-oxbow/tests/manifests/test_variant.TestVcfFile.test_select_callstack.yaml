@@ -1,12 +1,12 @@
 ? VcfFile("data/does-not-exist.vcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",),
     info_fields=("DP",)).select()
 : |-
-    ->  oxbow._core.variant.VariantFile.__init__("data/does-not-exist.vcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",), info_fields=("DP",))
-        ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.vcf", None, None)
+    ->  oxbow._core.variant.VariantFile.__init__(data/does-not-exist.vcf, samples=('HG00096', 'HG00101', 'HG00103'), genotype_fields=('GT',), info_fields=('DP',))
+        ->  oxbow._core.base.DataSource.__init__(data/does-not-exist.vcf, None, None)
         <-  None
         ->  oxbow._core.base.DataSource._scanner
             ->  oxbow._core.base.DataSource._source
-            <-  'data/does-not-exist.vcf'
+            <-  data/does-not-exist.vcf
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
         !!  FileNotFoundError('No such file or directory (os error 2)')
@@ -14,12 +14,12 @@
 ? VcfFile("data/malformed.vcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",),
     info_fields=("DP",)).select()
 : |-
-    ->  oxbow._core.variant.VariantFile.__init__("data/malformed.vcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",), info_fields=("DP",))
-        ->  oxbow._core.base.DataSource.__init__("data/malformed.vcf", None, None)
+    ->  oxbow._core.variant.VariantFile.__init__(data/malformed.vcf, samples=('HG00096', 'HG00101', 'HG00103'), genotype_fields=('GT',), info_fields=('DP',))
+        ->  oxbow._core.base.DataSource.__init__(data/malformed.vcf, None, None)
         <-  None
         ->  oxbow._core.base.DataSource._scanner
             ->  oxbow._core.base.DataSource._source
-            <-  'data/malformed.vcf'
+            <-  data/malformed.vcf
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
         !!  FileNotFoundError('No such file or directory (os error 2)')
@@ -27,53 +27,53 @@
 ? VcfFile("data/sample.vcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",),
     info_fields=("DP",)).select()
 : |-
-    ->  oxbow._core.variant.VariantFile.__init__("data/sample.vcf", samples=("HG00096", "HG00101", "HG00103"), genotype_fields=("GT",), info_fields=("DP",))
-        ->  oxbow._core.base.DataSource.__init__("data/sample.vcf", None, None)
+    ->  oxbow._core.variant.VariantFile.__init__(data/sample.vcf, samples=('HG00096', 'HG00101', 'HG00103'), genotype_fields=('GT',), info_fields=('DP',))
+        ->  oxbow._core.base.DataSource.__init__(data/sample.vcf, None, None)
         <-  None
         ->  oxbow._core.base.DataSource._scanner
             ->  oxbow._core.base.DataSource._source
-            <-  'data/sample.vcf'
+            <-  data/sample.vcf
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
         <-  oxbow.core.PyVcfScanner.<object>
         ->  oxbow._core.base.DataSource._scanner
             ->  oxbow._core.base.DataSource._source
-            <-  'data/sample.vcf'
+            <-  data/sample.vcf
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
         <-  oxbow.core.PyVcfScanner.<object>
         ->  oxbow._core.base.DataSource._scanner
             ->  oxbow._core.base.DataSource._source
-            <-  'data/sample.vcf'
+            <-  data/sample.vcf
             ->  oxbow._core.variant.VariantFile._scanner_kwargs
             <-  {'compressed': 'False'}
         <-  oxbow.core.PyVcfScanner.<object>
     <-  None
     ->  oxbow._core.base.DataSource.select()
         ->  oxbow._core.variant.VariantFile._scan_kwargs
-        <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
+        <-  {'fields': 'None', 'genotype_by': 'sample', 'genotype_fields': ['GT'], 'info_fields': ['DP'], 'samples': ['HG00096', 'HG00101', 'HG00103']}
         ->  oxbow._core.variant.VariantFile._scanner_kwargs
         <-  {'compressed': 'False'}
         ->  oxbow._core.variant.VariantFile._schema_kwargs
-        <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
-        ->  oxbow._core.variant.VariantFile.__init__("data/sample.vcf", None, fields=None, genotype_by="sample", genotype_fields=["GT"], info_fields=["DP"], samples=["HG00096", "HG00101", "HG00103"], compressed=False)
-            ->  oxbow._core.base.DataSource.__init__("data/sample.vcf", None, None)
+        <-  {'fields': 'None', 'genotype_by': 'sample', 'genotype_fields': ['GT'], 'info_fields': ['DP'], 'samples': ['HG00096', 'HG00101', 'HG00103']}
+        ->  oxbow._core.variant.VariantFile.__init__(data/sample.vcf, None, fields=None, genotype_by=sample, genotype_fields=['GT'], info_fields=['DP'], samples=['HG00096', 'HG00101', 'HG00103'], compressed=False)
+            ->  oxbow._core.base.DataSource.__init__(data/sample.vcf, None, None)
             <-  None
             ->  oxbow._core.base.DataSource._scanner
                 ->  oxbow._core.base.DataSource._source
-                <-  'data/sample.vcf'
+                <-  data/sample.vcf
                 ->  oxbow._core.variant.VariantFile._scanner_kwargs
                 <-  {'compressed': 'False'}
             <-  oxbow.core.PyVcfScanner.<object>
             ->  oxbow._core.base.DataSource._scanner
                 ->  oxbow._core.base.DataSource._source
-                <-  'data/sample.vcf'
+                <-  data/sample.vcf
                 ->  oxbow._core.variant.VariantFile._scanner_kwargs
                 <-  {'compressed': 'False'}
             <-  oxbow.core.PyVcfScanner.<object>
             ->  oxbow._core.base.DataSource._scanner
                 ->  oxbow._core.base.DataSource._source
-                <-  'data/sample.vcf'
+                <-  data/sample.vcf
                 ->  oxbow._core.variant.VariantFile._scanner_kwargs
                 <-  {'compressed': 'False'}
             <-  oxbow.core.PyVcfScanner.<object>
@@ -84,22 +84,24 @@
                 <-  VariantFile._batch_readers.<generator>
                 ->  oxbow._core.base.DataSource._scanner
                     ->  oxbow._core.base.DataSource._source
-                    <-  'data/sample.vcf'
+                    <-  data/sample.vcf
                     ->  oxbow._core.variant.VariantFile._scanner_kwargs
                     <-  {'compressed': 'False'}
                 <-  oxbow.core.PyVcfScanner.<object>
                 ->  oxbow._core.variant.VariantFile._scan_kwargs
-                <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
+                <-  {'fields': 'None', 'genotype_by': 'sample', 'genotype_fields': ['GT'], 'info_fields': ['DP'], 'samples': ['HG00096', 'HG00101', 'HG00103']}
+                ->  oxbow._core.base.DataSource._make_batch_reader(functools.partial(builtins.PyVcfScanner.scan, fields=None, genotype_by=sample, genotype_fields=["GT"], info_fields=["DP"], samples=["HG00096", "HG00101", "HG00103"])>)
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
                 ->  oxbow._core.variant.VariantFile._batch_readers.<generator>
                     ->  oxbow._core.base.DataSource.schema
                         ->  oxbow._core.base.DataSource._scanner
                             ->  oxbow._core.base.DataSource._source
-                            <-  'data/sample.vcf'
+                            <-  data/sample.vcf
                             ->  oxbow._core.variant.VariantFile._scanner_kwargs
                             <-  {'compressed': 'False'}
                         <-  oxbow.core.PyVcfScanner.<object>
                         ->  oxbow._core.variant.VariantFile._schema_kwargs
-                        <-  {'fields': 'None', 'genotype_by': "'sample'", 'genotype_fields': ["'GT'"], 'info_fields': ["'DP'"], 'samples': ["'HG00096'", "'HG00101'", "'HG00103'"]}
+                        <-  {'fields': 'None', 'genotype_by': 'sample', 'genotype_fields': ['GT'], 'info_fields': ['DP'], 'samples': ['HG00096', 'HG00101', 'HG00103']}
                     <-  chrom: dictionary<values=string, indices=int32, ordered=0>
                         pos: int32
                         id: list<item: string>
@@ -130,7 +132,7 @@
                                   child 0, item: int32
                               child 1, phased: list<item: bool>
                                   child 0, item: bool
-                <-  oxbow._core.variant.VariantFile._batch_readers.<locals>.<lambda>
+                <-  oxbow._core.base.DataSource._make_batch_reader.<locals>._batch_reader
             <-  ['oxbow._pyarrow.BatchReaderFragment.<object>']
         <-  oxbow._pyarrow.BatchReaderDataset.<object>
     <-  oxbow._pyarrow.BatchReaderDataset.<object>
