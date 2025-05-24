@@ -5,7 +5,7 @@ use pyo3::prelude::*;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
-use flate2::bufread::MultiGzDecoder;
+use flate2::read::MultiGzDecoder;
 use noodles::bgzf::gzi::Reader as GziReader;
 use noodles::bgzf::IndexedReader as IndexedBgzfReader;
 use noodles::core::Region;
