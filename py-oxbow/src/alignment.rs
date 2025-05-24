@@ -201,7 +201,6 @@ impl PySamScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let index = resolve_index(py, self.src.clone_ref(py), index)?;
         let region = region
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
@@ -209,6 +208,7 @@ impl PySamScanner {
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -233,6 +233,7 @@ impl PySamScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -256,7 +257,7 @@ impl PySamScanner {
                 Ok(py_batch_reader)
             }
             _ => Err(PyErr::new::<PyValueError, _>(
-                "Scanning unmapped reads is only supported for bgzf-compressed sources.",
+                "Scanning query ranges is only supported for bgzf-compressed sources.",
             )),
         }
     }
@@ -295,10 +296,10 @@ impl PySamScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let index = resolve_index(py, self.src.clone_ref(py), index)?;
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -319,6 +320,7 @@ impl PySamScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -528,7 +530,6 @@ impl PyBamScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let index = resolve_index(py, self.src.clone_ref(py), index)?;
         let region = region
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
@@ -536,6 +537,7 @@ impl PyBamScanner {
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -560,6 +562,7 @@ impl PyBamScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -622,10 +625,10 @@ impl PyBamScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let index = resolve_index(py, self.src.clone_ref(py), index)?;
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -646,6 +649,7 @@ impl PyBamScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -706,7 +710,6 @@ pub fn read_sam(
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
-        let index = resolve_index(py, src.clone_ref(py), index)?;
         let region = region
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
@@ -714,6 +717,7 @@ pub fn read_sam(
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, src.clone_ref(py), index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -727,6 +731,7 @@ pub fn read_sam(
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, src.clone_ref(py), index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -763,7 +768,7 @@ pub fn read_sam(
 ///     Names of the fixed fields to project.
 /// tag_defs : list[tuple[str, str]], optional
 ///    Definitions of tag fields to project.
-/// compressed : bool, optional [default: False]
+/// compressed : bool, optional [default: True]
 ///     Whether the source is BGZF-compressed.
 ///
 /// Returns
@@ -771,7 +776,7 @@ pub fn read_sam(
 /// bytes
 ///     Arrow IPC
 #[pyfunction]
-#[pyo3(signature = (src, region=None, index=None, fields=None, tag_defs=None, compressed=false))]
+#[pyo3(signature = (src, region=None, index=None, fields=None, tag_defs=None, compressed=true))]
 pub fn read_bam(
     py: Python,
     src: PyObject,
@@ -788,7 +793,6 @@ pub fn read_bam(
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
-        let index = resolve_index(py, src.clone_ref(py), index)?;
         let region = region
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
@@ -796,6 +800,7 @@ pub fn read_bam(
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
+                let index = resolve_index(py, src.clone_ref(py), index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -809,6 +814,7 @@ pub fn read_bam(
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
+                let index = resolve_index(py, src.clone_ref(py), index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,

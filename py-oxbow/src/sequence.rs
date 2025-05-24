@@ -189,12 +189,22 @@ impl PyFastaScanner {
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
         let reader = self.reader.clone();
-        let fmt_reader = noodles::fasta::io::Reader::new(reader);
-        let batch_reader = self
-            .scanner
-            .scan(fmt_reader, fields, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
-        Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
+        if self.compressed {
+            let gz_reader = std::io::BufReader::new(MultiGzDecoder::new(reader));
+            let fmt_reader = noodles::fasta::io::Reader::new(gz_reader);
+            let batch_reader = self
+                .scanner
+                .scan(fmt_reader, fields, batch_size, limit)
+                .map_err(PyErr::new::<PyValueError, _>)?;
+            Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
+        } else {
+            let fmt_reader = noodles::fasta::io::Reader::new(reader);
+            let batch_reader = self
+                .scanner
+                .scan(fmt_reader, fields, batch_size, limit)
+                .map_err(PyErr::new::<PyValueError, _>)?;
+            Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
+        }
     }
 
     /// Scan sequence slices as record batches from a list of genomic ranges.
