@@ -1,0 +1,301 @@
+"""
+DataSource classes for BBI (BigWig and BigBed) formats and their zoom levels.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Callable, Generator, IO, Self
+import pathlib
+
+import pyarrow as pa
+
+from oxbow._core.base import DataSource, DEFAULT_BATCH_SIZE
+from oxbow.oxbow import (
+    PyBBIZoomScanner,
+    PyBigBedScanner,
+    PyBigWigScanner,
+)
+
+
+class BbiFile(DataSource):
+    def _batchreader_builder(
+        self,
+        scan_fn: Callable,
+        field_names: list[str],
+        region: str | None = None,
+    ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
+        def builder(columns, batch_size):
+            scan_kwargs = self._schema_kwargs.copy()
+
+            if columns is not None:
+                scan_kwargs["fields"] = [col for col in columns if col in field_names]
+
+            if region is not None:
+                scan_kwargs["region"] = region
+
+            stream = scan_fn(**scan_kwargs, batch_size=batch_size)
+            return pa.RecordBatchReader.from_stream(
+                data=stream,
+                schema=pa.schema(stream.schema),
+            )
+
+        return builder
+
+    @property
+    def _batchreader_builders(
+        self,
+    ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
+        if self._regions:
+            for region in self._regions:
+                scanner = self.scanner()
+                yield self._batchreader_builder(
+                    scanner.scan_query, scanner.field_names(), region
+                )
+        else:
+            scanner = self.scanner()
+            yield self._batchreader_builder(scanner.scan, scanner.field_names())
+
+    @property
+    def zoom_levels(self):
+        return self.scanner().zoom_levels()
+
+    def zoom(
+        self,
+        resolution: int,
+        *,
+        fields: list[str] | None = None,
+        regions: str | list[str] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+    ) -> BbiZoom:
+        """
+        Create a data source for a BBI file zoom level.
+
+        Parameters
+        ----------
+        resolution: int
+            The resolution / reduction level for zoomed data, in bp.
+
+        Returns
+        -------
+        BbiZoom
+            A data source representing a BBI file zoom level.
+        """
+        return BbiZoom(
+            self, resolution, fields=fields, regions=regions, batch_size=batch_size
+        )
+
+
+class BigBedFile(BbiFile):
+    _scanner_type = PyBigBedScanner
+
+    def __init__(
+        self,
+        source: str | pathlib.Path | Callable[[], IO[Any]],
+        schema: str = "bed3+",
+        *,
+        fields: list[str] | None = None,
+        regions: str | list[str] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+    ):
+        super().__init__(source, None, batch_size)
+
+        if isinstance(regions, str):
+            regions = [regions]
+        self._regions = regions
+
+        self._schema_kwargs = dict(fields=fields)
+        self._scanner_kwargs = dict(schema=schema)
+
+    def select(self, regions: str | list[str]) -> Self:
+        return type(self)(
+            self._src,
+            regions=regions,
+            batch_size=self._batch_size,
+            **self._scanner_kwargs,
+            **self._schema_kwargs,
+        )
+
+
+class BigWigFile(BbiFile):
+    _scanner_type = PyBigWigScanner
+
+    def __init__(
+        self,
+        source: str | pathlib.Path | Callable[[], IO[Any]],
+        *,
+        fields: list[str] | None = None,
+        regions: str | list[str] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+    ):
+        super().__init__(source, None, batch_size)
+
+        if isinstance(regions, str):
+            regions = [regions]
+        self._regions = regions
+
+        self._schema_kwargs = dict(fields=fields)
+        self._scanner_kwargs = {}
+
+    def select(self, regions: str | list[str]) -> Self:
+        return type(self)(
+            self._source,
+            regions=regions,
+            batch_size=self._batch_size,
+            **self._scanner_kwargs,
+            **self._schema_kwargs,
+        )
+
+
+class BbiZoom(DataSource):
+    _scanner_type = PyBBIZoomScanner
+
+    def scanner(self) -> PyBBIZoomScanner:
+        return self._base.scanner().get_zoom(self._resolution)
+
+    def _batchreader_builder(
+        self,
+        scan_fn: Callable,
+        field_names: list[str],
+        region: str | None = None,
+    ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
+        def builder(columns, batch_size):
+            scan_kwargs = self._schema_kwargs.copy()
+
+            if columns is not None:
+                scan_kwargs["fields"] = [col for col in columns if col in field_names]
+
+            if region is not None:
+                scan_kwargs["region"] = region
+
+            stream = scan_fn(**scan_kwargs, batch_size=batch_size)
+            return pa.RecordBatchReader.from_stream(
+                data=stream,
+                schema=pa.schema(stream.schema),
+            )
+
+        return builder
+
+    @property
+    def _batchreader_builders(
+        self,
+    ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
+        if self._regions:
+            for region in self._regions:
+                scanner = self.scanner()
+                yield self._batchreader_builder(
+                    scanner.scan_query, scanner.field_names(), region
+                )
+        else:
+            scanner = self.scanner()
+            yield self._batchreader_builder(scanner.scan, scanner.field_names())
+
+    def __init__(
+        self,
+        base: BigBedFile | BigWigFile,
+        resolution: int,
+        *,
+        fields: list[str] | None = None,
+        regions: str | list[str] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+    ):
+        if isinstance(regions, str):
+            regions = [regions]
+
+        self._batch_size = batch_size
+        self._base = base
+        self._resolution = resolution
+        self._regions = regions
+        self._schema_kwargs = dict(fields=fields)
+
+    def select(self, regions: str | list[str]) -> Self:
+        return type(self)(
+            self._base,
+            self._resolution,
+            regions=regions,
+            batch_size=self._batch_size,
+            **self._schema_kwargs,
+        )
+
+
+def from_bigbed(
+    source: str | pathlib.Path | Callable[[], IO[Any]],
+    schema: str = "bed3+",
+    *,
+    fields: list[str] | None = None,
+    regions: list[str] | None = None,
+    batch_size: int = DEFAULT_BATCH_SIZE,
+) -> BigBedFile:
+    """
+    Create a BigBed file data source.
+
+    Parameters
+    ----------
+    source : str, pathlib.Path, or Callable
+        The URI or path to the BigBed file, or a callable that opens the file
+        as a file-like object.
+    bed_schema : str, optional
+        Schema for the BED file format, by default "bed3+".
+    fields : list[str], optional
+        Names of the fields to project.
+    regions : list[str], optional
+        Genomic regions to query.
+    batch_size : int, optional
+        Size of the batch to read.
+
+    Returns
+    -------
+    BigBedFile
+
+    See also
+    --------
+    from_bed : Create a BED file data source.
+    from_bigwig : Create a BigWig file data source.
+    BbiFile.zoom : Create a data source for a BBI file zoom level.
+    """
+    return BigBedFile(
+        source=source,
+        schema=schema,
+        fields=fields,
+        regions=regions,
+        batch_size=batch_size,
+    )
+
+
+def from_bigwig(
+    source: str | pathlib.Path | Callable[[], IO[Any]],
+    *,
+    fields: list[str] | None = None,
+    regions: list[str] | None = None,
+    batch_size: int = DEFAULT_BATCH_SIZE,
+) -> BigWigFile:
+    """
+    Create a BigWig file data source.
+
+    Parameters
+    ----------
+    source : str, pathlib.Path, or Callable
+        The URI or path to the BigWig file, or a callable that opens the file
+        as a file-like object.
+    fields : list[str], optional
+        Names of the fields to project.
+    regions : list[str], optional
+        Genomic regions to query.
+    batch_size : int, optional
+        Size of the batch to read.
+
+    Returns
+    -------
+    BigWigFile
+
+    See also
+    --------
+    from_bed : Create a BED file data source.
+    from_bigbed : Create a BigBed file data source.
+    BbiFile.zoom : Create a data source for a BBI file zoom level.
+    """
+    return BigWigFile(
+        source=source,
+        fields=fields,
+        regions=regions,
+        batch_size=batch_size,
+    )

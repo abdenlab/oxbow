@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Generator, Iterable
+from abc import abstractmethod
+from typing import Any, Callable, Generator, Iterable, IO, Self
+import pathlib
 
 import pyarrow as pa
 
-from oxbow._filetypes import FILETYPE_BY_NAME, FileType
 from oxbow._pyarrow import (
     DEFAULT_BATCH_SIZE,
     BatchReaderDataset,
@@ -13,86 +13,91 @@ from oxbow._pyarrow import (
 )
 
 
-class DataSourceMeta(ABCMeta):
-    _registry: dict[FileType, type] = {}
+class DataSource:
+    """
+    Base class for data sources.
 
-    # Invoked when an attribute is not found on the class object
-    def __getattr__(cls, key):
-        if key.startswith("from_"):
-            try:
-                file_type_name = key.rsplit("_", 1)[-1].lower()
-                file_type = FILETYPE_BY_NAME[file_type_name]
-                return {k: v for k, v in cls._registry.items() if issubclass(v, cls)}[
-                    file_type
-                ]
-            except Exception as e:
-                raise KeyError(key) from e
-        raise AttributeError(f"'{cls.__name__}' object has no attribute '{key}'")
+    Attributes
+    ----------
+    _scanner_type : type
+        The scanner type used for reading the data source.
+    _scanner_kwargs : dict
+        Additional keyword arguments for building the scanner.
+    _schema_kwargs : dict
+        Additional keyword arguments for assembling the schema.
+    _src : Callable[[], IO[Any]]
+        A callable that returns the data source.
+    _index_src : Callable[[], IO[Any]]
+        A callable that returns the index source.
+    _batch_size : int
+        The size of the batches to be read from the data source.
+    _batchreader_builders : Iterable[Callable]
+        Callables that create a RecordBatch iterator for each fragment of the
+        data source.
+    """
 
-
-class DataSource(metaclass=DataSourceMeta):
-    _schema = None
-
-    @property
-    @abstractmethod
-    def _scan_kwargs(self) -> dict[str, Any]: ...
-
-    @property
-    @abstractmethod
-    def _scanner_kwargs(self) -> dict[str, Any]: ...
-
-    @property
-    @abstractmethod
-    def _schema_kwargs(self) -> dict[str, Any]: ...
-
-    @property
-    @abstractmethod
-    def _batch_readers(
+    def __init__(
         self,
-    ) -> Iterable[Callable[[list[str] | None, int], pa.RecordBatchReader]]: ...
-
-    def __init_subclass__(cls, file_type: FileType | None = None) -> None:
-        if file_type:
-            assert file_type not in cls._registry
-            cls._scanner_type = file_type.value
-            cls._registry[file_type] = cls
-        return super().__init_subclass__()
-
-    def __init__(self, uri, opener=None, fields=None):
-        self._uri = uri
-        self._opener = opener
-        self._fields = fields
-        super().__init__()
-
-    @property
-    def _source(self):
-        if self._opener is None:
-            return self._uri
+        source: str | pathlib.Path | Callable[[], IO[Any]],
+        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+    ):
+        if isinstance(source, (str, pathlib.Path)):
+            source = str(source)
+            self._src = lambda: source
+        elif callable(source):
+            self._src = source
         else:
-            return self._opener(self._uri)
+            raise TypeError(
+                "`source` must be a str, pathlib.Path, or a callable returning "
+                "an IO stream"
+            )
+        if isinstance(index, (str, pathlib.Path)):
+            index = str(index)
+            self._index_src = lambda: index
+        elif callable(index) or index is None:
+            self._index_src = index
+        else:
+            raise TypeError(
+                "`index` must be a str, pathlib.Path, or a callable returning "
+                "an IO stream"
+            )
+        self._batch_size = batch_size
 
     @property
-    def _scanner(self):
-        return self._scanner_type(self._source, **self._scanner_kwargs)
+    def _source(self) -> str | IO[Any]:
+        return self._src()
+
+    @property
+    def _index(self) -> str | IO[Any]:
+        return self._index_src() if self._index_src else None
 
     @property
     def schema(self) -> pa.Schema:
-        if not self._schema:
-            self._schema = pa.schema(self._scanner.schema(**self._schema_kwargs))
-        return self._schema
+        return pa.schema(self.scanner().schema(**self._schema_kwargs))
 
     @property
-    def fields(self) -> dict[str, pa.DataType]:
-        return dict(zip(self.schema.names, self.schema.types))
+    def columns(self) -> list[str]:
+        return self.schema.names
 
-    def select(
+    @property
+    @abstractmethod
+    def _batchreader_builders(
         self,
-        *regions: str | list[str],
-        batch_size: int = DEFAULT_BATCH_SIZE,
-        **kwargs,
-    ) -> BatchReaderDataset:
+    ) -> Iterable[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
         """
-        Select a subset of the data source.
+        Callables that generate RecordBatch iterators from the data source.
+
+        Each callable corresponds to a specific fragment of the data source,
+        takes column projection and batch size arguments, and returns a
+        stream of record batches that cover the fragment.
+        """
+        ...
+
+    @abstractmethod
+    def select(self, regions: str | list[str]) -> Self:
+        """
+        Query a genomic range within the data source.
 
         This method creates a new instance of the data source with the same
         parameters, applies any overrides specified by keyword arguments,
@@ -100,72 +105,45 @@ class DataSource(metaclass=DataSourceMeta):
 
         Parameters
         ----------
-        *regions
+        regions
             The regions to select from the data source. This can be a single
             region or a list of regions.
-        batch_size
-            The size of each batch to be read. Default is DEFAULT_BATCH_SIZE.
-        **kwargs
-            Additional keyword arguments to override the current instance's
-            parameters.
 
         Returns
         -------
-        BatchReaderDataset
-            A dataset containing the selected subset of the data source.
+        DataSource
         """
-        return type(self)(
-            self._uri,
-            self._opener,
-            regions=regions,
-            **{
-                **self._scan_kwargs,
-                **self._scanner_kwargs,
-                **self._schema_kwargs,
-                **kwargs,
-            },
-        ).dataset(batch_size=batch_size)
+        ...
 
-    def batches(
-        self, *, batch_size: int = DEFAULT_BATCH_SIZE
-    ) -> Generator[pa.RecordBatch]:
+    def scanner(self) -> Any:
+        """
+        Create a low-level scanner for the data source.
+        """
+        return self._scanner_type(self._source, **self._scanner_kwargs)
+
+    def batches(self) -> Generator[pa.RecordBatch]:
         """
         Generate record batches from the data source.
-
-        This method iterates over the data source and yields record batches
-        of the specified size.
-
-        Parameters
-        ----------
-        batch_size
-            The size of each batch to be read. Default is DEFAULT_BATCH_SIZE.
 
         Yields
         ------
         pa.RecordBatch
             A record batch from the data source.
         """
-        for reader_factory in self._batch_readers:
-            reader = reader_factory(self._fields, batch_size)
+        for builder in self._batchreader_builders:
+            reader = builder(self.columns, self._batch_size)
             while True:
                 try:
                     yield reader.read_next_batch()
                 except StopIteration:
                     break
 
-    def fragments(
-        self, *, batch_size: int = DEFAULT_BATCH_SIZE
-    ) -> list[BatchReaderFragment]:
+    def fragments(self) -> list[BatchReaderFragment]:
         """
         Get fragments of the data source.
 
         Fragments represent parts of the data source that can be processed
-        independently. Each fragment is associated with a schema and batch size.
-
-        Parameters
-        ----------
-        batch_size
-            The size of each batch to be read. Default is DEFAULT_BATCH_SIZE.
+        independently.
 
         Returns
         -------
@@ -173,28 +151,23 @@ class DataSource(metaclass=DataSourceMeta):
             A list of fragments representing parts of the data source.
         """
         return [
-            BatchReaderFragment(r, self.schema, batch_size=batch_size)
-            for r in self._batch_readers
+            BatchReaderFragment(builder, self.schema, batch_size=self._batch_size)
+            for builder in self._batchreader_builders
         ]
 
-    def dataset(self, *, batch_size=DEFAULT_BATCH_SIZE) -> BatchReaderDataset:
+    def dataset(self) -> BatchReaderDataset:
         """
         Convert the data source into a dataset.
 
         A dataset is a collection of fragments that can be processed
         as a single logical entity.
 
-        Parameters
-        ----------
-        batch_size
-            The size of each batch to be read. Default is DEFAULT_BATCH_SIZE.
-
         Returns
         -------
         BatchReaderDataset
             A dataset representation of the data source.
         """
-        return BatchReaderDataset(self.fragments(batch_size=batch_size))
+        return BatchReaderDataset(self.fragments())
 
     def to_pandas(self):
         """
@@ -228,7 +201,7 @@ class DataSource(metaclass=DataSourceMeta):
         if lazy:
             return pl.scan_pyarrow_dataset(self.dataset())
         else:
-            return pl.from_arrow(self.dataset().iter_batches())
+            return pl.from_arrow(self.batches())
 
     pl = to_polars
 
@@ -255,26 +228,29 @@ class DataSource(metaclass=DataSourceMeta):
                 df = df.set_index(pd.RangeIndex(row_offset, row_offset + len(df)))
             return df
 
-        # TODO: A less hacky way to generate a "meta" pandas DataFrame for dask
-        # without having to materialize a full fragment.
-        meta = next(self._fragments[0]._make_batchreader(batch_size=1)).to_pandas()
+        # Generate a "meta" pandas DataFrame which serves as a schema for dask
+        schema = self.schema
+        meta = pa.Table.from_arrays(
+            [pa.array([], type=field.type) for field in schema], schema=schema
+        ).to_pandas()
 
-        # This does a full pass scan over all record batches to find the row
+        # This does a full-pass scan over all record batches to find the row
         # offsets of each fragment. While a costly first step, it will endow
         # the Dask DataFrame with "known divisions" which can be exploited for
         # more efficient computations.
+        fragments = self.fragments()
         if find_divisions:
-            fragment_lengths = [frag.count_rows() for frag in self._fragments]
+            fragment_lengths = [frag.count_rows() for frag in fragments]
             row_offsets = [0, *fragment_lengths[:-1]]
             return dd.from_map(
                 create_partition,
-                self._fragments,
+                fragments,
                 row_offsets,
                 divisions=fragment_lengths,
                 meta=meta,
             )
-
-        return dd.from_map(create_partition, self._fragments, meta=meta)
+        else:
+            return dd.from_map(create_partition, fragments, meta=meta)
 
     dd = to_dask
 
@@ -296,12 +272,12 @@ class DataSource(metaclass=DataSourceMeta):
 
     def to_ipc(self) -> bytes:
         """
-        Serialize the dataset as Arrow IPC.
+        Serialize the data source as an Arrow IPC stream.
 
         Returns
         -------
         bytes
-            The serialized dataset in Arrow IPC format.
+            The serialized data source in Arrow IPC format.
         """
         s = pa.BufferOutputStream()
         with pa.ipc.new_stream(s, self.schema) as writer:

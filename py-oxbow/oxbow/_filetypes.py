@@ -14,6 +14,7 @@ class FileType(Enum):
     BED = ox.PyBedScanner
     BigBed = ox.PyBigBedScanner
     BigWig = ox.PyBigWigScanner
+    BBIZoom = ox.PyBBIZoomScanner
     FASTA = ox.PyFastaScanner
     FASTQ = ox.PyFastqScanner
     GFF = ox.PyGffScanner
