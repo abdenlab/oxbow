@@ -30,12 +30,8 @@ class TestVcfFile:
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
     def test_fragments(self, regions):
-        fragments = ox.VcfFile(
-            "data/sample.vcf",
-            regions=regions,
-            samples=("HG00096", "HG00101", "HG00103"),
-        ).fragments()
-        assert len(fragments) == len(regions) if regions else 1
+        fragments = ox.BigWigFile("data/sample.bw", regions=regions).fragments()
+        assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",
