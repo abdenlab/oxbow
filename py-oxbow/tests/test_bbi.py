@@ -63,14 +63,12 @@ class TestBigBedFile:
         [
             ["chr21"],
             ["chr21:17878425-33832395", "chr21:46077848-46443662"],
-        ]
+        ],
     )
     def test_input_with_regions(self, regions):
-        file = ox.BigBedFile(
-            "data/sample.bb",
-            regions=regions
-        )
+        file = ox.BigBedFile("data/sample.bb", regions=regions)
         file.pl()
+
 
 class TestBigWigFile:
     @pytest.mark.parametrize(
@@ -130,13 +128,11 @@ class TestBigWigFile:
         [
             ["chr21"],
             ["chr21:17878425-33832395", "chr21:46077848-46443662"],
-        ]
+        ],
     )
     def test_input_with_regions(self, regions):
-        file = ox.BigWigFile(
-            "data/sample.bw",
-            regions=regions
-        )
+        ox.BigWigFile("data/sample.bw", regions=regions)
+
 
 class TestBbiZoom:
     def test_creation(self):
@@ -155,7 +151,7 @@ class TestBbiZoom:
         [
             ["chr21"],
             ["chr21:17878425-33832395", "chr21:46077848-46443662"],
-        ]
+        ],
     )
     def test_creation_with_regions(self, regions):
         file = ox.BigWigFile("data/sample.bw")

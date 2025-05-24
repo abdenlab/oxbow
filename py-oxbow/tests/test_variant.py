@@ -86,7 +86,7 @@ class TestVcfFile:
             ["Y"],
             ["Y:9089648-14384313"],
             ["Y:9089648-14384313", "Y:21000000-21001000"],
-        ]
+        ],
     )
     def test_input_with_regions(self, regions):
         file = ox.VcfFile(
@@ -94,7 +94,8 @@ class TestVcfFile:
             compressed=True,
             index="data/sample.vcf.gz.tbi",
             samples=["HG00096", "HG00101", "HG00103"],
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
 
         file = ox.VcfFile(
@@ -102,7 +103,8 @@ class TestVcfFile:
             compressed=True,
             index="data/sample.vcf.gz.csi",
             samples=["HG00096", "HG00101", "HG00103"],
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
 
         file = ox.VcfFile(
@@ -110,8 +112,10 @@ class TestVcfFile:
             compressed=True,
             index=None,  # inferred from name
             samples=["HG00096", "HG00101", "HG00103"],
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
+
 
 class TestBcfFile:
     @pytest.mark.parametrize(
@@ -130,7 +134,9 @@ class TestBcfFile:
                 pass
             finally:
                 assert (
-                    manifest[f"{ox.BcfFile.__name__}({Input(filepath)}, compressed=True)"]
+                    manifest[
+                        f"{ox.BcfFile.__name__}({Input(filepath)}, compressed=True)"
+                    ]
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
@@ -196,7 +202,7 @@ class TestBcfFile:
             ["Y"],
             ["Y:9089648-14384313"],
             ["Y:9089648-14384313", "Y:21000000-21001000"],
-        ]
+        ],
     )
     def test_input_with_regions(self, regions):
         file = ox.BcfFile(
@@ -204,7 +210,8 @@ class TestBcfFile:
             compressed=True,
             index="data/sample.bcf.csi",
             samples=["HG00096", "HG00101", "HG00103"],
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
 
         file = ox.BcfFile(
@@ -212,5 +219,6 @@ class TestBcfFile:
             compressed=True,
             index=None,  # inferred from name
             samples=["HG00096", "HG00101", "HG00103"],
-            regions=regions)
+            regions=regions,
+        )
         file.pl()

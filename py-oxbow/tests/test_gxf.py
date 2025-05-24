@@ -65,7 +65,9 @@ class TestGtfFile:
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.GtfFile("data/sample.sorted.gtf.gz", compressed=False, batch_size=3)
+            file = ox.GtfFile(
+                "data/sample.sorted.gtf.gz", compressed=False, batch_size=3
+            )
             next((file.batches()))
 
         with pytest.raises(BaseException):
@@ -78,21 +80,23 @@ class TestGtfFile:
             ["chr1"],
             ["chr12:19000000-90000000"],
             ["chr5", "chr12:19000000-90000000"],
-        ]
+        ],
     )
     def test_input_with_regions(self, regions):
         file = ox.GtfFile(
             "data/sample.sorted.gtf.gz",
             compressed=True,
             index="data/sample.sorted.gtf.gz.tbi",
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
 
         file = ox.GtfFile(
             "data/sample.sorted.gtf.gz",
             compressed=True,
             index=None,  # inferred from name
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
 
 
@@ -156,7 +160,9 @@ class TestGffFile:
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.GffFile("data/sample.sorted.gff.gz", compressed=False, batch_size=3)
+            file = ox.GffFile(
+                "data/sample.sorted.gff.gz", compressed=False, batch_size=3
+            )
             next((file.batches()))
 
         with pytest.raises(BaseException):
@@ -169,19 +175,21 @@ class TestGffFile:
             ["chr2"],
             ["chr13:35000000-82000000"],
             ["chr6", "chr13:35000000-82000000"],
-        ]
+        ],
     )
     def test_input_with_regions(self, regions):
         file = ox.GffFile(
             "data/sample.sorted.gff.gz",
             compressed=True,
             index="data/sample.sorted.gff.gz.tbi",
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
 
         file = ox.GffFile(
             "data/sample.sorted.gff.gz",
             compressed=True,
             index=None,  # inferred from name
-            regions=regions)
+            regions=regions,
+        )
         file.pl()

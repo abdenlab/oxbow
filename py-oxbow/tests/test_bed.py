@@ -58,11 +58,15 @@ class TestBedFile:
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.BedFile("data/sample.bed.gz", "bed9", compressed=False, batch_size=3)
+            file = ox.BedFile(
+                "data/sample.bed.gz", "bed9", compressed=False, batch_size=3
+            )
             next((file.batches()))
 
         with pytest.raises(BaseException):
-            file = ox.BedFile("doesnotexist.bed", "bed9", compressed=False, batch_size=3)
+            file = ox.BedFile(
+                "doesnotexist.bed", "bed9", compressed=False, batch_size=3
+            )
             next((file.batches()))
 
     @pytest.mark.parametrize(
@@ -71,19 +75,21 @@ class TestBedFile:
             ["chr1"],
             ["chr12"],
             ["chr5", "chr12:1-100"],
-        ]
+        ],
     )
     def test_input_with_regions(self, regions):
         file = ox.BedFile(
             "data/sample.bed.gz",
             compressed=True,
             index="data/sample.bed.gz.tbi",
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
 
         file = ox.BedFile(
             "data/sample.bed.gz",
             compressed=True,
             index=None,  # inferred from name
-            regions=regions)
+            regions=regions,
+        )
         file.pl()

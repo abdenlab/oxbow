@@ -127,21 +127,23 @@ class TestFastaFile:
             ["seq1:10-20"],
             ["seq1:10-20", "seq10"],
             ["seq1:10-20", "seq10", "seq2:1-30"],
-        ]
+        ],
     )
     def test_input_with_regions(self, regions):
         file = ox.FastaFile(
             "data/sample.fasta",
             compressed=False,
             index="data/sample.fasta.fai",
-            regions=regions)
+            regions=regions,
+        )
         assert len(file.pl()) == len(regions)
 
         file = ox.FastaFile(
             "data/sample.fasta",
             compressed=False,
             index=None,  # inferred from name
-            regions=regions)
+            regions=regions,
+        )
         assert len(file.pl()) == len(regions)
 
         file = ox.FastaFile(
@@ -149,7 +151,8 @@ class TestFastaFile:
             compressed=True,
             index="data/sample.fasta.fai",
             gzi="data/sample.fasta.gz.gzi",
-            regions=regions)
+            regions=regions,
+        )
         assert len(file.pl()) == len(regions)
 
         file = ox.FastaFile(
@@ -157,7 +160,8 @@ class TestFastaFile:
             compressed=True,
             index="data/sample.fasta.fai",
             gzi=None,  # currently not inferred from name
-            regions=regions)
+            regions=regions,
+        )
         with pytest.raises(ValueError):
             file.pl()
 

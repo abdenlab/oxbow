@@ -71,21 +71,23 @@ class TestSamFile:
             ["chr1"],
             ["chr1:17-32"],
             ["chr1:17-32", "chr1:30-37"],
-        ]
+        ],
     )
     def test_input_with_regions(self, regions):
         file = ox.SamFile(
             "data/sample.sam.gz",
             compressed=True,
             index="data/sample.sam.gz.tbi",
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
 
         file = ox.SamFile(
             "data/sample.sam.gz",
             compressed=True,
             index=None,  # inferred from name
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
 
 
@@ -102,7 +104,9 @@ class TestBamFile:
                 pass
             finally:
                 assert (
-                    manifest[f"{ox.BamFile.__name__}({Input(filepath)}, compressed=True)"]
+                    manifest[
+                        f"{ox.BamFile.__name__}({Input(filepath)}, compressed=True)"
+                    ]
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
@@ -114,7 +118,9 @@ class TestBamFile:
         ],
     )
     def test_batches(self, fields, manifest: Manifest):
-        batches = ox.BamFile("data/sample.bam", fields=fields, compressed=True).batches()
+        batches = ox.BamFile(
+            "data/sample.bam", fields=fields, compressed=True
+        ).batches()
         try:
             actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
         except OSError as e:
@@ -127,7 +133,9 @@ class TestBamFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BamFile("data/sample.bam", regions=regions, compressed=True).fragments()
+        fragments = ox.BamFile(
+            "data/sample.bam", regions=regions, compressed=True
+        ).fragments()
         assert len(fragments) == len(regions) if regions else 1
 
     def test_input_encodings(self):
@@ -155,19 +163,21 @@ class TestBamFile:
             ["chr1"],
             ["chr1:17-32"],
             ["chr1:17-32", "chr1:30-37"],
-        ]
+        ],
     )
     def test_input_with_regions(self, regions):
         file = ox.BamFile(
             "data/sample.bam",
             compressed=True,
             index="data/sample.bam.bai",
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
 
         file = ox.BamFile(
             "data/sample.bam",
             compressed=True,
             index=None,  # inferred from name
-            regions=regions)
+            regions=regions,
+        )
         file.pl()
