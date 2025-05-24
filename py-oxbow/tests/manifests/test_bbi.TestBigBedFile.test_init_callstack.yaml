@@ -1,0 +1,15 @@
+BigBedFile("data/does-not-exist.bb"): |-
+    ->  oxbow._core.bbi.BigBedFile.__init__("data/does-not-exist.bb")
+        ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.bb", None, 131072)
+        <-  None
+    <-  None
+BigBedFile("data/malformed.bb"): |-
+    ->  oxbow._core.bbi.BigBedFile.__init__("data/malformed.bb")
+        ->  oxbow._core.base.DataSource.__init__("data/malformed.bb", None, 131072)
+        <-  None
+    <-  None
+BigBedFile("data/sample.bb"): |-
+    ->  oxbow._core.bbi.BigBedFile.__init__("data/sample.bb")
+        ->  oxbow._core.base.DataSource.__init__("data/sample.bb", None, 131072)
+        <-  None
+    <-  None
