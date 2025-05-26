@@ -1,5 +1,5 @@
 """
-This module provides classes and utilities for working with PyArrow datasets and fragments.
+Utilities for exposing custom Arrow RecordBatch streams as PyArrow fragments and datasets.
 
 Classes
 -------
@@ -54,7 +54,7 @@ class BatchReaderFragment(Fragment):
     schema : pyarrow.Schema
         The schema of the RecordBatches.
     batch_size : int, optional
-        The maximum row count for scanned record batches, by default DEFAULT_BATCH_SIZE.
+        The maximum row count for scanned record batches.
     partition_expression : pyarrow.dataset.Expression, optional
         A partition expression for the fragment, by default None.
 
@@ -63,7 +63,8 @@ class BatchReaderFragment(Fragment):
     schema : pyarrow.Schema
         The schema of the RecordBatches in the fragment.
     partition_expression : pyarrow.dataset.Expression
-        An expression that evaluates to true for all data viewed by this fragment.
+        An expression that evaluates to true for all data viewed by this
+        fragment.
     """
 
     def __init__(
@@ -83,7 +84,7 @@ class BatchReaderFragment(Fragment):
         schema : pyarrow.Schema
             The schema of the RecordBatches.
         batch_size : int, optional
-            The maximum row count for scanned record batches, by default DEFAULT_BATCH_SIZE.
+            The maximum row count for scanned record batches.
         partition_expression : pyarrow.dataset.Expression, optional
             A partition expression for the fragment, by default None.
 
@@ -106,20 +107,22 @@ class BatchReaderFragment(Fragment):
     @property
     def schema(self) -> pa.Schema:
         """
+        The schema of the RecordBatches in the fragment.
+
         Returns
         -------
         pyarrow.Schema
-            The schema of the RecordBatches in the fragment.
         """
         return self._schema
 
     @property
     def partition_expression(self) -> ds.Expression:
         """
+        An expression that evaluates to true for all data viewed by this fragment.
+
         Returns
         -------
         pyarrow.dataset.Expression
-            An expression that evaluates to true for all data viewed by this fragment.
         """
         return self._partition_expression
 
@@ -134,6 +137,7 @@ class BatchReaderFragment(Fragment):
         fragment_scan_options: ds.FragmentScanOptions | None = None,
         use_threads: bool = True,
         memory_pool: ds.MemoryPool | None = None,
+        **kwargs,
     ) -> ds.Scanner:
         """
         Build a scan operation against the fragment.
@@ -141,23 +145,28 @@ class BatchReaderFragment(Fragment):
         Parameters
         ----------
         schema : pyarrow.Schema, optional
-            The schema to use for scanning. If not specified, uses the Fragment's physical schema.
+            The schema to use for scanning. If not specified, uses the
+            Fragment's physical schema.
         columns : list[str], optional
-            Names of columns to project. By default, all available columns are projected.
+            Names of columns to project. By default, all available columns are
+            projected.
         filter : pyarrow.dataset.Expression, optional
-            A filter expression. Scan will return only the rows matching the filter.
+            A filter expression. Scan will return only the rows matching the
+            filter.
         batch_size : int, optional
-            The maximum row count for scanned record batches, by default DEFAULT_BATCH_SIZE.
+            The maximum row count for scanned record batches.
         batch_readahead : int, optional
-            The number of batches to read ahead in a file, by default DEFAULT_BATCH_READAHEAD.
+            The number of batches to read ahead in a file.
         fragment_readahead : int, optional
-            The number of fragments/files to read ahead, by default DEFAULT_FRAGMENT_READAHEAD.
+            The number of fragments/files to read ahead.
         fragment_scan_options : pyarrow.dataset.FragmentScanOptions, optional
-            Options specific to a particular scan and fragment type, by default None.
+            Options specific to a particular scan and fragment type, by default
+            None.
         use_threads : bool, optional
             If enabled, maximum parallelism will be used, by default True.
         memory_pool : pyarrow.dataset.MemoryPool, optional
-            For memory allocations, if required. By default, uses the default pool.
+            For memory allocations, if required. By default, uses the default
+            pool.
 
         Returns
         -------
@@ -189,6 +198,7 @@ class BatchReaderFragment(Fragment):
             fragment_scan_options=fragment_scan_options,
             use_threads=use_threads,
             memory_pool=memory_pool,
+            **kwargs,
         )
 
     def to_batches(
@@ -202,6 +212,7 @@ class BatchReaderFragment(Fragment):
         fragment_scan_options: ds.FragmentScanOptions | None = None,
         use_threads: bool = True,
         memory_pool: ds.MemoryPool | None = None,
+        **kwargs,
     ) -> Iterator[pa.RecordBatch]:
         """
         Scan and read the fragment as materialized record batches.
@@ -211,23 +222,28 @@ class BatchReaderFragment(Fragment):
         Parameters
         ----------
         schema : pyarrow.Schema, optional
-            The schema to use for scanning. If not specified, uses the Fragment's physical schema.
+            The schema to use for scanning. If not specified, uses the
+            Fragment's physical schema.
         columns : list[str], optional
-            Names of columns to project. By default, all available columns are projected.
+            Names of columns to project. By default, all available columns are
+            projected.
         filter : pyarrow.dataset.Expression, optional
-            A filter expression. Scan will return only the rows matching the filter.
+            A filter expression. Scan will return only the rows matching the
+            filter.
         batch_size : int, optional
-            The maximum row count for scanned record batches, by default DEFAULT_BATCH_SIZE.
+            The maximum row count for scanned record batches.
         batch_readahead : int, optional
-            The number of batches to read ahead in a file, by default DEFAULT_BATCH_READAHEAD.
+            The number of batches to read ahead in a file.
         fragment_readahead : int, optional
-            The number of fragments/files to read ahead, by default DEFAULT_FRAGMENT_READAHEAD.
+            The number of fragments/files to read ahead,.
         fragment_scan_options : pyarrow.dataset.FragmentScanOptions, optional
-            Options specific to a particular scan and fragment type, by default None.
+            Options specific to a particular scan and fragment type, by default
+            None.
         use_threads : bool, optional
             If enabled, maximum parallelism will be used, by default True.
         memory_pool : pyarrow.dataset.MemoryPool, optional
-            For memory allocations, if required. By default, uses the default pool.
+            For memory allocations, if required. By default, uses the default
+            pool.
 
         Returns
         -------
@@ -244,6 +260,7 @@ class BatchReaderFragment(Fragment):
             fragment_scan_options=fragment_scan_options,
             use_threads=use_threads,
             memory_pool=memory_pool,
+            **kwargs,
         ).to_batches()
 
     def iter_batches(self, columns=None, batch_size=DEFAULT_BATCH_SIZE):
@@ -253,9 +270,10 @@ class BatchReaderFragment(Fragment):
         Parameters
         ----------
         columns : list[str], optional
-            Names of columns to project. By default, all available columns are projected.
+            Names of columns to project. By default, all available columns are
+            projected.
         batch_size : int, optional
-            The maximum row count for scanned record batches, by default DEFAULT_BATCH_SIZE.
+            The maximum row count for scanned record batches.
 
         Returns
         -------
@@ -299,7 +317,8 @@ class BatchReaderDataset(Dataset):
     schema : pyarrow.Schema
         The schema of the RecordBatches in the dataset.
     partition_expression : pyarrow.dataset.Expression
-        An expression that evaluates to true for all data viewed by this dataset.
+        An expression that evaluates to true for all data viewed by this
+        dataset.
     """
 
     def __init__(
@@ -331,7 +350,8 @@ class BatchReaderDataset(Dataset):
         Returns
         -------
         pyarrow.dataset.Expression
-            An expression that evaluates to true for all data viewed by this dataset.
+            An expression that evaluates to true for all data viewed by this
+            dataset.
         """
         return self._partition_expression
 
@@ -383,6 +403,7 @@ class BatchReaderDataset(Dataset):
         fragment_scan_options: ds.FragmentScanOptions | None = None,
         use_threads: bool | None = True,
         memory_pool: ds.MemoryPool | None = None,
+        **kwargs,
     ) -> ds.Scanner:
         """
         Build a scan operation against the dataset.
@@ -393,21 +414,25 @@ class BatchReaderDataset(Dataset):
         Parameters
         ----------
         columns : list[str], optional
-            Names of columns to project. By default, all available columns are projected.
+            Names of columns to project. By default, all available columns are
+            projected.
         filter : pyarrow.dataset.Expression, optional
-            A filter expression. Scan will return only the rows matching the filter.
+            A filter expression. Scan will return only the rows matching the
+            filter.
         batch_size : int, optional
-            The maximum row count for scanned record batches, by default DEFAULT_BATCH_SIZE.
+            The maximum row count for scanned record batches.
         batch_readahead : int, optional
-            The number of batches to read ahead in a file, by default DEFAULT_BATCH_READAHEAD.
+            The number of batches to read ahead in a file.
         fragment_readahead : int, optional
-            The number of fragments/files to read ahead, by default DEFAULT_FRAGMENT_READAHEAD.
+            The number of fragments/files to read ahead.
         fragment_scan_options : pyarrow.dataset.FragmentScanOptions, optional
-            Options specific to a particular scan and fragment type, by default None.
+            Options specific to a particular scan and fragment type, by default
+            None.
         use_threads : bool, optional
             If enabled, maximum parallelism will be used, by default True.
         memory_pool : pyarrow.dataset.MemoryPool, optional
-            For memory allocations, if required. By default, uses the default pool.
+            For memory allocations, if required. By default, uses the default
+            pool.
 
         Returns
         -------
@@ -438,6 +463,7 @@ class BatchReaderDataset(Dataset):
             fragment_scan_options=fragment_scan_options,
             use_threads=use_threads,
             memory_pool=memory_pool,
+            **kwargs,
         )
 
     def to_batches(
@@ -450,6 +476,7 @@ class BatchReaderDataset(Dataset):
         fragment_scan_options: ds.FragmentScanOptions | None = None,
         use_threads: bool | None = True,
         memory_pool: ds.MemoryPool | None = None,
+        **kwargs,
     ) -> Iterator[pa.RecordBatch]:
         """
         Read the dataset as materialized record batches.
@@ -457,21 +484,25 @@ class BatchReaderDataset(Dataset):
         Parameters
         ----------
         columns : list[str], optional
-            Names of columns to project. By default, all available columns are projected.
+            Names of columns to project. By default, all available columns are
+            projected.
         filter : pyarrow.dataset.Expression, optional
-            A filter expression. Scan will return only the rows matching the filter.
+            A filter expression. Scan will return only the rows matching the
+            filter.
         batch_size : int, optional
-            The maximum row count for scanned record batches, by default DEFAULT_BATCH_SIZE.
+            The maximum row count for scanned record batches.
         batch_readahead : int, optional
-            The number of batches to read ahead in a file, by default DEFAULT_BATCH_READAHEAD.
+            The number of batches to read ahead in a file.
         fragment_readahead : int, optional
-            The number of fragments/files to read ahead, by default DEFAULT_FRAGMENT_READAHEAD.
+            The number of fragments/files to read ahead.
         fragment_scan_options : pyarrow.dataset.FragmentScanOptions, optional
-            Options specific to a particular scan and fragment type, by default None.
+            Options specific to a particular scan and fragment type, by default
+            None.
         use_threads : bool, optional
             If enabled, maximum parallelism will be used, by default True.
         memory_pool : pyarrow.dataset.MemoryPool, optional
-            For memory allocations, if required. By default, uses the default pool.
+            For memory allocations, if required. By default, uses the default
+            pool.
 
         Returns
         -------
@@ -487,6 +518,7 @@ class BatchReaderDataset(Dataset):
             fragment_scan_options=fragment_scan_options,
             use_threads=use_threads,
             memory_pool=memory_pool,
+            **kwargs,
         ).to_batches()
 
     def iter_batches(self, columns=None, batch_size=DEFAULT_BATCH_SIZE):
@@ -496,9 +528,10 @@ class BatchReaderDataset(Dataset):
         Parameters
         ----------
         columns : list[str], optional
-            Names of columns to project. By default, all available columns are projected.
+            Names of columns to project. By default, all available columns are
+            projected.
         batch_size : int, optional
-            The maximum row count for scanned record batches, by default DEFAULT_BATCH_SIZE.
+            The maximum row count for scanned record batches.
 
         Returns
         -------
@@ -613,102 +646,3 @@ class BatchReaderDataset(Dataset):
             This method is not yet implemented.
         """
         raise NotImplementedError
-
-    def to_polars(self):
-        """
-        Convert the dataset to a Polars LazyFrame.
-
-        Returns
-        -------
-        polars.LazyFrame
-            A Polars LazyFrame representation of the dataset.
-        """
-        import polars as pl
-
-        return pl.scan_pyarrow_dataset(self)
-
-    def to_duckdb(self, conn):
-        """
-        Convert the dataset to a DuckDB Relation.
-
-        Parameters
-        ----------
-        conn : duckdb.DuckDBPyConnection
-            The DuckDB connection.
-
-        Returns
-        -------
-        duckdb.DuckDBPyRelation
-            A DuckDB Relation representation of the dataset.
-        """
-        return conn.from_arrow(self)
-
-    def to_dask(self, find_divisions=False):
-        """
-        Convert the dataset to a Dask DataFrame.
-
-        Parameters
-        ----------
-        find_divisions : bool, optional
-            If True, find divisions for the Dask DataFrame, by default False.
-
-        Returns
-        -------
-        dask.dataframe.DataFrame
-            A Dask DataFrame representation of the dataset.
-        """
-        import dask.dataframe as dd
-        import pandas as pd
-
-        def create_partition(fragment, row_offset=None, columns=None):
-            df = fragment.to_table(columns=columns).to_pandas()
-            if row_offset is not None:
-                df = df.set_index(pd.RangeIndex(row_offset, row_offset + len(df)))
-            return df
-
-        # TODO: A less hacky way to generate a "meta" pandas DataFrame for dask
-        # without having to materialize a full fragment.
-        meta = next(self._fragments[0]._make_batchreader(batch_size=1)).to_pandas()
-
-        # This does a full pass scan over all record batches to find the row
-        # offsets of each fragment. While a costly first step, it will endow
-        # the Dask DataFrame with "known divisions" which can be exploited for
-        # more efficient computations.
-        if find_divisions:
-            fragment_lengths = [frag.count_rows() for frag in self._fragments]
-            row_offsets = [0, *fragment_lengths[:-1]]
-            return dd.from_map(
-                create_partition,
-                self._fragments,
-                row_offsets,
-                divisions=fragment_lengths,
-                meta=meta,
-            )
-
-        return dd.from_map(create_partition, self._fragments, meta=meta)
-
-    def to_pandas(self):
-        """
-        Convert the dataset to a Pandas DataFrame.
-
-        Returns
-        -------
-        pandas.DataFrame
-            A Pandas DataFrame representation of the dataset.
-        """
-        return self.to_table().to_pandas()
-
-    def to_ipc(self) -> bytes:
-        """
-        Serialize the dataset as Arrow IPC.
-
-        Returns
-        -------
-        bytes
-            The serialized dataset in Arrow IPC format.
-        """
-        s = pa.BufferOutputStream()
-        with pa.ipc.new_stream(s, self.schema) as writer:
-            writer.write_table(self.to_table())
-        buffer = s.getvalue()
-        return buffer.to_pybytes()

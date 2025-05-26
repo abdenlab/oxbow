@@ -1,21 +1,21 @@
 FastaFile("data/does-not-exist.fasta"): |-
-    ->  oxbow._core.sequence.FastaFile.__init__(data/does-not-exist.fasta)
-        ->  oxbow._core.sequence.SequenceFile.__init__(data/does-not-exist.fasta, None, None, None, None, False)
-            ->  oxbow._core.base.DataSource.__init__(data/does-not-exist.fasta, None, None)
+    ->  oxbow._core.sequence.FastaFile.__init__("data/does-not-exist.fasta")
+        ->  oxbow._core.sequence.SequenceFile.__init__(source="data/does-not-exist.fasta", compressed=False, fields=None, regions=None, index=None, gzi=None, batch_size=1)
+            ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.fasta", None, 1)
             <-  None
         <-  None
     <-  None
 FastaFile("data/malformed.fasta"): |-
-    ->  oxbow._core.sequence.FastaFile.__init__(data/malformed.fasta)
-        ->  oxbow._core.sequence.SequenceFile.__init__(data/malformed.fasta, None, None, None, None, False)
-            ->  oxbow._core.base.DataSource.__init__(data/malformed.fasta, None, None)
+    ->  oxbow._core.sequence.FastaFile.__init__("data/malformed.fasta")
+        ->  oxbow._core.sequence.SequenceFile.__init__(source="data/malformed.fasta", compressed=False, fields=None, regions=None, index=None, gzi=None, batch_size=1)
+            ->  oxbow._core.base.DataSource.__init__("data/malformed.fasta", None, 1)
             <-  None
         <-  None
     <-  None
 FastaFile("data/sample.fasta"): |-
-    ->  oxbow._core.sequence.FastaFile.__init__(data/sample.fasta)
-        ->  oxbow._core.sequence.SequenceFile.__init__(data/sample.fasta, None, None, None, None, False)
-            ->  oxbow._core.base.DataSource.__init__(data/sample.fasta, None, None)
+    ->  oxbow._core.sequence.FastaFile.__init__("data/sample.fasta")
+        ->  oxbow._core.sequence.SequenceFile.__init__(source="data/sample.fasta", compressed=False, fields=None, regions=None, index=None, gzi=None, batch_size=1)
+            ->  oxbow._core.base.DataSource.__init__("data/sample.fasta", None, 1)
             <-  None
         <-  None
     <-  None

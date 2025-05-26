@@ -1,344 +1,251 @@
 """
-This module defines classes and functions for working with variant files, including VCF and BCF formats.
-
-Classes
--------
-VariantFile
-    Base class for variant files.
-BcfFile
-    Class for handling BCF files.
-VcfFile
-    Class for handling VCF files.
-
-Functions
----------
-from_bcf(uri, opener, fields, index, regions, info_fields, genotype_fields, samples, genotype_by)
-    Create a BcfFile instance from a BCF file.
-from_vcf(uri, opener, fields, index, regions, info_fields, genotype_fields, samples, genotype_by)
-    Create a VcfFile instance from a VCF file.
+DataSource classes for htslib variant call formats.
 """
 
 from __future__ import annotations
 
-from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Generator, Literal
+from typing import Any, Callable, Generator, IO, Literal, Self
+import pathlib
 
 import pyarrow as pa
 
-from oxbow._core.base import DataSource
-from oxbow._filetypes import FileType
+from oxbow._core.base import DataSource, DEFAULT_BATCH_SIZE
 from oxbow.oxbow import PyBcfScanner, PyVcfScanner
 
 
 class VariantFile(DataSource):
-    """
-    Base class for variant files.
+    def _batchreader_builder(
+        self,
+        scan_fn,
+        field_names: list[str],
+        region: str | None = None,
+    ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
+        def builder(columns, batch_size):
+            scan_kwargs = self._schema_kwargs.copy()
 
-    This class provides common functionality for handling VCF and BCF files.
+            if columns is not None:
+                n = len(columns)
+                scan_kwargs["fields"] = [col for col in columns if col in field_names]
+                n -= len(scan_kwargs["fields"])
 
-    Functions
-    ---------
-    from_bcf(uri, opener, fields, index, regions, info_fields, genotype_fields, samples, genotype_by)
-        Create a BcfFile instance from a BCF file.
-    from_vcf(uri, opener, fields, index, regions, info_fields, genotype_fields, samples, genotype_by)
-        Create a VcfFile instance from a VCF file.
-    """
+                if "info" not in columns:
+                    scan_kwargs["info_fields"] = []
+                elif scan_kwargs.get("info_fields") == []:
+                    raise ValueError(
+                        "Cannot select `info` column if no info fields are provided."
+                    )
+                else:
+                    n -= 1
+                if n == 0:
+                    scan_kwargs["samples"] = []
 
-    if TYPE_CHECKING:
-        from_bcf: BcfFile
-        from_vcf: VcfFile
-        _scanner: PyBcfScanner | PyVcfScanner
+            if region is not None:
+                scan_kwargs["region"] = region
+                scan_kwargs["index"] = self._index
+
+            stream = scan_fn(**scan_kwargs, batch_size=batch_size)
+            return pa.RecordBatchReader.from_stream(
+                data=stream,
+                schema=pa.schema(stream.schema),
+            )
+
+        return builder
 
     @property
-    def _scan_kwargs(self) -> dict[str, Any]:
-        return self.__scan_kwargs
-
-    @property
-    def _scanner_kwargs(self) -> dict[str, Any]:
-        return self.__scanner_kwargs
-
-    @property
-    def _schema_kwargs(self) -> dict[str, Any]:
-        return self.__schema_kwargs
-
-    @property
-    def _batch_readers(
+    def _batchreader_builders(
         self,
     ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
         if self._regions:
             for region in self._regions:
-                stream = partial(
-                    self._scanner.scan_query,
-                    region=region,
-                    index=self._index,
-                    **self._scan_kwargs,
+                scanner = self.scanner()
+                yield self._batchreader_builder(
+                    scanner.scan_query, scanner.field_names(), region
                 )
-                yield self._make_batch_reader(stream)
         else:
-            stream = partial(self._scanner.scan, **self._scan_kwargs)
-            yield self._make_batch_reader(stream)
+            scanner = self.scanner()
+            yield self._batchreader_builder(scanner.scan, scanner.field_names())
 
     def __init__(
         self,
-        uri,
-        opener=None,
+        source: str | pathlib.Path | Callable[[], IO[Any]],
+        compressed: bool = False,
+        *,
         fields=None,
-        index=None,
-        compressed=False,
-        regions=None,
         info_fields: list[str] | None = None,
-        genotype_fields: list[str] | None = None,
         samples: list[str] | None = None,
+        genotype_fields: list[str] | None = None,
         genotype_by: Literal["sample", "field"] = "sample",
+        regions: str | list[str] | None = None,
+        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
     ):
-        self._index = index
+        super().__init__(source, index, batch_size)
+
+        if isinstance(regions, str):
+            regions = [regions]
         self._regions = regions
-        super().__init__(uri, opener, fields)
-        self.__scanner_kwargs = dict(compressed=compressed)
-        if info_fields is None:
-            info_fields = self._scanner.info_field_names()
-        else:
-            info_fields = [
-                d for d in self._scanner.info_field_names() if d in info_fields
-            ]
-        if genotype_fields is None:
-            genotype_fields = self._scanner.genotype_field_names()
-        else:
-            genotype_fields = [
-                d for d in self._scanner.genotype_field_names() if d in genotype_fields
-            ]
-        if samples is None:
-            samples = self._scanner.sample_names()
-        else:
-            samples = [s for s in self._scanner.sample_names() if s in samples]
-        self.__schema_kwargs = dict(
+
+        self._scanner_kwargs = dict(compressed=compressed)
+        self._schema_kwargs = dict(
             fields=fields,
-            genotype_by=genotype_by,
-            genotype_fields=genotype_fields,
             info_fields=info_fields,
             samples=samples,
-        )
-        self.__scan_kwargs = dict(
-            fields=fields,
-            genotype_by=genotype_by,
             genotype_fields=genotype_fields,
-            info_fields=info_fields,
-            samples=samples,
+            genotype_by=genotype_by,
         )
 
-
-class BcfFile(VariantFile, file_type=FileType.BCF):
-    """
-    Class for handling BCF files.
-
-    Parameters
-    ----------
-    uri : str
-        The URI or file path to the BCF file.
-    opener : Callable, optional
-        A custom file opener, such as one for handling remote files.
-    fields : list[str], optional
-        Specific fields to include from the BCF file.
-    index : str, optional
-        Path to the index file associated with the BCF file.
-    regions : list[str], optional
-        Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
-    info_fields : list[str], optional
-        INFO fields to extract from the BCF file.
-    genotype_fields : list[str], optional
-        FORMAT fields to extract genotype-specific information.
-    samples : list[str], optional
-        A subset of samples to include.
-    genotype_by : Literal["sample", "field"], optional
-        Determines how genotype data is organized, by default "sample".
-    """
-
-    if TYPE_CHECKING:
-        _scanner: FileType.BCF.value
-
-    def __init__(
-        self,
-        uri,
-        opener=None,
-        fields=None,
-        index=None,
-        regions=None,
-        info_fields: list[str] | None = None,
-        genotype_fields: list[str] | None = None,
-        samples: list[str] | None = None,
-        genotype_by: Literal["sample"] | Literal["field"] = "sample",
-    ):
-        super().__init__(
-            uri=uri,
-            opener=opener,
-            fields=fields,
-            index=index,
-            compressed=True,
+    def regions(self, regions: str | list[str]) -> Self:
+        return type(self)(
+            self._src,
             regions=regions,
-            info_fields=info_fields,
-            genotype_fields=genotype_fields,
-            samples=samples,
-            genotype_by=genotype_by,
+            index=self._index_src,
+            batch_size=self._batch_size,
+            **self._scanner_kwargs,
+            **self._schema_kwargs,
         )
 
-    @property
-    def _scanner_kwargs(self) -> dict[str, Any]:
-        return {}
+
+class VcfFile(VariantFile):
+    _scanner_type = PyVcfScanner
 
 
-class VcfFile(VariantFile, file_type=FileType.VCF):
-    """
-    Class for handling VCF files.
-
-    Parameters
-    ----------
-    uri : str
-        The URI or file path to the VCF file.
-    opener : Callable, optional
-        A custom file opener, such as one for handling remote files.
-    fields : list[str], optional
-        Specific fields to include from the VCF file.
-    index : str, optional
-        Path to the index file associated with the VCF file.
-    regions : list[str], optional
-        Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
-    info_fields : list[str], optional
-        INFO fields to extract from the VCF file.
-    genotype_fields : list[str], optional
-        FORMAT fields to extract genotype-specific information.
-    samples : list[str], optional
-        A subset of samples to include.
-    genotype_by : Literal["sample", "field"], optional
-        Determines how genotype data is organized, by default "sample".
-    """
-
-    if TYPE_CHECKING:
-        _scanner: FileType.VCF.value
-
-
-def from_bcf(
-    uri: str,
-    opener: Callable | None = None,
-    fields: list[str] | None = None,
-    index: str | None = None,
-    regions: list[str] | None = None,
-    info_fields: list[str] | None = None,
-    genotype_fields: list[str] | None = None,
-    samples: list[str] | None = None,
-    genotype_by: Literal["sample", "field"] = "sample",
-) -> BcfFile:
-    """
-    Create a `BcfFile` object from a BCF (Binary Call Format) file.
-
-    Parameters
-    ----------
-    uri : str
-        The URI or file path to the BCF file.
-    opener : Callable, optional
-        A custom file opener, such as one for handling remote files.
-    fields : list[str], optional
-        Specific fields to include from the BCF file.
-    index : str, optional
-        Path to the index file associated with the BCF file.
-    regions : list[str], optional
-        Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
-    info_fields : list[str], optional
-        INFO fields to extract from the BCF file.
-    genotype_fields : list[str], optional
-        FORMAT fields to extract genotype-specific information.
-    samples : list[str], optional
-        A subset of samples to include.
-    genotype_by : Literal["sample", "field"], optional
-        Determines how genotype data is organized, by default "sample".
-
-    Returns
-    -------
-    BcfFile
-        An object representing the BCF file, ready for querying and analysis.
-
-    Notes
-    -----
-    The BCF format is a binary representation of the Variant Call Format (VCF), designed
-    for efficient storage and processing of genomic variant data. It is commonly used in
-    large-scale sequencing projects.
-
-    See Also
-    --------
-    from_vcf : Create a `VcfFile` object from a VCF file.
-    """
-    return BcfFile(
-        uri=uri,
-        opener=opener,
-        fields=fields,
-        index=index,
-        regions=regions,
-        info_fields=info_fields,
-        genotype_fields=genotype_fields,
-        samples=samples,
-        genotype_by=genotype_by,
-    )
+class BcfFile(VariantFile):
+    _scanner_type = PyBcfScanner
 
 
 def from_vcf(
-    uri: str,
-    opener: Callable | None = None,
-    fields: list[str] | None = None,
-    index: str | None = None,
-    regions: list[str] | None = None,
+    source: str | pathlib.Path | Callable[[], IO[Any]],
     compressed: bool = False,
+    *,
+    fields: list[str] | None = None,
     info_fields: list[str] | None = None,
-    genotype_fields: list[str] | None = None,
     samples: list[str] | None = None,
+    genotype_fields: list[str] | None = None,
     genotype_by: Literal["sample", "field"] = "sample",
+    regions: str | list[str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> VcfFile:
     """
-    Create a `VcfFile` object from a VCF (Variant Call Format) file.
+    Create a VCF (Variant Call Format) file data source.
 
     Parameters
     ----------
-    uri : str
-        The URI or file path to the VCF file.
-    opener : Callable, optional
-        A custom file opener, such as one for handling remote files.
+    source : str, pathlib.Path, or Callable
+        The URI or path to the VCF file, or a callable that opens the file
+        as a file-like object.
+    compressed : bool, optional
+        Whether the VCF file is compressed, by default False.
     fields : list[str], optional
         Specific fields to include from the VCF file.
-    index : str, optional
-        Path to the index file associated with the VCF file.
-    regions : list[str], optional
-        Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
     info_fields : list[str], optional
         INFO fields to extract from the VCF file.
-    genotype_fields : list[str], optional
-        FORMAT fields to extract genotype-specific information.
     samples : list[str], optional
         A subset of samples to include.
+    genotype_fields : list[str], optional
+        FORMAT fields to extract genotype-specific information.
     genotype_by : Literal["sample", "field"], optional
         Determines how genotype data is organized, by default "sample".
+    regions : list[str], optional
+        Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
+    index : str, pathlib.Path, or Callable, optional
+        The index file associated with the VCF file.
+    batch_size : int, optional
+        The number of records to read in each batch.
 
     Returns
     -------
     VcfFile
-        An object representing the VCF file, ready for querying and analysis.
+        A data source object representing the VCF file.
 
     Notes
     -----
-    The Variant Call Format (VCF) is a text-based format used to store information about
-    genomic variants. It is widely used in bioinformatics for storing and sharing variant
-    data from sequencing projects.
+    The Variant Call Format (VCF) is a text-based format used to store
+    information about genomic variants. It is widely used in bioinformatics
+    for storing and sharing variant data from sequencing projects.
 
     See Also
     --------
-    from_bcf : Create a `BcfFile` object from a BCF file.
+    from_bcf : Create a BCF file data source.
     """
     return VcfFile(
-        uri=uri,
-        opener=opener,
-        fields=fields,
-        index=index,
-        regions=regions,
+        source=source,
         compressed=compressed,
+        fields=fields,
         info_fields=info_fields,
-        genotype_fields=genotype_fields,
         samples=samples,
+        genotype_fields=genotype_fields,
         genotype_by=genotype_by,
+        regions=regions,
+        index=index,
+        batch_size=batch_size,
+    )
+
+
+def from_bcf(
+    source: str | pathlib.Path | Callable[[], IO[Any]],
+    compressed: bool = True,
+    *,
+    fields: list[str] | None = None,
+    info_fields: list[str] | None = None,
+    samples: list[str] | None = None,
+    genotype_fields: list[str] | None = None,
+    genotype_by: Literal["sample", "field"] = "sample",
+    regions: str | list[str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    batch_size: int = DEFAULT_BATCH_SIZE,
+) -> BcfFile:
+    """
+    Create a BCF (Binary Call Format) file data source.
+
+    Parameters
+    ----------
+    source : str, pathlib.Path, or Callable
+        The URI or path to the VCF file, or a callable that opens the file
+        as a file-like object.
+    compressed : bool, optional
+        Whether the BCF file is compressed, by default True.
+    fields : list[str], optional
+        Specific fields to include from the BCF file.
+    info_fields : list[str], optional
+        INFO fields to extract from the BCF file.
+    samples : list[str], optional
+        A subset of samples to include.
+    genotype_fields : list[str], optional
+        FORMAT fields to extract genotype-specific information.
+    genotype_by : Literal["sample", "field"], optional
+        Determines how genotype data is organized, by default "sample".
+    regions : list[str], optional
+        Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
+    index : str, optional
+        The index file associated with the BCF file.
+    batch_size : int, optional
+        The number of records to read in each batch.
+
+    Returns
+    -------
+    BcfFile
+        A data source object representing the BCF file.
+
+    Notes
+    -----
+    The BCF format is a binary representation of the Variant Call Format (VCF),
+    designed for efficient storage and processing of genomic variant data.
+    It is commonly used in large-scale sequencing projects.
+
+    See Also
+    --------
+    from_vcf : Create a VCF file data source.
+    """
+    return BcfFile(
+        source=source,
+        compressed=compressed,
+        fields=fields,
+        info_fields=info_fields,
+        samples=samples,
+        genotype_fields=genotype_fields,
+        genotype_by=genotype_by,
+        regions=regions,
+        index=index,
+        batch_size=batch_size,
     )

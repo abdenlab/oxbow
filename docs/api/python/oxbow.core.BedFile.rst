@@ -16,8 +16,17 @@
       ~BedFile.__init__
       ~BedFile.batches
       ~BedFile.dataset
+      ~BedFile.dd
       ~BedFile.fragments
-      ~BedFile.select
+      ~BedFile.pd
+      ~BedFile.pl
+      ~BedFile.regions
+      ~BedFile.scanner
+      ~BedFile.to_dask
+      ~BedFile.to_duckdb
+      ~BedFile.to_ipc
+      ~BedFile.to_pandas
+      ~BedFile.to_polars
    
    
 
@@ -27,7 +36,7 @@
 
    .. autosummary::
    
-      ~BedFile.fields
+      ~BedFile.columns
       ~BedFile.schema
    
    

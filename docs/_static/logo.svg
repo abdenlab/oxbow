@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60.56 60.56">
+<defs>
+  <style>
+    @media (prefers-color-scheme: dark){
+      .darkable {
+        filter: invert(100%);
+      }
+    }
+  </style>
+</defs>
+  <g id="Layer_1-2">
+    <path 
+      class="darkable"
+      fill="none"
+      stroke="#222"
+      stroke-width="5px"
+      d="m49.61,50.24c-11.02,10.67-28.61,10.39-39.28-.63C-.35,38.59-.07,21,10.96,10.32,21.98-.35,39.57-.07,50.24,10.96"
+    />
+    <path
+      class="darkable"
+      fill="none"
+      stroke="#222"
+      stroke-width="5px"
+      stroke-dasharray="0 0 5.38 5.38"
+      d="m55.09,17.75c4.51,8.93,3.88,19.76-1.82,28.14"
+    />
+    <polyline 
+      class="darkable" 
+      fill="none" 
+      stroke="#222"
+      stroke-width="5px"
+      stroke-linecap="round"
+      points="31.42 16.43 45.27 30.28 31.42 44.13"
+    />
+    <polyline 
+      class="darkable" 
+      fill="none" 
+      stroke="#222"
+      stroke-width="5px"
+      stroke-linecap="round"
+      points="18.43 16.43 32.28 30.28 18.43 44.13"
+    />
+  </g>
+</svg>

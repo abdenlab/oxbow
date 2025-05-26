@@ -1,272 +1,235 @@
 """
-This module defines classes and functions for working with sequence files, including FASTA and FASTQ formats.
-
-Classes
--------
-SequenceFile
-    Base class for sequence files.
-FastaFile
-    Class for handling FASTA files.
-FastqFile
-    Class for handling FASTQ files.
-
-Functions
----------
-from_fasta(uri, opener, fields, index, gzi, compressed, regions)
-    Create a FastaFile instance from a FASTA file.
-from_fastq(uri, opener, fields, index, gzi, compressed)
-    Create a FastqFile instance from a FASTQ file.
+DataSource classes for sequence file formats, including FASTA and FASTQ.
 """
 
 from __future__ import annotations
 
-from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Generator
+from typing import Any, Callable, Generator, IO, Self
+import pathlib
 
 import pyarrow as pa
 
-from oxbow._core.base import DataSource
-from oxbow._filetypes import FileType
-from oxbow._pyarrow import BatchReaderDataset
+from oxbow._core.base import DataSource, DEFAULT_BATCH_SIZE
 from oxbow.oxbow import PyFastaScanner, PyFastqScanner
 
 
 class SequenceFile(DataSource):
-    """
-    Base class for sequence files.
-
-    This class provides common functionality for handling FASTA and FASTQ files.
-
-    Functions
-    ---------
-    from_fasta(uri, opener, fields, index, gzi, compressed, regions)
-        Create a FastaFile instance from a FASTA file.
-    from_fastq(uri, opener, fields, index, gzi, compressed)
-        Create a FastqFile instance from a FASTQ file.
-    """
-
-    if TYPE_CHECKING:
-        from_fasta: FastaFile
-        from_fastq: FastqFile
-        _scanner: PyFastaScanner | PyFastqScanner
-
     @property
-    def _scan_kwargs(self) -> dict[str, Any]:
-        return self.__scan_kwargs
+    def _gzi(self) -> str | None:
+        return self._gzi_src() if self._gzi_src else None
 
-    @property
-    def _scanner_kwargs(self) -> dict[str, Any]:
-        return self.__scanner_kwargs
-
-    @property
-    def _schema_kwargs(self) -> dict[str, Any]:
-        return self.__schema_kwargs
-
-    def __init__(
+    def _batchreader_builder(
         self,
-        uri,
-        opener=None,
-        fields=None,
-        index=None,
-        gzi=None,
-        compressed=False,
-    ):
-        self._index = index
-        self._gzi = gzi
-        self.__schema_kwargs = dict(fields=fields)
-        self.__scan_kwargs = dict(fields=fields)
-        self.__scanner_kwargs = dict(compressed=compressed)
-        super().__init__(uri, opener, fields)
+    ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
+        def builder(columns, batch_size):
+            scanner = self.scanner()
+            scan_kwargs = self._schema_kwargs.copy()
+            field_names = scanner.field_names()
 
-    def select(self, *args, gzi=None, index=None, **kwargs) -> BatchReaderDataset:
-        return super().select(
-            *args, gzi=gzi or self._gzi, index=index or self._index, **kwargs
-        )
+            if columns is not None:
+                scan_kwargs["fields"] = [col for col in columns if col in field_names]
 
+            if self._regions is not None:
+                scan_kwargs["regions"] = self._regions
+                scan_kwargs["index"] = self._index
+                scan_kwargs["gzi"] = self._gzi
+                scan_fn = scanner.scan_query
+            else:
+                scan_fn = scanner.scan
 
-class FastaFile(SequenceFile, file_type=FileType.FASTA):
-    """
-    Class for handling FASTA files.
-
-    Parameters
-    ----------
-    uri : str
-        The URI of the FASTA file.
-    opener : Callable, optional
-        A callable to open the file.
-    fields : list[str], optional
-        Names of the fields to project.
-    index : str, optional
-        Path to the FAI index file.
-    gzi : str, optional
-        Path to the GZI index file for compressed sources.
-    compressed : bool, optional
-        Whether the source is compressed, by default False.
-    regions : list[tuple[int, int]], optional
-        Genomic regions to query.
-    """
-
-    if TYPE_CHECKING:
-        _scanner: FileType.FASTA.value
-
-    @property
-    def _batch_readers(
-        self,
-    ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
-        if self._regions:
-            stream = partial(
-                self._scanner.scan_query,
-                regions=self._regions,
-                index=self._index,
-                gzi=self._gzi,
+            stream = scan_fn(**scan_kwargs, batch_size=batch_size)
+            return pa.RecordBatchReader.from_stream(
+                data=stream,
+                schema=pa.schema(stream.schema),
             )
-            yield self._make_batch_reader(stream)
-        else:
-            stream = self._scanner.scan
-            yield self._make_batch_reader(stream)
+
+        return builder
+
+    @property
+    def _batchreader_builders(
+        self,
+    ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
+        # Right now, we always produce one fragment, even if multiple regions
+        # are requested from a FASTA, as each region corresponds to a single
+        # record.
+        yield self._batchreader_builder()
 
     def __init__(
         self,
-        uri,
-        opener=None,
-        fields=None,
-        index=None,
-        gzi=None,
-        compressed=False,
-        regions=None,
+        source,
+        compressed,
+        fields,
+        regions,
+        index,
+        gzi,
+        batch_size,
     ):
-        if not compressed and gzi:
-            raise ValueError("Got a GZI index for an uncompressed FASTA file")
-        if regions:
-            if not index:
-                raise ValueError(
-                    "A FAI index file is required for FASTA when regions are specified."
-                )
-            if compressed and not gzi:
-                raise ValueError(
-                    "A GZI index file is required for BGZF-compressed FASTA when regions are specified."
-                )
-        self._regions = regions
-        super().__init__(uri, opener, fields, index, gzi, compressed)
+        super().__init__(source, index, batch_size)
+        if isinstance(gzi, (str, pathlib.Path)):
+            gzi = str(gzi)
+            self._gzi_src = lambda: gzi
+        elif callable(gzi) or gzi is None:
+            self._gzi_src = gzi
+        else:
+            raise TypeError(
+                "`gzi` must be a str, pathlib.Path, or a callable returning "
+                "an IO stream"
+            )
 
-    def select(self, *args, regions=None, **kwargs) -> BatchReaderDataset:
-        return super().select(
-            *args, regions=regions if regions is not None else self._regions, **kwargs
+        if isinstance(regions, str):
+            regions = [regions]
+        self._regions = regions
+
+        self._scanner_kwargs = dict(compressed=compressed)
+        self._schema_kwargs = dict(fields=fields)
+
+    def regions(self, regions: str | list[str]) -> Self:
+        return type(self)(
+            self._src,
+            regions=regions,
+            index=self._index_src,
+            gzi=self._gzi_src,
+            batch_size=self._batch_size,
+            **self._scanner_kwargs,
+            **self._schema_kwargs,
         )
 
 
-class FastqFile(SequenceFile, file_type=FileType.FASTQ):
-    """
-    Class for handling FASTQ files.
+class FastaFile(SequenceFile):
+    _scanner_type = PyFastaScanner
 
-    Parameters
-    ----------
-    uri : str
-        The URI of the FASTQ file.
-    opener : Callable, optional
-        A callable to open the file.
-    fields : list[str], optional
-        Names of the fields to project.
-    index : str, optional
-        Path to the index file.
-    gzi : str, optional
-        Path to the GZI index file for compressed sources.
-    compressed : bool, optional
-        Whether the source is compressed, by default False.
-    """
-
-    if TYPE_CHECKING:
-        _scanner: FileType.FASTQ.value
-
-    @property
-    def _batch_readers(
+    def __init__(
         self,
-    ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
-        stream = self._scanner.scan
-        yield self._make_batch_reader(stream)
+        source: str | pathlib.Path | Callable[[], IO[Any]],
+        compressed: bool = False,
+        *,
+        fields: list[str] | None = None,
+        regions: str | list[str] | None = None,
+        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        gzi: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        batch_size: int = 1,
+    ):
+        super().__init__(
+            source=source,
+            compressed=compressed,
+            fields=fields,
+            regions=regions,
+            index=index,
+            gzi=gzi,
+            batch_size=batch_size,
+        )
+
+
+class FastqFile(SequenceFile):
+    _scanner_type = PyFastqScanner
+
+    def __init__(
+        self,
+        source: str | pathlib.Path | Callable[[], IO[Any]],
+        compressed: bool = False,
+        *,
+        fields: list[str] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+    ):
+        super().__init__(
+            source=source,
+            compressed=compressed,
+            fields=fields,
+            regions=None,
+            index=None,
+            gzi=None,
+            batch_size=batch_size,
+        )
+
+    def regions(self, regions: str | list[str]):
+        raise NotImplementedError("FastqFile does not support genomic range queries.")
 
 
 def from_fasta(
-    uri: str,
-    opener: Callable | None = None,
-    fields: list[str] | None = None,
-    index: str | None = None,
-    gzi: str | None = None,
+    source: str | pathlib.Path | Callable[[], IO[Any]],
     compressed: bool = False,
+    *,
+    fields: list[str] | None = None,
     regions: list[tuple[int, int]] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    gzi: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    batch_size: int = 1,
 ) -> FastaFile:
     """
-    Create a FastaFile instance from a FASTA file.
+    Create a FASTA file data source.
 
     Parameters
     ----------
-    uri : str
-        The URI of the FASTA file.
-    opener : Callable, optional
-        A callable to open the file.
-    fields : list[str], optional
-        Names of the fields to project.
-    index : str, optional
-        Path to the FAI index file.
-    gzi : str, optional
-        Path to the GZI index file for compressed sources.
+    source : str, pathlib.Path, or Callable
+        The URI or path to the FASTA file, or a callable that opens the file
+        as a file-like object.
     compressed : bool, optional
         Whether the source is compressed, by default False.
+    fields : list[str], optional
+        Names of the fields to project.
     regions : list[tuple[int, int]], optional
         Genomic regions to query.
+    index : str, optional
+        The FAI index file.
+    gzi : str, optional
+        The GZI index file for compressed sources.
+    batch_size : int, optional [default: 1]
+        The size of the batches to read. Since sequences for FASTA files
+        can be very long, the default batch size is set to 1 to generate one
+        sequence record at a time.
 
     Returns
     -------
     FastaFile
-        An instance of the FastaFile class.
+
+    See also
+    --------
+    from_fastq : Create a FASTQ file data source.
     """
     return FastaFile(
-        uri=uri,
-        opener=opener,
+        source=source,
+        compressed=compressed,
         fields=fields,
+        regions=regions,
         index=index,
         gzi=gzi,
-        compressed=compressed,
-        regions=regions,
+        batch_size=batch_size,
     )
 
 
 def from_fastq(
-    uri: str,
-    opener: Callable | None = None,
-    fields: list[str] | None = None,
-    index: str | None = None,
-    gzi: str | None = None,
+    source: str | pathlib.Path | Callable[[], IO[Any]],
     compressed: bool = False,
+    *,
+    fields: list[str] | None = None,
+    batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> FastqFile:
     """
-    Create a FastqFile instance from a FASTQ file.
+    Create a FASTQ file data source.
 
     Parameters
     ----------
-    uri : str
-        The URI of the FASTQ file.
-    opener : Callable, optional
-        A callable to open the file.
-    fields : list[str], optional
-        Names of the fields to project.
-    index : str, optional
-        Path to the index file.
-    gzi : str, optional
-        Path to the GZI index file for compressed sources.
+    source : str, pathlib.Path, or Callable
+        The URI or path to the FASTQ file, or a callable that opens the file
+        as a file-like object.
     compressed : bool, optional
         Whether the source is compressed, by default False.
+    fields : list[str], optional
+        Names of the fields to project.
+    batch_size : int, optional
+        The size of the batches to read.
 
     Returns
     -------
     FastqFile
-        An instance of the FastqFile class.
+
+    See also
+    --------
+    from_fasta : Create a FASTA file data source.
     """
     return FastqFile(
-        uri=uri,
-        opener=opener,
-        fields=fields,
-        index=index,
-        gzi=gzi,
+        source=source,
         compressed=compressed,
+        fields=fields,
+        batch_size=batch_size,
     )

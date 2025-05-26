@@ -1,0 +1,24 @@
+- !!python/tuple
+    - AD
+    - .
+    - Integer
+- !!python/tuple
+    - DP
+    - '1'
+    - Integer
+- !!python/tuple
+    - GQ
+    - '1'
+    - Integer
+- !!python/tuple
+    - GT
+    - '1'
+    - String
+- !!python/tuple
+    - PL
+    - G
+    - Integer
+- !!python/tuple
+    - TP
+    - '1'
+    - Integer

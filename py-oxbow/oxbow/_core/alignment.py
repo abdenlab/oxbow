@@ -1,285 +1,225 @@
 """
-This module defines classes and functions for working with alignment files, including BAM and SAM formats.
-
-Classes
--------
-AlignmentFile
-    Base class for alignment files.
-BamFile
-    Class for handling BAM files.
-SamFile
-    Class for handling SAM files.
-
-Functions
----------
-from_bam(uri, opener, fields, index, compressed, regions, tag_defs, tag_scan_rows)
-    Create a BamFile instance from a BAM file.
-from_sam(uri, opener, fields, index, compressed, regions, tag_defs, tag_scan_rows)
-    Create a SamFile instance from a SAM file.
+DataSource classes for htslib alignment formats.
 """
 
 from __future__ import annotations
 
-from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Generator
+from typing import Any, Callable, Generator, IO, Self
+import pathlib
 
 import pyarrow as pa
 
-from oxbow._core.base import DataSource
-from oxbow._filetypes import FileType
+from oxbow._core.base import DataSource, DEFAULT_BATCH_SIZE
 from oxbow.oxbow import PyBamScanner, PySamScanner
 
 
 class AlignmentFile(DataSource):
-    """
-    Base class for alignment files.
+    def _batchreader_builder(
+        self,
+        scan_fn: Callable,
+        field_names: list[str],
+        region: str | None = None,
+    ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
+        def builder(columns, batch_size):
+            scan_kwargs = self._schema_kwargs.copy()
 
-    This class provides common functionality for handling BAM and SAM files.
+            if columns is not None:
+                scan_kwargs["fields"] = [col for col in columns if col in field_names]
+                if "tags" not in columns:
+                    scan_kwargs["tag_defs"] = []
+                elif scan_kwargs.get("tag_defs") == []:
+                    raise ValueError(
+                        "Cannot select `tags` column if no tag definitions are "
+                        "provided."
+                    )
 
-    Functions
-    ---------
-    from_bam(uri, opener, fields, index, compressed, regions, tag_defs, tag_scan_rows)
-        Create a BamFile instance from a BAM file.
-    from_sam(uri, opener, fields, index, compressed, regions, tag_defs, tag_scan_rows)
-        Create a SamFile instance from a SAM file.
-    """
+            if region is not None:
+                scan_kwargs["region"] = region
+                scan_kwargs["index"] = self._index
 
-    if TYPE_CHECKING:
-        _scanner: PyBamScanner | PySamScanner
-        from_bam: BamFile
-        from_sam: SamFile
+            stream = scan_fn(**scan_kwargs, batch_size=batch_size)
+            return pa.RecordBatchReader.from_stream(
+                data=stream,
+                schema=pa.schema(stream.schema),
+            )
+
+        return builder
 
     @property
-    def _scan_kwargs(self) -> dict[str, Any]:
-        return self.__scan_kwargs
-
-    @property
-    def _scanner_kwargs(self) -> dict[str, Any]:
-        return self.__scanner_kwargs
-
-    @property
-    def _schema_kwargs(self) -> dict[str, Any]:
-        return self.__schema_kwargs
-
-    @property
-    def _batch_readers(
+    def _batchreader_builders(
         self,
     ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
         if self._regions:
             for region in self._regions:
+                scanner = self.scanner()
                 if region == "*":
-                    stream = partial(
-                        self._scanner.scan_unmapped,
-                        index=self._index,
-                        **self._scan_kwargs,
+                    yield self._batchreader_builder(
+                        scanner.scan_unmapped, scanner.field_names()
                     )
                 else:
-                    stream = partial(
-                        self._scanner.scan_query,
-                        region=region,
-                        index=self._index,
-                        **self._scan_kwargs,
+                    yield self._batchreader_builder(
+                        scanner.scan_query, scanner.field_names(), region
                     )
-                yield self._make_batch_reader(stream)
-
         else:
-            stream = partial(
-                self._scanner.scan,
-                **self._scan_kwargs,
-            )
-            yield self._make_batch_reader(stream)
+            scanner = self.scanner()
+            yield self._batchreader_builder(scanner.scan, scanner.field_names())
 
     def __init__(
         self,
-        uri: str,
-        opener: Callable | None = None,
-        fields: list[str] | None = None,
-        index: Any = None,
+        source: str | pathlib.Path | Callable[[], IO[Any]],
         compressed: bool = False,
-        regions: str | list[str] | None = None,
+        *,
+        fields: list[str] | None = None,
         tag_defs: list[tuple[str, str]] | None = None,
         tag_scan_rows: int = 1024,
-    ) -> None:
-        """
-        Initialize an AlignmentFile instance.
+        regions: str | list[str] | None = None,
+        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+    ):
+        super().__init__(source, index, batch_size)
 
-        Parameters
-        ----------
-        uri : str
-            The URI or path to the alignment file.
-        opener : Callable, optional
-            A callable to open the file, by default None.
-        fields : list[str], optional
-            Specific fields to extract from the file, by default None.
-        index : Any, optional
-            Index for the file, by default None.
-        compressed : bool, optional
-            Whether the file is compressed, by default False.
-        regions : str | list[str], optional
-            Specific regions to extract from the file, by default None.
-        tag_defs : Any, optional
-            Definitions for custom tags. If None, the scanner will scan the
-            first `tag_scan_rows` rows to find tag definitions.
-        tag_scan_rows : int, optional
-            Number of rows to scan for tag definitions, if tag_defs is None.
-            By default 1024.
-        """
-        super().__init__(uri, opener, fields)
-        self._index = index
         if isinstance(regions, str):
             regions = [regions]
         self._regions = regions
-        self.__scanner_kwargs = dict(compressed=compressed)
+
+        self._scanner_kwargs = dict(compressed=compressed)
         if tag_defs is None:
-            tag_defs = self._scanner.tag_defs(tag_scan_rows)
-        self.__scan_kwargs = dict(fields=fields, tag_defs=tag_defs)
-        self.__schema_kwargs = dict(fields=fields, tag_defs=tag_defs)
+            tag_defs = self.scanner().tag_defs(tag_scan_rows)
+        self._schema_kwargs = dict(fields=fields, tag_defs=tag_defs)
+
+    def regions(self, regions: str | list[str]) -> Self:
+        return type(self)(
+            self._src,
+            regions=regions,
+            index=self._index_src,
+            batch_size=self._batch_size,
+            **self._scanner_kwargs,
+            **self._schema_kwargs,
+        )
 
 
-class BamFile(AlignmentFile, file_type=FileType.BAM):
-    """
-    Class for handling BAM files.
-
-    Parameters
-    ----------
-    *args : Any
-        Positional arguments for the parent class.
-    compressed : bool, optional
-        Whether the BAM file is compressed, by default True.
-    **kwargs : Any
-        Keyword arguments for the parent class.
-    """
-
-    if TYPE_CHECKING:
-        _scanner: PyBamScanner
-
-    def __init__(self, *args: Any, compressed: bool = True, **kwargs: Any) -> None:
-        """
-        Initialize a BamFile instance.
-
-        Parameters
-        ----------
-        *args : Any
-            Positional arguments for the parent class.
-        compressed : bool, optional
-            Whether the BAM file is compressed, by default True.
-        **kwargs : Any
-            Keyword arguments for the parent class.
-        """
-        super().__init__(*args, compressed=compressed, **kwargs)
+class SamFile(AlignmentFile):
+    _scanner_type = PySamScanner
 
 
-class SamFile(AlignmentFile, file_type=FileType.SAM):
-    """
-    Class for handling SAM files.
-    """
-
-    if TYPE_CHECKING:
-        _scanner: PySamScanner
-
-
-def from_bam(
-    uri: str,
-    opener: Callable | None = None,
-    fields: list[str] | None = None,
-    index: str | None = None,
-    compressed: bool = True,
-    regions: str | list[str] | None = None,
-    tag_defs: Any = None,
-    tag_scan_rows: int = 1024,
-) -> BamFile:
-    """
-    Create a BamFile instance from a BAM file.
-
-    Parameters
-    ----------
-    uri : str
-        The URI or path to the BAM file.
-    opener : Callable, optional
-        A callable to open the file, by default None.
-    fields : list[str], optional
-        Specific fields to extract from the BAM file, by default None.
-    index : str, optional
-        Index for the BAM file, by default None.
-    compressed : bool, optional
-        Whether the BAM file is compressed, by default True.
-    regions : str | list[str], optional
-        Specific regions to extract from the BAM file, by default None.
-    tag_defs : Any, optional
-        Definitions for custom tags, by default None.
-    tag_scan_rows : int, optional
-        Number of rows to scan for tags, by default 1024.
-
-    Returns
-    -------
-    BamFile
-        An instance of BamFile representing the parsed BAM file.
-
-    Notes
-    -----
-    BAM (Binary Alignment Map) is a compressed binary representation of SAM files.
-    """
-    return BamFile(
-        uri=uri,
-        opener=opener,
-        fields=fields,
-        index=index,
-        compressed=compressed,
-        regions=regions,
-        tag_defs=tag_defs,
-        tag_scan_rows=tag_scan_rows,
-    )
+class BamFile(AlignmentFile):
+    _scanner_type = PyBamScanner
 
 
 def from_sam(
-    uri: str,
-    opener: Callable | None = None,
-    fields: list[str] | None = None,
-    index: Any = None,
+    source: str | pathlib.Path | Callable[[], IO[Any]],
     compressed: bool = False,
-    regions: str | list[str] | None = None,
+    *,
+    fields: list[str] | None = None,
     tag_defs: Any = None,
     tag_scan_rows: int = 1024,
+    regions: str | list[str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> SamFile:
     """
-    Create a SamFile instance from a SAM file.
+    Create a SAM (Sequence Alignment Map) file data source.
 
     Parameters
     ----------
-    uri : str
-        The URI or path to the SAM file.
-    opener : Callable, optional
-        A callable to open the file, by default None.
-    fields : list[str], optional
-        Specific fields to extract from the SAM file, by default None.
-    index : Any, optional
-        Index for the SAM file, by default None.
+    source : str, pathlib.Path, or Callable
+        The URI or path to the SAM file, or a callable that opens the file
+        as a file-like object.
     compressed : bool, optional
         Whether the SAM file is compressed, by default False.
-    regions : str | list[str], optional
-        Specific regions to extract from the SAM file, by default None.
+    fields : list[str], optional
+        Specific fields to extract from the SAM file, by default None.
     tag_defs : Any, optional
         Definitions for custom tags, by default None.
     tag_scan_rows : int, optional
         Number of rows to scan for tags, by default 1024.
+    regions : str | list[str], optional
+        Specific regions to extract from the SAM file, by default None.
+    index : str, pathlib.Path, or Callable, optional
+        Index file for the SAM file, by default None.
+    batch_size : int, optional
+        The size of the batches to read.
 
     Returns
     -------
     SamFile
-        An instance of SamFile representing the parsed SAM file.
+        A data source object representing the SAM file.
 
     Notes
     -----
-    SAM (Sequence Alignment Map) is a widely used text-based format for storing
-    biological sequences aligned to a reference sequence.
+    SAM is a widely used text-based format for storing biological sequences
+    aligned to a reference sequence.
+
+    See also
+    --------
+    from_bam : Create a BAM file data source.
     """
     return SamFile(
-        uri=uri,
-        opener=opener,
-        fields=fields,
-        index=index,
+        source=source,
         compressed=compressed,
-        regions=regions,
+        fields=fields,
         tag_defs=tag_defs,
         tag_scan_rows=tag_scan_rows,
+        regions=regions,
+        index=index,
+        batch_size=batch_size,
+    )
+
+
+def from_bam(
+    source: str | pathlib.Path | Callable[[], IO[Any]],
+    compressed: bool = True,
+    *,
+    fields: list[str] | None = None,
+    tag_defs: Any = None,
+    tag_scan_rows: int = 1024,
+    regions: str | list[str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    batch_size: int = DEFAULT_BATCH_SIZE,
+) -> BamFile:
+    """
+    Create a BAM (Binary Alignment Map) file data source.
+
+    Parameters
+    ----------
+    source : str, pathlib.Path, or Callable
+        The URI or path to the BAM file, or a callable that opens the file
+        as a file-like object.
+    compressed : bool, optional
+        Whether the BAM file is compressed, by default True.
+    fields : list[str], optional
+        Specific fields to extract from the BAM file, by default None.
+    tag_defs : Any, optional
+        Definitions for custom tags, by default None.
+    tag_scan_rows : int, optional
+        Number of rows to scan for tags, by default 1024.
+    regions : str | list[str], optional
+        Specific regions to extract from the BAM file, by default None.
+    index : str, pathlib.Path, or Callable, optional
+        Index file for the BAM file, by default None.
+    batch_size : int, optional
+        The size of the batches to read.
+
+    Returns
+    -------
+    BamFile
+         A data source object representing the BAM file.
+
+    Notes
+    -----
+    BAM is a compressed binary representation of SAM files.
+
+    See also
+    --------
+    from_sam : Create a SAM file data source.
+    """
+    return BamFile(
+        source=source,
+        compressed=compressed,
+        fields=fields,
+        tag_defs=tag_defs,
+        tag_scan_rows=tag_scan_rows,
+        regions=regions,
+        index=index,
+        batch_size=batch_size,
     )

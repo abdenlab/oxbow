@@ -1,0 +1,920 @@
+region="X", index="data/sample.vcf.gz.csi", batch_size=2, samples=["NA12878i", "NA12891", "NA12892"]:
+    NA12878i:
+    -   AD:
+        - 55
+        - 7
+        DP: 62
+        GQ: 68
+        GT:
+            allele:
+            - 0
+            - 0
+            phased:
+            - true
+            - true
+        PL:
+        - 0
+        - 68
+        - 1790
+        TP: 67
+    -   AD:
+        - 119
+        - 20
+        DP: 139
+        GQ: 99
+        GT:
+            allele:
+            - 0
+            - 1
+            phased:
+            - false
+            - false
+        PL:
+        - 200
+        - 0
+        - 3522
+        TP: 120
+    NA12891:
+    -   AD:
+        - 46
+        - 0
+        DP: 46
+        GQ: 99
+        GT:
+            allele:
+            - 0
+            - 0
+            phased:
+            - true
+            - true
+        PL:
+        - 0
+        - 139
+        - 1867
+        TP: 67
+    -   AD:
+        - 67
+        - 13
+        DP: 80
+        GQ: 99
+        GT:
+            allele:
+            - 0
+            - 1
+            phased:
+            - false
+            - false
+        PL:
+        - 121
+        - 0
+        - 2042
+        TP: 120
+    NA12892:
+    -   AD:
+        - 41
+        - 11
+        DP: 52
+        GQ: 99
+        GT:
+            allele:
+            - 0
+            - 1
+            phased:
+            - true
+            - true
+        PL:
+        - 122
+        - 0
+        - 882
+        TP: 67
+    -   AD:
+        - 110
+        - 23
+        DP: 133
+        GQ: 99
+        GT:
+            allele:
+            - 0
+            - 1
+            phased:
+            - false
+            - false
+        PL:
+        - 299
+        - 0
+        - 3396
+        TP: 120
+    alt:
+    -   - C
+    -   - G
+    chrom:
+    - X
+    - X
+    filter:
+    - []
+    -   - VQSRTrancheSNP99.90to100.00
+    id:
+    - []
+    - []
+    info:
+    -   AC:
+        - 1
+        ACMG_genes.name: null
+        AF:
+        - 0.16699999570846558
+        AN: 6
+        Clinvar.ClinicalSignificance: null
+        Clinvar.Guidelines: null
+        Clinvar.PhenotypeIDs: null
+        Clinvar.RCVaccession: null
+        Clinvar.ReviewStatus: null
+        CompoundHet: null
+        CompoundHetEffects: null
+        DBSNP: null
+        DP: 160
+        EFF: null
+        ExAC.Info.AC: null
+        ExAC.Info.AC_Het: null
+        ExAC.Info.AC_Hom: null
+        ExAC.Info.AF: null
+        ExAC.Info.AN: null
+        ExperienceDB.ASSAY: null
+        ExperienceDB.CLASS: null
+        ExperienceDB.NOTES: null
+        ExperienceDB.Submitter: null
+        InGeneList: null
+        InheritancePattern: notInChild
+        LOF: null
+        Link_Clinvar: null
+        Link_GeneCards: <a href="http://www.genecards.org/cgi-bin/carddisp.pl?gene=SHROOM4"
+            target="_blank">SHROOM4</a>
+        Link_GoogleSearch: <a href="https://www.google.com/search?q=SHROOM4+c.405-112delT+"
+            target="_blank">Google It!</a>
+        Link_IGV: <a href="http://localhost:60151/goto?locus=X:50378779">View</a>
+        Link_Pubmed: null
+        Link_dbSNP: null
+        MQ: 69.97000122070312
+        MQ0: 0
+        NA12878i_GT: 0|0
+        NA12891_GT: 0|0
+        NA12892_GT: 0|1
+        NMD: null
+        OMIM_phenotypes.name: Stocco_dos_Santos_X-linked_mental_retardation_syndrome|_300434_(3)
+        PGx_variants.name: null
+        SAVANT_ALTANN:
+        - HGVSNotClass
+        SAVANT_ALTCLASS: null
+        SAVANT_ALTHGVS: null
+        SAVANT_CLASS:
+        - INTR
+        SAVANT_EFFECT: INTRON
+        SAVANT_ENST:
+        - ENST00000376020
+        SAVANT_GENE:
+        - SHROOM4
+        SAVANT_HGVS:
+        - c.405-112delT
+        SAVANT_IMPACT: LOW
+        SAVANT_INFO:
+        - -/222.4kb/9/9.6kb
+        SAVANT_LOC:
+        - In3/4
+        TYPE:
+        - Deletion
+        cosmic68.Histology_subtype: null
+        culprit: FS
+        dbNSFPv2.8.FathmmPred: null
+        dbNSFPv2.8.MetalrPred: null
+        dbNSFPv2.8.MetasvmPred: null
+        dbNSFPv2.8.MutationassessorPred: null
+        dbNSFPv2.8.MutationtasterPred: null
+        dbNSFPv2.8.Polyphen2HdivPred: null
+        dbNSFPv2.8.SiftPred: null
+        dbSNP139.ID: null
+        hgmd_2014.2.CLASS: null
+        hgmd_2014.2.OMIM_ID: null
+        hgmd_2014.2.PHEN: null
+        hgmd_2014.2.PubMed: null
+        snpeff.Amino_Acid_Change: c.405-112delT
+        snpeff.Amino_Acid_length: '1493'
+        snpeff.Codon_Change: null
+        snpeff.ERRORS: null
+        snpeff.Effect: intron_variant
+        snpeff.Effect_Impact: MODIFIER
+        snpeff.Exon_Rank: '3'
+        snpeff.Functional_Class: null
+        snpeff.Gene_Coding: CODING
+        snpeff.Gene_Name: SHROOM4
+        snpeff.Genotype_Number: '1'
+        snpeff.Transcript_BioType: protein_coding
+        snpeff.Transcript_ID: ENST00000376020
+        snpeff.WARNINGS: null
+    -   AC:
+        - 3
+        ACMG_genes.name: null
+        AF:
+        - 0.5
+        AN: 6
+        Clinvar.ClinicalSignificance: null
+        Clinvar.Guidelines: null
+        Clinvar.PhenotypeIDs: null
+        Clinvar.RCVaccession: null
+        Clinvar.ReviewStatus: null
+        CompoundHet: null
+        CompoundHetEffects: null
+        DBSNP: null
+        DP: 352
+        EFF: null
+        ExAC.Info.AC:
+        - 55843
+        ExAC.Info.AC_Het: 54972
+        ExAC.Info.AC_Hom: 50
+        ExAC.Info.AF:
+        - 0.4410000145435333
+        ExAC.Info.AN: 126684
+        ExperienceDB.ASSAY: null
+        ExperienceDB.CLASS: null
+        ExperienceDB.NOTES: null
+        ExperienceDB.Submitter: null
+        InGeneList: null
+        InheritancePattern: Dad-DiploidX
+        LOF: null
+        Link_Clinvar: null
+        Link_GeneCards: <a href="http://www.genecards.org/cgi-bin/carddisp.pl?gene=NUDT10"
+            target="_blank">NUDT10</a>
+        Link_GoogleSearch: <a href="https://www.google.com/search?q=NUDT10+c.24A>G+p"
+            target="_blank">Google It!</a>
+        Link_IGV: <a href="http://localhost:60151/goto?locus=X:51075841">View</a>
+        Link_Pubmed: null
+        Link_dbSNP: <a href="http://www.ncbi.nlm.nih.gov/projects/SNP/snp_ref.cgi?rs=2625875"
+            target="_blank">rs2625875</a>
+        MQ: 66.80999755859375
+        MQ0: 0
+        NA12878i_GT: 0/1
+        NA12891_GT: 0/1
+        NA12892_GT: 0/1
+        NMD: null
+        OMIM_phenotypes.name: null
+        PGx_variants.name: null
+        SAVANT_ALTANN:
+        - None
+        SAVANT_ALTCLASS: null
+        SAVANT_ALTHGVS: null
+        SAVANT_CLASS:
+        - SC
+        SAVANT_EFFECT: SYNONYMOUS
+        SAVANT_ENST:
+        - ENST00000376006
+        SAVANT_GENE:
+        - NUDT10
+        SAVANT_HGVS:
+        - c.24A>G_p.=
+        SAVANT_IMPACT: LOW
+        SAVANT_INFO:
+        - +/5.3kb/3/2.0kb
+        SAVANT_LOC:
+        - Ex2
+        TYPE:
+        - SNP
+        cosmic68.Histology_subtype: adenocarcinoma
+        culprit: MQRankSum
+        dbNSFPv2.8.FathmmPred: null
+        dbNSFPv2.8.MetalrPred: null
+        dbNSFPv2.8.MetasvmPred: null
+        dbNSFPv2.8.MutationassessorPred: null
+        dbNSFPv2.8.MutationtasterPred: null
+        dbNSFPv2.8.Polyphen2HdivPred: null
+        dbNSFPv2.8.SiftPred: null
+        dbSNP139.ID:
+        - rs2625875
+        hgmd_2014.2.CLASS: null
+        hgmd_2014.2.OMIM_ID: null
+        hgmd_2014.2.PHEN: null
+        hgmd_2014.2.PubMed: null
+        snpeff.Amino_Acid_Change: p.Thr8Thr/c.24A>G
+        snpeff.Amino_Acid_length: '164'
+        snpeff.Codon_Change: acA/acG
+        snpeff.ERRORS: null
+        snpeff.Effect: synonymous_variant
+        snpeff.Effect_Impact: LOW
+        snpeff.Exon_Rank: '1'
+        snpeff.Functional_Class: SILENT
+        snpeff.Gene_Coding: CODING
+        snpeff.Gene_Name: NUDT10
+        snpeff.Genotype_Number: '1'
+        snpeff.Transcript_BioType: protein_coding
+        snpeff.Transcript_ID: ENST00000356450
+        snpeff.WARNINGS: null
+    pos:
+    - 50378779
+    - 51075841
+    qual:
+    - 197.7100067138672
+    - 2439.340087890625
+    ref:
+    - CA
+    - A
+region="X", index="data/sample.vcf.gz.tbi", batch_size=2, samples=["NA12878i", "NA12891", "NA12892"]:
+    NA12878i:
+    -   AD:
+        - 55
+        - 7
+        DP: 62
+        GQ: 68
+        GT:
+            allele:
+            - 0
+            - 0
+            phased:
+            - true
+            - true
+        PL:
+        - 0
+        - 68
+        - 1790
+        TP: 67
+    -   AD:
+        - 119
+        - 20
+        DP: 139
+        GQ: 99
+        GT:
+            allele:
+            - 0
+            - 1
+            phased:
+            - false
+            - false
+        PL:
+        - 200
+        - 0
+        - 3522
+        TP: 120
+    NA12891:
+    -   AD:
+        - 46
+        - 0
+        DP: 46
+        GQ: 99
+        GT:
+            allele:
+            - 0
+            - 0
+            phased:
+            - true
+            - true
+        PL:
+        - 0
+        - 139
+        - 1867
+        TP: 67
+    -   AD:
+        - 67
+        - 13
+        DP: 80
+        GQ: 99
+        GT:
+            allele:
+            - 0
+            - 1
+            phased:
+            - false
+            - false
+        PL:
+        - 121
+        - 0
+        - 2042
+        TP: 120
+    NA12892:
+    -   AD:
+        - 41
+        - 11
+        DP: 52
+        GQ: 99
+        GT:
+            allele:
+            - 0
+            - 1
+            phased:
+            - true
+            - true
+        PL:
+        - 122
+        - 0
+        - 882
+        TP: 67
+    -   AD:
+        - 110
+        - 23
+        DP: 133
+        GQ: 99
+        GT:
+            allele:
+            - 0
+            - 1
+            phased:
+            - false
+            - false
+        PL:
+        - 299
+        - 0
+        - 3396
+        TP: 120
+    alt:
+    -   - C
+    -   - G
+    chrom:
+    - X
+    - X
+    filter:
+    - []
+    -   - VQSRTrancheSNP99.90to100.00
+    id:
+    - []
+    - []
+    info:
+    -   AC:
+        - 1
+        ACMG_genes.name: null
+        AF:
+        - 0.16699999570846558
+        AN: 6
+        Clinvar.ClinicalSignificance: null
+        Clinvar.Guidelines: null
+        Clinvar.PhenotypeIDs: null
+        Clinvar.RCVaccession: null
+        Clinvar.ReviewStatus: null
+        CompoundHet: null
+        CompoundHetEffects: null
+        DBSNP: null
+        DP: 160
+        EFF: null
+        ExAC.Info.AC: null
+        ExAC.Info.AC_Het: null
+        ExAC.Info.AC_Hom: null
+        ExAC.Info.AF: null
+        ExAC.Info.AN: null
+        ExperienceDB.ASSAY: null
+        ExperienceDB.CLASS: null
+        ExperienceDB.NOTES: null
+        ExperienceDB.Submitter: null
+        InGeneList: null
+        InheritancePattern: notInChild
+        LOF: null
+        Link_Clinvar: null
+        Link_GeneCards: <a href="http://www.genecards.org/cgi-bin/carddisp.pl?gene=SHROOM4"
+            target="_blank">SHROOM4</a>
+        Link_GoogleSearch: <a href="https://www.google.com/search?q=SHROOM4+c.405-112delT+"
+            target="_blank">Google It!</a>
+        Link_IGV: <a href="http://localhost:60151/goto?locus=X:50378779">View</a>
+        Link_Pubmed: null
+        Link_dbSNP: null
+        MQ: 69.97000122070312
+        MQ0: 0
+        NA12878i_GT: 0|0
+        NA12891_GT: 0|0
+        NA12892_GT: 0|1
+        NMD: null
+        OMIM_phenotypes.name: Stocco_dos_Santos_X-linked_mental_retardation_syndrome|_300434_(3)
+        PGx_variants.name: null
+        SAVANT_ALTANN:
+        - HGVSNotClass
+        SAVANT_ALTCLASS: null
+        SAVANT_ALTHGVS: null
+        SAVANT_CLASS:
+        - INTR
+        SAVANT_EFFECT: INTRON
+        SAVANT_ENST:
+        - ENST00000376020
+        SAVANT_GENE:
+        - SHROOM4
+        SAVANT_HGVS:
+        - c.405-112delT
+        SAVANT_IMPACT: LOW
+        SAVANT_INFO:
+        - -/222.4kb/9/9.6kb
+        SAVANT_LOC:
+        - In3/4
+        TYPE:
+        - Deletion
+        cosmic68.Histology_subtype: null
+        culprit: FS
+        dbNSFPv2.8.FathmmPred: null
+        dbNSFPv2.8.MetalrPred: null
+        dbNSFPv2.8.MetasvmPred: null
+        dbNSFPv2.8.MutationassessorPred: null
+        dbNSFPv2.8.MutationtasterPred: null
+        dbNSFPv2.8.Polyphen2HdivPred: null
+        dbNSFPv2.8.SiftPred: null
+        dbSNP139.ID: null
+        hgmd_2014.2.CLASS: null
+        hgmd_2014.2.OMIM_ID: null
+        hgmd_2014.2.PHEN: null
+        hgmd_2014.2.PubMed: null
+        snpeff.Amino_Acid_Change: c.405-112delT
+        snpeff.Amino_Acid_length: '1493'
+        snpeff.Codon_Change: null
+        snpeff.ERRORS: null
+        snpeff.Effect: intron_variant
+        snpeff.Effect_Impact: MODIFIER
+        snpeff.Exon_Rank: '3'
+        snpeff.Functional_Class: null
+        snpeff.Gene_Coding: CODING
+        snpeff.Gene_Name: SHROOM4
+        snpeff.Genotype_Number: '1'
+        snpeff.Transcript_BioType: protein_coding
+        snpeff.Transcript_ID: ENST00000376020
+        snpeff.WARNINGS: null
+    -   AC:
+        - 3
+        ACMG_genes.name: null
+        AF:
+        - 0.5
+        AN: 6
+        Clinvar.ClinicalSignificance: null
+        Clinvar.Guidelines: null
+        Clinvar.PhenotypeIDs: null
+        Clinvar.RCVaccession: null
+        Clinvar.ReviewStatus: null
+        CompoundHet: null
+        CompoundHetEffects: null
+        DBSNP: null
+        DP: 352
+        EFF: null
+        ExAC.Info.AC:
+        - 55843
+        ExAC.Info.AC_Het: 54972
+        ExAC.Info.AC_Hom: 50
+        ExAC.Info.AF:
+        - 0.4410000145435333
+        ExAC.Info.AN: 126684
+        ExperienceDB.ASSAY: null
+        ExperienceDB.CLASS: null
+        ExperienceDB.NOTES: null
+        ExperienceDB.Submitter: null
+        InGeneList: null
+        InheritancePattern: Dad-DiploidX
+        LOF: null
+        Link_Clinvar: null
+        Link_GeneCards: <a href="http://www.genecards.org/cgi-bin/carddisp.pl?gene=NUDT10"
+            target="_blank">NUDT10</a>
+        Link_GoogleSearch: <a href="https://www.google.com/search?q=NUDT10+c.24A>G+p"
+            target="_blank">Google It!</a>
+        Link_IGV: <a href="http://localhost:60151/goto?locus=X:51075841">View</a>
+        Link_Pubmed: null
+        Link_dbSNP: <a href="http://www.ncbi.nlm.nih.gov/projects/SNP/snp_ref.cgi?rs=2625875"
+            target="_blank">rs2625875</a>
+        MQ: 66.80999755859375
+        MQ0: 0
+        NA12878i_GT: 0/1
+        NA12891_GT: 0/1
+        NA12892_GT: 0/1
+        NMD: null
+        OMIM_phenotypes.name: null
+        PGx_variants.name: null
+        SAVANT_ALTANN:
+        - None
+        SAVANT_ALTCLASS: null
+        SAVANT_ALTHGVS: null
+        SAVANT_CLASS:
+        - SC
+        SAVANT_EFFECT: SYNONYMOUS
+        SAVANT_ENST:
+        - ENST00000376006
+        SAVANT_GENE:
+        - NUDT10
+        SAVANT_HGVS:
+        - c.24A>G_p.=
+        SAVANT_IMPACT: LOW
+        SAVANT_INFO:
+        - +/5.3kb/3/2.0kb
+        SAVANT_LOC:
+        - Ex2
+        TYPE:
+        - SNP
+        cosmic68.Histology_subtype: adenocarcinoma
+        culprit: MQRankSum
+        dbNSFPv2.8.FathmmPred: null
+        dbNSFPv2.8.MetalrPred: null
+        dbNSFPv2.8.MetasvmPred: null
+        dbNSFPv2.8.MutationassessorPred: null
+        dbNSFPv2.8.MutationtasterPred: null
+        dbNSFPv2.8.Polyphen2HdivPred: null
+        dbNSFPv2.8.SiftPred: null
+        dbSNP139.ID:
+        - rs2625875
+        hgmd_2014.2.CLASS: null
+        hgmd_2014.2.OMIM_ID: null
+        hgmd_2014.2.PHEN: null
+        hgmd_2014.2.PubMed: null
+        snpeff.Amino_Acid_Change: p.Thr8Thr/c.24A>G
+        snpeff.Amino_Acid_length: '164'
+        snpeff.Codon_Change: acA/acG
+        snpeff.ERRORS: null
+        snpeff.Effect: synonymous_variant
+        snpeff.Effect_Impact: LOW
+        snpeff.Exon_Rank: '1'
+        snpeff.Functional_Class: SILENT
+        snpeff.Gene_Coding: CODING
+        snpeff.Gene_Name: NUDT10
+        snpeff.Genotype_Number: '1'
+        snpeff.Transcript_BioType: protein_coding
+        snpeff.Transcript_ID: ENST00000356450
+        snpeff.WARNINGS: null
+    pos:
+    - 50378779
+    - 51075841
+    qual:
+    - 197.7100067138672
+    - 2439.340087890625
+    ref:
+    - CA
+    - A
+region="Y", index="data/sample.vcf.gz.csi", batch_size=2, samples=["HG00096", "HG00101", "HG00103"]:
+    HG00096:
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    HG00101:
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    HG00103:
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    alt:
+    -   - CA
+    -   - T
+    chrom:
+    - Y
+    - Y
+    filter:
+    - []
+    - []
+    id:
+    - []
+    - []
+    info:
+    -   AA: C
+        AC:
+        - 3
+        AF:
+        - 0.002433090005069971
+        AFR_AF:
+        - 0.003100000089034438
+        AMR_AF:
+        - 0.002899999963119626
+        AN: 1233
+        DP: 3663
+        EAS_AF:
+        - 0.0
+        END: null
+        EUR_AF:
+        - 0.0
+        NS: 1233
+        SAS_AF:
+        - 0.0
+        SVTYPE: null
+    -   AA: G
+        AC:
+        - 9
+        AF:
+        - 0.007563029881566763
+        AFR_AF:
+        - 0.0
+        AMR_AF:
+        - 0.0
+        AN: 1190
+        DP: 5210
+        EAS_AF:
+        - 0.0
+        END: null
+        EUR_AF:
+        - 0.0
+        NS: 1190
+        SAS_AF:
+        - 0.01730000041425228
+        SVTYPE: null
+    pos:
+    - 2761189
+    - 6932688
+    qual:
+    - 106.43299865722656
+    - 1751.52001953125
+    ref:
+    - C
+    - G
+region="Y", index="data/sample.vcf.gz.tbi", batch_size=2, samples=["HG00096", "HG00101", "HG00103"]:
+    HG00096:
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    HG00101:
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    HG00103:
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    -   CN: null
+        CNL: null
+        CNP: null
+        CNQ: null
+        FT: null
+        GP: null
+        GQ: null
+        GT:
+            allele:
+            - 0
+            phased:
+            - true
+        PL: null
+    alt:
+    -   - CA
+    -   - T
+    chrom:
+    - Y
+    - Y
+    filter:
+    - []
+    - []
+    id:
+    - []
+    - []
+    info:
+    -   AA: C
+        AC:
+        - 3
+        AF:
+        - 0.002433090005069971
+        AFR_AF:
+        - 0.003100000089034438
+        AMR_AF:
+        - 0.002899999963119626
+        AN: 1233
+        DP: 3663
+        EAS_AF:
+        - 0.0
+        END: null
+        EUR_AF:
+        - 0.0
+        NS: 1233
+        SAS_AF:
+        - 0.0
+        SVTYPE: null
+    -   AA: G
+        AC:
+        - 9
+        AF:
+        - 0.007563029881566763
+        AFR_AF:
+        - 0.0
+        AMR_AF:
+        - 0.0
+        AN: 1190
+        DP: 5210
+        EAS_AF:
+        - 0.0
+        END: null
+        EUR_AF:
+        - 0.0
+        NS: 1190
+        SAS_AF:
+        - 0.01730000041425228
+        SVTYPE: null
+    pos:
+    - 2761189
+    - 6932688
+    qual:
+    - 106.43299865722656
+    - 1751.52001953125
+    ref:
+    - C
+    - G

@@ -1,0 +1,15 @@
+BigWigFile("data/does-not-exist.bw"): |-
+    ->  oxbow._core.bbi.BigWigFile.__init__("data/does-not-exist.bw")
+        ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.bw", None, 131072)
+        <-  None
+    <-  None
+BigWigFile("data/malformed.bw"): |-
+    ->  oxbow._core.bbi.BigWigFile.__init__("data/malformed.bw")
+        ->  oxbow._core.base.DataSource.__init__("data/malformed.bw", None, 131072)
+        <-  None
+    <-  None
+BigWigFile("data/sample.bw"): |-
+    ->  oxbow._core.bbi.BigWigFile.__init__("data/sample.bw")
+        ->  oxbow._core.base.DataSource.__init__("data/sample.bw", None, 131072)
+        <-  None
+    <-  None

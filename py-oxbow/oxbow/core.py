@@ -1,5 +1,5 @@
 """
-Data file adapters and Arrow scanners.
+Scanners and data source classes.
 """
 
 from oxbow._core.base import DataSource
@@ -9,10 +9,15 @@ from oxbow._core.alignment import (
     BamFile,
     SamFile,
 )
-from oxbow._core.feature import (
+from oxbow._core.bed import (
     BedFile,
+)
+from oxbow._core.bbi import (
     BigBedFile,
     BigWigFile,
+    BbiZoom,
+)
+from oxbow._core.gxf import (
     GffFile,
     GtfFile,
 )
@@ -24,7 +29,7 @@ from oxbow._core.variant import (
     BcfFile,
     VcfFile,
 )
-from oxbow._filetypes import FileType as FileType
+from oxbow._filetypes import FileType
 from oxbow.oxbow import (
     PyBamScanner,
     PyBcfScanner,
@@ -47,6 +52,7 @@ __all__ = [
     "BedFile",
     "BigBedFile",
     "BigWigFile",
+    "BbiZoom",
     "DataSource",
     "FastaFile",
     "FastqFile",
@@ -75,6 +81,7 @@ BcfFile.__module__ = __name__
 BedFile.__module__ = __name__
 BigBedFile.__module__ = __name__
 BigWigFile.__module__ = __name__
+BbiZoom.__module__ = __name__
 FastaFile.__module__ = __name__
 FastqFile.__module__ = __name__
 FileType.__module__ = __name__
@@ -86,5 +93,11 @@ PyFastaScanner.__module__ = __name__
 PyFastqScanner.__module__ = __name__
 PySamScanner.__module__ = __name__
 PyVcfScanner.__module__ = __name__
+PyBedScanner.__module__ = __name__
+PyBigBedScanner.__module__ = __name__
+PyBigWigScanner.__module__ = __name__
+PyGffScanner.__module__ = __name__
+PyGtfScanner.__module__ = __name__
+PyBBIZoomScanner.__module__ = __name__
 SamFile.__module__ = __name__
 VcfFile.__module__ = __name__

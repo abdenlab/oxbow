@@ -192,84 +192,85 @@ impl PyGtfScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let index = resolve_index(py, self.src.clone_ref(py), index)?;
         let region = region
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
 
         match self.reader.clone() {
-            Reader::BgzfFile(bgzf_reader) => match index {
-                IndexType::Linear(index) => {
-                    let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
-                    let batch_reader = self
-                        .scanner
-                        .scan_query(
-                            fmt_reader,
-                            region,
-                            index,
-                            fields,
-                            attribute_defs,
-                            batch_size,
-                            limit,
-                        )
-                        .map_err(PyErr::new::<PyValueError, _>)?;
-                    let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                    Ok(py_batch_reader)
-                }
-                IndexType::Binned(index) => {
-                    let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
-                    let batch_reader = self
-                        .scanner
-                        .scan_query(
-                            fmt_reader,
-                            region,
-                            index,
-                            fields,
-                            attribute_defs,
-                            batch_size,
-                            limit,
-                        )
-                        .map_err(PyErr::new::<PyValueError, _>)?;
-                    let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                    Ok(py_batch_reader)
-                }
-            },
-            Reader::BgzfPyFileLike(bgzf_reader) => match index {
-                IndexType::Linear(index) => {
-                    let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
-                    let batch_reader = self
-                        .scanner
-                        .scan_query(
-                            fmt_reader,
-                            region,
-                            index,
-                            fields,
-                            attribute_defs,
-                            batch_size,
-                            limit,
-                        )
-                        .map_err(PyErr::new::<PyValueError, _>)?;
-                    let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                    Ok(py_batch_reader)
-                }
-                IndexType::Binned(index) => {
-                    let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
-                    let batch_reader = self
-                        .scanner
-                        .scan_query(
-                            fmt_reader,
-                            region,
-                            index,
-                            fields,
-                            attribute_defs,
-                            batch_size,
-                            limit,
-                        )
-                        .map_err(PyErr::new::<PyValueError, _>)?;
-                    let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                    Ok(py_batch_reader)
-                }
-            },
+            Reader::BgzfFile(bgzf_reader) => {
+                let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let py_batch_reader = match index {
+                    IndexType::Linear(index) => {
+                        let batch_reader = self
+                            .scanner
+                            .scan_query(
+                                fmt_reader,
+                                region,
+                                index,
+                                fields,
+                                attribute_defs,
+                                batch_size,
+                                limit,
+                            )
+                            .map_err(PyErr::new::<PyValueError, _>)?;
+                        PyRecordBatchReader::new(Box::new(batch_reader))
+                    }
+                    IndexType::Binned(index) => {
+                        let batch_reader = self
+                            .scanner
+                            .scan_query(
+                                fmt_reader,
+                                region,
+                                index,
+                                fields,
+                                attribute_defs,
+                                batch_size,
+                                limit,
+                            )
+                            .map_err(PyErr::new::<PyValueError, _>)?;
+                        PyRecordBatchReader::new(Box::new(batch_reader))
+                    }
+                };
+                Ok(py_batch_reader)
+            }
+            Reader::BgzfPyFileLike(bgzf_reader) => {
+                let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let py_batch_reader = match index {
+                    IndexType::Linear(index) => {
+                        let batch_reader = self
+                            .scanner
+                            .scan_query(
+                                fmt_reader,
+                                region,
+                                index,
+                                fields,
+                                attribute_defs,
+                                batch_size,
+                                limit,
+                            )
+                            .map_err(PyErr::new::<PyValueError, _>)?;
+                        PyRecordBatchReader::new(Box::new(batch_reader))
+                    }
+                    IndexType::Binned(index) => {
+                        let batch_reader = self
+                            .scanner
+                            .scan_query(
+                                fmt_reader,
+                                region,
+                                index,
+                                fields,
+                                attribute_defs,
+                                batch_size,
+                                limit,
+                            )
+                            .map_err(PyErr::new::<PyValueError, _>)?;
+                        PyRecordBatchReader::new(Box::new(batch_reader))
+                    }
+                };
+                Ok(py_batch_reader)
+            }
             _ => Err(PyErr::new::<PyValueError, _>(
                 "Scanning query ranges is only supported for indexed bgzf-compressed sources.",
             )),
@@ -450,84 +451,85 @@ impl PyGffScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let index = resolve_index(py, self.src.clone_ref(py), index)?;
         let region = region
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
 
         match self.reader.clone() {
-            Reader::BgzfFile(bgzf_reader) => match index {
-                IndexType::Linear(index) => {
-                    let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
-                    let batch_reader = self
-                        .scanner
-                        .scan_query(
-                            fmt_reader,
-                            region,
-                            index,
-                            fields,
-                            attribute_defs,
-                            batch_size,
-                            limit,
-                        )
-                        .map_err(PyErr::new::<PyValueError, _>)?;
-                    let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                    Ok(py_batch_reader)
-                }
-                IndexType::Binned(index) => {
-                    let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
-                    let batch_reader = self
-                        .scanner
-                        .scan_query(
-                            fmt_reader,
-                            region,
-                            index,
-                            fields,
-                            attribute_defs,
-                            batch_size,
-                            limit,
-                        )
-                        .map_err(PyErr::new::<PyValueError, _>)?;
-                    let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                    Ok(py_batch_reader)
-                }
-            },
-            Reader::BgzfPyFileLike(bgzf_reader) => match index {
-                IndexType::Linear(index) => {
-                    let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
-                    let batch_reader = self
-                        .scanner
-                        .scan_query(
-                            fmt_reader,
-                            region,
-                            index,
-                            fields,
-                            attribute_defs,
-                            batch_size,
-                            limit,
-                        )
-                        .map_err(PyErr::new::<PyValueError, _>)?;
-                    let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                    Ok(py_batch_reader)
-                }
-                IndexType::Binned(index) => {
-                    let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
-                    let batch_reader = self
-                        .scanner
-                        .scan_query(
-                            fmt_reader,
-                            region,
-                            index,
-                            fields,
-                            attribute_defs,
-                            batch_size,
-                            limit,
-                        )
-                        .map_err(PyErr::new::<PyValueError, _>)?;
-                    let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                    Ok(py_batch_reader)
-                }
-            },
+            Reader::BgzfFile(bgzf_reader) => {
+                let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let py_batch_reader = match index {
+                    IndexType::Linear(index) => {
+                        let batch_reader = self
+                            .scanner
+                            .scan_query(
+                                fmt_reader,
+                                region,
+                                index,
+                                fields,
+                                attribute_defs,
+                                batch_size,
+                                limit,
+                            )
+                            .map_err(PyErr::new::<PyValueError, _>)?;
+                        PyRecordBatchReader::new(Box::new(batch_reader))
+                    }
+                    IndexType::Binned(index) => {
+                        let batch_reader = self
+                            .scanner
+                            .scan_query(
+                                fmt_reader,
+                                region,
+                                index,
+                                fields,
+                                attribute_defs,
+                                batch_size,
+                                limit,
+                            )
+                            .map_err(PyErr::new::<PyValueError, _>)?;
+                        PyRecordBatchReader::new(Box::new(batch_reader))
+                    }
+                };
+                Ok(py_batch_reader)
+            }
+            Reader::BgzfPyFileLike(bgzf_reader) => {
+                let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let py_batch_reader = match index {
+                    IndexType::Linear(index) => {
+                        let batch_reader = self
+                            .scanner
+                            .scan_query(
+                                fmt_reader,
+                                region,
+                                index,
+                                fields,
+                                attribute_defs,
+                                batch_size,
+                                limit,
+                            )
+                            .map_err(PyErr::new::<PyValueError, _>)?;
+                        PyRecordBatchReader::new(Box::new(batch_reader))
+                    }
+                    IndexType::Binned(index) => {
+                        let batch_reader = self
+                            .scanner
+                            .scan_query(
+                                fmt_reader,
+                                region,
+                                index,
+                                fields,
+                                attribute_defs,
+                                batch_size,
+                                limit,
+                            )
+                            .map_err(PyErr::new::<PyValueError, _>)?;
+                        PyRecordBatchReader::new(Box::new(batch_reader))
+                    }
+                };
+                Ok(py_batch_reader)
+            }
             _ => Err(PyErr::new::<PyValueError, _>(
                 "Scanning query ranges is only supported for indexed bgzf-compressed sources.",
             )),
@@ -567,7 +569,6 @@ pub fn read_gtf(
     let scanner = GtfScanner::new(None);
 
     let ipc = if let Some(region) = region {
-        let index = resolve_index(py, src.clone_ref(py), index)?;
         let region = region
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
@@ -575,6 +576,7 @@ pub fn read_gtf(
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, src.clone_ref(py), index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -588,6 +590,7 @@ pub fn read_gtf(
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, src.clone_ref(py), index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -646,7 +649,6 @@ pub fn read_gff(
     let scanner = GffScanner::new(None);
 
     let ipc = if let Some(region) = region {
-        let index = resolve_index(py, src.clone_ref(py), index)?;
         let region = region
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
@@ -654,6 +656,7 @@ pub fn read_gff(
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, src.clone_ref(py), index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -667,6 +670,7 @@ pub fn read_gff(
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
+                let index = resolve_index(py, src.clone_ref(py), index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,

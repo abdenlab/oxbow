@@ -1,0 +1,320 @@
+- !!python/tuple
+    - ACMG_genes.name
+    - '1'
+    - String
+- !!python/tuple
+    - AC
+    - A
+    - Integer
+- !!python/tuple
+    - AF
+    - A
+    - Float
+- !!python/tuple
+    - AN
+    - '1'
+    - Integer
+- !!python/tuple
+    - Clinvar.ClinicalSignificance
+    - .
+    - String
+- !!python/tuple
+    - Clinvar.Guidelines
+    - .
+    - String
+- !!python/tuple
+    - Clinvar.PhenotypeIDs
+    - .
+    - String
+- !!python/tuple
+    - Clinvar.RCVaccession
+    - .
+    - String
+- !!python/tuple
+    - Clinvar.ReviewStatus
+    - .
+    - String
+- !!python/tuple
+    - CompoundHetEffects
+    - .
+    - String
+- !!python/tuple
+    - CompoundHet
+    - '0'
+    - Flag
+- !!python/tuple
+    - cosmic68.Histology_subtype
+    - '1'
+    - String
+- !!python/tuple
+    - culprit
+    - '1'
+    - String
+- !!python/tuple
+    - dbNSFPv2.8.FathmmPred
+    - '1'
+    - String
+- !!python/tuple
+    - dbNSFPv2.8.MetalrPred
+    - '1'
+    - String
+- !!python/tuple
+    - dbNSFPv2.8.MetasvmPred
+    - '1'
+    - String
+- !!python/tuple
+    - dbNSFPv2.8.MutationassessorPred
+    - '1'
+    - String
+- !!python/tuple
+    - dbNSFPv2.8.MutationtasterPred
+    - '1'
+    - String
+- !!python/tuple
+    - dbNSFPv2.8.Polyphen2HdivPred
+    - '1'
+    - String
+- !!python/tuple
+    - dbNSFPv2.8.SiftPred
+    - '1'
+    - String
+- !!python/tuple
+    - dbSNP139.ID
+    - .
+    - String
+- !!python/tuple
+    - DBSNP
+    - .
+    - String
+- !!python/tuple
+    - DP
+    - '1'
+    - Integer
+- !!python/tuple
+    - EFF
+    - .
+    - String
+- !!python/tuple
+    - ExAC.Info.AC_Het
+    - '1'
+    - Integer
+- !!python/tuple
+    - ExAC.Info.AC_Hom
+    - '1'
+    - Integer
+- !!python/tuple
+    - ExAC.Info.AC
+    - A
+    - Integer
+- !!python/tuple
+    - ExAC.Info.AF
+    - A
+    - Float
+- !!python/tuple
+    - ExAC.Info.AN
+    - '1'
+    - Integer
+- !!python/tuple
+    - ExperienceDB.ASSAY
+    - '1'
+    - String
+- !!python/tuple
+    - ExperienceDB.CLASS
+    - '1'
+    - String
+- !!python/tuple
+    - ExperienceDB.NOTES
+    - '1'
+    - String
+- !!python/tuple
+    - ExperienceDB.Submitter
+    - '1'
+    - String
+- !!python/tuple
+    - hgmd_2014.2.CLASS
+    - '1'
+    - String
+- !!python/tuple
+    - hgmd_2014.2.OMIM_ID
+    - '1'
+    - String
+- !!python/tuple
+    - hgmd_2014.2.PHEN
+    - '1'
+    - String
+- !!python/tuple
+    - hgmd_2014.2.PubMed
+    - '1'
+    - String
+- !!python/tuple
+    - InGeneList
+    - '0'
+    - Flag
+- !!python/tuple
+    - InheritancePattern
+    - '1'
+    - String
+- !!python/tuple
+    - Link_Clinvar
+    - '1'
+    - String
+- !!python/tuple
+    - Link_dbSNP
+    - '1'
+    - String
+- !!python/tuple
+    - Link_GeneCards
+    - '1'
+    - String
+- !!python/tuple
+    - Link_GoogleSearch
+    - '1'
+    - String
+- !!python/tuple
+    - Link_IGV
+    - '1'
+    - String
+- !!python/tuple
+    - Link_Pubmed
+    - '1'
+    - String
+- !!python/tuple
+    - LOF
+    - .
+    - String
+- !!python/tuple
+    - MQ0
+    - '1'
+    - Integer
+- !!python/tuple
+    - MQ
+    - '1'
+    - Float
+- !!python/tuple
+    - NA12878i_GT
+    - '1'
+    - String
+- !!python/tuple
+    - NA12891_GT
+    - '1'
+    - String
+- !!python/tuple
+    - NA12892_GT
+    - '1'
+    - String
+- !!python/tuple
+    - NMD
+    - .
+    - String
+- !!python/tuple
+    - OMIM_phenotypes.name
+    - '1'
+    - String
+- !!python/tuple
+    - PGx_variants.name
+    - '1'
+    - String
+- !!python/tuple
+    - SAVANT_ALTANN
+    - .
+    - String
+- !!python/tuple
+    - SAVANT_ALTCLASS
+    - .
+    - String
+- !!python/tuple
+    - SAVANT_ALTHGVS
+    - .
+    - String
+- !!python/tuple
+    - SAVANT_CLASS
+    - .
+    - String
+- !!python/tuple
+    - SAVANT_EFFECT
+    - '1'
+    - String
+- !!python/tuple
+    - SAVANT_ENST
+    - .
+    - String
+- !!python/tuple
+    - SAVANT_GENE
+    - .
+    - String
+- !!python/tuple
+    - SAVANT_HGVS
+    - .
+    - String
+- !!python/tuple
+    - SAVANT_IMPACT
+    - '1'
+    - String
+- !!python/tuple
+    - SAVANT_INFO
+    - .
+    - String
+- !!python/tuple
+    - SAVANT_LOC
+    - .
+    - String
+- !!python/tuple
+    - snpeff.Amino_Acid_Change
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.Amino_Acid_length
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.Codon_Change
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.Effect_Impact
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.Effect
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.ERRORS
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.Exon_Rank
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.Functional_Class
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.Gene_Coding
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.Gene_Name
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.Genotype_Number
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.Transcript_BioType
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.Transcript_ID
+    - '1'
+    - String
+- !!python/tuple
+    - snpeff.WARNINGS
+    - '1'
+    - String
+- !!python/tuple
+    - TYPE
+    - .
+    - String

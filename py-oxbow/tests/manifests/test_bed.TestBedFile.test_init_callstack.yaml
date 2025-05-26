@@ -1,0 +1,15 @@
+BedFile("data/does-not-exist.bed"): |-
+    ->  oxbow._core.bed.BedFile.__init__("data/does-not-exist.bed")
+        ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.bed", None, 131072)
+        <-  None
+    <-  None
+BedFile("data/malformed.bed"): |-
+    ->  oxbow._core.bed.BedFile.__init__("data/malformed.bed")
+        ->  oxbow._core.base.DataSource.__init__("data/malformed.bed", None, 131072)
+        <-  None
+    <-  None
+BedFile("data/sample.bed"): |-
+    ->  oxbow._core.bed.BedFile.__init__("data/sample.bed")
+        ->  oxbow._core.base.DataSource.__init__("data/sample.bed", None, 131072)
+        <-  None
+    <-  None

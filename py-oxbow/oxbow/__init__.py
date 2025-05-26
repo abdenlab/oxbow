@@ -4,10 +4,14 @@ from oxbow._core.alignment import (
     from_bam,
     from_sam,
 )
-from oxbow._core.feature import (
+from oxbow._core.bed import (
     from_bed,
+)
+from oxbow._core.bbi import (
     from_bigbed,
     from_bigwig,
+)
+from oxbow._core.gxf import (
     from_gff,
     from_gtf,
 )

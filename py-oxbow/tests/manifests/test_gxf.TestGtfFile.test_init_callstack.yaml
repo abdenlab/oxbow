@@ -1,0 +1,27 @@
+GtfFile("data/does-not-exist.gtf"): |-
+    ->  oxbow._core.gxf.GxfFile.__init__("data/does-not-exist.gtf")
+        ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.gtf", None, 131072)
+        <-  None
+        ->  oxbow._core.base.DataSource.scanner()
+            ->  oxbow._core.base.DataSource._source
+            <-  'data/does-not-exist.gtf'
+        !!  FileNotFoundError("No such file or directory (os error 2)")
+    !!  FileNotFoundError("No such file or directory (os error 2)")
+GtfFile("data/malformed.gtf"): |-
+    ->  oxbow._core.gxf.GxfFile.__init__("data/malformed.gtf")
+        ->  oxbow._core.base.DataSource.__init__("data/malformed.gtf", None, 131072)
+        <-  None
+        ->  oxbow._core.base.DataSource.scanner()
+            ->  oxbow._core.base.DataSource._source
+            <-  'data/malformed.gtf'
+        <-  oxbow.core.PyGtfScanner.<object>
+    <-  None
+GtfFile("data/sample.gtf"): |-
+    ->  oxbow._core.gxf.GxfFile.__init__("data/sample.gtf")
+        ->  oxbow._core.base.DataSource.__init__("data/sample.gtf", None, 131072)
+        <-  None
+        ->  oxbow._core.base.DataSource.scanner()
+            ->  oxbow._core.base.DataSource._source
+            <-  'data/sample.gtf'
+        <-  oxbow.core.PyGtfScanner.<object>
+    <-  None

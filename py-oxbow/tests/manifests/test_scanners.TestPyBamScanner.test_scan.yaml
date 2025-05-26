@@ -1,0 +1,206 @@
+batch_size=1:
+    cigar:
+    - 50M
+    end:
+    - 10591
+    flag:
+    - 163
+    mapq:
+    - 0
+    pnext:
+    - 10571
+    pos:
+    - 10542
+    qname:
+    - HWI-BRUNOP16X_0001:3:48:4861:11838#0
+    qual:
+    - gggggggggggggggggggggggggeggggR\_[\ggggghggggggggg
+    rname:
+    - chr1
+    rnext:
+    - chr1
+    seq:
+    - CGAAATCTGTGCAGAGGAGAACGCAGCTCCGCCCTCGCGGTGCTCTCCGG
+    tlen:
+    - 79
+batch_size=2:
+    cigar:
+    - 50M
+    - 75M
+    end:
+    - 10591
+    - 10620
+    flag:
+    - 163
+    - 16
+    mapq:
+    - 0
+    - 16
+    pnext:
+    - 10571
+    - null
+    pos:
+    - 10542
+    - 10546
+    qname:
+    - HWI-BRUNOP16X_0001:3:48:4861:11838#0
+    - HWI-BRUNOP16X_0001:3:28:6650:168848#0
+    qual:
+    - gggggggggggggggggggggggggeggggR\_[\ggggghggggggggg
+    - fggggggggdgdggcdfggggfgggggggggggggggggggggggggfggggggggggggggggggggggggggg
+    rname:
+    - chr1
+    - chr1
+    rnext:
+    - chr1
+    - null
+    seq:
+    - CGAAATCTGTGCAGAGGAGAACGCAGCTCCGCCCTCGCGGTGCTCTCCGG
+    - ATCTGTGCAGAGGAGAACGCAGCTCCGCCCTCGCGGTGCTCTCCGGGTCTGTGCTGAGGAGAACGCAGCTCCGCC
+    tlen:
+    - 79
+    - 0
+batch_size=3:
+    cigar:
+    - 50M
+    - 75M
+    - 75M
+    end:
+    - 10591
+    - 10620
+    - 946531
+    flag:
+    - 163
+    - 16
+    - 16
+    mapq:
+    - 0
+    - 16
+    - 0
+    pnext:
+    - 10571
+    - null
+    - null
+    pos:
+    - 10542
+    - 10546
+    - 946457
+    qname:
+    - HWI-BRUNOP16X_0001:3:48:4861:11838#0
+    - HWI-BRUNOP16X_0001:3:28:6650:168848#0
+    - HWI-BRUNOP16X_0001:3:8:20066:88158#0
+    qual:
+    - gggggggggggggggggggggggggeggggR\_[\ggggghggggggggg
+    - fggggggggdgdggcdfggggfgggggggggggggggggggggggggfggggggggggggggggggggggggggg
+    - BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBd`aed``__U^__]_ggggcggggd]\\\[\]^]]gggggdfcbb
+    rname:
+    - chr1
+    - chr1
+    - chr1
+    rnext:
+    - chr1
+    - null
+    - null
+    seq:
+    - CGAAATCTGTGCAGAGGAGAACGCAGCTCCGCCCTCGCGGTGCTCTCCGG
+    - ATCTGTGCAGAGGAGAACGCAGCTCCGCCCTCGCGGTGCTCTCCGGGTCTGTGCTGAGGAGAACGCAGCTCCGCC
+    - TAGTCCGAGGTCTCCTGAACCTTCCCAAGCAGCTGCTGCACCTGCCGGCAGTAGTTGGCCACCTTGCACTCCCGG
+    tlen:
+    - 79
+    - 0
+    - 0
+batch_size=4:
+    cigar:
+    - 50M
+    - 75M
+    - 75M
+    - 75M
+    end:
+    - 10591
+    - 10620
+    - 946531
+    - 1014134
+    flag:
+    - 163
+    - 16
+    - 16
+    - 16
+    mapq:
+    - 0
+    - 16
+    - 0
+    - 37
+    pnext:
+    - 10571
+    - null
+    - null
+    - null
+    pos:
+    - 10542
+    - 10546
+    - 946457
+    - 1014060
+    qname:
+    - HWI-BRUNOP16X_0001:3:48:4861:11838#0
+    - HWI-BRUNOP16X_0001:3:28:6650:168848#0
+    - HWI-BRUNOP16X_0001:3:8:20066:88158#0
+    - HWI-BRUNOP16X_0001:3:27:10302:58768#0
+    qual:
+    - gggggggggggggggggggggggggeggggR\_[\ggggghggggggggg
+    - fggggggggdgdggcdfggggfgggggggggggggggggggggggggfggggggggggggggggggggggggggg
+    - BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBd`aed``__U^__]_ggggcggggd]\\\[\]^]]gggggdfcbb
+    - BBBBBBBBBBBBBBBBcYRcffggfgf_gfg\deegfgfgfcggcggfggggcgggggcgcggfgggggggggeg
+    rname:
+    - chr1
+    - chr1
+    - chr1
+    - chr1
+    rnext:
+    - chr1
+    - null
+    - null
+    - null
+    seq:
+    - CGAAATCTGTGCAGAGGAGAACGCAGCTCCGCCCTCGCGGTGCTCTCCGG
+    - ATCTGTGCAGAGGAGAACGCAGCTCCGCCCTCGCGGTGCTCTCCGGGTCTGTGCTGAGGAGAACGCAGCTCCGCC
+    - TAGTCCGAGGTCTCCTGAACCTTCCCAAGCAGCTGCTGCACCTGCCGGCAGTAGTTGGCCACCTTGCACTCCCGG
+    - AGCTGAATGGGCAGGTCCCCCAGAAGATCGGCGTGCACGCCTTCCAGCAGCGTCTGGCTGTCCACCCGAGCGGTG
+    tlen:
+    - 79
+    - 0
+    - 0
+    - 0
+fields=("qname", "rname", "mapq"):
+    mapq:
+    - 0
+    - 16
+    - 0
+    - 37
+    - 60
+    - 37
+    - 60
+    - 0
+    - 0
+    - 0
+    qname:
+    - HWI-BRUNOP16X_0001:3:48:4861:11838#0
+    - HWI-BRUNOP16X_0001:3:28:6650:168848#0
+    - HWI-BRUNOP16X_0001:3:8:20066:88158#0
+    - HWI-BRUNOP16X_0001:3:27:10302:58768#0
+    - HWI-BRUNOP16X_0001:3:65:3144:143676#0
+    - HWI-BRUNOP16X_0001:3:68:13088:156644#0
+    - HWI-BRUNOP16X_0001:3:48:3417:101389#0
+    - HWI-BRUNOP16X_0001:3:46:17583:95767#0
+    - HWI-BRUNOP16X_0001:3:4:7989:14941#0
+    - HWI-BRUNOP16X_0001:3:44:11450:50194#0
+    rname:
+    - chr1
+    - chr1
+    - chr1
+    - chr1
+    - chr3
+    - chr3
+    - chr3
+    - chrX
+    - chrY
+    - chrY

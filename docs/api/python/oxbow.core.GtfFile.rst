@@ -16,8 +16,17 @@
       ~GtfFile.__init__
       ~GtfFile.batches
       ~GtfFile.dataset
+      ~GtfFile.dd
       ~GtfFile.fragments
-      ~GtfFile.select
+      ~GtfFile.pd
+      ~GtfFile.pl
+      ~GtfFile.regions
+      ~GtfFile.scanner
+      ~GtfFile.to_dask
+      ~GtfFile.to_duckdb
+      ~GtfFile.to_ipc
+      ~GtfFile.to_pandas
+      ~GtfFile.to_polars
    
    
 
@@ -27,7 +36,7 @@
 
    .. autosummary::
    
-      ~GtfFile.fields
+      ~GtfFile.columns
       ~GtfFile.schema
    
    
