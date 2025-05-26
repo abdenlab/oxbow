@@ -4,10 +4,10 @@ Python API Reference
 High-level API
 =================
 
-Dataset interface
-^^^^^^^^^^^^^^^^^^^^
+Data Source interface
+^^^^^^^^^^^^^^^^^^^^^
 
-The following functions provide a PyArrow Dataset interface for reading genomic files that may be larger than memory.
+The following functions return a data source object to read from files that may be larger than memory.
 
 .. rubric:: Sequence formats
 
@@ -119,11 +119,12 @@ PyArrow Datasets allow working with large datasets that do not fit in memory.
     oxbow.arrow.BatchReaderFragment
     oxbow.arrow.BatchReaderDataset
 
+
 .. rubric:: Data source classes
 
 .. autosummary::
     :toctree: python
-    :caption: DataSources
+    :caption: Data source classes
 
     oxbow.core.FastaFile
     oxbow.core.FastqFile

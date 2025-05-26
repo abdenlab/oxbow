@@ -108,7 +108,7 @@ ox.from_bam(
 ).pl()
 ```
 
-The lazy data structures returned by a data source are able to perform column projection through oxbow. In the following example, only the four fields passed to the polars `select` method will be parsed when the output gets computed.
+The lazy data structures returned by a data source are able to push the column projection operation down to oxbow. In the following example, only the four fields passed to the polars `LazyFrame.select` method will be parsed when the output gets computed.
 
 ```{code-cell} ipython3
 df = (
@@ -134,7 +134,7 @@ For example, fields like SAM tags, VCF info and samples, and GTF attributes are 
 
 ### SAM/BAM tags
 
-The htslib alignment formats, SAM and BAM, have optional fields called `tags` that are defined inline, rather than in a header or manifest. These definitions, a tuple of tag name and one-letter type code, can be provided explicitly to the data source constructor for projection.
+The htslib alignment formats, SAM and BAM, have optional fields called `tags` that are defined inline, rather than in a header or manifest. These definitions, a tuple of a tag name and type code, can be provided explicitly to the data source constructor for projection.
 
 ```{code-cell} ipython3
 df = (
