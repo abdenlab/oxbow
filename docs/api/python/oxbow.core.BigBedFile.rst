@@ -16,8 +16,17 @@
       ~BigBedFile.__init__
       ~BigBedFile.batches
       ~BigBedFile.dataset
+      ~BigBedFile.dd
       ~BigBedFile.fragments
-      ~BigBedFile.select
+      ~BigBedFile.pd
+      ~BigBedFile.pl
+      ~BigBedFile.regions
+      ~BigBedFile.scanner
+      ~BigBedFile.to_dask
+      ~BigBedFile.to_duckdb
+      ~BigBedFile.to_ipc
+      ~BigBedFile.to_pandas
+      ~BigBedFile.to_polars
       ~BigBedFile.zoom
    
    
@@ -28,7 +37,7 @@
 
    .. autosummary::
    
-      ~BigBedFile.fields
+      ~BigBedFile.columns
       ~BigBedFile.schema
       ~BigBedFile.zoom_levels
    

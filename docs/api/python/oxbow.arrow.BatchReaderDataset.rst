@@ -26,11 +26,6 @@
       ~BatchReaderDataset.sort_by
       ~BatchReaderDataset.take
       ~BatchReaderDataset.to_batches
-      ~BatchReaderDataset.to_dask
-      ~BatchReaderDataset.to_duckdb
-      ~BatchReaderDataset.to_ipc
-      ~BatchReaderDataset.to_pandas
-      ~BatchReaderDataset.to_polars
       ~BatchReaderDataset.to_table
    
    

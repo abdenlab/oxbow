@@ -16,8 +16,17 @@
       ~FastqFile.__init__
       ~FastqFile.batches
       ~FastqFile.dataset
+      ~FastqFile.dd
       ~FastqFile.fragments
-      ~FastqFile.select
+      ~FastqFile.pd
+      ~FastqFile.pl
+      ~FastqFile.regions
+      ~FastqFile.scanner
+      ~FastqFile.to_dask
+      ~FastqFile.to_duckdb
+      ~FastqFile.to_ipc
+      ~FastqFile.to_pandas
+      ~FastqFile.to_polars
    
    
 
@@ -27,7 +36,7 @@
 
    .. autosummary::
    
-      ~FastqFile.fields
+      ~FastqFile.columns
       ~FastqFile.schema
    
    

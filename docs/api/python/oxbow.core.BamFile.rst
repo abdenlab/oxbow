@@ -16,8 +16,17 @@
       ~BamFile.__init__
       ~BamFile.batches
       ~BamFile.dataset
+      ~BamFile.dd
       ~BamFile.fragments
-      ~BamFile.select
+      ~BamFile.pd
+      ~BamFile.pl
+      ~BamFile.regions
+      ~BamFile.scanner
+      ~BamFile.to_dask
+      ~BamFile.to_duckdb
+      ~BamFile.to_ipc
+      ~BamFile.to_pandas
+      ~BamFile.to_polars
    
    
 
@@ -27,7 +36,7 @@
 
    .. autosummary::
    
-      ~BamFile.fields
+      ~BamFile.columns
       ~BamFile.schema
    
    

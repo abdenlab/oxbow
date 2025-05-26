@@ -28,7 +28,8 @@ author = "Oxbow Developers"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "myst_parser",
+    # "myst_parser",
+    "myst_nb",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.mathjax",
@@ -37,7 +38,14 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_design",
 ]
+
+# Autosummary options
 autosummary_generate = True
+autodoc_default_options = {
+    'members': True,
+    'inherited-members': True,
+    # 'show-inheritance': True,
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

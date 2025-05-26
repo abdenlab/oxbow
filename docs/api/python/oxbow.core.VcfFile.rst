@@ -16,8 +16,17 @@
       ~VcfFile.__init__
       ~VcfFile.batches
       ~VcfFile.dataset
+      ~VcfFile.dd
       ~VcfFile.fragments
-      ~VcfFile.select
+      ~VcfFile.pd
+      ~VcfFile.pl
+      ~VcfFile.regions
+      ~VcfFile.scanner
+      ~VcfFile.to_dask
+      ~VcfFile.to_duckdb
+      ~VcfFile.to_ipc
+      ~VcfFile.to_pandas
+      ~VcfFile.to_polars
    
    
 
@@ -27,7 +36,7 @@
 
    .. autosummary::
    
-      ~VcfFile.fields
+      ~VcfFile.columns
       ~VcfFile.schema
    
    

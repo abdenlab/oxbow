@@ -16,8 +16,17 @@
       ~BigWigFile.__init__
       ~BigWigFile.batches
       ~BigWigFile.dataset
+      ~BigWigFile.dd
       ~BigWigFile.fragments
-      ~BigWigFile.select
+      ~BigWigFile.pd
+      ~BigWigFile.pl
+      ~BigWigFile.regions
+      ~BigWigFile.scanner
+      ~BigWigFile.to_dask
+      ~BigWigFile.to_duckdb
+      ~BigWigFile.to_ipc
+      ~BigWigFile.to_pandas
+      ~BigWigFile.to_polars
       ~BigWigFile.zoom
    
    
@@ -28,7 +37,7 @@
 
    .. autosummary::
    
-      ~BigWigFile.fields
+      ~BigWigFile.columns
       ~BigWigFile.schema
       ~BigWigFile.zoom_levels
    

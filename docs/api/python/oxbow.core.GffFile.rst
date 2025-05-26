@@ -16,8 +16,17 @@
       ~GffFile.__init__
       ~GffFile.batches
       ~GffFile.dataset
+      ~GffFile.dd
       ~GffFile.fragments
-      ~GffFile.select
+      ~GffFile.pd
+      ~GffFile.pl
+      ~GffFile.regions
+      ~GffFile.scanner
+      ~GffFile.to_dask
+      ~GffFile.to_duckdb
+      ~GffFile.to_ipc
+      ~GffFile.to_pandas
+      ~GffFile.to_polars
    
    
 
@@ -27,7 +36,7 @@
 
    .. autosummary::
    
-      ~GffFile.fields
+      ~GffFile.columns
       ~GffFile.schema
    
    
