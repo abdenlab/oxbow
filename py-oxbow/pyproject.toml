@@ -34,6 +34,7 @@ dev = [
     "ruff>=0.11.2",
 ]
 docs = [
+    "myst-nb>=1.2.0",
     "myst-parser>=4.0.1; python_version >= '3.10'",
     "sphinx>=8.1.3; python_version >= '3.11'",
     "sphinx-autobuild>=2024.10.3",
