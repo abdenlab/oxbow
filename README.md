@@ -1,4 +1,4 @@
-# oxbow <a href="https://github.com/abdenlab/oxbow"><img align="right" src="./assets/logo.svg" height="38"></img></a>
+# oxbow <a href="https://github.com/abdenlab/oxbow"><img align="right" src="./docs/_static/logo.svg" height="38"></img></a>
 [![DOI](https://zenodo.org/badge/641466193.svg)](https://zenodo.org/doi/10.5281/zenodo.10573864)
 
 Oxbow makes genomic data accessible for high-performance analytics.
