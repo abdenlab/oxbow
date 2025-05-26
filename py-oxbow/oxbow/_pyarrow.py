@@ -107,21 +107,22 @@ class BatchReaderFragment(Fragment):
     @property
     def schema(self) -> pa.Schema:
         """
+        The schema of the RecordBatches in the fragment.
+
         Returns
         -------
         pyarrow.Schema
-            The schema of the RecordBatches in the fragment.
         """
         return self._schema
 
     @property
     def partition_expression(self) -> ds.Expression:
         """
+        An expression that evaluates to true for all data viewed by this fragment.
+
         Returns
         -------
         pyarrow.dataset.Expression
-            An expression that evaluates to true for all data viewed by this
-            fragment.
         """
         return self._partition_expression
 
