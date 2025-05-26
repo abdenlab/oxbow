@@ -405,7 +405,7 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
                                     .sample_names()
                                     .get_index_of(sample_name)
                                     .unwrap();
-                                let maybe_result = series.get(&self.header, i).unwrap();
+                                let maybe_result = series.get(&self.header, i).flatten();
                                 let option = match maybe_result {
                                     Some(Ok(value)) => Some(value),
                                     _ => None,
