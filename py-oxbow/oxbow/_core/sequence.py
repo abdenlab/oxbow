@@ -83,7 +83,7 @@ class SequenceFile(DataSource):
         self._scanner_kwargs = dict(compressed=compressed)
         self._schema_kwargs = dict(fields=fields)
 
-    def select(self, regions: str | list[str]) -> Self:
+    def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
             self._src,
             regions=regions,
@@ -141,7 +141,7 @@ class FastqFile(SequenceFile):
             batch_size=batch_size,
         )
 
-    def select(self, regions: str | list[str]):
+    def regions(self, regions: str | list[str]):
         raise NotImplementedError("FastqFile does not support genomic range queries.")
 
 

@@ -94,7 +94,7 @@ class VariantFile(DataSource):
             genotype_by=genotype_by,
         )
 
-    def select(self, regions: str | list[str]) -> Self:
+    def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
             self._src,
             regions=regions,

@@ -177,15 +177,15 @@ class TestPyVcfScanner:
 
     def test_sample_names(self):
         scanner = ox.PyVcfScanner("data/sample.vcf", compressed=False)
-        assert 1233 == len(scanner.sample_names())
+        assert 3 == len(scanner.sample_names())
 
     def test_sample_names_compressed(self):
         scanner = ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)
-        assert 1233 == len(scanner.sample_names())
+        assert 3 == len(scanner.sample_names())
 
     @pytest.mark.parametrize(
         "input",
-        Input.permute(batch_size=[2], samples=[["HG00096", "HG00101", "HG00103"]]),
+        Input.permute(batch_size=[2], samples=[["NA12878i", "NA12891", "NA12892"]]),
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
         scanner = ox.PyVcfScanner("data/sample.vcf", compressed=False)
@@ -196,7 +196,7 @@ class TestPyVcfScanner:
 
     @pytest.mark.parametrize(
         "input",
-        Input.permute(batch_size=[2], samples=[["HG00096", "HG00101", "HG00103"]]),
+        Input.permute(batch_size=[2], samples=[["NA12878i", "NA12891", "NA12892"]]),
     )
     def test_scan_compressed(self, input, manifest: pytest_manifest.Manifest):
         scanner = ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)
@@ -219,10 +219,10 @@ class TestPyVcfScanner:
     @pytest.mark.parametrize(
         "input",
         Input.permute(
-            region=["Y"],
+            region=["X"],
             index=["data/sample.vcf.gz.csi", "data/sample.vcf.gz.tbi"],
             batch_size=[2],
-            samples=[["HG00096", "HG00101", "HG00103"]],
+            samples=[["NA12878i", "NA12891", "NA12892"]],
         ),
     )
     def test_scan_query(self, input, manifest: pytest_manifest.Manifest):

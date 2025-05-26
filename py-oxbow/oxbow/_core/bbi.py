@@ -106,7 +106,7 @@ class BigBedFile(BbiFile):
         self._schema_kwargs = dict(fields=fields)
         self._scanner_kwargs = dict(schema=schema)
 
-    def select(self, regions: str | list[str]) -> Self:
+    def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
             self._src,
             regions=regions,
@@ -136,7 +136,7 @@ class BigWigFile(BbiFile):
         self._schema_kwargs = dict(fields=fields)
         self._scanner_kwargs = {}
 
-    def select(self, regions: str | list[str]) -> Self:
+    def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
             self._source,
             regions=regions,
@@ -207,7 +207,7 @@ class BbiZoom(DataSource):
         self._regions = regions
         self._schema_kwargs = dict(fields=fields)
 
-    def select(self, regions: str | list[str]) -> Self:
+    def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
             self._base,
             self._resolution,

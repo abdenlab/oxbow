@@ -79,9 +79,9 @@ class TestVcfFile:
     @pytest.mark.parametrize(
         "regions",
         [
-            ["Y"],
-            ["Y:9089648-14384313"],
-            ["Y:9089648-14384313", "Y:21000000-21001000"],
+            ["X"],
+            ["X:51000000-51100000"],
+            ["X:51000000-51100000", "X:21000000-21001000"],
         ],
     )
     def test_input_with_regions(self, regions):
@@ -89,7 +89,7 @@ class TestVcfFile:
             "data/sample.vcf.gz",
             compressed=True,
             index="data/sample.vcf.gz.tbi",
-            samples=["HG00096", "HG00101", "HG00103"],
+            samples=["NA12878i", "NA12891", "NA12892"],
             regions=regions,
         )
         file.pl()
@@ -98,7 +98,7 @@ class TestVcfFile:
             "data/sample.vcf.gz",
             compressed=True,
             index="data/sample.vcf.gz.csi",
-            samples=["HG00096", "HG00101", "HG00103"],
+            samples=["NA12878i", "NA12891", "NA12892"],
             regions=regions,
         )
         file.pl()
@@ -107,7 +107,7 @@ class TestVcfFile:
             "data/sample.vcf.gz",
             compressed=True,
             index=None,  # inferred from name
-            samples=["HG00096", "HG00101", "HG00103"],
+            samples=["NA12878i", "NA12891", "NA12892"],
             regions=regions,
         )
         file.pl()

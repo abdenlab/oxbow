@@ -95,17 +95,16 @@ class DataSource:
         ...
 
     @abstractmethod
-    def select(self, regions: str | list[str]) -> Self:
+    def regions(self, regions: str | list[str]) -> Self:
         """
-        Query a genomic range within the data source.
+        Query one or more genomic ranges within the data source.
 
         This method creates a new instance of the data source with the same
-        parameters, applies any overrides specified by keyword arguments,
-        and returns it as a dataset.
+        parameters, overriding the regions to select from the data source.
 
         Parameters
         ----------
-        regions
+        regions: str | list[str]
             The regions to select from the data source. This can be a single
             region or a list of regions.
 
@@ -201,7 +200,10 @@ class DataSource:
         if lazy:
             return pl.scan_pyarrow_dataset(self.dataset())
         else:
-            return pl.from_arrow(self.batches())
+            batches = list(self.batches())
+            if not batches:
+                return pl.from_arrow(self.schema.empty_table())
+            return pl.from_arrow(batches)
 
     pl = to_polars
 
@@ -229,10 +231,7 @@ class DataSource:
             return df
 
         # Generate a "meta" pandas DataFrame which serves as a schema for dask
-        schema = self.schema
-        meta = pa.Table.from_arrays(
-            [pa.array([], type=field.type) for field in schema], schema=schema
-        ).to_pandas()
+        meta = self.schema.empty_table().to_pandas()
 
         # This does a full-pass scan over all record batches to find the row
         # offsets of each fragment. While a costly first step, it will endow

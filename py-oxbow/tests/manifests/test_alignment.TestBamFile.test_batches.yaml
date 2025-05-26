@@ -1,81 +1,412 @@
 fields=None:
     batch-00:
         cigar:
-        - 8M4I4M1D3M
-        - 1S2I6M1P1I1P1I4M2I
-        - 5H6M
+        - 50M
+        - 75M
+        - 75M
+        - 75M
+        - 50M
+        - 75M
+        - 50M
+        - 50M
+        - 75M
+        - 75M
         end:
-        - 22
-        - 18
-        - 14
+        - 10591
+        - 10620
+        - 946531
+        - 1014134
+        - 197006
+        - 197032
+        - 197010
+        - 503896
+        - 586259
+        - 587635
         flag:
         - 163
-        - 0
+        - 16
+        - 16
+        - 16
+        - 83
+        - 16
+        - 163
+        - 161
+        - 16
         - 0
         mapq:
-        - 30
-        - 30
-        - 30
-        pnext:
+        - 0
+        - 16
+        - 0
         - 37
+        - 60
+        - 37
+        - 60
+        - 0
+        - 0
+        - 0
+        pnext:
+        - 10571
+        - null
+        - null
+        - null
+        - 196008
+        - null
+        - 319702
+        - 185365552
         - null
         - null
         pos:
-        - 7
-        - 9
-        - 9
+        - 10542
+        - 10546
+        - 946457
+        - 1014060
+        - 196957
+        - 196958
+        - 196961
+        - 503847
+        - 586185
+        - 587561
         qname:
-        - r001
-        - r002
-        - r003
+        - HWI-BRUNOP16X_0001:3:48:4861:11838#0
+        - HWI-BRUNOP16X_0001:3:28:6650:168848#0
+        - HWI-BRUNOP16X_0001:3:8:20066:88158#0
+        - HWI-BRUNOP16X_0001:3:27:10302:58768#0
+        - HWI-BRUNOP16X_0001:3:65:3144:143676#0
+        - HWI-BRUNOP16X_0001:3:68:13088:156644#0
+        - HWI-BRUNOP16X_0001:3:48:3417:101389#0
+        - HWI-BRUNOP16X_0001:3:46:17583:95767#0
+        - HWI-BRUNOP16X_0001:3:4:7989:14941#0
+        - HWI-BRUNOP16X_0001:3:44:11450:50194#0
         qual:
-        - null
-        - null
-        - null
+        - gggggggggggggggggggggggggeggggR\_[\ggggghggggggggg
+        - fggggggggdgdggcdfggggfgggggggggggggggggggggggggfggggggggggggggggggggggggggg
+        - BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBd`aed``__U^__]_ggggcggggd]\\\[\]^]]gggggdfcbb
+        - BBBBBBBBBBBBBBBBcYRcffggfgf_gfg\deegfgfgfcggcggfggggcgggggcgcggfgggggggggeg
+        - BBBBBBBBBBBBBB_TTSSS[[Obbd`]e^STTTSZW`beTTTTTSSTTT
+        - BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB^bg_`[^\]X`ZZcggggdfgggggggg
+        - gggggggggggggggggggggggfdaggggggdgggfgdhbe\T`BBBBB
+        - ddfdfd____dffff]__aeZ]\XZSPSNSSSSSSbbaabZ_``BBBBBB
+        - BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+        - BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
         rname:
         - chr1
         - chr1
         - chr1
+        - chr1
+        - chr3
+        - chr3
+        - chr3
+        - chrX
+        - chrY
+        - chrY
         rnext:
         - chr1
         - null
         - null
+        - null
+        - chr3
+        - null
+        - chr3
+        - chr4
+        - null
+        - null
         seq:
-        - TTAGATAAAGAGGATACTG
-        - AAAAGATAAGGGATAAA
-        - AGCTAA
+        - CGAAATCTGTGCAGAGGAGAACGCAGCTCCGCCCTCGCGGTGCTCTCCGG
+        - ATCTGTGCAGAGGAGAACGCAGCTCCGCCCTCGCGGTGCTCTCCGGGTCTGTGCTGAGGAGAACGCAGCTCCGCC
+        - TAGTCCGAGGTCTCCTGAACCTTCCCAAGCAGCTGCTGCACCTGCCGGCAGTAGTTGGCCACCTTGCACTCCCGG
+        - AGCTGAATGGGCAGGTCCCCCAGAAGATCGGCGTGCACGCCTTCCAGCAGCGTCTGGCTGTCCACCCGAGCGGTG
+        - GTAACGCTCCCGGACCCTGCGCGCCCCCGTCCCGGCTCCCGGCCGGCTCG
+        - GACCCCCCCGGCCCCCGGCGCCCCCCCGCCCCGCCCCCGGGCGGGCGGGGGGGAGAAGGCGCCCGAGGGGAGGCG
+        - GCTTACCGGACCCTGCGCGCCCCCGTCCCGGCTCCCGGCCGGCTCGGGGG
+        - TTTTATTTTTTTTTTTGAGATGGAGTCTCGCTCTTGTCACCGAGGCTGGA
+        - GTGCGATCTCGGTTCGCTGCAACCTCTGCTTCCCAGGTTCAAGTGATTCTCCGGCCTCAGCCTCCCAAGTAGCNN
+        - NNTGCAGTGAGCTGAGATTGTGCCACTGCACTCCAGCCTGGGTGACAGAGGTAGACTGTGTCTCAAAAAAAAAAA
         tags:
-        -   XX:
-            - 12561
-            - 2
-            - 20
-            - 112
-        -   XX: null
-        -   XX: null
+        -   AM: 0
+            MD: 18C31
+            NM: 1
+            RG: brain_50_fcb
+            SM: 0
+            X0: 3
+            X1: 8
+            XA: null
+            XG: 0
+            XM: 1
+            XO: 0
+            XT: '82'
+        -   AM: null
+            MD: 14C52A7
+            NM: 2
+            RG: brain_75_fca
+            SM: null
+            X0: 1
+            X1: 5
+            XA: null
+            XG: 0
+            XM: 2
+            XO: 0
+            XT: '85'
+        -   AM: null
+            MD: 2T0G5T65
+            NM: 3
+            RG: brain_75_fca
+            SM: null
+            X0: 2
+            X1: 0
+            XA: 2,-131443143,75M,3;
+            XG: 0
+            XM: 3
+            XO: 0
+            XT: '82'
+        -   AM: null
+            MD: 7G1C4A2A57
+            NM: 4
+            RG: brain_75_fca
+            SM: null
+            X0: 1
+            X1: 0
+            XA: null
+            XG: 0
+            XM: 4
+            XO: 0
+            XT: '85'
+        -   AM: 37
+            MD: 0C0A0G1G0C0T1A41
+            NM: 7
+            RG: brain_50_fcb
+            SM: 37
+            X0: 1
+            X1: 0
+            XA: null
+            XG: 0
+            XM: 7
+            XO: 0
+            XT: '85'
+        -   AM: null
+            MD: 0A0G0A0G1T0T0A1C1G0A3T4G6T4G1T2C3C3T0C27
+            NM: 19
+            RG: brain_75_fca
+            SM: null
+            X0: 1
+            X1: 0
+            XA: null
+            XG: 0
+            XM: 19
+            XO: 0
+            XT: '85'
+        -   AM: 37
+            MD: '50'
+            NM: 0
+            RG: brain_50_fcb
+            SM: 37
+            X0: 1
+            X1: 0
+            XA: null
+            XG: 0
+            XM: 0
+            XO: 0
+            XT: '85'
+        -   AM: 0
+            MD: 4T36C8
+            NM: 2
+            RG: brain_50_fcb
+            SM: 0
+            X0: 18
+            X1: 174
+            XA: null
+            XG: 0
+            XM: 2
+            XO: 0
+            XT: '82'
+        -   AM: null
+            MD: 4C10A10C16C29T0G0
+            NM: 6
+            RG: brain_75_fca
+            SM: null
+            X0: 2
+            X1: 2
+            XA: X,-586185,75M,6;3,+196723225,75M,7;19,+13666092,75M,7;
+            XG: 0
+            XM: 6
+            XO: 0
+            XT: '82'
+        -   AM: null
+            MD: 0G0G48T0G23
+            NM: 4
+            RG: brain_75_fca
+            SM: null
+            X0: 6
+            X1: 54
+            XA: null
+            XG: 0
+            XM: 4
+            XO: 0
+            XT: '82'
         tlen:
-        - 39
+        - 79
+        - 0
+        - 0
+        - 0
+        - -999
+        - 0
+        - 122791
+        - 0
         - 0
         - 0
 fields=['qname', 'rname', 'foo']: 'Invalid field name: foo'
 fields=['qname', 'rname', 'mapq']:
     batch-00:
         mapq:
-        - 30
-        - 30
-        - 30
+        - 0
+        - 16
+        - 0
+        - 37
+        - 60
+        - 37
+        - 60
+        - 0
+        - 0
+        - 0
         qname:
-        - r001
-        - r002
-        - r003
+        - HWI-BRUNOP16X_0001:3:48:4861:11838#0
+        - HWI-BRUNOP16X_0001:3:28:6650:168848#0
+        - HWI-BRUNOP16X_0001:3:8:20066:88158#0
+        - HWI-BRUNOP16X_0001:3:27:10302:58768#0
+        - HWI-BRUNOP16X_0001:3:65:3144:143676#0
+        - HWI-BRUNOP16X_0001:3:68:13088:156644#0
+        - HWI-BRUNOP16X_0001:3:48:3417:101389#0
+        - HWI-BRUNOP16X_0001:3:46:17583:95767#0
+        - HWI-BRUNOP16X_0001:3:4:7989:14941#0
+        - HWI-BRUNOP16X_0001:3:44:11450:50194#0
         rname:
         - chr1
         - chr1
         - chr1
+        - chr1
+        - chr3
+        - chr3
+        - chr3
+        - chrX
+        - chrY
+        - chrY
         tags:
-        -   XX:
-            - 12561
-            - 2
-            - 20
-            - 112
-        -   XX: null
-        -   XX: null
+        -   AM: 0
+            MD: 18C31
+            NM: 1
+            RG: brain_50_fcb
+            SM: 0
+            X0: 3
+            X1: 8
+            XA: null
+            XG: 0
+            XM: 1
+            XO: 0
+            XT: '82'
+        -   AM: null
+            MD: 14C52A7
+            NM: 2
+            RG: brain_75_fca
+            SM: null
+            X0: 1
+            X1: 5
+            XA: null
+            XG: 0
+            XM: 2
+            XO: 0
+            XT: '85'
+        -   AM: null
+            MD: 2T0G5T65
+            NM: 3
+            RG: brain_75_fca
+            SM: null
+            X0: 2
+            X1: 0
+            XA: 2,-131443143,75M,3;
+            XG: 0
+            XM: 3
+            XO: 0
+            XT: '82'
+        -   AM: null
+            MD: 7G1C4A2A57
+            NM: 4
+            RG: brain_75_fca
+            SM: null
+            X0: 1
+            X1: 0
+            XA: null
+            XG: 0
+            XM: 4
+            XO: 0
+            XT: '85'
+        -   AM: 37
+            MD: 0C0A0G1G0C0T1A41
+            NM: 7
+            RG: brain_50_fcb
+            SM: 37
+            X0: 1
+            X1: 0
+            XA: null
+            XG: 0
+            XM: 7
+            XO: 0
+            XT: '85'
+        -   AM: null
+            MD: 0A0G0A0G1T0T0A1C1G0A3T4G6T4G1T2C3C3T0C27
+            NM: 19
+            RG: brain_75_fca
+            SM: null
+            X0: 1
+            X1: 0
+            XA: null
+            XG: 0
+            XM: 19
+            XO: 0
+            XT: '85'
+        -   AM: 37
+            MD: '50'
+            NM: 0
+            RG: brain_50_fcb
+            SM: 37
+            X0: 1
+            X1: 0
+            XA: null
+            XG: 0
+            XM: 0
+            XO: 0
+            XT: '85'
+        -   AM: 0
+            MD: 4T36C8
+            NM: 2
+            RG: brain_50_fcb
+            SM: 0
+            X0: 18
+            X1: 174
+            XA: null
+            XG: 0
+            XM: 2
+            XO: 0
+            XT: '82'
+        -   AM: null
+            MD: 4C10A10C16C29T0G0
+            NM: 6
+            RG: brain_75_fca
+            SM: null
+            X0: 2
+            X1: 2
+            XA: X,-586185,75M,6;3,+196723225,75M,7;19,+13666092,75M,7;
+            XG: 0
+            XM: 6
+            XO: 0
+            XT: '82'
+        -   AM: null
+            MD: 0G0G48T0G23
+            NM: 4
+            RG: brain_75_fca
+            SM: null
+            X0: 6
+            X1: 54
+            XA: null
+            XG: 0
+            XM: 4
+            XO: 0
+            XT: '82'

@@ -82,7 +82,7 @@ class GxfFile(DataSource):
             attribute_defs = self.scanner().attribute_defs(attribute_scan_rows)
         self._schema_kwargs = dict(fields=fields, attribute_defs=attribute_defs)
 
-    def select(self, regions: str | list[str]) -> Self:
+    def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
             self._src,
             regions=regions,

@@ -76,7 +76,7 @@ class BedFile(DataSource):
         self._scanner_kwargs = dict(bed_schema=bed_schema, compressed=compressed)
         self._schema_kwargs = dict(fields=fields)
 
-    def select(self, regions: str | list[str]) -> Self:
+    def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
             self._src,
             regions=regions,

@@ -87,7 +87,7 @@ class AlignmentFile(DataSource):
             tag_defs = self.scanner().tag_defs(tag_scan_rows)
         self._schema_kwargs = dict(fields=fields, tag_defs=tag_defs)
 
-    def select(self, regions: str | list[str]) -> Self:
+    def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
             self._src,
             regions=regions,

@@ -216,7 +216,7 @@ class TestFastqFile:
     def test_select(self, filepath):
         file = ox.FastqFile(filepath)
         with pytest.raises(NotImplementedError):
-            file.select("seq1:10-20")
+            file.regions("seq1:10-20")
 
     def test_input_encodings(self):
         file = ox.FastqFile("data/sample.fastq", compressed=False, batch_size=3)
