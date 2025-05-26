@@ -12,23 +12,10 @@ Read specialized bioinformatic file formats into dataframes.
 pip install oxbow
 ```
 
-## Usage
+To build and install the bleeding edge from GitHub (requires Rust and maturin to build the package locally):
 
-[API Documentation](https://abdenlab.org/oxbow/)
-
-```python
-import oxbow as ox
-
-arrow_ipc = ox.read_bam("data.bam", "chr1:1-100000")
-
-# Read into polars
-import polars as pl
-df = pl.read_ipc(arrow_ipc)
-
-# Read into pandas
-import io
-import pyarrow.ipc
-df = pyarrow.ipc.open_file(io.BytesIO(ipc)).read_pandas()
+```sh
+pip install 'git+https://github.com/abdenlab/oxbow.git@main#egg=oxbow&subdirectory=py-oxbow'
 ```
 
 ## Development
