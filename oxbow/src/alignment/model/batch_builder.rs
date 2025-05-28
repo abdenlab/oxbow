@@ -157,24 +157,12 @@ impl Push<&noodles::sam::Record> for BatchBuilder {
             let data = record.data();
             for (def, builder) in self.tag_builders.iter_mut() {
                 let tag = Tag::from(def.into_bytes());
-                let ty = def.ty.noodles_type();
                 match data.get(&tag) {
                     // tag is present in this record
                     Some(result) => {
                         match result {
                             // tag parsed successfully
                             Ok(value) => {
-                                if value.ty() != ty {
-                                    return Err(io::Error::new(
-                                        io::ErrorKind::InvalidData,
-                                        format!(
-                                            "Type mismatch for tag {}; expected {:?}, got {:?}",
-                                            def.name,
-                                            ty,
-                                            value.ty()
-                                        ),
-                                    ));
-                                }
                                 builder.append_value(&value)?;
                             }
                             // tag could not be parsed
@@ -208,24 +196,12 @@ impl Push<&noodles::bam::Record> for BatchBuilder {
             let data = record.data();
             for (def, builder) in self.tag_builders.iter_mut() {
                 let tag = Tag::from(def.into_bytes());
-                let ty = def.ty.noodles_type();
                 match data.get(&tag) {
                     // tag is present in this record
                     Some(result) => {
                         match result {
                             // tag parsed successfully
                             Ok(value) => {
-                                if value.ty() != ty {
-                                    return Err(io::Error::new(
-                                        io::ErrorKind::InvalidData,
-                                        format!(
-                                            "Type mismatch for tag {}; expected {:?}, got {:?}",
-                                            def.name,
-                                            ty,
-                                            value.ty()
-                                        ),
-                                    ));
-                                }
                                 builder.append_value(&value)?;
                             }
                             // tag could not be parsed
@@ -279,7 +255,7 @@ mod tests {
         assert_eq!(schema.field(2).name(), "tags");
         assert_eq!(
             schema.field(2).data_type(),
-            &DataType::Struct(vec![ArrowField::new("NM", DataType::Int32, true)].into())
+            &DataType::Struct(vec![ArrowField::new("NM", DataType::Int64, true)].into())
         );
     }
 

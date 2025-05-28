@@ -3,10 +3,7 @@ use std::io;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use arrow::array::{
-    ArrayRef, Float32Builder, GenericStringBuilder, Int16Builder, Int32Builder, Int8Builder,
-    ListBuilder, UInt16Builder, UInt32Builder, UInt8Builder,
-};
+use arrow::array::{ArrayRef, Float32Builder, GenericStringBuilder, Int64Builder, ListBuilder};
 use arrow::datatypes::{DataType, Field as ArrowField};
 
 use bstr::ByteSlice;
@@ -125,35 +122,35 @@ impl TagType {
             Self::Character => DataType::Utf8,
             Self::String => DataType::Utf8,
             Self::Hex => DataType::Utf8,
-            Self::Int8 => DataType::Int8,
-            Self::UInt8 => DataType::UInt8,
-            Self::Int16 => DataType::Int16,
-            Self::UInt16 => DataType::UInt16,
-            Self::Int32 => DataType::Int32,
-            Self::UInt32 => DataType::UInt32,
+            Self::Int8 => DataType::Int64,
+            Self::UInt8 => DataType::Int64,
+            Self::Int16 => DataType::Int64,
+            Self::UInt16 => DataType::Int64,
+            Self::Int32 => DataType::Int64,
+            Self::UInt32 => DataType::Int64,
             Self::Float => DataType::Float32,
             Self::ArrayInt8 => {
-                let item = ArrowField::new("item", DataType::Int8, true);
+                let item = ArrowField::new("item", DataType::Int64, true);
                 DataType::List(Arc::new(item))
             }
             Self::ArrayUInt8 => {
-                let item = ArrowField::new("item", DataType::UInt8, true);
+                let item = ArrowField::new("item", DataType::Int64, true);
                 DataType::List(Arc::new(item))
             }
             Self::ArrayInt16 => {
-                let item = ArrowField::new("item", DataType::Int16, true);
+                let item = ArrowField::new("item", DataType::Int64, true);
                 DataType::List(Arc::new(item))
             }
             Self::ArrayUInt16 => {
-                let item = ArrowField::new("item", DataType::UInt16, true);
+                let item = ArrowField::new("item", DataType::Int64, true);
                 DataType::List(Arc::new(item))
             }
             Self::ArrayInt32 => {
-                let item = ArrowField::new("item", DataType::Int32, true);
+                let item = ArrowField::new("item", DataType::Int64, true);
                 DataType::List(Arc::new(item))
             }
             Self::ArrayUInt32 => {
-                let item = ArrowField::new("item", DataType::UInt32, true);
+                let item = ArrowField::new("item", DataType::Int64, true);
                 DataType::List(Arc::new(item))
             }
             Self::ArrayFloat => {
@@ -221,25 +218,18 @@ impl FromStr for TagType {
 }
 
 /// A builder for Arrow arrays (columns) based on alignment tags.
+///
+/// The `String` builder also serves as a sink for any tag value in cases where there are
+/// unresolvable mismatches between tag types for the same tag name across different records.
 #[derive(Debug)]
 pub enum TagBuilder {
     Character(GenericStringBuilder<i32>),
     String(GenericStringBuilder<i32>),
     Hex(GenericStringBuilder<i32>),
-    Int8(Int8Builder),
-    UInt8(UInt8Builder),
-    Int16(Int16Builder),
-    UInt16(UInt16Builder),
-    Int32(Int32Builder),
-    UInt32(UInt32Builder),
+    Integer(Int64Builder),
     Float(Float32Builder),
-    ArrayInt8(ListBuilder<Int8Builder>),
-    ArrayUInt8(ListBuilder<UInt8Builder>),
-    ArrayInt16(ListBuilder<Int16Builder>),
-    ArrayUInt16(ListBuilder<UInt16Builder>),
-    ArrayInt32(ListBuilder<Int32Builder>),
-    ArrayUInt32(ListBuilder<UInt32Builder>),
-    ArrayFloat(ListBuilder<Float32Builder>),
+    IntegerArray(ListBuilder<Int64Builder>),
+    FloatArray(ListBuilder<Float32Builder>),
 }
 
 impl TagBuilder {
@@ -248,20 +238,20 @@ impl TagBuilder {
             TagType::Character => Self::Character(GenericStringBuilder::<i32>::new()),
             TagType::String => Self::String(GenericStringBuilder::<i32>::new()),
             TagType::Hex => Self::Hex(GenericStringBuilder::<i32>::new()),
-            TagType::Int8 => Self::Int8(Int8Builder::new()),
-            TagType::UInt8 => Self::UInt8(UInt8Builder::new()),
-            TagType::Int16 => Self::Int16(Int16Builder::new()),
-            TagType::UInt16 => Self::UInt16(UInt16Builder::new()),
-            TagType::Int32 => Self::Int32(Int32Builder::new()),
-            TagType::UInt32 => Self::UInt32(UInt32Builder::new()),
+            TagType::Int8 => Self::Integer(Int64Builder::new()),
+            TagType::UInt8 => Self::Integer(Int64Builder::new()),
+            TagType::Int16 => Self::Integer(Int64Builder::new()),
+            TagType::UInt16 => Self::Integer(Int64Builder::new()),
+            TagType::Int32 => Self::Integer(Int64Builder::new()),
+            TagType::UInt32 => Self::Integer(Int64Builder::new()),
             TagType::Float => Self::Float(Float32Builder::new()),
-            TagType::ArrayInt8 => Self::ArrayInt8(ListBuilder::new(Int8Builder::new())),
-            TagType::ArrayUInt8 => Self::ArrayUInt8(ListBuilder::new(UInt8Builder::new())),
-            TagType::ArrayInt16 => Self::ArrayInt16(ListBuilder::new(Int16Builder::new())),
-            TagType::ArrayUInt16 => Self::ArrayUInt16(ListBuilder::new(UInt16Builder::new())),
-            TagType::ArrayInt32 => Self::ArrayInt32(ListBuilder::new(Int32Builder::new())),
-            TagType::ArrayUInt32 => Self::ArrayUInt32(ListBuilder::new(UInt32Builder::new())),
-            TagType::ArrayFloat => Self::ArrayFloat(ListBuilder::new(Float32Builder::new())),
+            TagType::ArrayInt8 => Self::IntegerArray(ListBuilder::new(Int64Builder::new())),
+            TagType::ArrayUInt8 => Self::IntegerArray(ListBuilder::new(Int64Builder::new())),
+            TagType::ArrayInt16 => Self::IntegerArray(ListBuilder::new(Int64Builder::new())),
+            TagType::ArrayUInt16 => Self::IntegerArray(ListBuilder::new(Int64Builder::new())),
+            TagType::ArrayInt32 => Self::IntegerArray(ListBuilder::new(Int64Builder::new())),
+            TagType::ArrayUInt32 => Self::IntegerArray(ListBuilder::new(Int64Builder::new())),
+            TagType::ArrayFloat => Self::FloatArray(ListBuilder::new(Float32Builder::new())),
         }
     }
 
@@ -270,182 +260,205 @@ impl TagBuilder {
             Self::Character(builder) => builder.append_null(),
             Self::String(builder) => builder.append_null(),
             Self::Hex(builder) => builder.append_null(),
-            Self::Int8(builder) => builder.append_null(),
-            Self::UInt8(builder) => builder.append_null(),
-            Self::Int16(builder) => builder.append_null(),
-            Self::UInt16(builder) => builder.append_null(),
-            Self::Int32(builder) => builder.append_null(),
-            Self::UInt32(builder) => builder.append_null(),
+            Self::Integer(builder) => builder.append_null(),
             Self::Float(builder) => builder.append_null(),
-            Self::ArrayInt8(builder) => builder.append(false),
-            Self::ArrayUInt8(builder) => builder.append(false),
-            Self::ArrayInt16(builder) => builder.append(false),
-            Self::ArrayUInt16(builder) => builder.append(false),
-            Self::ArrayInt32(builder) => builder.append(false),
-            Self::ArrayUInt32(builder) => builder.append(false),
-            Self::ArrayFloat(builder) => builder.append(false),
+            Self::IntegerArray(builder) => builder.append(false),
+            Self::FloatArray(builder) => builder.append(false),
         }
     }
 
     pub fn append_value(&mut self, value: &Value) -> io::Result<()> {
-        match value {
-            Value::Character(v) => match self {
-                Self::Character(builder) => {
+        match self {
+            Self::Character(builder) => {
+                if let Value::Character(v) = value {
+                    builder.append_value(v.to_string());
+                    Ok(())
+                } else {
+                    Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Type mismatch: expected Character, got {:?}", value),
+                    ))
+                }
+            }
+            Self::Hex(builder) => {
+                if let Value::Hex(v) = value {
+                    match v.to_str() {
+                        Ok(s) => {
+                            builder.append_value(s);
+                            Ok(())
+                        }
+                        Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
+                    }
+                } else {
+                    Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Type mismatch: expected Hex, got {:?}", value),
+                    ))
+                }
+            }
+            Self::Integer(builder) => match value.as_int() {
+                Some(v) => {
+                    builder.append_value(v);
+                    Ok(())
+                }
+                None => Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("Type mismatch: expected Integer, got {:?}", value),
+                )),
+            },
+            Self::Float(builder) => match value {
+                Value::Float(v) => {
+                    builder.append_value(*v);
+                    Ok(())
+                }
+                Value::Int8(v) => {
+                    builder.append_value(f32::from(*v));
+                    Ok(())
+                }
+                Value::UInt8(v) => {
+                    builder.append_value(f32::from(*v));
+                    Ok(())
+                }
+                Value::Int16(v) => {
+                    builder.append_value(f32::from(*v));
+                    Ok(())
+                }
+                Value::UInt16(v) => {
+                    builder.append_value(f32::from(*v));
+                    Ok(())
+                }
+                _ => Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!(
+                        "Type mismatch: expected Float or compatible integer, got {:?}",
+                        value
+                    ),
+                )),
+            },
+            Self::String(builder) => match value {
+                Value::String(v) => match v.to_str() {
+                    Ok(s) => {
+                        builder.append_value(s);
+                        Ok(())
+                    }
+                    Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
+                },
+                Value::Character(v) => {
                     builder.append_value(v.to_string());
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
-                    ),
-                )),
-            },
-            Value::String(v) => match self {
-                Self::String(builder) => {
-                    match v.to_str() {
-                        Ok(s) => builder.append_value(s),
-                        Err(e) => return Err(io::Error::new(io::ErrorKind::InvalidData, e)),
-                    }
+                Value::Hex(v) => {
+                    builder.append_value(v.to_string());
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
-                    ),
-                )),
-            },
-            Value::Hex(v) => match self {
-                Self::Hex(builder) => {
-                    match v.to_str() {
-                        Ok(s) => builder.append_value(s),
-                        Err(e) => return Err(io::Error::new(io::ErrorKind::InvalidData, e)),
-                    }
+                Value::Int8(v) => {
+                    builder.append_value(v.to_string());
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
-                    ),
-                )),
-            },
-            Value::Int8(v) => match self {
-                Self::Int8(builder) => {
-                    builder.append_value(*v);
+                Value::UInt8(v) => {
+                    builder.append_value(v.to_string());
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
-                    ),
-                )),
-            },
-            Value::UInt8(v) => match self {
-                Self::UInt8(builder) => {
-                    builder.append_value(*v);
+                Value::Int16(v) => {
+                    builder.append_value(v.to_string());
                     Ok(())
                 }
-                Self::Int8(builder) => {
-                    if *v > i8::MAX as u8 {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidInput,
-                            format!("Value {} exceeds i8 range", v),
-                        ));
-                    }
-                    builder.append_value(*v as i8);
+                Value::UInt16(v) => {
+                    builder.append_value(v.to_string());
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
-                    ),
-                )),
-            },
-            Value::Int16(v) => match self {
-                Self::Int16(builder) => {
-                    builder.append_value(*v);
+                Value::Int32(v) => {
+                    builder.append_value(v.to_string());
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
-                    ),
-                )),
-            },
-            Value::UInt16(v) => match self {
-                Self::UInt16(builder) => {
-                    builder.append_value(*v);
+                Value::UInt32(v) => {
+                    builder.append_value(v.to_string());
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
-                    ),
-                )),
-            },
-            Value::Int32(v) => match self {
-                Self::Int32(builder) => {
-                    builder.append_value(*v);
+                Value::Float(v) => {
+                    builder.append_value(v.to_string());
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
-                    ),
-                )),
-            },
-            Value::UInt32(v) => match self {
-                Self::UInt32(builder) => {
-                    builder.append_value(*v);
+                Value::Array(array) => {
+                    let s = array_to_string(array)?;
+                    builder.append_value(s);
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
-                    ),
-                )),
             },
-            Value::Float(v) => match self {
-                Self::Float(builder) => {
-                    builder.append_value(*v);
+            _ => {
+                if let Value::Array(array) = value {
+                    self.append_values(array)?;
                     Ok(())
+                } else {
+                    Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!(
+                            "Type mismatch: expected an Array, got non-array {:?}",
+                            value
+                        ),
+                    ))
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
-                    ),
-                )),
-            },
-            Value::Array(array) => self.append_values(array),
+            }
         }
     }
 
     fn append_values(&mut self, array: &Array) -> io::Result<()> {
-        match array {
-            Array::Int8(values) => match self {
-                Self::ArrayInt8(builder) => {
+        match self {
+            Self::IntegerArray(builder) => match array {
+                Array::Int8(values) => {
                     for value in values.iter() {
                         match value {
-                            Ok(v) => builder.values().append_value(v),
+                            Ok(v) => builder.values().append_value(i64::from(v)),
+                            Err(e) => return Err(e),
+                        }
+                    }
+                    builder.append(true);
+                    Ok(())
+                }
+                Array::UInt8(values) => {
+                    for value in values.iter() {
+                        match value {
+                            Ok(v) => builder.values().append_value(i64::from(v)),
+                            Err(e) => return Err(e),
+                        }
+                    }
+                    builder.append(true);
+                    Ok(())
+                }
+                Array::Int16(values) => {
+                    for value in values.iter() {
+                        match value {
+                            Ok(v) => builder.values().append_value(i64::from(v)),
+                            Err(e) => return Err(e),
+                        }
+                    }
+                    builder.append(true);
+                    Ok(())
+                }
+                Array::UInt16(values) => {
+                    for value in values.iter() {
+                        match value {
+                            Ok(v) => builder.values().append_value(i64::from(v)),
+                            Err(e) => return Err(e),
+                        }
+                    }
+                    builder.append(true);
+                    Ok(())
+                }
+                Array::Int32(values) => {
+                    for value in values.iter() {
+                        match value {
+                            Ok(v) => builder.values().append_value(i64::from(v)),
+                            Err(e) => return Err(e),
+                        }
+                    }
+                    builder.append(true);
+                    Ok(())
+                }
+                Array::UInt32(values) => {
+                    for value in values.iter() {
+                        match value {
+                            Ok(v) => builder.values().append_value(i64::from(v)),
                             Err(e) => return Err(e),
                         }
                     }
@@ -455,13 +468,13 @@ impl TagBuilder {
                 _ => Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
                     format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        array, self
+                        "Type mismatch: expected Array<Int8/16/32/UInt8/16/32>, got {:?}",
+                        array
                     ),
                 )),
             },
-            Array::UInt8(values) => match self {
-                Self::ArrayUInt8(builder) => {
+            Self::FloatArray(builder) => match array {
+                Array::Float(values) => {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(v),
@@ -471,19 +484,40 @@ impl TagBuilder {
                     builder.append(true);
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        array, self
-                    ),
-                )),
-            },
-            Array::Int16(values) => match self {
-                Self::ArrayInt16(builder) => {
+                Array::Int8(values) => {
                     for value in values.iter() {
                         match value {
-                            Ok(v) => builder.values().append_value(v),
+                            Ok(v) => builder.values().append_value(f32::from(v)),
+                            Err(e) => return Err(e),
+                        }
+                    }
+                    builder.append(true);
+                    Ok(())
+                }
+                Array::UInt8(values) => {
+                    for value in values.iter() {
+                        match value {
+                            Ok(v) => builder.values().append_value(f32::from(v)),
+                            Err(e) => return Err(e),
+                        }
+                    }
+                    builder.append(true);
+                    Ok(())
+                }
+                Array::Int16(values) => {
+                    for value in values.iter() {
+                        match value {
+                            Ok(v) => builder.values().append_value(f32::from(v)),
+                            Err(e) => return Err(e),
+                        }
+                    }
+                    builder.append(true);
+                    Ok(())
+                }
+                Array::UInt16(values) => {
+                    for value in values.iter() {
+                        match value {
+                            Ok(v) => builder.values().append_value(f32::from(v)),
                             Err(e) => return Err(e),
                         }
                     }
@@ -493,87 +527,18 @@ impl TagBuilder {
                 _ => Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
                     format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        array, self
+                        "Type mismatch: expected Array<Float> or compatible integers, got {:?}",
+                        array
                     ),
                 )),
             },
-            Array::UInt16(values) => match self {
-                Self::ArrayUInt16(builder) => {
-                    for value in values.iter() {
-                        match value {
-                            Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e),
-                        }
-                    }
-                    builder.append(true);
-                    Ok(())
-                }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        array, self
-                    ),
-                )),
-            },
-            Array::Int32(values) => match self {
-                Self::ArrayInt32(builder) => {
-                    for value in values.iter() {
-                        match value {
-                            Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e),
-                        }
-                    }
-                    builder.append(true);
-                    Ok(())
-                }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        array, self
-                    ),
-                )),
-            },
-            Array::UInt32(values) => match self {
-                Self::ArrayUInt32(builder) => {
-                    for value in values.iter() {
-                        match value {
-                            Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e),
-                        }
-                    }
-                    builder.append(true);
-                    Ok(())
-                }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        array, self
-                    ),
-                )),
-            },
-            Array::Float(values) => match self {
-                Self::ArrayFloat(builder) => {
-                    for value in values.iter() {
-                        match value {
-                            Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e),
-                        }
-                    }
-                    builder.append(true);
-                    Ok(())
-                }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        array, self
-                    ),
-                )),
-            },
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!(
+                    "Type mismatch: expected an Array, got non-array {:?}",
+                    array,
+                ),
+            )),
         }
     }
 
@@ -582,20 +547,57 @@ impl TagBuilder {
             Self::Character(builder) => Arc::new(builder.finish()),
             Self::String(builder) => Arc::new(builder.finish()),
             Self::Hex(builder) => Arc::new(builder.finish()),
-            Self::Int8(builder) => Arc::new(builder.finish()),
-            Self::UInt8(builder) => Arc::new(builder.finish()),
-            Self::Int16(builder) => Arc::new(builder.finish()),
-            Self::UInt16(builder) => Arc::new(builder.finish()),
-            Self::Int32(builder) => Arc::new(builder.finish()),
-            Self::UInt32(builder) => Arc::new(builder.finish()),
+            Self::Integer(builder) => Arc::new(builder.finish()),
             Self::Float(builder) => Arc::new(builder.finish()),
-            Self::ArrayInt8(builder) => Arc::new(builder.finish()),
-            Self::ArrayUInt8(builder) => Arc::new(builder.finish()),
-            Self::ArrayInt16(builder) => Arc::new(builder.finish()),
-            Self::ArrayUInt16(builder) => Arc::new(builder.finish()),
-            Self::ArrayInt32(builder) => Arc::new(builder.finish()),
-            Self::ArrayUInt32(builder) => Arc::new(builder.finish()),
-            Self::ArrayFloat(builder) => Arc::new(builder.finish()),
+            Self::IntegerArray(builder) => Arc::new(builder.finish()),
+            Self::FloatArray(builder) => Arc::new(builder.finish()),
+        }
+    }
+}
+
+fn array_to_string(array: &Array) -> io::Result<String> {
+    match array {
+        Array::Int8(values) => {
+            let values: Result<Vec<String>, _> =
+                values.iter().map(|v| v.map(|x| x.to_string())).collect();
+            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            Ok(format!("[{}]", values.join(", ")))
+        }
+        Array::UInt8(values) => {
+            let values: Result<Vec<String>, _> =
+                values.iter().map(|v| v.map(|x| x.to_string())).collect();
+            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            Ok(format!("[{}]", values.join(", ")))
+        }
+        Array::Int16(values) => {
+            let values: Result<Vec<String>, _> =
+                values.iter().map(|v| v.map(|x| x.to_string())).collect();
+            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            Ok(format!("[{}]", values.join(", ")))
+        }
+        Array::UInt16(values) => {
+            let values: Result<Vec<String>, _> =
+                values.iter().map(|v| v.map(|x| x.to_string())).collect();
+            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            Ok(format!("[{}]", values.join(", ")))
+        }
+        Array::Int32(values) => {
+            let values: Result<Vec<String>, _> =
+                values.iter().map(|v| v.map(|x| x.to_string())).collect();
+            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            Ok(format!("[{}]", values.join(", ")))
+        }
+        Array::UInt32(values) => {
+            let values: Result<Vec<String>, _> =
+                values.iter().map(|v| v.map(|x| x.to_string())).collect();
+            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            Ok(format!("[{}]", values.join(", ")))
+        }
+        Array::Float(values) => {
+            let values: Result<Vec<String>, _> =
+                values.iter().map(|v| v.map(|x| x.to_string())).collect();
+            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            Ok(format!("[{}]", values.join(", ")))
         }
     }
 }
@@ -712,7 +714,7 @@ mod tests {
         let array = builder.finish();
         let int_array = array
             .as_any()
-            .downcast_ref::<arrow::array::Int32Array>()
+            .downcast_ref::<arrow::array::Int64Array>()
             .unwrap();
         assert_eq!(int_array.len(), 1);
         assert_eq!(int_array.value(0), 42);
