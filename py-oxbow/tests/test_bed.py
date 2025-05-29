@@ -3,6 +3,8 @@ from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
+import os
+from urllib.parse import urlunparse
 
 
 class TestBedFile:
@@ -22,12 +24,32 @@ class TestBedFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
+        "filepath",
+        ["data/sample.bed", "data/malformed.bed", "data/does-not-exist.bed"],
+    )
+    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
+        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
+        with wiretap(ox.BedFile) as stack:
+            try:
+                ox.BedFile(filepath)
+            except BaseException:
+                pass
+            finally:
+                assert (
+                    manifest[f"{ox.BedFile.__name__}({Input(filepath)})"]
+                ) == "\n".join([c.serialize() for c in stack])
+
+    @pytest.mark.parametrize(
         "regions",
-        [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
+        [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BedFile("data/sample.bed", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+        for filepath in (
+            "data/sample.bed",
+            urlunparse(("file", "", os.path.abspath("data/sample.bed"), "", "", "")),
+        ):
+            fragments = ox.BedFile(filepath, regions=regions).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",

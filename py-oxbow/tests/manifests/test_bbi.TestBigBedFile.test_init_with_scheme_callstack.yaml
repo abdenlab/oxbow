@@ -1,0 +1,15 @@
+BigBedFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.bb"): |-
+    ->  oxbow._core.bbi.BigBedFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.bb")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.bb", None, 131072)
+        <-  None
+    <-  None
+BigBedFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.bb"): |-
+    ->  oxbow._core.bbi.BigBedFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.bb")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.bb", None, 131072)
+        <-  None
+    <-  None
+BigBedFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.bb"): |-
+    ->  oxbow._core.bbi.BigBedFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.bb")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.bb", None, 131072)
+        <-  None
+    <-  None

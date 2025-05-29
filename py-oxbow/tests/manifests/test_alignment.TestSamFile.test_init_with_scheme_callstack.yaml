@@ -1,0 +1,27 @@
+SamFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.sam"): |-
+    ->  oxbow._core.alignment.AlignmentFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.sam")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.sam", None, 131072)
+        <-  None
+        ->  oxbow._core.base.DataSource.scanner()
+            ->  oxbow._core.base.DataSource._source
+            !!  FileNotFoundError(2, 'No such file or directory')
+        !!  FileNotFoundError(2, "No such file or directory")
+    !!  FileNotFoundError(2, "No such file or directory")
+SamFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.sam"): |-
+    ->  oxbow._core.alignment.AlignmentFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.sam")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.sam", None, 131072)
+        <-  None
+        ->  oxbow._core.base.DataSource.scanner()
+            ->  oxbow._core.base.DataSource._source
+            <-  fsspec.implementations.local.LocalFileOpener.<object>
+        <-  oxbow.core.PySamScanner.<object>
+    <-  None
+SamFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.sam"): |-
+    ->  oxbow._core.alignment.AlignmentFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.sam")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.sam", None, 131072)
+        <-  None
+        ->  oxbow._core.base.DataSource.scanner()
+            ->  oxbow._core.base.DataSource._source
+            <-  fsspec.implementations.local.LocalFileOpener.<object>
+        <-  oxbow.core.PySamScanner.<object>
+    <-  None
