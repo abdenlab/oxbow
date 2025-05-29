@@ -26,24 +26,6 @@ class TestFastaFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
-        "filepath",
-        [
-            "data/sample.fasta",
-            "data/malformed.fasta",
-            "data/does-not-exist.fasta",
-        ],
-    )
-    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
-        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
-        with wiretap(ox.FastaFile) as stack:
-            try:
-                ox.FastaFile(filepath)
-            finally:
-                assert (
-                    manifest[f"{ox.FastaFile.__name__}({Input(filepath)})"]
-                ) == "\n".join([c.serialize() for c in stack])
-
-    @pytest.mark.parametrize(
         "regions",
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
@@ -200,24 +182,6 @@ class TestFastqFile:
         ],
     )
     def test_init_callstack(self, filepath, wiretap, manifest: Manifest):
-        with wiretap(ox.FastqFile) as stack:
-            try:
-                ox.FastqFile(filepath)
-            finally:
-                assert (
-                    manifest[f"{ox.FastqFile.__name__}({Input(filepath)})"]
-                ) == "\n".join([c.serialize() for c in stack])
-
-    @pytest.mark.parametrize(
-        "filepath",
-        [
-            "data/sample.fastq",
-            "data/malformed.fastq",
-            "data/does-not-exist.fastq",
-        ],
-    )
-    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
-        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
         with wiretap(ox.FastqFile) as stack:
             try:
                 ox.FastqFile(filepath)

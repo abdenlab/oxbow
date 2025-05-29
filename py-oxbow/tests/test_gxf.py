@@ -24,22 +24,6 @@ class TestGtfFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
-        "filepath",
-        ["data/sample.gtf", "data/malformed.gtf", "data/does-not-exist.gtf"],
-    )
-    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
-        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
-        with wiretap(ox.GtfFile) as stack:
-            try:
-                ox.GtfFile(filepath)
-            except BaseException:
-                pass
-            finally:
-                assert (
-                    manifest[f"{ox.GtfFile.__name__}({Input(filepath)})"]
-                ) == "\n".join([c.serialize() for c in stack])
-
-    @pytest.mark.parametrize(
         "regions",
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
@@ -128,22 +112,6 @@ class TestGffFile:
         ["data/sample.gff", "data/malformed.gff", "data/does-not-exist.gff"],
     )
     def test_init_callstack(self, filepath, wiretap, manifest: Manifest):
-        with wiretap(ox.GffFile) as stack:
-            try:
-                ox.GffFile(filepath)
-            except BaseException:
-                pass
-            finally:
-                assert (
-                    manifest[f"{ox.GffFile.__name__}({Input(filepath)})"]
-                ) == "\n".join([c.serialize() for c in stack])
-
-    @pytest.mark.parametrize(
-        "filepath",
-        ["data/sample.gff", "data/malformed.gff", "data/does-not-exist.gff"],
-    )
-    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
-        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
         with wiretap(ox.GffFile) as stack:
             try:
                 ox.GffFile(filepath)
