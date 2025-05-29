@@ -44,7 +44,10 @@ class TestBigBedFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        for filepath in ("data/sample.bb", urlunparse(("file", "", os.path.abspath("data/sample.bb"), "", "", ""))):
+        for filepath in (
+            "data/sample.bb",
+            urlunparse(("file", "", os.path.abspath("data/sample.bb"), "", "", "")),
+        ):
             fragments = ox.BigBedFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 
@@ -126,7 +129,10 @@ class TestBigWigFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        for filepath in ("data/sample.bw", urlunparse(("file", "", os.path.abspath("data/sample.bw"), "", "", ""))):
+        for filepath in (
+            "data/sample.bw",
+            urlunparse(("file", "", os.path.abspath("data/sample.bw"), "", "", "")),
+        ):
             fragments = ox.BigWigFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 

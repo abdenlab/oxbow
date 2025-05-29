@@ -44,7 +44,10 @@ class TestSamFile:
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
     def test_fragments(self, regions):
-        for filepath in ("data/sample.bw", urlunparse(("file", "", os.path.abspath("data/sample.bw"), "", "", ""))):
+        for filepath in (
+            "data/sample.bw",
+            urlunparse(("file", "", os.path.abspath("data/sample.bw"), "", "", "")),
+        ):
             fragments = ox.BigWigFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 
@@ -170,8 +173,13 @@ class TestBamFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        for filepath in ("data/sample.bam", urlunparse(("file", "", os.path.abspath("data/sample.bam"), "", "", ""))):
-            fragments = ox.BamFile(filepath, regions=regions, compressed=True).fragments()
+        for filepath in (
+            "data/sample.bam",
+            urlunparse(("file", "", os.path.abspath("data/sample.bam"), "", "", "")),
+        ):
+            fragments = ox.BamFile(
+                filepath, regions=regions, compressed=True
+            ).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 
     def test_input_encodings(self):
