@@ -1,0 +1,15 @@
+BigWigFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.bw"): |-
+    ->  oxbow._core.bbi.BigWigFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.bw")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.bw", None, 131072)
+        <-  None
+    <-  None
+BigWigFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.bw"): |-
+    ->  oxbow._core.bbi.BigWigFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.bw")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.bw", None, 131072)
+        <-  None
+    <-  None
+BigWigFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.bw"): |-
+    ->  oxbow._core.bbi.BigWigFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.bw")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.bw", None, 131072)
+        <-  None
+    <-  None

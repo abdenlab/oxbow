@@ -1,6 +1,8 @@
 import pytest
+import os
 from pytest_manifest import Manifest
 from utils import Input
+from urllib.parse import urlunparse
 
 import oxbow.core as ox
 
@@ -22,12 +24,29 @@ class TestSamFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
+        "filepath",
+        ["data/sample.sam", "data/malformed.sam", "data/does-not-exist.sam"],
+    )
+    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
+        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
+        with wiretap(ox.SamFile) as stack:
+            try:
+                ox.SamFile(filepath)
+            except BaseException:
+                pass
+            finally:
+                assert (
+                    manifest[f"{ox.SamFile.__name__}({Input(filepath)})"]
+                ) == "\n".join([c.serialize() for c in stack])
+
+    @pytest.mark.parametrize(
         "regions",
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BigWigFile("data/sample.bw", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+        for filepath in ("data/sample.bw", urlunparse(("file", "", os.path.abspath("data/sample.bw"), "", "", ""))):
+            fragments = ox.BigWigFile(filepath, regions=regions).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",
@@ -110,6 +129,24 @@ class TestBamFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
+        "filepath",
+        ["data/sample.bam", "data/malformed.bam", "data/does-not-exist.bam"],
+    )
+    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
+        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
+        with wiretap(ox.BamFile) as stack:
+            try:
+                ox.BamFile(filepath, compressed=True)
+            except BaseException:
+                pass
+            finally:
+                assert (
+                    manifest[
+                        f"{ox.BamFile.__name__}({Input(filepath)}, compressed=True)"
+                    ]
+                ) == "\n".join([c.serialize() for c in stack])
+
+    @pytest.mark.parametrize(
         "fields",
         [
             None,
@@ -133,10 +170,9 @@ class TestBamFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BamFile(
-            "data/sample.bam", regions=regions, compressed=True
-        ).fragments()
-        assert len(fragments) == len(regions) if regions else 1
+        for filepath in ("data/sample.bam", urlunparse(("file", "", os.path.abspath("data/sample.bam"), "", "", ""))):
+            fragments = ox.BamFile(filepath, regions=regions, compressed=True).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     def test_input_encodings(self):
         file = ox.BamFile("data/sample.bam", compressed=True, batch_size=3)

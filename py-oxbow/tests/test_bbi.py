@@ -3,6 +3,8 @@ from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
+import os
+from urllib.parse import urlunparse
 
 
 class TestBigBedFile:
@@ -22,12 +24,29 @@ class TestBigBedFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
+        "filepath",
+        ["data/sample.bb", "data/malformed.bb", "data/does-not-exist.bb"],
+    )
+    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
+        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
+        with wiretap(ox.BigBedFile) as stack:
+            try:
+                ox.BigBedFile(filepath)
+            except BaseException:
+                pass
+            finally:
+                assert (
+                    manifest[f"{ox.BigBedFile.__name__}({Input(filepath)})"]
+                ) == "\n".join([c.serialize() for c in stack])
+
+    @pytest.mark.parametrize(
         "regions",
-        [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
+        [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BigBedFile("data/sample.bb", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+        for filepath in ("data/sample.bb", urlunparse(("file", "", os.path.abspath("data/sample.bb"), "", "", ""))):
+            fragments = ox.BigBedFile(filepath, regions=regions).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",
@@ -87,12 +106,29 @@ class TestBigWigFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
+        "filepath",
+        ["data/sample.bw", "data/malformed.bw", "data/does-not-exist.bw"],
+    )
+    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
+        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
+        with wiretap(ox.BigWigFile) as stack:
+            try:
+                ox.BigWigFile(filepath)
+            except BaseException:
+                pass
+            finally:
+                assert (
+                    manifest[f"{ox.BigWigFile.__name__}({Input(filepath)})"]
+                ) == "\n".join([c.serialize() for c in stack])
+
+    @pytest.mark.parametrize(
         "regions",
-        [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
+        [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BigWigFile("data/sample.bw", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+        for filepath in ("data/sample.bw", urlunparse(("file", "", os.path.abspath("data/sample.bw"), "", "", ""))):
+            fragments = ox.BigWigFile(filepath, regions=regions).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",

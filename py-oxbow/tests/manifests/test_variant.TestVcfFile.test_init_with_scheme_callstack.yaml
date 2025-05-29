@@ -1,0 +1,15 @@
+VcfFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.vcf"): |-
+    ->  oxbow._core.variant.VariantFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.vcf")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/does-not-exist.vcf", None, 131072)
+        <-  None
+    <-  None
+VcfFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.vcf"): |-
+    ->  oxbow._core.variant.VariantFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.vcf")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/malformed.vcf", None, 131072)
+        <-  None
+    <-  None
+VcfFile("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.vcf"): |-
+    ->  oxbow._core.variant.VariantFile.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.vcf")
+        ->  oxbow._core.base.DataSource.__init__("file:///Users/conrad/Projects/abdenlab/oxbow/py-oxbow/tests/data/sample.vcf", None, 131072)
+        <-  None
+    <-  None
