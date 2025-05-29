@@ -67,9 +67,19 @@ class DataSource:
                 "`source` must be a str, pathlib.Path, or a callable returning "
                 "an IO byte stream"
             )
+
         if isinstance(index, (str, pathlib.Path)):
             index = str(index)
-            self._index_src = lambda: index
+            if (scheme := urlparse(index).scheme) and scheme in (
+                "http",
+                "https",
+                "ftp",
+                "s3",
+                "file",
+            ):
+                self._index_src = lambda: fsspec.open(index, mode="rb").open()
+            else:
+                self._index_src = lambda: index
         elif callable(index) or index is None:
             self._index_src = index
         else:
