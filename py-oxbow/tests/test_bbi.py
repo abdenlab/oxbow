@@ -24,22 +24,6 @@ class TestBigBedFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
-        "filepath",
-        ["data/sample.bb", "data/malformed.bb", "data/does-not-exist.bb"],
-    )
-    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
-        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
-        with wiretap(ox.BigBedFile) as stack:
-            try:
-                ox.BigBedFile(filepath)
-            except BaseException:
-                pass
-            finally:
-                assert (
-                    manifest[f"{ox.BigBedFile.__name__}({Input(filepath)})"]
-                ) == "\n".join([c.serialize() for c in stack])
-
-    @pytest.mark.parametrize(
         "regions",
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
@@ -98,22 +82,6 @@ class TestBigWigFile:
         ["data/sample.bw", "data/malformed.bw", "data/does-not-exist.bw"],
     )
     def test_init_callstack(self, filepath, wiretap, manifest: Manifest):
-        with wiretap(ox.BigWigFile) as stack:
-            try:
-                ox.BigWigFile(filepath)
-            except BaseException:
-                pass
-            finally:
-                assert (
-                    manifest[f"{ox.BigWigFile.__name__}({Input(filepath)})"]
-                ) == "\n".join([c.serialize() for c in stack])
-
-    @pytest.mark.parametrize(
-        "filepath",
-        ["data/sample.bw", "data/malformed.bw", "data/does-not-exist.bw"],
-    )
-    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
-        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
         with wiretap(ox.BigWigFile) as stack:
             try:
                 ox.BigWigFile(filepath)

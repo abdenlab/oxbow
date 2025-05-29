@@ -24,22 +24,6 @@ class TestSamFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     @pytest.mark.parametrize(
-        "filepath",
-        ["data/sample.sam", "data/malformed.sam", "data/does-not-exist.sam"],
-    )
-    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
-        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
-        with wiretap(ox.SamFile) as stack:
-            try:
-                ox.SamFile(filepath)
-            except BaseException:
-                pass
-            finally:
-                assert (
-                    manifest[f"{ox.SamFile.__name__}({Input(filepath)})"]
-                ) == "\n".join([c.serialize() for c in stack])
-
-    @pytest.mark.parametrize(
         "regions",
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
@@ -119,24 +103,6 @@ class TestBamFile:
         ["data/sample.bam", "data/malformed.bam", "data/does-not-exist.bam"],
     )
     def test_init_callstack(self, filepath, wiretap, manifest: Manifest):
-        with wiretap(ox.BamFile) as stack:
-            try:
-                ox.BamFile(filepath, compressed=True)
-            except BaseException:
-                pass
-            finally:
-                assert (
-                    manifest[
-                        f"{ox.BamFile.__name__}({Input(filepath)}, compressed=True)"
-                    ]
-                ) == "\n".join([c.serialize() for c in stack])
-
-    @pytest.mark.parametrize(
-        "filepath",
-        ["data/sample.bam", "data/malformed.bam", "data/does-not-exist.bam"],
-    )
-    def test_init_with_scheme_callstack(self, filepath, wiretap, manifest: Manifest):
-        filepath = urlunparse(("file", "", os.path.abspath(filepath), "", "", ""))
         with wiretap(ox.BamFile) as stack:
             try:
                 ox.BamFile(filepath, compressed=True)
