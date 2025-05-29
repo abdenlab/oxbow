@@ -16,5 +16,7 @@ updates:
     directories:
       - "/oxbow"
       - "/py-oxbow"
+      - "/r-oxbow/src/rust"
+      - "/r-oxbow/src/rust/oxbow"
     schedule:
       interval: "weekly"
