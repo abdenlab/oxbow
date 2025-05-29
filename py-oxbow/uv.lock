@@ -1679,7 +1679,7 @@ notebooks = [
 [package.metadata]
 requires-dist = [
     { name = "arro3-core", specifier = ">=0.4.6" },
-    { name = "fsspec" },
+    { name = "fsspec", specifier = ">=2025.5.1" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "polars", specifier = ">=1.26.0" },
     { name = "pyarrow", specifier = ">=19.0.1" },

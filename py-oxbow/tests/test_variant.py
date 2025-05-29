@@ -170,7 +170,9 @@ class TestBcfFile:
             "data/sample.bcf",
             urlunparse(("file", "", os.path.abspath("data/sample.bcf"), "", "", "")),
         ):
-            fragments = ox.BcfFile(filepath, compressed=True, regions=regions).fragments()
+            fragments = ox.BcfFile(
+                filepath, compressed=True, regions=regions
+            ).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(

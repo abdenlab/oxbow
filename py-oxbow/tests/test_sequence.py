@@ -52,7 +52,9 @@ class TestFastaFile:
             "data/sample.fasta",
             urlunparse(("file", "", os.path.abspath("data/sample.fasta"), "", "", "")),
         ):
-            fragments = ox.FastaFile(filepath, index="data/sample.fasta.fai", regions=regions).fragments()
+            fragments = ox.FastaFile(
+                filepath, index="data/sample.fasta.fai", regions=regions
+            ).fragments()
             assert len(fragments) == 1
 
     @pytest.mark.parametrize(
