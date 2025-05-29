@@ -17,7 +17,6 @@ Use the convenience function associated with your file type. The returned `DataS
 
 ```{code-cell} ipython3
 import oxbow as ox
-import polars as pl
 
 ds = ox.from_bam("data/sample.bam")
 ```
@@ -80,7 +79,7 @@ ds = ds.regions("chr1:900000-1100000")
 ds.pl()
 ```
 
-If the index file exists in the same location as the source file, it can usually be inferred.
+If the index file exists in the same location as the source file, it is automatically detected.
 
 ```{code-cell} ipython3
 ox.from_bam("data/sample.bam").regions(["chr1", "chr3"]).pl()
@@ -99,6 +98,8 @@ Oxbow handles multiple ranges as separate **fragments**. For more details, see t
 Oxbow lets you select only the columns you need and will not parse the others. This is referred to as column "projection".
 
 ```{code-cell} ipython3
+import polars as pl
+
 ox.from_bam(
     "data/sample.bam", 
     fields=["rname", "pos", "end", "mapq"],
@@ -214,11 +215,7 @@ df.head()
 ```
 
 ```{code-cell} ipython3
-(
-    df.with_columns(pl.col("info").struct.unnest())
-    .drop("info")
-    .head()
-)
+df.unnest("info").head()
 ```
 
 ### VCF/BCF sample genotype data
