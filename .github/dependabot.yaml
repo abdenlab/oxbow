@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns:
+          - "*"
+  - package-ecosystem: "pip"
+    directory: "/py-oxbow"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "cargo"
+    directories:
+      - "/oxbow"
+      - "/py-oxbow"
+      - "/r-oxbow/src/rust"
+    schedule:
+      interval: "weekly"
