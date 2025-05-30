@@ -4,6 +4,7 @@ use std::sync::Arc;
 use noodles::bgzf::io::Seek as _;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
@@ -23,11 +24,12 @@ use oxbow::util::index::IndexType;
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed. If None, it is assumed to be
 ///     uncompressed.
-#[pyclass]
+#[pyclass(module = "oxbow.oxbow")]
 pub struct PyGtfScanner {
     src: PyObject,
     reader: Reader,
     scanner: GtfScanner,
+    compressed: bool,
 }
 
 #[pymethods]
@@ -42,7 +44,18 @@ impl PyGtfScanner {
             src,
             reader,
             scanner,
+            compressed,
         })
+    }
+
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+        Ok(py.None())
+    }
+
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+        let args = (self.src.clone_ref(py), self.compressed.into_py(py));
+        let kwargs = PyDict::new(py);
+        Ok((args.to_object(py), kwargs.to_object(py)))
     }
 
     // fn chrom_names(&self) -> Vec<String> {
@@ -287,11 +300,12 @@ impl PyGtfScanner {
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed. If None, it is assumed to be
 ///     uncompressed.
-#[pyclass]
+#[pyclass(module = "oxbow.oxbow")]
 pub struct PyGffScanner {
     src: PyObject,
     reader: Reader,
     scanner: GffScanner,
+    compressed: bool,
 }
 
 #[pymethods]
@@ -306,7 +320,18 @@ impl PyGffScanner {
             src,
             reader,
             scanner,
+            compressed,
         })
+    }
+
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+        Ok(py.None())
+    }
+
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+        let args = (self.src.clone_ref(py), self.compressed.into_py(py));
+        let kwargs = PyDict::new(py);
+        Ok((args.to_object(py), kwargs.to_object(py)))
     }
 
     /// Return the names of the fixed fields.
