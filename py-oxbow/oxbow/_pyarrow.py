@@ -66,6 +66,7 @@ class BatchReaderFragment:
         An expression that evaluates to true for all data viewed by this
         fragment.
     """
+
     def __init__(
         self,
         make_batchreader: Callable[[list[str] | None, int], RecordBatchIter],
@@ -366,10 +367,8 @@ class BatchReaderFragment:
         ).count_rows()
 
     def iter_batches(
-            self,
-            columns: list[str] | None = None,
-            batch_size: int | None = None
-        ) -> Iterator[pa.RecordBatch]:
+        self, columns: list[str] | None = None, batch_size: int | None = None
+    ) -> Iterator[pa.RecordBatch]:
         """
         Iterate over batches in the fragment.
 
@@ -630,10 +629,8 @@ class BatchReaderDataset(Dataset):
         ).to_batches()
 
     def iter_batches(
-            self,
-            columns: list[str] | None = None,
-            batch_size: int | None = None
-        ) -> Iterator[pa.RecordBatch]:
+        self, columns: list[str] | None = None, batch_size: int | None = None
+    ) -> Iterator[pa.RecordBatch]:
         """
         Iterate over batches in the dataset.
 
