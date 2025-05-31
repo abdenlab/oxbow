@@ -36,7 +36,7 @@ use oxbow::util::index::IndexType;
 /// While the 12 standard fields have defined types, custom fields are
 /// intepreted as text. ``bed{n}+`` custom fields are collapsed into a single
 /// field named `rest`.
-#[pyclass]
+#[pyclass(module = "oxbow.oxbow")]
 pub struct PyBedScanner {
     src: PyObject,
     reader: Reader,

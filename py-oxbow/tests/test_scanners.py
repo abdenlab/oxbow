@@ -1,3 +1,4 @@
+import pickle
 import pyarrow as pa
 import pytest
 import pytest_manifest
@@ -35,6 +36,12 @@ class TestPySamScanner:
         finally:
             assert manifest == error
 
+    def test_pickle(self):
+        scanner = ox.PySamScanner("data/sample.sam")
+        pickled = pickle.dumps(scanner)
+        unpickled = pickle.loads(pickled)
+        assert isinstance(unpickled, ox.PySamScanner)
+
 
 class TestPyBamScanner:
     @pytest.mark.parametrize(
@@ -64,6 +71,12 @@ class TestPyBamScanner:
             error = str(e)
         finally:
             assert manifest == error
+
+    def test_pickle(self):
+        scanner = ox.PyBamScanner("data/sample.bam")
+        pickled = pickle.dumps(scanner)
+        unpickled = pickle.loads(pickled)
+        assert isinstance(unpickled, ox.PyBamScanner)
 
 
 class TestPyBcfScanner:
@@ -124,6 +137,12 @@ class TestPyBcfScanner:
         stream = scanner.scan_query(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
+
+    def test_pickle(self):
+        scanner = ox.PyBcfScanner("data/sample.bcf")
+        pickled = pickle.dumps(scanner)
+        unpickled = pickle.loads(pickled)
+        assert isinstance(unpickled, ox.PyBcfScanner)
 
 
 class TestPyVcfScanner:
@@ -232,6 +251,12 @@ class TestPyVcfScanner:
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
+    def test_pickle(self):
+        scanner = ox.PyVcfScanner("data/sample.vcf", compressed=False)
+        pickled = pickle.dumps(scanner)
+        unpickled = pickle.loads(pickled)
+        assert isinstance(unpickled, ox.PyVcfScanner)
+
 
 class TestPyFastaScanner:
     @pytest.mark.parametrize(
@@ -278,6 +303,12 @@ class TestPyFastaScanner:
             error = str(e)
         finally:
             assert manifest == error
+
+    def test_pickle(self):
+        scanner = ox.PyFastaScanner("data/sample.fasta")
+        pickled = pickle.dumps(scanner)
+        unpickled = pickle.loads(pickled)
+        assert isinstance(unpickled, ox.PyFastaScanner)
 
 
 class TestPyFastqScanner:
@@ -564,6 +595,12 @@ class TestPyGffScanner:
             pass
         assert manifest[str(input)] == result
 
+    def test_pickle(self):
+        scanner = ox.PyGffScanner("data/sample.gff")
+        pickled = pickle.dumps(scanner)
+        unpickled = pickle.loads(pickled)
+        assert isinstance(unpickled, ox.PyGffScanner)
+
 
 class TestPyGtfScanner:
     @pytest.mark.parametrize(
@@ -659,3 +696,9 @@ class TestPyGtfScanner:
         scanner = ox.PyGtfScanner("data/sample.gtf")
         schema = scanner.schema(**input.kwargs)
         assert manifest[f"schema({str(input)})"] == schema.names
+
+    def test_pickle(self):
+        scanner = ox.PyGtfScanner("data/sample.gtf")
+        pickled = pickle.dumps(scanner)
+        unpickled = pickle.loads(pickled)
+        assert isinstance(unpickled, ox.PyGtfScanner)

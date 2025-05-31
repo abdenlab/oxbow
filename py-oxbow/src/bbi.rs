@@ -20,7 +20,7 @@ use oxbow::util::batches_to_ipc;
 /// ----------
 /// obj : str or file-like
 ///     The path to the BigWig file or a file-like object.
-#[pyclass]
+#[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigWigScanner {
     _src: PyObject,
     reader: Reader,
@@ -183,7 +183,7 @@ impl PyBigWigScanner {
 ///     fields are returned as a single lumped string field named "rest".
 ///     If "autosql", the file's AutoSql definition is used to parse the
 ///     records, if it exists.
-#[pyclass]
+#[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigBedScanner {
     _src: PyObject,
     reader: Reader,
@@ -370,7 +370,7 @@ impl PyBigBedScanner {
 /// A BBI file zoom level scanner.
 ///
 /// Can only be initialized from a BigBed or BigWig scanner.
-#[pyclass]
+#[pyclass(module = "oxbow.oxbow")]
 pub struct PyBBIZoomScanner {
     reader: Reader,
     bbi_type: BBIFileType,

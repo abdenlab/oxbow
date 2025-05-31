@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
@@ -22,7 +23,7 @@ use oxbow::util::batches_to_ipc;
 ///     The path to the FASTQ file or a file-like object.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is GZIP-compressed.
-#[pyclass]
+#[pyclass(module = "oxbow.oxbow")]
 pub struct PyFastqScanner {
     reader: Reader,
     scanner: FastqScanner,
@@ -116,7 +117,7 @@ impl PyFastqScanner {
 ///     The path to the FASTA file or a file-like object.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed.
-#[pyclass]
+#[pyclass(module = "oxbow.oxbow")]
 pub struct PyFastaScanner {
     src: PyObject,
     reader: Reader,
@@ -137,6 +138,16 @@ impl PyFastaScanner {
             scanner,
             compressed,
         })
+    }
+
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+        Ok(py.None())
+    }
+
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+        let args = (self.src.clone_ref(py), self.compressed.into_py(py));
+        let kwargs = PyDict::new(py);
+        Ok((args.to_object(py), kwargs.to_object(py)))
     }
 
     /// Return the names of the fixed fields.
