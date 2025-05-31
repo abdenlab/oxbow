@@ -198,7 +198,7 @@ class DataSource:
         import polars as pl
 
         if lazy:
-            return pl.scan_pyarrow_dataset(self.dataset())
+            return pl.scan_pyarrow_dataset(self.dataset(), batch_size=self._batch_size)
         else:
             batches = list(self.batches())
             if not batches:
