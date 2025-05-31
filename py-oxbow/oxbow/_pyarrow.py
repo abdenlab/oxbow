@@ -131,7 +131,7 @@ class BatchReaderFragment(Fragment):
         schema: pa.Schema | None = None,
         columns: list[str] | None = None,
         filter: ds.Expression | None = None,
-        batch_size: int = DEFAULT_BATCH_SIZE,
+        batch_size: int | None = None,
         batch_readahead: int = DEFAULT_BATCH_READAHEAD,
         fragment_readahead: int = DEFAULT_FRAGMENT_READAHEAD,
         fragment_scan_options: ds.FragmentScanOptions | None = None,
@@ -175,6 +175,7 @@ class BatchReaderFragment(Fragment):
         """
         # Apply column projection if specified
         schema = schema or self._schema
+        batch_size = batch_size or self._batch_size
         batches = self._make_batchreader(columns, batch_size)
 
         # The scanner constructor treats a RecordBatchReader differently than
@@ -206,7 +207,7 @@ class BatchReaderFragment(Fragment):
         schema: pa.Schema | None = None,
         columns: list[str] | None = None,
         filter: ds.Expression | None = None,
-        batch_size: int = DEFAULT_BATCH_SIZE,
+        batch_size: int | None = None,
         batch_readahead: int = DEFAULT_BATCH_READAHEAD,
         fragment_readahead: int = DEFAULT_FRAGMENT_READAHEAD,
         fragment_scan_options: ds.FragmentScanOptions | None = None,
@@ -250,6 +251,7 @@ class BatchReaderFragment(Fragment):
         Iterator[pyarrow.RecordBatch]
             An iterator of record batches.
         """
+        batch_size = batch_size or self._batch_size
         return self.scanner(
             schema=schema or self.schema,
             columns=columns,
@@ -263,7 +265,11 @@ class BatchReaderFragment(Fragment):
             **kwargs,
         ).to_batches()
 
-    def iter_batches(self, columns=None, batch_size=DEFAULT_BATCH_SIZE):
+    def iter_batches(
+            self,
+            columns: list[str] | None = None,
+            batch_size: int | None = None
+        ) -> Iterator[pa.RecordBatch]:
         """
         Iterate over batches in the fragment.
 
@@ -280,6 +286,7 @@ class BatchReaderFragment(Fragment):
         Iterator[pyarrow.RecordBatch]
             An iterator of record batches.
         """
+        batch_size = batch_size or self._batch_size
         return self._make_batchreader(columns, batch_size)
 
     def __dask_tokenize__(self):
@@ -338,6 +345,7 @@ class BatchReaderDataset(Dataset):
         """
         self._fragments = fragments
         self._schema = self._fragments[0].schema
+        self._batch_size = self._fragments[0]._batch_size
         self._scan_options = {}
         if partition_expression is not None:
             self._partition_expression = partition_expression
@@ -397,7 +405,7 @@ class BatchReaderDataset(Dataset):
         self,
         columns: list[str] | None = None,
         filter: ds.Expression | None = None,
-        batch_size: int = DEFAULT_BATCH_SIZE,
+        batch_size: int | None = None,
         batch_readahead: int = DEFAULT_BATCH_READAHEAD,
         fragment_readahead: int = DEFAULT_FRAGMENT_READAHEAD,
         fragment_scan_options: ds.FragmentScanOptions | None = None,
@@ -443,6 +451,7 @@ class BatchReaderDataset(Dataset):
 
         # Chain all the fragments' record batch iterators together; don't
         # apply any filter yet. No batches should get materialized.
+        batch_size = batch_size or self._batch_size
         batch_iter = chain.from_iterable(
             fragment.iter_batches(
                 columns=columns,
@@ -470,7 +479,7 @@ class BatchReaderDataset(Dataset):
         self,
         columns: list[str] | None = None,
         filter: ds.Expression | None = None,
-        batch_size: int = DEFAULT_BATCH_SIZE,
+        batch_size: int | None = None,
         batch_readahead: int = DEFAULT_BATCH_READAHEAD,
         fragment_readahead: int = DEFAULT_FRAGMENT_READAHEAD,
         fragment_scan_options: ds.FragmentScanOptions | None = None,
@@ -509,6 +518,7 @@ class BatchReaderDataset(Dataset):
         Iterator[pyarrow.RecordBatch]
             An iterator of record batches.
         """
+        batch_size = batch_size or self._batch_size
         return self.scanner(
             columns=columns,
             filter=filter,
@@ -521,7 +531,11 @@ class BatchReaderDataset(Dataset):
             **kwargs,
         ).to_batches()
 
-    def iter_batches(self, columns=None, batch_size=DEFAULT_BATCH_SIZE):
+    def iter_batches(
+            self,
+            columns: list[str] | None = None,
+            batch_size: int | None = None
+        ) -> Iterator[pa.RecordBatch]:
         """
         Iterate over batches in the dataset.
 
@@ -538,6 +552,7 @@ class BatchReaderDataset(Dataset):
         Iterator[pyarrow.RecordBatch]
             An iterator of record batches.
         """
+        batch_size = batch_size or self._batch_size
         return chain.from_iterable(
             fragment.iter_batches(
                 columns=columns,
