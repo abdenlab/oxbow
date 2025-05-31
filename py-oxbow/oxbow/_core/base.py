@@ -3,6 +3,8 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Any, Callable, Generator, Iterable, IO, Self
 import pathlib
+from urllib.parse import urlparse
+import fsspec
 
 import pyarrow as pa
 
@@ -36,6 +38,10 @@ class DataSource:
         data source.
     """
 
+    _scanner_type: type
+    _scanner_kwargs: dict[str, Any] = {}
+    _schema_kwargs: dict[str, Any] = {}
+
     def __init__(
         self,
         source: str | pathlib.Path | Callable[[], IO[Any]],
@@ -44,23 +50,42 @@ class DataSource:
     ):
         if isinstance(source, (str, pathlib.Path)):
             source = str(source)
-            self._src = lambda: source
+            if (scheme := urlparse(source).scheme) and scheme in (
+                "http",
+                "https",
+                "ftp",
+                "s3",
+                "file",
+            ):
+                self._src = lambda: fsspec.open(source, mode="rb").open()
+            else:
+                self._src = lambda: source
         elif callable(source):
             self._src = source
         else:
             raise TypeError(
                 "`source` must be a str, pathlib.Path, or a callable returning "
-                "an IO stream"
+                "an IO byte stream"
             )
+
         if isinstance(index, (str, pathlib.Path)):
             index = str(index)
-            self._index_src = lambda: index
+            if (scheme := urlparse(index).scheme) and scheme in (
+                "http",
+                "https",
+                "ftp",
+                "s3",
+                "file",
+            ):
+                self._index_src = lambda: fsspec.open(index, mode="rb").open()
+            else:
+                self._index_src = lambda: index
         elif callable(index) or index is None:
             self._index_src = index
         else:
             raise TypeError(
                 "`index` must be a str, pathlib.Path, or a callable returning "
-                "an IO stream"
+                "an IO byte stream"
             )
         self._batch_size = batch_size
 
@@ -69,7 +94,7 @@ class DataSource:
         return self._src()
 
     @property
-    def _index(self) -> str | IO[Any]:
+    def _index(self) -> str | IO[Any] | None:
         return self._index_src() if self._index_src else None
 
     @property

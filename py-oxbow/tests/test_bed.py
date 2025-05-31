@@ -3,6 +3,8 @@ from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
+import os
+from urllib.parse import urlunparse
 
 
 class TestBedFile:
@@ -23,11 +25,15 @@ class TestBedFile:
 
     @pytest.mark.parametrize(
         "regions",
-        [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
+        [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BedFile("data/sample.bed", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+        for filepath in (
+            "data/sample.bed",
+            urlunparse(("file", "", os.path.abspath("data/sample.bed"), "", "", "")),
+        ):
+            fragments = ox.BedFile(filepath, regions=regions).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",
