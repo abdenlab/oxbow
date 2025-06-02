@@ -25,6 +25,7 @@ use oxbow::util::batches_to_ipc;
 ///     Whether the source is GZIP-compressed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyFastqScanner {
+    src: PyObject,
     reader: Reader,
     scanner: FastqScanner,
     compressed: bool,
@@ -35,13 +36,25 @@ impl PyFastqScanner {
     #[new]
     #[pyo3(signature = (src, compressed=false))]
     fn new(py: Python, src: PyObject, compressed: bool) -> PyResult<Self> {
+        let _src = src.clone_ref(py);
         let reader = pyobject_to_bufreader(py, src, false)?;
         let scanner = FastqScanner::new();
         Ok(Self {
+            src:_src,
             reader,
             scanner,
             compressed,
         })
+    }
+
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+        Ok(py.None())
+    }
+
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+        let args = (self.src.clone_ref(py), self.compressed.into_py(py));
+        let kwargs = PyDict::new(py);
+        Ok((args.to_object(py), kwargs.to_object(py)))
     }
 
     /// Return the names of the fixed fields.

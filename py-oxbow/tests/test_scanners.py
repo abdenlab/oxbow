@@ -340,6 +340,12 @@ class TestPyFastqScanner:
         finally:
             assert manifest == error
 
+    def test_pickle(self):
+        scanner = ox.PyFastqScanner("data/sample.fastq")
+        pickled = pickle.dumps(scanner)
+        unpickled = pickle.loads(pickled)
+        assert isinstance(unpickled, ox.PyFastqScanner)
+
 
 class TestPyBedScanner:
     @pytest.mark.parametrize(
