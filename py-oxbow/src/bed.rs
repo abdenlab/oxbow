@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
@@ -41,6 +42,8 @@ pub struct PyBedScanner {
     src: PyObject,
     reader: Reader,
     scanner: BedScanner,
+    bed_schema: String,
+    compressed: bool,
 }
 
 #[pymethods]
@@ -49,13 +52,25 @@ impl PyBedScanner {
     #[pyo3(signature = (src, bed_schema, compressed=false))]
     fn new(py: Python, src: PyObject, bed_schema: String, compressed: bool) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-        let bed_schema: BedSchema = bed_schema.parse().unwrap();
-        let scanner = BedScanner::new(bed_schema);
+        let _bed_schema: BedSchema = bed_schema.parse().unwrap();
+        let scanner = BedScanner::new(_bed_schema);
         Ok(Self {
             src,
             reader,
             scanner,
+            bed_schema,
+            compressed,
         })
+    }
+
+    fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
+        Ok(py.None())
+    }
+
+    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
+        let args = (self.src.clone_ref(py), self.bed_schema.clone().to_object(py), self.compressed.to_object(py));
+        let kwargs = PyDict::new(py);
+        Ok((args.to_object(py), kwargs.to_object(py)))
     }
 
     // fn chrom_names(&self) -> Vec<String> {

@@ -382,6 +382,12 @@ class TestPyBedScanner:
         finally:
             assert manifest == error
 
+    def test_pickle(self):
+        scanner = ox.PyBedScanner("data/sample.bed", bed_schema="bed9")
+        pickled = pickle.dumps(scanner)
+        unpickled = pickle.loads(pickled)
+        assert isinstance(unpickled, ox.PyBedScanner)
+
 
 class TestPyBigBedScanner:
     @pytest.mark.parametrize(
