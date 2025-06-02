@@ -458,6 +458,12 @@ class TestPyBigBedScanner:
         finally:
             assert manifest == str(error)
 
+    def test_pickle(self):
+        scanner = ox.PyBigBedScanner("data/sample.bb")
+        pickled = pickle.dumps(scanner)
+        unpickled = pickle.loads(pickled)
+        assert isinstance(unpickled, ox.PyBigBedScanner)
+
 
 class TestPyBigWigScanner:
     @pytest.mark.parametrize(
@@ -492,6 +498,12 @@ class TestPyBigWigScanner:
             error = e
         finally:
             assert manifest == str(error)
+
+    def test_pickle(self):
+        scanner = ox.PyBigWigScanner("data/sample.bw")
+        pickled = pickle.dumps(scanner)
+        unpickled = pickle.loads(pickled)
+        assert isinstance(unpickled, ox.PyBigWigScanner)
 
 
 class TestPyGffScanner:

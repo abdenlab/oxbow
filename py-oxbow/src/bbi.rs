@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
@@ -42,6 +43,16 @@ impl PyBigWigScanner {
             reader,
             scanner,
         })
+    }
+
+    fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
+        Ok(py.None())
+    }
+
+    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
+        let args = (self._src.clone_ref(py),);
+        let kwargs = PyDict::new(py);
+        Ok((args.to_object(py), kwargs.to_object(py)))
     }
 
     /// Return the names of the reference sequences.
@@ -186,6 +197,7 @@ impl PyBigWigScanner {
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigBedScanner {
     _src: PyObject,
+    _schema: Option<String>,
     reader: Reader,
     scanner: BigBedScanner,
 }
@@ -221,11 +233,27 @@ impl PyBigBedScanner {
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
         let scanner = BigBedScanner::new(bed_schema, info);
+        let _schema: Option<String> = match schema {
+            Some(schema) => Some(schema.to_string()),
+            None => None,
+        };
+        // let schema = schema.map(|s| s.to_owned());
         Ok(Self {
             _src: src,
+            _schema,
             reader,
             scanner,
         })
+    }
+
+    fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
+        Ok(py.None())
+    }
+
+    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
+        let args = (self._src.clone_ref(py), self._schema.clone().into_py(py));
+        let kwargs = PyDict::new(py);
+        Ok((args.to_object(py), kwargs.to_object(py)))
     }
 
     /// Return the names of the reference sequences.
