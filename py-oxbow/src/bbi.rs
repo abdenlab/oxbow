@@ -12,8 +12,17 @@ use noodles::core::Region;
 
 use crate::util::{pyobject_to_bufreader, Reader};
 use oxbow::bbi::model::base::field::FieldDef;
-use oxbow::bbi::{BBIFileType, BBIReader, BBIZoomScanner, BedSchema, BigBedScanner, BigWigScanner};
+use oxbow::bbi::{BBIReader, BBIZoomScanner, BedSchema, BigBedScanner, BigWigScanner};
 use oxbow::util::batches_to_ipc;
+
+
+#[pyclass(module = "oxbow.oxbow")]
+#[derive(Clone)]
+pub enum PyBBIFileType {
+    BigWig,
+    BigBed,
+}
+
 
 /// A BigWig file scanner.
 ///
@@ -87,9 +96,10 @@ impl PyBigWigScanner {
     /// PyBBIZoomScanner
     ///     A scanner for the specified zoom level.
     fn get_zoom(&mut self, zoom_level: u32) -> PyResult<PyBBIZoomScanner> {
-        let reader = self.reader.clone();
-        let py_zoom = PyBBIZoomScanner::new(reader, BBIFileType::BigWig, zoom_level);
-        Ok(py_zoom)
+        Python::with_gil(|py| {
+            let py_zoom = PyBBIZoomScanner::new(py, self._src.clone_ref(py), PyBBIFileType::BigWig, zoom_level);
+            Ok(py_zoom)
+        })
     }
 
     /// Return the Arrow schema.
@@ -301,9 +311,10 @@ impl PyBigBedScanner {
     /// PyBBIZoomScanner
     ///     A scanner for the specified zoom level.
     fn get_zoom(&mut self, zoom_level: u32) -> PyResult<PyBBIZoomScanner> {
-        let reader = self.reader.clone();
-        let py_zoom = PyBBIZoomScanner::new(reader, BBIFileType::BigBed, zoom_level);
-        Ok(py_zoom)
+        Python::with_gil(|py| {
+            let py_zoom = PyBBIZoomScanner::new(py, self._src.clone_ref(py), PyBBIFileType::BigBed, zoom_level);
+            Ok(py_zoom)
+        })
     }
 
     /// Return the Arrow schema.
@@ -400,74 +411,91 @@ impl PyBigBedScanner {
 /// Can only be initialized from a BigBed or BigWig scanner.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBBIZoomScanner {
+    src: PyObject,
     reader: Reader,
-    bbi_type: BBIFileType,
+    bbi_type: PyBBIFileType,
+    zoom_level: u32,
     scanner: BBIZoomScanner,
 }
 
+#[pymethods]
 impl PyBBIZoomScanner {
-    pub fn new(mut reader: Reader, bbi_type: BBIFileType, zoom_level: u32) -> Self {
-        reader.seek(std::io::SeekFrom::Start(0)).unwrap();
-        let read = reader.clone();
+    #[new]
+    pub fn new(py: Python, src: PyObject, bbi_type: PyBBIFileType, zoom_level: u32) -> Self {
+        let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)
+            .expect("Failed to convert PyObject to BufReader");
         match bbi_type {
-            BBIFileType::BigBed => {
-                let fmt_reader = bigtools::BigBedRead::open(read).unwrap();
+            PyBBIFileType::BigBed => {
+                let fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
                 let ref_names = fmt_reader
-                    .chroms()
-                    .iter()
-                    .map(|info| info.name.to_string())
-                    .collect();
+                .chroms()
+                .iter()
+                .map(|info| info.name.to_string())
+                .collect();
                 let zoom_levels: Vec<u32> = fmt_reader
-                    .info()
-                    .zoom_headers
-                    .iter()
-                    .map(|header| header.reduction_level)
-                    .collect();
+                .info()
+                .zoom_headers
+                .iter()
+                .map(|header| header.reduction_level)
+                .collect();
                 if !zoom_levels.contains(&zoom_level) {
                     panic!(
                         "Zoom resolution {} not found in BBI file. Available reduction levels: {:?}.",
                         zoom_level, zoom_levels
                     );
                 }
+                let reader = fmt_reader.into_inner();
                 let scanner = BBIZoomScanner::new(ref_names, zoom_level);
                 Self {
+                    src,
                     reader,
                     bbi_type,
+                    zoom_level,
                     scanner,
                 }
             }
-            BBIFileType::BigWig => {
-                let fmt_reader = bigtools::BigWigRead::open(read).unwrap();
+            PyBBIFileType::BigWig => {
+                let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
                 let ref_names = fmt_reader
-                    .chroms()
-                    .iter()
-                    .map(|info| info.name.to_string())
-                    .collect();
+                .chroms()
+                .iter()
+                .map(|info| info.name.to_string())
+                .collect();
                 let zoom_levels: Vec<u32> = fmt_reader
-                    .info()
-                    .zoom_headers
-                    .iter()
-                    .map(|header| header.reduction_level)
-                    .collect();
+                .info()
+                .zoom_headers
+                .iter()
+                .map(|header| header.reduction_level)
+                .collect();
                 if !zoom_levels.contains(&zoom_level) {
                     panic!(
                         "Zoom resolution {} not found in BBI file. Available reduction levels: {:?}.",
                         zoom_level, zoom_levels
                     );
                 }
+                let reader = fmt_reader.into_inner();
                 let scanner = BBIZoomScanner::new(ref_names, zoom_level);
                 Self {
+                    src,
                     reader,
                     bbi_type,
+                    zoom_level,
                     scanner,
                 }
             }
         }
     }
-}
 
-#[pymethods]
-impl PyBBIZoomScanner {
+    fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
+        Ok(py.None())
+    }
+
+    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
+        let args = (self.src.clone_ref(py), self.bbi_type.clone().into_py(py), self.zoom_level.into_py(py));
+        let kwargs = PyDict::new(py);
+        Ok((args.to_object(py), kwargs.to_object(py)))
+    }
+
     /// Return the names of the reference sequences.
     fn field_names(&self) -> Vec<String> {
         self.scanner.field_names()
@@ -515,7 +543,7 @@ impl PyBBIZoomScanner {
         self.reader.seek(std::io::SeekFrom::Start(0)).unwrap();
         let reader = self.reader.clone();
         match self.bbi_type {
-            BBIFileType::BigBed => {
+            PyBBIFileType::BigBed => {
                 let fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
                 let reader = BBIReader::BigBed(fmt_reader);
                 let batch_reader = self
@@ -525,7 +553,7 @@ impl PyBBIZoomScanner {
                 let py_batch_reader = PyRecordBatchReader::new(batch_reader);
                 Ok(py_batch_reader)
             }
-            BBIFileType::BigWig => {
+            PyBBIFileType::BigWig => {
                 let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
                 let reader = BBIReader::BigWig(fmt_reader);
                 let batch_reader = self
@@ -568,7 +596,7 @@ impl PyBBIZoomScanner {
         self.reader.seek(std::io::SeekFrom::Start(0)).unwrap();
         let reader = self.reader.clone();
         match self.bbi_type {
-            BBIFileType::BigBed => {
+            PyBBIFileType::BigBed => {
                 let fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
                 let reader = BBIReader::BigBed(fmt_reader);
                 let batch_reader = self
@@ -578,7 +606,7 @@ impl PyBBIZoomScanner {
                 let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                 Ok(py_batch_reader)
             }
-            BBIFileType::BigWig => {
+            PyBBIFileType::BigWig => {
                 let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
                 let reader = BBIReader::BigWig(fmt_reader);
                 let batch_reader = self
