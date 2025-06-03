@@ -17,8 +17,9 @@ use oxbow::bbi::{BBIReader, BBIZoomScanner, BedSchema, BigBedScanner, BigWigScan
 use oxbow::util::batches_to_ipc;
 
 
-#[pyclass(module = "oxbow.oxbow")]
+#[pyclass(eq, eq_int, module = "oxbow.oxbow")]
 #[derive(Clone)]
+#[derive(PartialEq)]
 pub enum PyBBIFileType {
     BigWig,
     BigBed,
