@@ -41,7 +41,7 @@ impl PyFastqScanner {
         let reader = pyobject_to_bufreader(py, src, false)?;
         let scanner = FastqScanner::new();
         Ok(Self {
-            src:_src,
+            src: _src,
             reader,
             scanner,
             compressed,

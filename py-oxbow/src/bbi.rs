@@ -16,15 +16,12 @@ use oxbow::bbi::model::base::field::FieldDef;
 use oxbow::bbi::{BBIReader, BBIZoomScanner, BedSchema, BigBedScanner, BigWigScanner};
 use oxbow::util::batches_to_ipc;
 
-
 #[pyclass(eq, eq_int, module = "oxbow.oxbow")]
-#[derive(Clone)]
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum PyBBIFileType {
     BigWig,
     BigBed,
 }
-
 
 /// A BigWig file scanner.
 ///
@@ -99,7 +96,12 @@ impl PyBigWigScanner {
     ///     A scanner for the specified zoom level.
     fn get_zoom(&mut self, zoom_level: u32) -> PyResult<PyBBIZoomScanner> {
         Python::with_gil(|py| {
-            let py_zoom = PyBBIZoomScanner::new(py, self._src.clone_ref(py), PyBBIFileType::BigWig, zoom_level);
+            let py_zoom = PyBBIZoomScanner::new(
+                py,
+                self._src.clone_ref(py),
+                PyBBIFileType::BigWig,
+                zoom_level,
+            );
             Ok(py_zoom)
         })
     }
@@ -260,7 +262,10 @@ impl PyBigBedScanner {
     }
 
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
-        let args = (self._src.clone_ref(py), self._schema.clone().into_py_any(py)?);
+        let args = (
+            self._src.clone_ref(py),
+            self._schema.clone().into_py_any(py)?,
+        );
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
@@ -311,7 +316,12 @@ impl PyBigBedScanner {
     ///     A scanner for the specified zoom level.
     fn get_zoom(&mut self, zoom_level: u32) -> PyResult<PyBBIZoomScanner> {
         Python::with_gil(|py| {
-            let py_zoom = PyBBIZoomScanner::new(py, self._src.clone_ref(py), PyBBIFileType::BigBed, zoom_level);
+            let py_zoom = PyBBIZoomScanner::new(
+                py,
+                self._src.clone_ref(py),
+                PyBBIFileType::BigBed,
+                zoom_level,
+            );
             Ok(py_zoom)
         })
     }
@@ -427,16 +437,16 @@ impl PyBBIZoomScanner {
             PyBBIFileType::BigBed => {
                 let fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
                 let ref_names = fmt_reader
-                .chroms()
-                .iter()
-                .map(|info| info.name.to_string())
-                .collect();
+                    .chroms()
+                    .iter()
+                    .map(|info| info.name.to_string())
+                    .collect();
                 let zoom_levels: Vec<u32> = fmt_reader
-                .info()
-                .zoom_headers
-                .iter()
-                .map(|header| header.reduction_level)
-                .collect();
+                    .info()
+                    .zoom_headers
+                    .iter()
+                    .map(|header| header.reduction_level)
+                    .collect();
                 if !zoom_levels.contains(&zoom_level) {
                     panic!(
                         "Zoom resolution {} not found in BBI file. Available reduction levels: {:?}.",
@@ -456,16 +466,16 @@ impl PyBBIZoomScanner {
             PyBBIFileType::BigWig => {
                 let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
                 let ref_names = fmt_reader
-                .chroms()
-                .iter()
-                .map(|info| info.name.to_string())
-                .collect();
+                    .chroms()
+                    .iter()
+                    .map(|info| info.name.to_string())
+                    .collect();
                 let zoom_levels: Vec<u32> = fmt_reader
-                .info()
-                .zoom_headers
-                .iter()
-                .map(|header| header.reduction_level)
-                .collect();
+                    .info()
+                    .zoom_headers
+                    .iter()
+                    .map(|header| header.reduction_level)
+                    .collect();
                 if !zoom_levels.contains(&zoom_level) {
                     panic!(
                         "Zoom resolution {} not found in BBI file. Available reduction levels: {:?}.",
@@ -490,7 +500,11 @@ impl PyBBIZoomScanner {
     }
 
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
-        let args = (self.src.clone_ref(py), self.bbi_type.clone().into_py_any(py)?, self.zoom_level.into_py_any(py)?);
+        let args = (
+            self.src.clone_ref(py),
+            self.bbi_type.clone().into_py_any(py)?,
+            self.zoom_level.into_py_any(py)?,
+        );
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }

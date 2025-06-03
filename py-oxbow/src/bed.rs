@@ -69,7 +69,11 @@ impl PyBedScanner {
     }
 
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
-        let args = (self.src.clone_ref(py), self.bed_schema.clone().into_py_any(py)?, self.compressed.into_py_any(py)?);
+        let args = (
+            self.src.clone_ref(py),
+            self.bed_schema.clone().into_py_any(py)?,
+            self.compressed.into_py_any(py)?,
+        );
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }

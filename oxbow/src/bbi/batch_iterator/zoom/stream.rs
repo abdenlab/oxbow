@@ -65,10 +65,7 @@ where
         loop {
             match self.state.take() {
                 Some(Either::Left(bigwig)) => {
-                    let info = match self.chroms.pop() {
-                        Some(info) => info,
-                        None => return None,
-                    };
+                    let info = self.chroms.pop()?;
                     let chrom = info.name;
                     let length = info.length;
                     let iter = match bigwig.get_zoom_interval_move(&chrom, 0, length, self.level) {
@@ -107,10 +104,7 @@ where
         loop {
             match self.state.take() {
                 Some(Either::Left(bigbed)) => {
-                    let info = match self.chroms.pop() {
-                        Some(info) => info,
-                        None => return None,
-                    };
+                    let info = self.chroms.pop()?;
                     let chrom = info.name;
                     let length = info.length;
                     let iter = match bigbed.get_zoom_interval_move(&chrom, 0, length, self.level) {

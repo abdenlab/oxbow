@@ -404,7 +404,6 @@ impl PyBamScanner {
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
-
     /// Return the names of the reference sequences.
     fn chrom_names(&self) -> Vec<String> {
         self.scanner.chrom_names()

@@ -10,7 +10,9 @@ mod gxf;
 mod sequence;
 mod variant;
 use crate::alignment::{read_bam, read_sam, PyBamScanner, PySamScanner};
-use crate::bbi::{read_bigbed, read_bigwig, PyBBIZoomScanner, PyBigBedScanner, PyBigWigScanner, PyBBIFileType};
+use crate::bbi::{
+    read_bigbed, read_bigwig, PyBBIFileType, PyBBIZoomScanner, PyBigBedScanner, PyBigWigScanner,
+};
 use crate::bed::{read_bed, PyBedScanner};
 use crate::gxf::{read_gff, read_gtf, PyGffScanner, PyGtfScanner};
 use crate::sequence::{read_fasta, read_fastq, PyFastaScanner, PyFastqScanner};
