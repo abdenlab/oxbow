@@ -4,12 +4,12 @@ DataSource classes for sequence file formats, including FASTA and FASTQ.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, IO, Self
 import pathlib
+from typing import IO, Any, Callable, Generator, Self
 
 import pyarrow as pa
 
-from oxbow._core.base import DataSource, DEFAULT_BATCH_SIZE
+from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
 from oxbow.oxbow import PyFastaScanner, PyFastqScanner
 
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from abc import abstractmethod
-from typing import Any, Callable, Generator, Iterable, IO, Self
 import pathlib
+from abc import abstractmethod
+from typing import IO, Any, Callable, Generator, Iterable, Self
 
 import pyarrow as pa
 

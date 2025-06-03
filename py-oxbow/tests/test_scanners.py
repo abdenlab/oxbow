@@ -1,4 +1,5 @@
 import pickle
+
 import pyarrow as pa
 import pytest
 import pytest_manifest
@@ -19,7 +20,9 @@ class TestPySamScanner:
         ],
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(pickle.loads(pickle.dumps(ox.PySamScanner("data/sample.sam")))))
+        scanner = pickle.loads(
+            pickle.dumps(pickle.loads(pickle.dumps(ox.PySamScanner("data/sample.sam"))))
+        )
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
@@ -27,7 +30,9 @@ class TestPySamScanner:
 
     def test_scan_invalid_field(self, manifest):
         input = Input(fields=("qname", "rname", "foo"))
-        scanner = pickle.loads(pickle.dumps(pickle.loads(pickle.dumps(ox.PySamScanner("data/sample.sam")))))
+        scanner = pickle.loads(
+            pickle.dumps(pickle.loads(pickle.dumps(ox.PySamScanner("data/sample.sam"))))
+        )
         error = None
         try:
             scanner.scan(*input.args, **input.kwargs)
@@ -53,7 +58,9 @@ class TestPyBamScanner:
         ],
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(pickle.loads(pickle.dumps(ox.PyBamScanner("data/sample.bam")))))
+        scanner = pickle.loads(
+            pickle.dumps(pickle.loads(pickle.dumps(ox.PyBamScanner("data/sample.bam"))))
+        )
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
@@ -61,7 +68,9 @@ class TestPyBamScanner:
 
     def test_scan_invalid_field(self, manifest):
         input = Input(fields=("qname", "rname", "foo"))
-        scanner = pickle.loads(pickle.dumps(pickle.loads(pickle.dumps(ox.PyBamScanner("data/sample.bam")))))
+        scanner = pickle.loads(
+            pickle.dumps(pickle.loads(pickle.dumps(ox.PyBamScanner("data/sample.bam"))))
+        )
         error = None
         try:
             scanner.scan(*input.args, **input.kwargs)
@@ -141,59 +150,87 @@ class TestPyBcfScanner:
 
 class TestPyVcfScanner:
     def test_chrom_names(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False))
+        )
         assert manifest == scanner.chrom_names()
 
     def test_chrom_names_compressed(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True))
+        )
         assert manifest == scanner.chrom_names()
 
     def test_chrom_sizes(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False))
+        )
         assert manifest == scanner.chrom_sizes()
 
     def test_chrom_sizes_compressed(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True))
+        )
         assert manifest == scanner.chrom_sizes()
 
     def test_info_field_names(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False))
+        )
         assert manifest == scanner.info_field_names()
 
     def test_info_field_names_compressed(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True))
+        )
         assert manifest == scanner.info_field_names()
 
     def test_info_field_defs(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False))
+        )
         assert manifest == scanner.info_field_defs()
 
     def test_info_field_defs_compressed(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True))
+        )
         assert manifest == scanner.info_field_defs()
 
     def test_genotype_field_names(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False))
+        )
         assert manifest == scanner.genotype_field_names()
 
     def test_genotype_field_names_compressed(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True))
+        )
         assert manifest == scanner.genotype_field_names()
 
     def test_genotype_field_defs(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False))
+        )
         assert manifest == scanner.genotype_field_defs()
 
     def test_genotype_field_defs_compressed(self, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True))
+        )
         assert manifest == scanner.genotype_field_defs()
 
     def test_sample_names(self):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False))
+        )
         assert 3 == len(scanner.sample_names())
 
     def test_sample_names_compressed(self):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True))
+        )
         assert 3 == len(scanner.sample_names())
 
     @pytest.mark.parametrize(
@@ -201,7 +238,9 @@ class TestPyVcfScanner:
         Input.permute(batch_size=[2], samples=[["NA12878i", "NA12891", "NA12892"]]),
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False))
+        )
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
@@ -212,7 +251,9 @@ class TestPyVcfScanner:
         Input.permute(batch_size=[2], samples=[["NA12878i", "NA12891", "NA12892"]]),
     )
     def test_scan_compressed(self, input, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True))
+        )
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
@@ -239,14 +280,18 @@ class TestPyVcfScanner:
         ),
     )
     def test_scan_query(self, input, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True))
+        )
         schema = scanner.schema()
         stream = scanner.scan_query(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_pickle(self):
-        scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False))
+        )
         assert isinstance(scanner, ox.PyVcfScanner)
 
 
@@ -352,9 +397,13 @@ class TestPyBedScanner:
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
         key = str(input)
-        scanner = pickle.loads(pickle.dumps(ox.PyBedScanner(
-            "data/sample.bed", bed_schema=input.kwargs.pop("bed_schema")
-        )))
+        scanner = pickle.loads(
+            pickle.dumps(
+                ox.PyBedScanner(
+                    "data/sample.bed", bed_schema=input.kwargs.pop("bed_schema")
+                )
+            )
+        )
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
@@ -364,7 +413,9 @@ class TestPyBedScanner:
         input = Input(fields=("nonexistent-field",))
         error = None
         try:
-            scanner = pickle.loads(pickle.dumps(ox.PyBedScanner("data/sample.bed", bed_schema="bed9")))
+            scanner = pickle.loads(
+                pickle.dumps(ox.PyBedScanner("data/sample.bed", bed_schema="bed9"))
+            )
             schema = scanner.schema()
             stream = scanner.scan(*input.args, **input.kwargs)
             reader = pa.RecordBatchReader.from_stream(
@@ -377,7 +428,9 @@ class TestPyBedScanner:
             assert manifest == error
 
     def test_pickle(self):
-        scanner = pickle.loads(pickle.dumps(ox.PyBedScanner("data/sample.bed", bed_schema="bed9")))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyBedScanner("data/sample.bed", bed_schema="bed9"))
+        )
         assert isinstance(scanner, ox.PyBedScanner)
 
 
@@ -400,9 +453,13 @@ class TestPyBigBedScanner:
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
         key = str(input)
         try:
-            scanner = pickle.loads(pickle.dumps(ox.PyBigBedScanner(
-                "data/sample.bb", schema=input.kwargs.pop("bed_schema")
-            )))
+            scanner = pickle.loads(
+                pickle.dumps(
+                    ox.PyBigBedScanner(
+                        "data/sample.bb", schema=input.kwargs.pop("bed_schema")
+                    )
+                )
+            )
             schema = scanner.schema()
             stream = scanner.scan(*input.args, **input.kwargs)
             reader = pa.RecordBatchReader.from_stream(
@@ -427,7 +484,11 @@ class TestPyBigBedScanner:
     )
     def test_scan_with_autosql(self, input, manifest: pytest_manifest.Manifest):
         try:
-            scanner = pickle.loads(pickle.dumps(ox.PyBigBedScanner("data/autosql-sample.bb", schema="autosql")))
+            scanner = pickle.loads(
+                pickle.dumps(
+                    ox.PyBigBedScanner("data/autosql-sample.bb", schema="autosql")
+                )
+            )
             schema = scanner.schema()
             stream = scanner.scan(*input.args, **input.kwargs)
             reader = pa.RecordBatchReader.from_stream(
@@ -564,7 +625,9 @@ class TestPyGffScanner:
         ],
     )
     def test_scan_sorted_compressed(self, input, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyGffScanner("data/sample.sorted.gff.gz", compressed=True)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyGffScanner("data/sample.sorted.gff.gz", compressed=True))
+        )
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
@@ -585,7 +648,11 @@ class TestPyGffScanner:
         self, input, manifest: pytest_manifest.Manifest
     ):
         try:
-            scanner = pickle.loads(pickle.dumps(ox.PyGffScanner("data/sample.sorted.gff.gz", compressed=True)))
+            scanner = pickle.loads(
+                pickle.dumps(
+                    ox.PyGffScanner("data/sample.sorted.gff.gz", compressed=True)
+                )
+            )
             schema = scanner.schema()
             stream = scanner.scan_query(
                 *input.args,
@@ -652,7 +719,9 @@ class TestPyGtfScanner:
         ],
     )
     def test_scan_sorted_compressed(self, input, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyGtfScanner("data/sample.sorted.gtf.gz", compressed=True)))
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyGtfScanner("data/sample.sorted.gtf.gz", compressed=True))
+        )
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
@@ -673,7 +742,11 @@ class TestPyGtfScanner:
         self, input, manifest: pytest_manifest.Manifest
     ):
         try:
-            scanner = pickle.loads(pickle.dumps(ox.PyGtfScanner("data/sample.sorted.gtf.gz", compressed=True)))
+            scanner = pickle.loads(
+                pickle.dumps(
+                    ox.PyGtfScanner("data/sample.sorted.gtf.gz", compressed=True)
+                )
+            )
             schema = scanner.schema()
             stream = scanner.scan_query(
                 *input.args,

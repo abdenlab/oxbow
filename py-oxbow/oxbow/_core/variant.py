@@ -4,12 +4,12 @@ DataSource classes for htslib variant call formats.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, IO, Literal, Self
 import pathlib
+from typing import IO, Any, Callable, Generator, Literal, Self
 
 import pyarrow as pa
 
-from oxbow._core.base import DataSource, DEFAULT_BATCH_SIZE
+from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
 from oxbow.oxbow import PyBcfScanner, PyVcfScanner
 
 
