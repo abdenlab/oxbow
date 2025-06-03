@@ -4,6 +4,7 @@ use std::sync::Arc;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
@@ -61,7 +62,7 @@ impl PyBigWigScanner {
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
         let args = (self._src.clone_ref(py),);
         let kwargs = PyDict::new(py);
-        Ok((args.to_object(py), kwargs.to_object(py)))
+        Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
     /// Return the names of the reference sequences.
@@ -243,10 +244,7 @@ impl PyBigBedScanner {
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
         let scanner = BigBedScanner::new(bed_schema, info);
-        let _schema: Option<String> = match schema {
-            Some(schema) => Some(schema.to_string()),
-            None => None,
-        };
+        let _schema: Option<String> = schema.map(|schema| schema.to_string());
         // let schema = schema.map(|s| s.to_owned());
         Ok(Self {
             _src: src,
@@ -263,7 +261,7 @@ impl PyBigBedScanner {
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
         let args = (self._src.clone_ref(py), self._schema.clone().into_py(py));
         let kwargs = PyDict::new(py);
-        Ok((args.to_object(py), kwargs.to_object(py)))
+        Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
     /// Return the names of the reference sequences.
@@ -493,7 +491,7 @@ impl PyBBIZoomScanner {
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
         let args = (self.src.clone_ref(py), self.bbi_type.clone().into_py(py), self.zoom_level.into_py(py));
         let kwargs = PyDict::new(py);
-        Ok((args.to_object(py), kwargs.to_object(py)))
+        Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
     /// Return the names of the reference sequences.

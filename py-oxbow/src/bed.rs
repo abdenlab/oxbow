@@ -3,6 +3,7 @@ use std::sync::Arc;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
@@ -68,9 +69,9 @@ impl PyBedScanner {
     }
 
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
-        let args = (self.src.clone_ref(py), self.bed_schema.clone().to_object(py), self.compressed.to_object(py));
+        let args = (self.src.clone_ref(py), self.bed_schema.clone().into_py_any(py)?, self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
-        Ok((args.to_object(py), kwargs.to_object(py)))
+        Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
     // fn chrom_names(&self) -> Vec<String> {

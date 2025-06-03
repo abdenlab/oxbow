@@ -3,6 +3,7 @@ use std::sync::Arc;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
@@ -52,9 +53,9 @@ impl PyFastqScanner {
     }
 
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
-        let args = (self.src.clone_ref(py), self.compressed.into_py(py));
+        let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
-        Ok((args.to_object(py), kwargs.to_object(py)))
+        Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
     /// Return the names of the fixed fields.
@@ -158,9 +159,9 @@ impl PyFastaScanner {
     }
 
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
-        let args = (self.src.clone_ref(py), self.compressed.into_py(py));
+        let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
-        Ok((args.to_object(py), kwargs.to_object(py)))
+        Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
     /// Return the names of the fixed fields.
