@@ -259,7 +259,7 @@ impl PyBigBedScanner {
     }
 
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
-        let args = (self._src.clone_ref(py), self._schema.clone().into_py(py));
+        let args = (self._src.clone_ref(py), self._schema.clone().into_py_any(py)?);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
@@ -489,7 +489,7 @@ impl PyBBIZoomScanner {
     }
 
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
-        let args = (self.src.clone_ref(py), self.bbi_type.clone().into_py(py), self.zoom_level.into_py(py));
+        let args = (self.src.clone_ref(py), self.bbi_type.clone().into_py_any(py)?, self.zoom_level.into_py_any(py)?);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
