@@ -147,7 +147,7 @@ class FastqFile(SequenceFile):
 
 def from_fasta(
     source: str | pathlib.Path | Callable[[], IO[Any] | str],
-    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
+    compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
     regions: str | list[str] | None = None,
@@ -163,8 +163,12 @@ def from_fasta(
     source : str, pathlib.Path, or Callable
         The URI or path to the FASTA file, or a callable that opens the file
         as a file-like object.
-    compressed : bool, optional
-        Whether the source is compressed, by default False.
+    compression : Literal["infer", "gzip", "bgzf", None], default: "infer"
+        If "infer" and `source` is a URI or path, the file's compression is
+        guessed based on the file extension, where ".gz" or ".bgz" is
+        interpreted as BGZF. To decode vanilla GZIP, use "gzip". If None, the
+        source bytestream is assumed to be uncompressed. For more custom
+        decoding, provide a callable `source` instead.
     fields : list[str], optional
         Names of the fields to project.
     regions : list[tuple[int, int]], optional
@@ -202,7 +206,7 @@ def from_fasta(
 
 def from_fastq(
     source: str | pathlib.Path | Callable[[], IO[Any] | str],
-    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
+    compression: Literal["infer", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
@@ -215,8 +219,10 @@ def from_fastq(
     source : str, pathlib.Path, or Callable
         The URI or path to the FASTQ file, or a callable that opens the file
         as a file-like object.
-    compressed : bool, optional
-        Whether the source is compressed, by default False.
+    compression : Literal["infer", "gzip", None], default: "infer"
+        If "infer" and `source` is a URI or path, the file's compression is
+        guessed based on the file extension. For more custom decoding, provide
+        a callable `source` instead.
     fields : list[str], optional
         Names of the fields to project.
     batch_size : int, optional
@@ -226,14 +232,20 @@ def from_fastq(
     -------
     FastqFile
 
+    Notes
+    -----
+    Indexed FASTQ files are not supported. Hence, range queries are disallowed
+    and files compressed using either plain GZIP or BGZF are decoded using a
+    standard GZIP decoder.
+
     See also
     --------
     from_fasta : Create a FASTA file data source.
     """
-    source, _, bgzf_compressed = prepare_source_and_index(source, None, compression)
+    source, _, compressed = prepare_source_and_index(source, None, compression)
     return FastqFile(
         source=source,
-        compressed=bgzf_compressed,
+        compressed=compressed,
         fields=fields,
         batch_size=batch_size,
     )

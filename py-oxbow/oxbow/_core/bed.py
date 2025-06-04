@@ -90,7 +90,7 @@ class BedFile(DataSource):
 def from_bed(
     source: str | pathlib.Path | Callable[[], IO[Any] | str],
     bed_schema: str = "bed3+",
-    compression: Literal["bgzf", None] = "bgzf",
+    compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
     regions: str | list[str] | None = None,
@@ -107,8 +107,12 @@ def from_bed(
         as a file-like object.
     bed_schema : str, optional
         Schema for the BED file format, by default "bed3+".
-    compressed : bool, optional
-        Whether the source is compressed, by default False.
+    compression : Literal["infer", "bgzf", "gzip", None], default: "infer"
+        If "infer" and `source` is a URI or path, the file's compression is
+        guessed based on the file extension, where ".gz" or ".bgz" is
+        interpreted as BGZF. To decode vanilla GZIP, use "gzip". If None, the
+        source bytestream is assumed to be uncompressed. For more custom
+        decoding, provide a callable `source` instead.
     fields : list[str], optional
         Names of the fields to project.
     regions : list[str], optional

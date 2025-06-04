@@ -108,7 +108,7 @@ class BamFile(AlignmentFile):
 
 def from_sam(
     source: str | pathlib.Path | Callable[[], IO[Any] | str],
-    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
+    compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
     tag_defs: Any = None,
@@ -125,8 +125,12 @@ def from_sam(
     source : str, pathlib.Path, or Callable
         The URI or path to the SAM file, or a callable that opens the file
         as a file-like object.
-    compressed : bool, optional
-        Whether the SAM file is compressed, by default False.
+    compression : Literal["infer", "bgzf", "gzip", None], default: "infer"
+        If "infer" and `source` is a URI or path, the file's compression is
+        guessed based on the file extension, where ".gz" or ".bgz" is
+        interpreted as BGZF. To decode vanilla GZIP, use "gzip". If None, the
+        source bytestream is assumed to be uncompressed. For more custom
+        decoding, provide a callable `source` instead.
     fields : list[str], optional
         Specific fields to extract from the SAM file, by default None.
     tag_defs : Any, optional
@@ -188,8 +192,11 @@ def from_bam(
     source : str, pathlib.Path, or Callable
         The URI or path to the BAM file, or a callable that opens the file
         as a file-like object.
-    compressed : bool, optional
-        Whether the BAM file is compressed, by default True.
+    compression : Literal["bgzf", None], default: "bgzf"
+        Compression of the source bytestream. By default, BAM sources are
+        assumed to be BGZF-compressed. If None, the source is assumed to be
+        uncompressed. For more custom decoding, provide a callable `source`
+        instead.
     fields : list[str], optional
         Specific fields to extract from the BAM file, by default None.
     tag_defs : Any, optional

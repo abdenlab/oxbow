@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import logging
 import pathlib
+import warnings
 from abc import abstractmethod
 from typing import IO, Any, Callable, Generator, Iterable, Literal, Self
 from urllib.parse import urlparse
@@ -281,50 +281,54 @@ class DataSource:
 def prepare_source_and_index(
     source: str | pathlib.Path | Callable[[], IO[Any] | str],
     index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
-    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
-) -> tuple[Callable[[], IO[Any] | str], Callable[[], IO[Any] | str] | None, bool]:
+    compression: Literal["infer", "bgzf", "gzip", None] = "infer",
+) -> tuple[str | Callable[[], IO[Any]], str | Callable[[], IO[Any]] | None, bool]:
     if isinstance(source, (str, pathlib.Path)):
         source = str(source)
-        match compression:
-            case "bgzf":
-                bgzf_compressed = True
-            case "infer":
-                bgzf_compressed = str(source).endswith(".gz") or str(source).endswith(
-                    ".bgz"
-                )
-            case _:
-                bgzf_compressed = False
-
-        if (scheme := urlparse(source).scheme) and scheme in (
+        use_fsspec = (scheme := urlparse(source).scheme) and scheme in (
             "http",
             "https",
             "ftp",
             "s3",
             "file",
-        ):
+        )
+        match compression:
+            case "infer":
+                bgzf_compressed = str(source).endswith(".gz") or str(source).endswith(
+                    ".bgz"
+                )
+            case "bgzf":
+                bgzf_compressed = True
+            case "gzip":
+                bgzf_compressed = False
+                use_fsspec = True
+            case _:
+                bgzf_compressed = False
+
+        if use_fsspec:
             src = lambda: fsspec.open(  # noqa: E731
                 source,
                 mode="rb",
                 compression=compression if compression == "gzip" else None,
             ).open()
         else:
-            src = lambda: source  # noqa: E731
+            src = source
     elif callable(source):
         src = source
         match compression:
+            case "infer":
+                warnings.warn(
+                    "Compression inference is not supported for callable sources. "
+                    "Assuming bytestream returned by source is uncompressed."
+                )
+                bgzf_compressed = False
+            case "bgzf":
+                bgzf_compressed = True
             case "gzip":
                 raise ValueError(
                     "'gzip' compression is not supported for callable sources. "
                     "The callable should handle decompression in this case."
                 )
-            case "bgzf":
-                bgzf_compressed = True
-            case "infer":
-                logging.warning(
-                    "Compression inference is not supported for callable sources. "
-                    "Assuming uncompressed source."
-                )
-                bgzf_compressed = False
             case _:
                 bgzf_compressed = False
     else:
@@ -344,7 +348,7 @@ def prepare_source_and_index(
         ):
             index_src = lambda: fsspec.open(index, mode="rb").open()  # noqa: E731
         else:
-            index_src = lambda: index  # noqa: E731
+            index_src = index
     elif callable(index) or index is None:
         index_src = index
     else:

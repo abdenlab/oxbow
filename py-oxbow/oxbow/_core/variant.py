@@ -115,7 +115,7 @@ class BcfFile(VariantFile):
 
 def from_vcf(
     source: str | pathlib.Path | Callable[[], IO[Any] | str],
-    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
+    compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
     info_fields: list[str] | None = None,
@@ -134,8 +134,12 @@ def from_vcf(
     source : str, pathlib.Path, or Callable
         The URI or path to the VCF file, or a callable that opens the file
         as a file-like object.
-    compressed : bool, optional
-        Whether the VCF file is compressed, by default False.
+    compression : Literal["infer", "bgzf", "gzip", None], default: "infer"
+        If "infer" and `source` is a URI or path, the file's compression is
+        guessed based on the file extension, where ".gz" or ".bgz" is
+        interpreted as BGZF. To decode vanilla GZIP, use "gzip". If None, the
+        source bytestream is assumed to be uncompressed. For more custom
+        decoding, provide a callable `source` instead.
     fields : list[str], optional
         Specific fields to include from the VCF file.
     info_fields : list[str], optional
@@ -206,8 +210,11 @@ def from_bcf(
     source : str, pathlib.Path, or Callable
         The URI or path to the VCF file, or a callable that opens the file
         as a file-like object.
-    compressed : bool, optional
-        Whether the BCF file is compressed, by default True.
+    compression : Literal["bgzf", None], default: "bgzf"
+        Compression of the source bytestream. By default, BCF sources are
+        assumed to be BGZF-compressed. If None, the source is assumed to be
+        uncompressed. For more custom decoding, provide a callable `source`
+        instead.
     fields : list[str], optional
         Specific fields to include from the BCF file.
     info_fields : list[str], optional
