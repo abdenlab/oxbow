@@ -1,4 +1,4 @@
-? FastaFile("data/sample.fasta", index="data/sample.fasta.fai", gzi=None, compression=None,
+? FastaFile("data/sample.fasta", index="data/sample.fasta.fai", gzi=None, compressed=False,
     regions=["seq1:10-20", "seq10", "seq2:1-30"]).batches()
 :   batch-00:
         description:
@@ -21,7 +21,7 @@
         - seq2:1-30
         sequence:
         - CGTACGTACGTACGTACGTACGTACGTACG
-? FastaFile("data/sample.fasta", index="data/sample.fasta.fai", gzi=None, compression=None,
+? FastaFile("data/sample.fasta", index="data/sample.fasta.fai", gzi=None, compressed=False,
     regions=["seq1:10-20", "seq10"]).batches()
 :   batch-00:
         description:
@@ -38,7 +38,7 @@
         sequence:
         - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
 ? FastaFile("data/sample.fasta.gz", index="data/sample.fasta.fai", gzi="data/sample.fasta.gz.gzi",
-    compression="bgzf", regions=["seq1:10-20", "seq10", "seq2:1-30"]).batches()
+    compressed=True, regions=["seq1:10-20", "seq10", "seq2:1-30"]).batches()
 :   batch-00:
         description:
         - null
@@ -61,7 +61,7 @@
         sequence:
         - CGTACGTACGTACGTACGTACGTACGTACG
 ? FastaFile("data/sample.fasta.gz", index="data/sample.fasta.fai", gzi="data/sample.fasta.gz.gzi",
-    compression="bgzf", regions=["seq1:10-20", "seq10"]).batches()
+    compressed=True, regions=["seq1:10-20", "seq10"]).batches()
 :   batch-00:
         description:
         - null

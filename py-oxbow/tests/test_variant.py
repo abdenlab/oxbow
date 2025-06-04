@@ -1,11 +1,10 @@
-import os
-from urllib.parse import urlunparse
-
 import pytest
 from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
+import os
+from urllib.parse import urlunparse
 
 
 class TestVcfFile:
@@ -65,22 +64,22 @@ class TestVcfFile:
         assert manifest[f"fields={fields}"] == actual
 
     def test_input_encodings(self):
-        file = ox.VcfFile("data/sample.vcf", compression=None, batch_size=3)
+        file = ox.VcfFile("data/sample.vcf", compressed=False, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.VcfFile("data/sample.vcf", compression="gzip", batch_size=3)
+            file = ox.VcfFile("data/sample.vcf", compressed=True, batch_size=3)
             next((file.batches()))
 
-        file = ox.VcfFile("data/sample.vcf.gz", compression="gzip", batch_size=3)
+        file = ox.VcfFile("data/sample.vcf.gz", compressed=True, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.VcfFile("data/sample.vcf.gz", compression=None, batch_size=3)
+            file = ox.VcfFile("data/sample.vcf.gz", compressed=False, batch_size=3)
             next((file.batches()))
 
         with pytest.raises(BaseException):
-            file = ox.VcfFile("doesnotexist.vcf", compression=None, batch_size=3)
+            file = ox.VcfFile("doesnotexist.vcf", compressed=False, batch_size=3)
             next((file.batches()))
 
     @pytest.mark.parametrize(
@@ -94,7 +93,7 @@ class TestVcfFile:
     def test_input_with_regions(self, regions):
         file = ox.VcfFile(
             "data/sample.vcf.gz",
-            compression="bgzf",
+            compressed=True,
             index="data/sample.vcf.gz.tbi",
             samples=["NA12878i", "NA12891", "NA12892"],
             regions=regions,
@@ -103,7 +102,7 @@ class TestVcfFile:
 
         file = ox.VcfFile(
             "data/sample.vcf.gz",
-            compression="bgzf",
+            compressed=True,
             index="data/sample.vcf.gz.csi",
             samples=["NA12878i", "NA12891", "NA12892"],
             regions=regions,
@@ -112,7 +111,7 @@ class TestVcfFile:
 
         file = ox.VcfFile(
             "data/sample.vcf.gz",
-            compression="bgzf",
+            compressed=True,
             index=None,  # inferred from name
             samples=["NA12878i", "NA12891", "NA12892"],
             regions=regions,
@@ -132,13 +131,13 @@ class TestBcfFile:
     def test_init_callstack(self, filepath, wiretap, manifest: Manifest):
         with wiretap(ox.BcfFile) as stack:
             try:
-                ox.BcfFile(filepath, compression="bgzf")
+                ox.BcfFile(filepath, compressed=True)
             except BaseException:
                 pass
             finally:
                 assert (
                     manifest[
-                        f"{ox.BcfFile.__name__}({Input(filepath)}, compression='bgzf')"
+                        f"{ox.BcfFile.__name__}({Input(filepath)}, compressed=True)"
                     ]
                 ) == "\n".join([c.serialize() for c in stack])
 
@@ -152,7 +151,7 @@ class TestBcfFile:
             urlunparse(("file", "", os.path.abspath("data/sample.bcf"), "", "", "")),
         ):
             fragments = ox.BcfFile(
-                filepath, compression="bgzf", regions=regions
+                filepath, compressed=True, regions=regions
             ).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 
@@ -167,7 +166,7 @@ class TestBcfFile:
     def test_batches(self, fields, manifest: Manifest):
         input = Input(
             "data/sample.bcf",
-            compression="bgzf",
+            compressed=True,
             fields=fields,
             genotype_fields=("GT",),
             info_fields=("DP",),
@@ -182,22 +181,22 @@ class TestBcfFile:
         assert manifest[f"fields={fields}"] == actual
 
     def test_input_encodings(self):
-        file = ox.BcfFile("data/sample.bcf", compression="bgzf", batch_size=3)
+        file = ox.BcfFile("data/sample.bcf", compressed=True, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.BcfFile("data/sample.bcf", compression=None, batch_size=3)
+            file = ox.BcfFile("data/sample.bcf", compressed=False, batch_size=3)
             next((file.batches()))
 
-        file = ox.BcfFile("data/sample.ubcf", compression=None, batch_size=3)
+        file = ox.BcfFile("data/sample.ubcf", compressed=False, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.BcfFile("data/sample.ubcf", compression="bgzf", batch_size=3)
+            file = ox.BcfFile("data/sample.ubcf", compressed=True, batch_size=3)
             next((file.batches()))
 
         with pytest.raises(BaseException):
-            file = ox.BcfFile("doesnotexist.bcf", compression=None, batch_size=3)
+            file = ox.BcfFile("doesnotexist.bcf", compressed=False, batch_size=3)
             next((file.batches()))
 
     @pytest.mark.parametrize(
@@ -211,7 +210,7 @@ class TestBcfFile:
     def test_input_with_regions(self, regions):
         file = ox.BcfFile(
             "data/sample.bcf",
-            compression="bgzf",
+            compressed=True,
             index="data/sample.bcf.csi",
             samples=["HG00096", "HG00101", "HG00103"],
             regions=regions,
@@ -220,7 +219,7 @@ class TestBcfFile:
 
         file = ox.BcfFile(
             "data/sample.bcf",
-            compression="bgzf",
+            compressed=True,
             index=None,  # inferred from name
             samples=["HG00096", "HG00101", "HG00103"],
             regions=regions,

@@ -1,8 +1,6 @@
 GtfFile("data/does-not-exist.gtf"): |-
     ->  oxbow._core.gxf.GxfFile.__init__("data/does-not-exist.gtf")
-        ->  oxbow._core.base.CompressibleDataSource.__init__("data/does-not-exist.gtf", None, 131072, compression="infer")
-            ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.gtf", None, 131072)
-            <-  None
+        ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.gtf", None, 131072)
         <-  None
         ->  oxbow._core.base.DataSource.scanner()
             ->  oxbow._core.base.DataSource._source
@@ -11,9 +9,7 @@ GtfFile("data/does-not-exist.gtf"): |-
     !!  FileNotFoundError("No such file or directory (os error 2)")
 GtfFile("data/malformed.gtf"): |-
     ->  oxbow._core.gxf.GxfFile.__init__("data/malformed.gtf")
-        ->  oxbow._core.base.CompressibleDataSource.__init__("data/malformed.gtf", None, 131072, compression="infer")
-            ->  oxbow._core.base.DataSource.__init__("data/malformed.gtf", None, 131072)
-            <-  None
+        ->  oxbow._core.base.DataSource.__init__("data/malformed.gtf", None, 131072)
         <-  None
         ->  oxbow._core.base.DataSource.scanner()
             ->  oxbow._core.base.DataSource._source
@@ -22,9 +18,7 @@ GtfFile("data/malformed.gtf"): |-
     <-  None
 GtfFile("data/sample.gtf"): |-
     ->  oxbow._core.gxf.GxfFile.__init__("data/sample.gtf")
-        ->  oxbow._core.base.CompressibleDataSource.__init__("data/sample.gtf", None, 131072, compression="infer")
-            ->  oxbow._core.base.DataSource.__init__("data/sample.gtf", None, 131072)
-            <-  None
+        ->  oxbow._core.base.DataSource.__init__("data/sample.gtf", None, 131072)
         <-  None
         ->  oxbow._core.base.DataSource.scanner()
             ->  oxbow._core.base.DataSource._source

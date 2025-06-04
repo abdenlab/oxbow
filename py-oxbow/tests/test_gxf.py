@@ -1,11 +1,10 @@
-import os
-from urllib.parse import urlunparse
-
 import pytest
 from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
+import os
+from urllib.parse import urlunparse
 
 
 class TestGtfFile:
@@ -54,33 +53,31 @@ class TestGtfFile:
         assert manifest[f"fields={fields}"] == actual
 
     def test_input_encodings(self):
-        file = ox.GtfFile("data/sample.gtf", compression=None, batch_size=3)
+        file = ox.GtfFile("data/sample.gtf", compressed=False, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
-        file = ox.GtfFile("data/sample.sorted.gtf", compression=None, batch_size=3)
+        file = ox.GtfFile("data/sample.sorted.gtf", compressed=False, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.GtfFile("data/sample.gtf", compression="gzip", batch_size=3)
+            file = ox.GtfFile("data/sample.gtf", compressed=True, batch_size=3)
             next((file.batches()))
 
         with pytest.raises(BaseException):
-            file = ox.GtfFile(
-                "data/sample.sorted.gtf", compression="gzip", batch_size=3
-            )
+            file = ox.GtfFile("data/sample.sorted.gtf", compressed=True, batch_size=3)
             next((file.batches()))
 
-        file = ox.GtfFile("data/sample.sorted.gtf.gz", compression="gzip", batch_size=3)
+        file = ox.GtfFile("data/sample.sorted.gtf.gz", compressed=True, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
             file = ox.GtfFile(
-                "data/sample.sorted.gtf.gz", compression=None, batch_size=3
+                "data/sample.sorted.gtf.gz", compressed=False, batch_size=3
             )
             next((file.batches()))
 
         with pytest.raises(BaseException):
-            file = ox.GtfFile("doesnotexist.gtf", compression=None, batch_size=3)
+            file = ox.GtfFile("doesnotexist.gtf", compressed=False, batch_size=3)
             next((file.batches()))
 
     @pytest.mark.parametrize(
@@ -94,7 +91,7 @@ class TestGtfFile:
     def test_input_with_regions(self, regions):
         file = ox.GtfFile(
             "data/sample.sorted.gtf.gz",
-            compression="bgzf",
+            compressed=True,
             index="data/sample.sorted.gtf.gz.tbi",
             regions=regions,
         )
@@ -102,7 +99,7 @@ class TestGtfFile:
 
         file = ox.GtfFile(
             "data/sample.sorted.gtf.gz",
-            compression="bgzf",
+            compressed=True,
             index=None,  # inferred from name
             regions=regions,
         )
@@ -155,33 +152,31 @@ class TestGffFile:
         assert manifest[f"fields={fields}"] == actual
 
     def test_input_encodings(self):
-        file = ox.GffFile("data/sample.gff", compression=None, batch_size=3)
+        file = ox.GffFile("data/sample.gff", compressed=False, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
-        file = ox.GffFile("data/sample.sorted.gff", compression=None, batch_size=3)
+        file = ox.GffFile("data/sample.sorted.gff", compressed=False, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.GffFile("data/sample.gff", compression="gzip", batch_size=3)
+            file = ox.GffFile("data/sample.gff", compressed=True, batch_size=3)
             next((file.batches()))
 
         with pytest.raises(BaseException):
-            file = ox.GffFile(
-                "data/sample.sorted.gff", compression="gzip", batch_size=3
-            )
+            file = ox.GffFile("data/sample.sorted.gff", compressed=True, batch_size=3)
             next((file.batches()))
 
-        file = ox.GffFile("data/sample.sorted.gff.gz", compression="gzip", batch_size=3)
+        file = ox.GffFile("data/sample.sorted.gff.gz", compressed=True, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
             file = ox.GffFile(
-                "data/sample.sorted.gff.gz", compression=None, batch_size=3
+                "data/sample.sorted.gff.gz", compressed=False, batch_size=3
             )
             next((file.batches()))
 
         with pytest.raises(BaseException):
-            file = ox.GffFile("doesnotexist.gff", compression=None, batch_size=3)
+            file = ox.GffFile("doesnotexist.gff", compressed=False, batch_size=3)
             next((file.batches()))
 
     @pytest.mark.parametrize(
@@ -195,7 +190,7 @@ class TestGffFile:
     def test_input_with_regions(self, regions):
         file = ox.GffFile(
             "data/sample.sorted.gff.gz",
-            compression="bgzf",
+            compressed=True,
             index="data/sample.sorted.gff.gz.tbi",
             regions=regions,
         )
@@ -203,7 +198,7 @@ class TestGffFile:
 
         file = ox.GffFile(
             "data/sample.sorted.gff.gz",
-            compression="bgzf",
+            compressed=True,
             index=None,  # inferred from name
             regions=regions,
         )

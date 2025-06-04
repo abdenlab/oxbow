@@ -4,6 +4,7 @@ DataSource classes for htslib alignment formats.
 
 from __future__ import annotations
 
+from typing import Any, Callable, Generator, IO, Self
 import pathlib
 from typing import IO, Any, Callable, Generator, Self
 
@@ -13,7 +14,7 @@ from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
 from oxbow.oxbow import PyBamScanner, PySamScanner
 
 
-class AlignmentFile(CompressibleDataSource):
+class AlignmentFile(DataSource):
     def _batchreader_builder(
         self,
         scan_fn: Callable,
@@ -67,7 +68,7 @@ class AlignmentFile(CompressibleDataSource):
     def __init__(
         self,
         source: str | pathlib.Path | Callable[[], IO[Any]],
-        compression: Literal["infer", "gzip", "bgzf", None] = "infer",
+        compressed: bool = False,
         *,
         fields: list[str] | None = None,
         tag_defs: list[tuple[str, str]] | None = None,
@@ -76,13 +77,13 @@ class AlignmentFile(CompressibleDataSource):
         index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
-        super().__init__(source, index, batch_size, compression=compression)
+        super().__init__(source, index, batch_size)
 
         if isinstance(regions, str):
             regions = [regions]
         self._regions = regions
 
-        self._scanner_kwargs = dict(compressed=self.compressed)
+        self._scanner_kwargs = dict(compressed=compressed)
         if tag_defs is None:
             tag_defs = self.scanner().tag_defs(tag_scan_rows)
         self._schema_kwargs = dict(fields=fields, tag_defs=tag_defs)
@@ -104,9 +105,6 @@ class SamFile(AlignmentFile):
 
 class BamFile(AlignmentFile):
     _scanner_type = PyBamScanner
-
-    def __init__(self, *args, compression: Literal["bgzf", None] = "bgzf", **kwargs):
-        super().__init__(*args, compression=compression, **kwargs)
 
 
 def from_sam(

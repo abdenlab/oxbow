@@ -1,11 +1,10 @@
-import os
-from urllib.parse import urlunparse
-
 import pytest
 from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
+import os
+from urllib.parse import urlunparse
 
 
 class TestBedFile:
@@ -54,29 +53,25 @@ class TestBedFile:
         assert manifest[f"fields={fields}"] == actual
 
     def test_input_encodings(self):
-        file = ox.BedFile("data/sample.bed", "bed9", compression=None, batch_size=3)
+        file = ox.BedFile("data/sample.bed", "bed9", compressed=False, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.BedFile(
-                "data/sample.bed", "bed9", compression="gzip", batch_size=3
-            )
+            file = ox.BedFile("data/sample.bed", "bed9", compressed=True, batch_size=3)
             next((file.batches()))
 
-        file = ox.BedFile(
-            "data/sample.bed.gz", "bed9", compression="gzip", batch_size=3
-        )
+        file = ox.BedFile("data/sample.bed.gz", "bed9", compressed=True, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
             file = ox.BedFile(
-                "data/sample.bed.gz", "bed9", compression=None, batch_size=3
+                "data/sample.bed.gz", "bed9", compressed=False, batch_size=3
             )
             next((file.batches()))
 
         with pytest.raises(BaseException):
             file = ox.BedFile(
-                "doesnotexist.bed", "bed9", compression=None, batch_size=3
+                "doesnotexist.bed", "bed9", compressed=False, batch_size=3
             )
             next((file.batches()))
 
@@ -91,7 +86,7 @@ class TestBedFile:
     def test_input_with_regions(self, regions):
         file = ox.BedFile(
             "data/sample.bed.gz",
-            compression="bgzf",
+            compressed=True,
             index="data/sample.bed.gz.tbi",
             regions=regions,
         )
@@ -99,7 +94,7 @@ class TestBedFile:
 
         file = ox.BedFile(
             "data/sample.bed.gz",
-            compression="bgzf",
+            compressed=True,
             index=None,  # inferred from name
             regions=regions,
         )

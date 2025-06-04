@@ -4,12 +4,12 @@ from oxbow._core.alignment import (
     from_bam,
     from_sam,
 )
+from oxbow._core.bed import (
+    from_bed,
+)
 from oxbow._core.bbi import (
     from_bigbed,
     from_bigwig,
-)
-from oxbow._core.bed import (
-    from_bed,
 )
 from oxbow._core.gxf import (
     from_gff,
@@ -23,18 +23,19 @@ from oxbow._core.variant import (
     from_bcf,
     from_vcf,
 )
+
 from oxbow.oxbow import (
+    read_fasta,
+    read_fastq,
+    read_sam,
     read_bam,
     read_bcf,
+    read_vcf,
     read_bed,
     read_bigbed,
     read_bigwig,
-    read_fasta,
-    read_fastq,
     read_gff,
     read_gtf,
-    read_sam,
-    read_vcf,
 )
 
 try:
