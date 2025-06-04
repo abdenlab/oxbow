@@ -13,7 +13,36 @@ from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
 from oxbow.oxbow import PyBcfScanner, PyVcfScanner
 
 
-class VariantFile(DataSource):
+class VariantFile(CompressibleDataSource):
+    def __init__(
+        self,
+        source: str | pathlib.Path | Callable[[], IO[Any]],
+        compression: Literal["infer", "gzip", "bgzf", None] = "infer",
+        *,
+        fields=None,
+        info_fields: list[str] | None = None,
+        samples: list[str] | None = None,
+        genotype_fields: list[str] | None = None,
+        genotype_by: Literal["sample", "field"] = "sample",
+        regions: str | list[str] | None = None,
+        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+    ):
+        super().__init__(source, index, batch_size, compression=compression)
+
+        if isinstance(regions, str):
+            regions = [regions]
+        self._regions = regions
+
+        self._scanner_kwargs = dict(compressed=self.compressed)
+        self._schema_kwargs = dict(
+            fields=fields,
+            info_fields=info_fields,
+            samples=samples,
+            genotype_fields=genotype_fields,
+            genotype_by=genotype_by,
+        )
+
     def _batchreader_builder(
         self,
         scan_fn,
@@ -65,35 +94,6 @@ class VariantFile(DataSource):
             scanner = self.scanner()
             yield self._batchreader_builder(scanner.scan, scanner.field_names())
 
-    def __init__(
-        self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
-        compressed: bool = False,
-        *,
-        fields=None,
-        info_fields: list[str] | None = None,
-        samples: list[str] | None = None,
-        genotype_fields: list[str] | None = None,
-        genotype_by: Literal["sample", "field"] = "sample",
-        regions: str | list[str] | None = None,
-        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
-        batch_size: int = DEFAULT_BATCH_SIZE,
-    ):
-        super().__init__(source, index, batch_size)
-
-        if isinstance(regions, str):
-            regions = [regions]
-        self._regions = regions
-
-        self._scanner_kwargs = dict(compressed=compressed)
-        self._schema_kwargs = dict(
-            fields=fields,
-            info_fields=info_fields,
-            samples=samples,
-            genotype_fields=genotype_fields,
-            genotype_by=genotype_by,
-        )
-
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
             self._src,
@@ -111,6 +111,9 @@ class VcfFile(VariantFile):
 
 class BcfFile(VariantFile):
     _scanner_type = PyBcfScanner
+
+    def __init__(self, *args, compression: Literal["bgzf", None] = "bgzf", **kwargs):
+        super().__init__(*args, compression=compression, **kwargs)
 
 
 def from_vcf(

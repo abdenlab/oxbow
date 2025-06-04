@@ -4,8 +4,8 @@ import pathlib
 from abc import abstractmethod
 from typing import IO, Any, Callable, Generator, Iterable, Self
 from urllib.parse import urlparse
-import fsspec
 
+import fsspec
 import pyarrow as pa
 
 from oxbow._pyarrow import (
@@ -308,3 +308,47 @@ class DataSource:
             writer.write_table(self.dataset().to_table())
         buffer = s.getvalue()
         return buffer.to_pybytes()
+
+
+class CompressibleDataSource(DataSource):
+    def __init__(
+        self,
+        source: str | pathlib.Path | Callable[[], IO[Any]],
+        *args,
+        compression: Literal["infer", "gzip", "bgzf", None] = "infer",
+        **kwargs,
+    ) -> None:
+        super().__init__(source, *args, **kwargs)
+        if isinstance(source, (str, pathlib.Path)):
+            match compression:
+                case "gzip":
+                    self._src = lambda: fsspec.open(
+                        source, mode="rb", compression=compression
+                    ).open()
+                    compressed = False
+                case "bgzf":
+                    compressed = True
+                case "infer":
+                    compressed = str(source).endswith(".gz") or str(source).endswith(
+                        ".bgz"
+                    )
+                case None:
+                    compressed = False
+        else:
+            match compression:
+                case "gzip":
+                    raise ValueError(
+                        "'gzip' compression is not supported for callable sources. "
+                        "The callable should handle decompression in this case."
+                    )
+                case "bgzf":
+                    compressed = True
+                case "infer":
+                    logging.warning(
+                        "Compression inference is not supported for callable sources. "
+                        "Assuming uncompressed source."
+                    )
+                    compressed = False
+                case None:
+                    compressed = False
+        self.compressed = compressed

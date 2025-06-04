@@ -13,7 +13,30 @@ from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
 from oxbow.oxbow import PyGffScanner, PyGtfScanner
 
 
-class GxfFile(DataSource):
+class GxfFile(CompressibleDataSource):
+    def __init__(
+        self,
+        source: str | pathlib.Path | Callable[[], IO[Any]],
+        *,
+        fields: list[str] | None = None,
+        attribute_defs: list[tuple[str, str]] | None = None,
+        attribute_scan_rows: int = 1024,
+        regions: str | list[str] | None = None,
+        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+        compression: Literal["infer", "gzip", "bgzf", None] = "infer",
+    ):
+        super().__init__(source, index, batch_size, compression=compression)
+
+        if isinstance(regions, str):
+            regions = [regions]
+        self._regions = regions
+
+        self._scanner_kwargs = dict(compressed=self.compressed)
+        if attribute_defs is None:
+            attribute_defs = self.scanner().attribute_defs(attribute_scan_rows)
+        self._schema_kwargs = dict(fields=fields, attribute_defs=attribute_defs)
+
     def _batchreader_builder(
         self,
         scan_fn: Callable,
@@ -58,29 +81,6 @@ class GxfFile(DataSource):
         else:
             scanner = self.scanner()
             yield self._batchreader_builder(scanner.scan, scanner.field_names())
-
-    def __init__(
-        self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
-        compressed: bool = False,
-        *,
-        fields: list[str] | None = None,
-        attribute_defs: list[tuple[str, str]] | None = None,
-        attribute_scan_rows: int = 1024,
-        regions: str | list[str] | None = None,
-        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
-        batch_size: int = DEFAULT_BATCH_SIZE,
-    ):
-        super().__init__(source, index, batch_size)
-
-        if isinstance(regions, str):
-            regions = [regions]
-        self._regions = regions
-
-        self._scanner_kwargs = dict(compressed=compressed)
-        if attribute_defs is None:
-            attribute_defs = self.scanner().attribute_defs(attribute_scan_rows)
-        self._schema_kwargs = dict(fields=fields, attribute_defs=attribute_defs)
 
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(

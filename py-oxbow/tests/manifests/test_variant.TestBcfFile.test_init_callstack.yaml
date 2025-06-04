@@ -1,15 +1,27 @@
-BcfFile("data/does-not-exist.bcf", compressed=True): |-
-    ->  oxbow._core.variant.VariantFile.__init__("data/does-not-exist.bcf", compressed=True)
-        ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.bcf", None, 131072)
+BcfFile("data/does-not-exist.bcf", compression='bgzf'): |-
+    ->  oxbow._core.variant.BcfFile.__init__("data/does-not-exist.bcf", compression="bgzf")
+        ->  oxbow._core.variant.VariantFile.__init__("data/does-not-exist.bcf", compression="bgzf")
+            ->  oxbow._core.base.CompressibleDataSource.__init__("data/does-not-exist.bcf", None, 131072, compression="bgzf")
+                ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.bcf", None, 131072)
+                <-  None
+            <-  None
         <-  None
     <-  None
-BcfFile("data/malformed.bcf", compressed=True): |-
-    ->  oxbow._core.variant.VariantFile.__init__("data/malformed.bcf", compressed=True)
-        ->  oxbow._core.base.DataSource.__init__("data/malformed.bcf", None, 131072)
+BcfFile("data/malformed.bcf", compression='bgzf'): |-
+    ->  oxbow._core.variant.BcfFile.__init__("data/malformed.bcf", compression="bgzf")
+        ->  oxbow._core.variant.VariantFile.__init__("data/malformed.bcf", compression="bgzf")
+            ->  oxbow._core.base.CompressibleDataSource.__init__("data/malformed.bcf", None, 131072, compression="bgzf")
+                ->  oxbow._core.base.DataSource.__init__("data/malformed.bcf", None, 131072)
+                <-  None
+            <-  None
         <-  None
     <-  None
-BcfFile("data/sample.bcf", compressed=True): |-
-    ->  oxbow._core.variant.VariantFile.__init__("data/sample.bcf", compressed=True)
-        ->  oxbow._core.base.DataSource.__init__("data/sample.bcf", None, 131072)
+BcfFile("data/sample.bcf", compression='bgzf'): |-
+    ->  oxbow._core.variant.BcfFile.__init__("data/sample.bcf", compression="bgzf")
+        ->  oxbow._core.variant.VariantFile.__init__("data/sample.bcf", compression="bgzf")
+            ->  oxbow._core.base.CompressibleDataSource.__init__("data/sample.bcf", None, 131072, compression="bgzf")
+                ->  oxbow._core.base.DataSource.__init__("data/sample.bcf", None, 131072)
+                <-  None
+            <-  None
         <-  None
     <-  None

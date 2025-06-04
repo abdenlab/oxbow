@@ -1,21 +1,27 @@
 FastqFile("data/does-not-exist.fastq"): |-
     ->  oxbow._core.sequence.FastqFile.__init__("data/does-not-exist.fastq")
-        ->  oxbow._core.sequence.SequenceFile.__init__(source="data/does-not-exist.fastq", compressed=False, fields=None, regions=None, index=None, gzi=None, batch_size=131072)
-            ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.fastq", None, 131072)
+        ->  oxbow._core.sequence.SequenceFile.__init__(source="data/does-not-exist.fastq", compression="infer", fields=None, regions=None, index=None, gzi=None, batch_size=131072)
+            ->  oxbow._core.base.CompressibleDataSource.__init__("data/does-not-exist.fastq", None, 131072, compression="infer")
+                ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.fastq", None, 131072)
+                <-  None
             <-  None
         <-  None
     <-  None
 FastqFile("data/malformed.fastq"): |-
     ->  oxbow._core.sequence.FastqFile.__init__("data/malformed.fastq")
-        ->  oxbow._core.sequence.SequenceFile.__init__(source="data/malformed.fastq", compressed=False, fields=None, regions=None, index=None, gzi=None, batch_size=131072)
-            ->  oxbow._core.base.DataSource.__init__("data/malformed.fastq", None, 131072)
+        ->  oxbow._core.sequence.SequenceFile.__init__(source="data/malformed.fastq", compression="infer", fields=None, regions=None, index=None, gzi=None, batch_size=131072)
+            ->  oxbow._core.base.CompressibleDataSource.__init__("data/malformed.fastq", None, 131072, compression="infer")
+                ->  oxbow._core.base.DataSource.__init__("data/malformed.fastq", None, 131072)
+                <-  None
             <-  None
         <-  None
     <-  None
 FastqFile("data/sample.fastq"): |-
     ->  oxbow._core.sequence.FastqFile.__init__("data/sample.fastq")
-        ->  oxbow._core.sequence.SequenceFile.__init__(source="data/sample.fastq", compressed=False, fields=None, regions=None, index=None, gzi=None, batch_size=131072)
-            ->  oxbow._core.base.DataSource.__init__("data/sample.fastq", None, 131072)
+        ->  oxbow._core.sequence.SequenceFile.__init__(source="data/sample.fastq", compression="infer", fields=None, regions=None, index=None, gzi=None, batch_size=131072)
+            ->  oxbow._core.base.CompressibleDataSource.__init__("data/sample.fastq", None, 131072, compression="infer")
+                ->  oxbow._core.base.DataSource.__init__("data/sample.fastq", None, 131072)
+                <-  None
             <-  None
         <-  None
     <-  None

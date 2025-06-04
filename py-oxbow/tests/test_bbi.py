@@ -1,10 +1,11 @@
+import os
+from urllib.parse import urlunparse
+
 import pytest
 from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
-import os
-from urllib.parse import urlunparse
 
 
 class TestBigBedFile:

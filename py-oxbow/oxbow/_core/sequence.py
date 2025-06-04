@@ -13,9 +13,39 @@ from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
 from oxbow.oxbow import PyFastaScanner, PyFastqScanner
 
 
-class SequenceFile(DataSource):
+class SequenceFile(CompressibleDataSource):
+    def __init__(
+        self,
+        source,
+        fields,
+        regions,
+        index,
+        gzi,
+        batch_size,
+        compression: Literal["infer", "gzip", "bgzf", None] = "infer",
+    ):
+        super().__init__(source, index, batch_size, compression=compression)
+
+        if isinstance(gzi, (str, pathlib.Path)):
+            gzi = str(gzi)
+            self._gzi_src = lambda: gzi
+        elif callable(gzi) or gzi is None:
+            self._gzi_src = gzi
+        else:
+            raise TypeError(
+                "`gzi` must be a str, pathlib.Path, or a callable returning "
+                "an IO stream"
+            )
+
+        if isinstance(regions, str):
+            regions = [regions]
+        self._regions = regions
+
+        self._scanner_kwargs = dict(compressed=self.compressed)
+        self._schema_kwargs = dict(fields=fields)
+
     @property
-    def _gzi(self) -> str | None:
+    def _gzi(self):
         return self._gzi_src() if self._gzi_src else None
 
     def _batchreader_builder(
@@ -54,35 +84,6 @@ class SequenceFile(DataSource):
         # record.
         yield self._batchreader_builder()
 
-    def __init__(
-        self,
-        source,
-        compressed,
-        fields,
-        regions,
-        index,
-        gzi,
-        batch_size,
-    ):
-        super().__init__(source, index, batch_size)
-        if isinstance(gzi, (str, pathlib.Path)):
-            gzi = str(gzi)
-            self._gzi_src = lambda: gzi
-        elif callable(gzi) or gzi is None:
-            self._gzi_src = gzi
-        else:
-            raise TypeError(
-                "`gzi` must be a str, pathlib.Path, or a callable returning "
-                "an IO stream"
-            )
-
-        if isinstance(regions, str):
-            regions = [regions]
-        self._regions = regions
-
-        self._scanner_kwargs = dict(compressed=compressed)
-        self._schema_kwargs = dict(fields=fields)
-
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
             self._src,
@@ -101,7 +102,7 @@ class FastaFile(SequenceFile):
     def __init__(
         self,
         source: str | pathlib.Path | Callable[[], IO[Any]],
-        compressed: bool = False,
+        compression: Literal["infer", "gzip", "bgzf", None] = "infer",
         *,
         fields: list[str] | None = None,
         regions: str | list[str] | None = None,
@@ -111,7 +112,7 @@ class FastaFile(SequenceFile):
     ):
         super().__init__(
             source=source,
-            compressed=compressed,
+            compression=compression,
             fields=fields,
             regions=regions,
             index=index,
@@ -126,14 +127,14 @@ class FastqFile(SequenceFile):
     def __init__(
         self,
         source: str | pathlib.Path | Callable[[], IO[Any]],
-        compressed: bool = False,
+        compression: Literal["infer", "gzip", "bgzf", None] = "infer",
         *,
         fields: list[str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
         super().__init__(
             source=source,
-            compressed=compressed,
+            compression=compression,
             fields=fields,
             regions=None,
             index=None,

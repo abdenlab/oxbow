@@ -1,10 +1,11 @@
+import os
+from urllib.parse import urlunparse
+
 import pytest
 from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
-import os
-from urllib.parse import urlunparse
 
 
 class TestFastaFile:
@@ -57,46 +58,46 @@ class TestFastaFile:
         assert manifest[f"fields={fields}"] == actual
 
     @pytest.mark.parametrize(
-        ("filepath", "indexpath", "gzipath", "compressed", "regions"),
+        ("filepath", "indexpath", "gzipath", "compression", "regions"),
         [
             (
                 "data/sample.fasta",
                 "data/sample.fasta.fai",
                 None,
-                False,
+                None,
                 ["seq1:10-20", "seq10"],
             ),
             (
                 "data/sample.fasta",
                 "data/sample.fasta.fai",
                 None,
-                False,
+                None,
                 ["seq1:10-20", "seq10", "seq2:1-30"],
             ),
             (
                 "data/sample.fasta.gz",
                 "data/sample.fasta.fai",
                 "data/sample.fasta.gz.gzi",
-                True,
+                "bgzf",
                 ["seq1:10-20", "seq10"],
             ),
             (
                 "data/sample.fasta.gz",
                 "data/sample.fasta.fai",
                 "data/sample.fasta.gz.gzi",
-                True,
+                "bgzf",
                 ["seq1:10-20", "seq10", "seq2:1-30"],
             ),
         ],
     )
     def test_batches_with_regions(
-        self, filepath, indexpath, gzipath, compressed, regions, manifest: Manifest
+        self, filepath, indexpath, gzipath, compression, regions, manifest: Manifest
     ):
         input = Input(
             filepath,
             index=indexpath,
             gzi=gzipath,
-            compressed=compressed,
+            compression=compression,
             regions=regions,
         )
         batches = ox.FastaFile(*input.args, **input.kwargs).batches()
@@ -108,21 +109,21 @@ class TestFastaFile:
         assert manifest[f"{ox.FastaFile.__name__}({input}).batches()"] == actual
 
     def test_input_encodings(self):
-        file = ox.FastaFile("data/sample.fasta", compressed=False, batch_size=3)
+        file = ox.FastaFile("data/sample.fasta", compression=None, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
-        file = ox.FastaFile("data/sample.fasta", compressed=True, batch_size=3)
+        file = ox.FastaFile("data/sample.fasta", compression="gzip", batch_size=3)
         with pytest.raises(OSError):
             next((file.batches()))
 
-        file = ox.FastaFile("data/sample.fasta.gz", compressed=True, batch_size=3)
+        file = ox.FastaFile("data/sample.fasta.gz", compression="gzip", batch_size=3)
         assert len(next((file.batches()))) <= 3
 
-        file = ox.FastaFile("data/sample.fasta.gz", compressed=False, batch_size=3)
+        file = ox.FastaFile("data/sample.fasta.gz", compression=None, batch_size=3)
         with pytest.raises(OSError):
             next((file.batches()))
 
-        file = ox.FastaFile("doesnotexist.fasta", compressed=False, batch_size=3)
+        file = ox.FastaFile("doesnotexist.fasta", compression=None, batch_size=3)
         with pytest.raises(FileNotFoundError):
             next((file.batches()))
 
@@ -138,7 +139,7 @@ class TestFastaFile:
     def test_input_with_regions(self, regions):
         file = ox.FastaFile(
             "data/sample.fasta",
-            compressed=False,
+            compression=None,
             index="data/sample.fasta.fai",
             regions=regions,
         )
@@ -146,7 +147,7 @@ class TestFastaFile:
 
         file = ox.FastaFile(
             "data/sample.fasta",
-            compressed=False,
+            compression=None,
             index=None,  # inferred from name
             regions=regions,
         )
@@ -154,7 +155,7 @@ class TestFastaFile:
 
         file = ox.FastaFile(
             "data/sample.fasta.gz",
-            compressed=True,
+            compression="gzip",
             index="data/sample.fasta.fai",
             gzi="data/sample.fasta.gz.gzi",
             regions=regions,
@@ -163,7 +164,7 @@ class TestFastaFile:
 
         file = ox.FastaFile(
             "data/sample.fasta.gz",
-            compressed=True,
+            compression="bgzf",
             index="data/sample.fasta.fai",
             gzi=None,  # currently not inferred from name
             regions=regions,
@@ -229,24 +230,24 @@ class TestFastqFile:
             file.regions("seq1:10-20")
 
     def test_input_encodings(self):
-        file = ox.FastqFile("data/sample.fastq", compressed=False, batch_size=3)
+        file = ox.FastqFile("data/sample.fastq", compression=None, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
-        file = ox.FastqFile("data/sample.fastq", compressed=True, batch_size=3)
+        file = ox.FastqFile("data/sample.fastq", compression="gzip", batch_size=3)
         with pytest.raises(OSError):
             next((file.batches()))
 
-        file = ox.FastqFile("data/sample.fastq.gz", compressed=True, batch_size=3)
+        file = ox.FastqFile("data/sample.fastq.gz", compression="gzip", batch_size=3)
         assert len(next((file.batches()))) <= 3
 
-        file = ox.FastqFile("data/sample.fastq.gz", compressed=False, batch_size=3)
+        file = ox.FastqFile("data/sample.fastq.gz", compression=None, batch_size=3)
         with pytest.raises(OSError):
             next((file.batches()))
 
-        file = ox.FastqFile("data/malformed.fastq", compressed=False, batch_size=3)
+        file = ox.FastqFile("data/malformed.fastq", compression=None, batch_size=3)
         with pytest.raises(OSError):
             next((file.batches()))
 
-        file = ox.FastqFile("doesnotexist.fastq", compressed=False, batch_size=3)
+        file = ox.FastqFile("doesnotexist.fastq", compression=None, batch_size=3)
         with pytest.raises(FileNotFoundError):
             next((file.batches()))

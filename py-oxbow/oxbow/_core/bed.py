@@ -13,8 +13,28 @@ from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
 from oxbow.oxbow import PyBedScanner
 
 
-class BedFile(DataSource):
+class BedFile(CompressibleDataSource):
     _scanner_type = PyBedScanner
+
+    def __init__(
+        self,
+        source: str | pathlib.Path | Callable[[], IO[Any]],
+        bed_schema: str = "bed3+",
+        *,
+        fields: list[str] | None = None,
+        regions: str | list[str] | None = None,
+        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+        compression: Literal["infer", "gzip", "bgzf", None] = "infer",
+    ):
+        super().__init__(source, index, batch_size, compression=compression)
+
+        if isinstance(regions, str):
+            regions = [regions]
+        self._regions = regions
+
+        self._scanner_kwargs = dict(bed_schema=bed_schema, compressed=self.compressed)
+        self._schema_kwargs = dict(fields=fields)
 
     def _batchreader_builder(
         self,
@@ -55,26 +75,6 @@ class BedFile(DataSource):
         else:
             scanner = self.scanner()
             yield self._batchreader_builder(scanner.scan, scanner.field_names())
-
-    def __init__(
-        self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
-        bed_schema: str = "bed3+",
-        compressed: bool = False,
-        *,
-        fields: list[str] | None = None,
-        regions: str | list[str] | None = None,
-        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
-        batch_size: int = DEFAULT_BATCH_SIZE,
-    ):
-        super().__init__(source, index, batch_size)
-
-        if isinstance(regions, str):
-            regions = [regions]
-        self._regions = regions
-
-        self._scanner_kwargs = dict(bed_schema=bed_schema, compressed=compressed)
-        self._schema_kwargs = dict(fields=fields)
 
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(

@@ -1,8 +1,9 @@
-import pytest
 import os
+from urllib.parse import urlunparse
+
+import pytest
 from pytest_manifest import Manifest
 from utils import Input
-from urllib.parse import urlunparse
 
 import oxbow.core as ox
 
@@ -53,22 +54,22 @@ class TestSamFile:
         assert manifest[f"fields={fields}"] == actual
 
     def test_input_encodings(self):
-        file = ox.SamFile("data/sample.sam", compressed=False, batch_size=3)
+        file = ox.SamFile("data/sample.sam", compression=None, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(OSError):
-            file = ox.SamFile("data/sample.sam", compressed=True, batch_size=3)
+            file = ox.SamFile("data/sample.sam", compression="gzip", batch_size=3)
             next((file.batches()))
 
-        file = ox.SamFile("data/sample.sam.gz", compressed=True, batch_size=3)
+        file = ox.SamFile("data/sample.sam.gz", compression="gzip", batch_size=3)
         assert len(next((file.batches()))) <= 3
 
-        # file = ox.SamFile("data/sample.sam.gz", compressed=False, batch_size=3)
+        # file = ox.SamFile("data/sample.sam.gz", compression=None, batch_size=3)
         # with pytest.raises(OSError):
         #     next((file.batches()))
 
         with pytest.raises(FileNotFoundError):
-            file = ox.SamFile("doesnotexist.sam", compressed=False, batch_size=3)
+            file = ox.SamFile("doesnotexist.sam", compression=None, batch_size=3)
             next((file.batches()))
 
     @pytest.mark.parametrize(
@@ -82,7 +83,7 @@ class TestSamFile:
     def test_input_with_regions(self, regions):
         file = ox.SamFile(
             "data/sample.sam.gz",
-            compressed=True,
+            compression="bgzf",
             index="data/sample.sam.gz.tbi",
             regions=regions,
         )
@@ -90,7 +91,7 @@ class TestSamFile:
 
         file = ox.SamFile(
             "data/sample.sam.gz",
-            compressed=True,
+            compression="bgzf",
             index=None,  # inferred from name
             regions=regions,
         )
@@ -105,13 +106,16 @@ class TestBamFile:
     def test_init_callstack(self, filepath, wiretap, manifest: Manifest):
         with wiretap(ox.BamFile) as stack:
             try:
-                ox.BamFile(filepath, compressed=True)
+                ox.BamFile(
+                    filepath,
+                    compression="bgzf",
+                )
             except BaseException:
                 pass
             finally:
                 assert (
                     manifest[
-                        f"{ox.BamFile.__name__}({Input(filepath)}, compressed=True)"
+                        f"{ox.BamFile.__name__}({Input(filepath)}, compression='bgzf',)"
                     ]
                 ) == "\n".join([c.serialize() for c in stack])
 
@@ -125,7 +129,9 @@ class TestBamFile:
     )
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.BamFile(
-            "data/sample.bam", fields=fields, compressed=True
+            "data/sample.bam",
+            fields=fields,
+            compression="bgzf",
         ).batches()
         try:
             actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
@@ -144,27 +150,29 @@ class TestBamFile:
             urlunparse(("file", "", os.path.abspath("data/sample.bam"), "", "", "")),
         ):
             fragments = ox.BamFile(
-                filepath, regions=regions, compressed=True
+                filepath,
+                regions=regions,
+                compression="bgzf",
             ).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 
     def test_input_encodings(self):
-        file = ox.BamFile("data/sample.bam", compressed=True, batch_size=3)
+        file = ox.BamFile("data/sample.bam", compression="bgzf", batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.BamFile("data/sample.bam", compressed=False, batch_size=3)
+            file = ox.BamFile("data/sample.bam", compression=None, batch_size=3)
             next((file.batches()))
 
-        file = ox.BamFile("data/sample.ubam", compressed=False, batch_size=3)
+        file = ox.BamFile("data/sample.ubam", compression=None, batch_size=3)
         assert len(next((file.batches()))) <= 3
 
         with pytest.raises(BaseException):
-            file = ox.BamFile("data/sample.ubam", compressed=True, batch_size=3)
+            file = ox.BamFile("data/sample.ubam", compression="bgzf", batch_size=3)
             next((file.batches()))
 
         with pytest.raises(BaseException):
-            file = ox.BamFile("doesnotexist.bam", compressed=False, batch_size=3)
+            file = ox.BamFile("doesnotexist.bam", compression=None, batch_size=3)
             next((file.batches()))
 
     @pytest.mark.parametrize(
@@ -178,7 +186,7 @@ class TestBamFile:
     def test_input_with_regions(self, regions):
         file = ox.BamFile(
             "data/sample.bam",
-            compressed=True,
+            compression="bgzf",
             index="data/sample.bam.bai",
             regions=regions,
         )
@@ -186,7 +194,7 @@ class TestBamFile:
 
         file = ox.BamFile(
             "data/sample.bam",
-            compressed=True,
+            compression="bgzf",
             index=None,  # inferred from name
             regions=regions,
         )
