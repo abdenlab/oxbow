@@ -4,13 +4,12 @@ DataSource classes for GTF/GFF3 formats.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, IO, Self
 import pathlib
-from typing import IO, Any, Callable, Generator, Self
+from typing import IO, Any, Callable, Generator, Literal, Self
 
 import pyarrow as pa
 
-from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
+from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
 from oxbow.oxbow import PyGffScanner, PyGtfScanner
 
 
@@ -62,14 +61,14 @@ class GxfFile(DataSource):
 
     def __init__(
         self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
+        source: str | Callable[[], IO[Any] | str],
         compressed: bool = False,
         *,
         fields: list[str] | None = None,
         attribute_defs: list[tuple[str, str]] | None = None,
         attribute_scan_rows: int = 1024,
         regions: str | list[str] | None = None,
-        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        index: str | Callable[[], IO[Any] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
         super().__init__(source, index, batch_size)
@@ -103,14 +102,14 @@ class GffFile(GxfFile):
 
 
 def from_gtf(
-    source: str | pathlib.Path | Callable[[], IO[Any]],
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
     compression: Literal["infer", "gzip", "bgzf", None] = "infer",
     *,
     fields: list[str] | None = None,
-    attribute_defs: dict | None = None,
+    attribute_defs: list[tuple[str, str]] | None = None,
     attribute_scan_rows: int = 1024,
     regions: list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> GtfFile:
     """
@@ -147,9 +146,12 @@ def from_gtf(
     from_bigbed : Create a BigBed file data source.
     from_bigwig : Create a BigWig file data source.
     """
+    source, index, bgzf_compressed = prepare_source_and_index(
+        source, index, compression
+    )
     return GtfFile(
         source=source,
-        compression=compression,
+        compressed=bgzf_compressed,
         fields=fields,
         attribute_defs=attribute_defs,
         attribute_scan_rows=attribute_scan_rows,
@@ -160,14 +162,14 @@ def from_gtf(
 
 
 def from_gff(
-    source: str | pathlib.Path | Callable[[], IO[Any]],
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
     compression: Literal["infer", "gzip", "bgzf", None] = "infer",
     *,
     fields: list[str] | None = None,
-    attribute_defs: dict | None = None,
+    attribute_defs: list[tuple[str, str]] | None = None,
     attribute_scan_rows: int = 1024,
     regions: list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> GffFile:
     """
@@ -204,11 +206,14 @@ def from_gff(
     from_bigbed : Create a BigBed file data source.
     from_bigwig : Create a BigWig file data source.
     """
+    source, index, bgzf_compressed = prepare_source_and_index(
+        source, index, compression
+    )
     return GffFile(
         source=source,
         fields=fields,
         index=index,
-        compression=compression,
+        compressed=bgzf_compressed,
         regions=regions,
         attribute_defs=attribute_defs,
         attribute_scan_rows=attribute_scan_rows,

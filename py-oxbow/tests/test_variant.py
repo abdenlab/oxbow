@@ -1,10 +1,10 @@
+import os
+
 import pytest
 from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
-import os
-from urllib.parse import urlunparse
 
 
 class TestVcfFile:
@@ -34,7 +34,6 @@ class TestVcfFile:
     def test_fragments(self, regions):
         for filepath in (
             "data/sample.vcf",
-            urlunparse(("file", "", os.path.abspath("data/sample.vcf"), "", "", "")),
         ):
             fragments = ox.VcfFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
@@ -148,7 +147,6 @@ class TestBcfFile:
     def test_fragments(self, regions):
         for filepath in (
             "data/sample.bcf",
-            urlunparse(("file", "", os.path.abspath("data/sample.bcf"), "", "", "")),
         ):
             fragments = ox.BcfFile(
                 filepath, compressed=True, regions=regions

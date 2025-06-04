@@ -1,10 +1,10 @@
+import os
+
 import pytest
 from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
-import os
-from urllib.parse import urlunparse
 
 
 class TestGtfFile:
@@ -30,7 +30,6 @@ class TestGtfFile:
     def test_fragments(self, regions):
         for filepath in (
             "data/sample.gtf",
-            urlunparse(("file", "", os.path.abspath("data/sample.gtf"), "", "", "")),
         ):
             fragments = ox.GtfFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
@@ -129,7 +128,6 @@ class TestGffFile:
     def test_fragments(self, regions):
         for filepath in (
             "data/sample.gff",
-            urlunparse(("file", "", os.path.abspath("data/sample.gff"), "", "", "")),
         ):
             fragments = ox.GffFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)

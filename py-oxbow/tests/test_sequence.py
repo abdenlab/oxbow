@@ -1,10 +1,10 @@
+import os
+
 import pytest
 from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
-import os
-from urllib.parse import urlunparse
 
 
 class TestFastaFile:
@@ -30,14 +30,10 @@ class TestFastaFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        for filepath in (
-            "data/sample.fasta",
-            urlunparse(("file", "", os.path.abspath("data/sample.fasta"), "", "", "")),
-        ):
-            fragments = ox.FastaFile(
-                filepath, index="data/sample.fasta.fai", regions=regions
-            ).fragments()
-            assert len(fragments) == 1
+        fragments = ox.FastaFile(
+            "data/sample.fasta", index="data/sample.fasta.fai", regions=regions
+        ).fragments()
+        assert len(fragments) == 1
 
     @pytest.mark.parametrize(
         "fields",
@@ -191,12 +187,8 @@ class TestFastqFile:
                 ) == "\n".join([c.serialize() for c in stack])
 
     def test_fragments(self):
-        for filepath in (
-            "data/sample.fastq",
-            urlunparse(("file", "", os.path.abspath("data/sample.fastq"), "", "", "")),
-        ):
-            fragments = ox.FastqFile(filepath).fragments()
-            assert len(fragments) == 1
+        fragments = ox.FastqFile("data/sample.fastq").fragments()
+        assert len(fragments) == 1
 
     @pytest.mark.parametrize(
         "fields",

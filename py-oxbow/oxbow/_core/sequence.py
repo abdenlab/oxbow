@@ -4,19 +4,18 @@ DataSource classes for sequence file formats, including FASTA and FASTQ.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, IO, Self
 import pathlib
-from typing import IO, Any, Callable, Generator, Self
+from typing import IO, Any, Callable, Generator, Literal, Self
 
 import pyarrow as pa
 
-from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
+from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
 from oxbow.oxbow import PyFastaScanner, PyFastqScanner
 
 
 class SequenceFile(DataSource):
     @property
-    def _gzi(self) -> str | None:
+    def _gzi(self):
         return self._gzi_src() if self._gzi_src else None
 
     def _batchreader_builder(
@@ -101,13 +100,13 @@ class FastaFile(SequenceFile):
 
     def __init__(
         self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
+        source: str | Callable[[], IO[Any] | str],
         compressed: bool = False,
         *,
         fields: list[str] | None = None,
         regions: str | list[str] | None = None,
-        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
-        gzi: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        index: str | Callable[[], IO[Any] | str] | None = None,
+        gzi: str | Callable[[], IO[Any]] | None = None,
         batch_size: int = 1,
     ):
         super().__init__(
@@ -126,7 +125,7 @@ class FastqFile(SequenceFile):
 
     def __init__(
         self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
+        source: str | Callable[[], IO[Any] | str],
         compressed: bool = False,
         *,
         fields: list[str] | None = None,
@@ -147,13 +146,13 @@ class FastqFile(SequenceFile):
 
 
 def from_fasta(
-    source: str | pathlib.Path | Callable[[], IO[Any]],
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
     compression: Literal["infer", "gzip", "bgzf", None] = "infer",
     *,
     fields: list[str] | None = None,
-    regions: list[tuple[int, int]] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
-    gzi: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    regions: str | list[str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
+    gzi: str | Callable[[], IO[Any]] | None = None,
     batch_size: int = 1,
 ) -> FastaFile:
     """
@@ -187,9 +186,12 @@ def from_fasta(
     --------
     from_fastq : Create a FASTQ file data source.
     """
+    source, index, bgzf_compressed = prepare_source_and_index(
+        source, index, compression
+    )
     return FastaFile(
         source=source,
-        compression=compression,
+        compressed=bgzf_compressed,
         fields=fields,
         regions=regions,
         index=index,
@@ -199,7 +201,7 @@ def from_fasta(
 
 
 def from_fastq(
-    source: str | pathlib.Path | Callable[[], IO[Any]],
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
     compression: Literal["infer", "gzip", "bgzf", None] = "infer",
     *,
     fields: list[str] | None = None,
@@ -228,9 +230,10 @@ def from_fastq(
     --------
     from_fasta : Create a FASTA file data source.
     """
+    source, _, bgzf_compressed = prepare_source_and_index(source, None, compression)
     return FastqFile(
         source=source,
-        compression=compression,
+        compressed=bgzf_compressed,
         fields=fields,
         batch_size=batch_size,
     )

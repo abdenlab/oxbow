@@ -4,12 +4,12 @@ DataSource classes for htslib variant call formats.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, IO, Literal, Self
 import pathlib
+from typing import IO, Any, Callable, Generator, Literal, Self
 
 import pyarrow as pa
 
-from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
+from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
 from oxbow.oxbow import PyBcfScanner, PyVcfScanner
 
 
@@ -67,7 +67,7 @@ class VariantFile(DataSource):
 
     def __init__(
         self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
+        source: str | Callable[[], IO[Any] | str],
         compressed: bool = False,
         *,
         fields=None,
@@ -76,7 +76,7 @@ class VariantFile(DataSource):
         genotype_fields: list[str] | None = None,
         genotype_by: Literal["sample", "field"] = "sample",
         regions: str | list[str] | None = None,
-        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        index: str | Callable[[], IO[Any] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
         super().__init__(source, index, batch_size)
@@ -114,7 +114,7 @@ class BcfFile(VariantFile):
 
 
 def from_vcf(
-    source: str | pathlib.Path | Callable[[], IO[Any]],
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
     compression: Literal["infer", "gzip", "bgzf", None] = "infer",
     *,
     fields: list[str] | None = None,
@@ -123,7 +123,7 @@ def from_vcf(
     genotype_fields: list[str] | None = None,
     genotype_by: Literal["sample", "field"] = "sample",
     regions: str | list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> VcfFile:
     """
@@ -168,9 +168,12 @@ def from_vcf(
     --------
     from_bcf : Create a BCF file data source.
     """
+    source, index, bgzf_compressed = prepare_source_and_index(
+        source, index, compression
+    )
     return VcfFile(
         source=source,
-        compression=compression,
+        compressed=bgzf_compressed,
         fields=fields,
         info_fields=info_fields,
         samples=samples,
@@ -183,7 +186,7 @@ def from_vcf(
 
 
 def from_bcf(
-    source: str | pathlib.Path | Callable[[], IO[Any]],
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
     compression: Literal["bgzf", None] = "bgzf",
     *,
     fields: list[str] | None = None,
@@ -192,7 +195,7 @@ def from_bcf(
     genotype_fields: list[str] | None = None,
     genotype_by: Literal["sample", "field"] = "sample",
     regions: str | list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BcfFile:
     """
@@ -237,9 +240,12 @@ def from_bcf(
     --------
     from_vcf : Create a VCF file data source.
     """
+    source, index, bgzf_compressed = prepare_source_and_index(
+        source, index, compression
+    )
     return BcfFile(
         source=source,
-        compression=compression,
+        compressed=bgzf_compressed,
         fields=fields,
         info_fields=info_fields,
         samples=samples,

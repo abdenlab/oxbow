@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import logging
 import pathlib
 from abc import abstractmethod
-from typing import IO, Any, Callable, Generator, Iterable, Self
+from typing import IO, Any, Callable, Generator, Iterable, Literal, Self
 from urllib.parse import urlparse
-import fsspec
 
+import fsspec
 import pyarrow as pa
 
 from oxbow._pyarrow import (
@@ -44,58 +45,25 @@ class DataSource:
 
     def __init__(
         self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
-        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        source: str | Callable[[], IO[Any] | str],
+        index: str | Callable[[], IO[Any] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
-        if isinstance(source, (str, pathlib.Path)):
-            source = str(source)
-            if (scheme := urlparse(source).scheme) and scheme in (
-                "http",
-                "https",
-                "ftp",
-                "s3",
-                "file",
-            ):
-                self._src = lambda: fsspec.open(source, mode="rb").open()
-            else:
-                self._src = lambda: source
-        elif callable(source):
-            self._src = source
-        else:
-            raise TypeError(
-                "`source` must be a str, pathlib.Path, or a callable returning "
-                "an IO byte stream"
-            )
-
-        if isinstance(index, (str, pathlib.Path)):
-            index = str(index)
-            if (scheme := urlparse(index).scheme) and scheme in (
-                "http",
-                "https",
-                "ftp",
-                "s3",
-                "file",
-            ):
-                self._index_src = lambda: fsspec.open(index, mode="rb").open()
-            else:
-                self._index_src = lambda: index
-        elif callable(index) or index is None:
-            self._index_src = index
-        else:
-            raise TypeError(
-                "`index` must be a str, pathlib.Path, or a callable returning "
-                "an IO byte stream"
-            )
+        self._src = source
+        self._index_src = index
         self._batch_size = batch_size
 
     @property
-    def _source(self) -> str | IO[Any]:
-        return self._src()
+    def _source(self) -> IO[Any] | str:
+        return self._src() if callable(self._src) else self._src
 
     @property
-    def _index(self) -> str | IO[Any] | None:
-        return self._index_src() if self._index_src else None
+    def _index(self) -> IO[Any] | str | None:
+        return (
+            self._index_src()
+            if (self._index_src and callable(self._index_src))
+            else self._index_src
+        )
 
     @property
     def schema(self) -> pa.Schema:
@@ -308,3 +276,81 @@ class DataSource:
             writer.write_table(self.dataset().to_table())
         buffer = s.getvalue()
         return buffer.to_pybytes()
+
+
+def prepare_source_and_index(
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
+    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
+) -> tuple[Callable[[], IO[Any] | str], Callable[[], IO[Any] | str] | None, bool]:
+    if isinstance(source, (str, pathlib.Path)):
+        source = str(source)
+        match compression:
+            case "bgzf":
+                bgzf_compressed = True
+            case "infer":
+                bgzf_compressed = str(source).endswith(".gz") or str(source).endswith(
+                    ".bgz"
+                )
+            case _:
+                bgzf_compressed = False
+
+        if (scheme := urlparse(source).scheme) and scheme in (
+            "http",
+            "https",
+            "ftp",
+            "s3",
+            "file",
+        ):
+            src = lambda: fsspec.open(  # noqa: E731
+                source,
+                mode="rb",
+                compression=compression if compression == "gzip" else None,
+            ).open()
+        else:
+            src = lambda: source  # noqa: E731
+    elif callable(source):
+        src = source
+        match compression:
+            case "gzip":
+                raise ValueError(
+                    "'gzip' compression is not supported for callable sources. "
+                    "The callable should handle decompression in this case."
+                )
+            case "bgzf":
+                bgzf_compressed = True
+            case "infer":
+                logging.warning(
+                    "Compression inference is not supported for callable sources. "
+                    "Assuming uncompressed source."
+                )
+                bgzf_compressed = False
+            case _:
+                bgzf_compressed = False
+    else:
+        raise TypeError(
+            "`source` must be a str, pathlib.Path, or a callable returning "
+            "an IO byte stream"
+        )
+
+    if isinstance(index, (str, pathlib.Path)):
+        index = str(index)
+        if (scheme := urlparse(index).scheme) and scheme in (
+            "http",
+            "https",
+            "ftp",
+            "s3",
+            "file",
+        ):
+            index_src = lambda: fsspec.open(index, mode="rb").open()  # noqa: E731
+        else:
+            index_src = lambda: index  # noqa: E731
+    elif callable(index) or index is None:
+        index_src = index
+    else:
+        raise TypeError(
+            "`index` must be a str, pathlib.Path, or a callable returning "
+            "an IO byte stream"
+        )
+
+    return src, index_src, bgzf_compressed

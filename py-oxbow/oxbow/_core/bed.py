@@ -4,13 +4,12 @@ DataSource classes for the BED family of formats.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, IO, Self
 import pathlib
-from typing import IO, Any, Callable, Generator, Self
+from typing import IO, Any, Callable, Generator, Literal, Self
 
 import pyarrow as pa
 
-from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
+from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
 from oxbow.oxbow import PyBedScanner
 
 
@@ -59,13 +58,13 @@ class BedFile(DataSource):
 
     def __init__(
         self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
+        source: str | Callable[[], IO[Any] | str],
         bed_schema: str = "bed3+",
         compressed: bool = False,
         *,
         fields: list[str] | None = None,
         regions: str | list[str] | None = None,
-        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        index: str | Callable[[], IO[Any] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
         super().__init__(source, index, batch_size)
@@ -89,13 +88,13 @@ class BedFile(DataSource):
 
 
 def from_bed(
-    source: str | pathlib.Path | Callable[[], IO[Any]],
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
     bed_schema: str = "bed3+",
     compression: Literal["bgzf", None] = "bgzf",
     *,
     fields: list[str] | None = None,
     regions: str | list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BedFile:
     """
@@ -130,10 +129,13 @@ def from_bed(
     from_bigbed : Create a BigBed file data source.
     from_bigwig : Create a BigWig file data source.
     """
+    source, index, bgzf_compressed = prepare_source_and_index(
+        source, index, compression
+    )
     return BedFile(
         source=source,
         bed_schema=bed_schema,
-        compression=compression,
+        compressed=bgzf_compressed,
         fields=fields,
         regions=regions,
         index=index,

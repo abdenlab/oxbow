@@ -1,10 +1,10 @@
+import os
+
 import pytest
 from pytest_manifest import Manifest
 
 import oxbow.core as ox
 from tests.utils import Input
-import os
-from urllib.parse import urlunparse
 
 
 class TestBigBedFile:
@@ -30,7 +30,6 @@ class TestBigBedFile:
     def test_fragments(self, regions):
         for filepath in (
             "data/sample.bb",
-            urlunparse(("file", "", os.path.abspath("data/sample.bb"), "", "", "")),
         ):
             fragments = ox.BigBedFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
@@ -99,7 +98,6 @@ class TestBigWigFile:
     def test_fragments(self, regions):
         for filepath in (
             "data/sample.bw",
-            urlunparse(("file", "", os.path.abspath("data/sample.bw"), "", "", "")),
         ):
             fragments = ox.BigWigFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
