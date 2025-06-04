@@ -1,10 +1,10 @@
 import pickle
+from typing import Iterable, Iterator
 
 import pyarrow as pa
 import pyarrow.dataset as ds
 
-from oxbow._pyarrow import BatchReaderFragment, BatchReaderDataset
-from typing import Iterable, Iterator
+from oxbow._pyarrow import BatchReaderDataset, BatchReaderFragment
 
 
 def toy_schema():

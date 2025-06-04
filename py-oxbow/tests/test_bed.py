@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from pytest_manifest import Manifest
 
@@ -28,9 +26,7 @@ class TestBedFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        for filepath in (
-            "data/sample.bed",
-        ):
+        for filepath in ("data/sample.bed",):
             fragments = ox.BedFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 

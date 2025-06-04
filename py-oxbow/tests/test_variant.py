@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from pytest_manifest import Manifest
 
@@ -32,9 +30,7 @@ class TestVcfFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        for filepath in (
-            "data/sample.vcf",
-        ):
+        for filepath in ("data/sample.vcf",):
             fragments = ox.VcfFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 
@@ -145,9 +141,7 @@ class TestBcfFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        for filepath in (
-            "data/sample.bcf",
-        ):
+        for filepath in ("data/sample.bcf",):
             fragments = ox.BcfFile(
                 filepath, compressed=True, regions=regions
             ).fragments()

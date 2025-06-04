@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from pytest_manifest import Manifest
 
@@ -28,9 +26,7 @@ class TestGtfFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        for filepath in (
-            "data/sample.gtf",
-        ):
+        for filepath in ("data/sample.gtf",):
             fragments = ox.GtfFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 
@@ -126,9 +122,7 @@ class TestGffFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        for filepath in (
-            "data/sample.gff",
-        ):
+        for filepath in ("data/sample.gff",):
             fragments = ox.GffFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 

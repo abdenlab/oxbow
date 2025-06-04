@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from pytest_manifest import Manifest
 from utils import Input

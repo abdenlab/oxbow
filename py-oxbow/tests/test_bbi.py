@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from pytest_manifest import Manifest
 
@@ -28,9 +26,7 @@ class TestBigBedFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        for filepath in (
-            "data/sample.bb",
-        ):
+        for filepath in ("data/sample.bb",):
             fragments = ox.BigBedFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 
@@ -96,9 +92,7 @@ class TestBigWigFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        for filepath in (
-            "data/sample.bw",
-        ):
+        for filepath in ("data/sample.bw",):
             fragments = ox.BigWigFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 
