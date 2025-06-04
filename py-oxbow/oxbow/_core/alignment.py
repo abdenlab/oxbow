@@ -111,7 +111,7 @@ class BamFile(AlignmentFile):
 
 def from_sam(
     source: str | pathlib.Path | Callable[[], IO[Any]],
-    compressed: bool = False,
+    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
     *,
     fields: list[str] | None = None,
     tag_defs: Any = None,
@@ -159,7 +159,7 @@ def from_sam(
     """
     return SamFile(
         source=source,
-        compressed=compressed,
+        compression=compression,
         fields=fields,
         tag_defs=tag_defs,
         tag_scan_rows=tag_scan_rows,
@@ -171,7 +171,7 @@ def from_sam(
 
 def from_bam(
     source: str | pathlib.Path | Callable[[], IO[Any]],
-    compressed: bool = True,
+    compression: Literal["bgzf", None] = "bgzf",
     *,
     fields: list[str] | None = None,
     tag_defs: Any = None,
@@ -218,7 +218,7 @@ def from_bam(
     """
     return BamFile(
         source=source,
-        compressed=compressed,
+        compression=compression,
         fields=fields,
         tag_defs=tag_defs,
         tag_scan_rows=tag_scan_rows,

@@ -118,7 +118,7 @@ class BcfFile(VariantFile):
 
 def from_vcf(
     source: str | pathlib.Path | Callable[[], IO[Any]],
-    compressed: bool = False,
+    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
     *,
     fields: list[str] | None = None,
     info_fields: list[str] | None = None,
@@ -173,7 +173,7 @@ def from_vcf(
     """
     return VcfFile(
         source=source,
-        compressed=compressed,
+        compression=compression,
         fields=fields,
         info_fields=info_fields,
         samples=samples,
@@ -187,7 +187,7 @@ def from_vcf(
 
 def from_bcf(
     source: str | pathlib.Path | Callable[[], IO[Any]],
-    compressed: bool = True,
+    compression: Literal["bgzf", None] = "bgzf",
     *,
     fields: list[str] | None = None,
     info_fields: list[str] | None = None,
@@ -242,7 +242,7 @@ def from_bcf(
     """
     return BcfFile(
         source=source,
-        compressed=compressed,
+        compression=compression,
         fields=fields,
         info_fields=info_fields,
         samples=samples,

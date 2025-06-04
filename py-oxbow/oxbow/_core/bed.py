@@ -90,7 +90,7 @@ class BedFile(CompressibleDataSource):
 def from_bed(
     source: str | pathlib.Path | Callable[[], IO[Any]],
     bed_schema: str = "bed3+",
-    compressed: bool = False,
+    compression: Literal["bgzf", None] = "bgzf",
     *,
     fields: list[str] | None = None,
     regions: str | list[str] | None = None,
@@ -132,7 +132,7 @@ def from_bed(
     return BedFile(
         source=source,
         bed_schema=bed_schema,
-        compressed=compressed,
+        compression=compression,
         fields=fields,
         regions=regions,
         index=index,

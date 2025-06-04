@@ -148,7 +148,7 @@ class FastqFile(SequenceFile):
 
 def from_fasta(
     source: str | pathlib.Path | Callable[[], IO[Any]],
-    compressed: bool = False,
+    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
     *,
     fields: list[str] | None = None,
     regions: list[tuple[int, int]] | None = None,
@@ -189,7 +189,7 @@ def from_fasta(
     """
     return FastaFile(
         source=source,
-        compressed=compressed,
+        compression=compression,
         fields=fields,
         regions=regions,
         index=index,
@@ -200,7 +200,7 @@ def from_fasta(
 
 def from_fastq(
     source: str | pathlib.Path | Callable[[], IO[Any]],
-    compressed: bool = False,
+    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
     *,
     fields: list[str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
@@ -230,7 +230,7 @@ def from_fastq(
     """
     return FastqFile(
         source=source,
-        compressed=compressed,
+        compression=compression,
         fields=fields,
         batch_size=batch_size,
     )

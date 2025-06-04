@@ -103,7 +103,7 @@ class GffFile(GxfFile):
 
 def from_gtf(
     source: str | pathlib.Path | Callable[[], IO[Any]],
-    compressed: bool = False,
+    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
     *,
     fields: list[str] | None = None,
     attribute_defs: dict | None = None,
@@ -148,7 +148,7 @@ def from_gtf(
     """
     return GtfFile(
         source=source,
-        compressed=compressed,
+        compression=compression,
         fields=fields,
         attribute_defs=attribute_defs,
         attribute_scan_rows=attribute_scan_rows,
@@ -160,7 +160,7 @@ def from_gtf(
 
 def from_gff(
     source: str | pathlib.Path | Callable[[], IO[Any]],
-    compressed: bool = False,
+    compression: Literal["infer", "gzip", "bgzf", None] = "infer",
     *,
     fields: list[str] | None = None,
     attribute_defs: dict | None = None,
@@ -207,7 +207,7 @@ def from_gff(
         source=source,
         fields=fields,
         index=index,
-        compressed=compressed,
+        compression=compression,
         regions=regions,
         attribute_defs=attribute_defs,
         attribute_scan_rows=attribute_scan_rows,
