@@ -26,8 +26,9 @@ class TestSamFile:
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BigWigFile("data/sample.bw", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+        for filepath in ("data/sample.bw",):
+            fragments = ox.BigWigFile(filepath, regions=regions).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",
@@ -133,10 +134,11 @@ class TestBamFile:
         [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BamFile(
-            "data/sample.bam", regions=regions, compressed=True
-        ).fragments()
-        assert len(fragments) == len(regions) if regions else 1
+        for filepath in ("data/sample.bam",):
+            fragments = ox.BamFile(
+                filepath, regions=regions, compressed=True
+            ).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     def test_input_encodings(self):
         file = ox.BamFile("data/sample.bam", compressed=True, batch_size=3)

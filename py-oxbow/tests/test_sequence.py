@@ -25,7 +25,7 @@ class TestFastaFile:
 
     @pytest.mark.parametrize(
         "regions",
-        [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
+        [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
         fragments = ox.FastaFile(

@@ -23,11 +23,12 @@ class TestBedFile:
 
     @pytest.mark.parametrize(
         "regions",
-        [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
+        [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BedFile("data/sample.bed", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+        for filepath in ("data/sample.bed",):
+            fragments = ox.BedFile(filepath, regions=regions).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",

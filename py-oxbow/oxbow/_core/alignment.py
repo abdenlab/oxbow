@@ -5,11 +5,11 @@ DataSource classes for htslib alignment formats.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Any, Callable, Generator, Self
+from typing import IO, Any, Callable, Generator, Literal, Self
 
 import pyarrow as pa
 
-from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
+from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
 from oxbow.oxbow import PyBamScanner, PySamScanner
 
 
@@ -66,14 +66,14 @@ class AlignmentFile(DataSource):
 
     def __init__(
         self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
+        source: str | Callable[[], IO[Any] | str],
         compressed: bool = False,
         *,
         fields: list[str] | None = None,
         tag_defs: list[tuple[str, str]] | None = None,
         tag_scan_rows: int = 1024,
         regions: str | list[str] | None = None,
-        index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+        index: str | Callable[[], IO[Any] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
         super().__init__(source, index, batch_size)
@@ -107,14 +107,14 @@ class BamFile(AlignmentFile):
 
 
 def from_sam(
-    source: str | pathlib.Path | Callable[[], IO[Any]],
-    compressed: bool = False,
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
     tag_defs: Any = None,
     tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> SamFile:
     """
@@ -125,8 +125,12 @@ def from_sam(
     source : str, pathlib.Path, or Callable
         The URI or path to the SAM file, or a callable that opens the file
         as a file-like object.
-    compressed : bool, optional
-        Whether the SAM file is compressed, by default False.
+    compression : Literal["infer", "bgzf", "gzip", None], default: "infer"
+        If "infer" and `source` is a URI or path, the file's compression is
+        guessed based on the file extension, where ".gz" or ".bgz" is
+        interpreted as BGZF. To decode vanilla GZIP, use "gzip". If None, the
+        source bytestream is assumed to be uncompressed. For more custom
+        decoding, provide a callable `source` instead.
     fields : list[str], optional
         Specific fields to extract from the SAM file, by default None.
     tag_defs : Any, optional
@@ -154,9 +158,12 @@ def from_sam(
     --------
     from_bam : Create a BAM file data source.
     """
+    source, index, bgzf_compressed = prepare_source_and_index(
+        source, index, compression
+    )
     return SamFile(
         source=source,
-        compressed=compressed,
+        compressed=bgzf_compressed,
         fields=fields,
         tag_defs=tag_defs,
         tag_scan_rows=tag_scan_rows,
@@ -167,14 +174,14 @@ def from_sam(
 
 
 def from_bam(
-    source: str | pathlib.Path | Callable[[], IO[Any]],
-    compressed: bool = True,
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    compression: Literal["bgzf", None] = "bgzf",
     *,
     fields: list[str] | None = None,
     tag_defs: Any = None,
     tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any]] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BamFile:
     """
@@ -185,8 +192,11 @@ def from_bam(
     source : str, pathlib.Path, or Callable
         The URI or path to the BAM file, or a callable that opens the file
         as a file-like object.
-    compressed : bool, optional
-        Whether the BAM file is compressed, by default True.
+    compression : Literal["bgzf", None], default: "bgzf"
+        Compression of the source bytestream. By default, BAM sources are
+        assumed to be BGZF-compressed. If None, the source is assumed to be
+        uncompressed. For more custom decoding, provide a callable `source`
+        instead.
     fields : list[str], optional
         Specific fields to extract from the BAM file, by default None.
     tag_defs : Any, optional
@@ -213,9 +223,12 @@ def from_bam(
     --------
     from_sam : Create a SAM file data source.
     """
+    source, index, bgzf_compressed = prepare_source_and_index(
+        source, index, compression
+    )
     return BamFile(
         source=source,
-        compressed=compressed,
+        compressed=bgzf_compressed,
         fields=fields,
         tag_defs=tag_defs,
         tag_scan_rows=tag_scan_rows,

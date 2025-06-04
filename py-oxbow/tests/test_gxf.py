@@ -23,11 +23,12 @@ class TestGtfFile:
 
     @pytest.mark.parametrize(
         "regions",
-        [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
+        [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.GtfFile("data/sample.gtf", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+        for filepath in ("data/sample.gtf",):
+            fragments = ox.GtfFile(filepath, regions=regions).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",
@@ -118,11 +119,12 @@ class TestGffFile:
 
     @pytest.mark.parametrize(
         "regions",
-        [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
+        [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.GffFile("data/sample.gff", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+        for filepath in ("data/sample.gff",):
+            fragments = ox.GffFile(filepath, regions=regions).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",

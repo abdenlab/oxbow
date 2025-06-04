@@ -9,7 +9,7 @@ from typing import IO, Any, Callable, Generator, Self
 
 import pyarrow as pa
 
-from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource
+from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
 from oxbow.oxbow import (
     PyBBIZoomScanner,
     PyBigBedScanner,
@@ -18,6 +18,8 @@ from oxbow.oxbow import (
 
 
 class BbiFile(DataSource):
+    _regions: list[str] | None
+
     def _batchreader_builder(
         self,
         scan_fn: Callable,
@@ -90,7 +92,7 @@ class BigBedFile(BbiFile):
 
     def __init__(
         self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
+        source: str | Callable[[], IO[Any] | str],
         schema: str = "bed3+",
         *,
         fields: list[str] | None = None,
@@ -121,7 +123,7 @@ class BigWigFile(BbiFile):
 
     def __init__(
         self,
-        source: str | pathlib.Path | Callable[[], IO[Any]],
+        source: str | Callable[[], IO[Any] | str],
         *,
         fields: list[str] | None = None,
         regions: str | list[str] | None = None,
@@ -138,7 +140,7 @@ class BigWigFile(BbiFile):
 
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
-            self._source,
+            self._src,
             regions=regions,
             batch_size=self._batch_size,
             **self._scanner_kwargs,
@@ -191,7 +193,7 @@ class BbiZoom(DataSource):
 
     def __init__(
         self,
-        base: BigBedFile | BigWigFile,
+        base: BbiFile,
         resolution: int,
         *,
         fields: list[str] | None = None,
@@ -218,7 +220,7 @@ class BbiZoom(DataSource):
 
 
 def from_bigbed(
-    source: str | pathlib.Path | Callable[[], IO[Any]],
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
     schema: str = "bed3+",
     *,
     fields: list[str] | None = None,
@@ -252,6 +254,7 @@ def from_bigbed(
     from_bigwig : Create a BigWig file data source.
     BbiFile.zoom : Create a data source for a BBI file zoom level.
     """
+    source, *_ = prepare_source_and_index(source, None, None)
     return BigBedFile(
         source=source,
         schema=schema,
@@ -262,7 +265,7 @@ def from_bigbed(
 
 
 def from_bigwig(
-    source: str | pathlib.Path | Callable[[], IO[Any]],
+    source: str | pathlib.Path | Callable[[], IO[Any] | str],
     *,
     fields: list[str] | None = None,
     regions: list[str] | None = None,
@@ -293,6 +296,7 @@ def from_bigwig(
     from_bigbed : Create a BigBed file data source.
     BbiFile.zoom : Create a data source for a BBI file zoom level.
     """
+    source, *_ = prepare_source_and_index(source, None, None)
     return BigWigFile(
         source=source,
         fields=fields,

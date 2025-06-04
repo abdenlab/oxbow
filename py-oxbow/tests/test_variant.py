@@ -27,11 +27,12 @@ class TestVcfFile:
 
     @pytest.mark.parametrize(
         "regions",
-        [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
+        [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BigWigFile("data/sample.bw", regions=regions).fragments()
-        assert len(fragments) == (len(regions) if regions else 1)
+        for filepath in ("data/sample.vcf",):
+            fragments = ox.VcfFile(filepath, regions=regions).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",
@@ -137,16 +138,14 @@ class TestBcfFile:
 
     @pytest.mark.parametrize(
         "regions",
-        [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
+        [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
     )
     def test_fragments(self, regions):
-        fragments = ox.BcfFile(
-            "data/sample.bcf",
-            compressed=True,
-            regions=regions,
-            samples=("HG00096", "HG00101", "HG00103"),
-        ).fragments()
-        assert len(fragments) == len(regions) if regions else 1
+        for filepath in ("data/sample.bcf",):
+            fragments = ox.BcfFile(
+                filepath, compressed=True, regions=regions
+            ).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
 
     @pytest.mark.parametrize(
         "fields",

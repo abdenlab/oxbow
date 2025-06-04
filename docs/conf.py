@@ -43,8 +43,8 @@ extensions = [
 # Autosummary options
 autosummary_generate = True
 autodoc_default_options = {
-    'members': True,
-    'inherited-members': True,
+    "members": True,
+    "inherited-members": True,
     # 'show-inheritance': True,
 }
 
@@ -96,7 +96,7 @@ html_theme_options = {
     },
     "primary_sidebar_end": ["version-switcher"],
 }
-html_favicon = '_static/favicon.ico'
+html_favicon = "_static/favicon.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
