@@ -8,8 +8,3 @@ pub enum BBIReader<R> {
     BigWig(BigWigRead<R>),
     BigBed(BigBedRead<R>),
 }
-
-pub enum BBIFileType {
-    BigWig,
-    BigBed,
-}

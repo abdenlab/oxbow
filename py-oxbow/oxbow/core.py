@@ -2,20 +2,19 @@
 Scanners and data source classes.
 """
 
-from oxbow._core.base import DataSource
-
 from oxbow._core.alignment import (
     AlignmentFile,
     BamFile,
     SamFile,
 )
-from oxbow._core.bed import (
-    BedFile,
-)
+from oxbow._core.base import DataSource
 from oxbow._core.bbi import (
+    BbiZoom,
     BigBedFile,
     BigWigFile,
-    BbiZoom,
+)
+from oxbow._core.bed import (
+    BedFile,
 )
 from oxbow._core.gxf import (
     GffFile,
@@ -32,17 +31,17 @@ from oxbow._core.variant import (
 from oxbow._filetypes import FileType
 from oxbow.oxbow import (
     PyBamScanner,
+    PyBBIZoomScanner,
     PyBcfScanner,
-    PyFastaScanner,
-    PyFastqScanner,
-    PySamScanner,
-    PyVcfScanner,
     PyBedScanner,
     PyBigBedScanner,
     PyBigWigScanner,
+    PyFastaScanner,
+    PyFastqScanner,
     PyGffScanner,
     PyGtfScanner,
-    PyBBIZoomScanner,
+    PySamScanner,
+    PyVcfScanner,
 )
 
 __all__ = [

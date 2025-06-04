@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
+use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
@@ -20,11 +22,12 @@ use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
 ///    The path to the VCF file or a file-like object.
 /// compressed : bool, optional [default: False]
 ///    Whether the source is BGZF-compressed.
-#[pyclass]
+#[pyclass(module = "oxbow.oxbow")]
 pub struct PyVcfScanner {
     src: PyObject,
     reader: Reader,
     scanner: VcfScanner,
+    compressed: bool,
 }
 
 #[pymethods]
@@ -41,7 +44,18 @@ impl PyVcfScanner {
             src,
             reader,
             scanner,
+            compressed,
         })
+    }
+
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+        Ok(py.None())
+    }
+
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+        let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
+        let kwargs = PyDict::new(py);
+        Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
     /// Return the names of the references sequences.
@@ -331,11 +345,12 @@ impl PyVcfScanner {
 /// compressed : bool, optional [default: True]
 ///     Whether the source is BGZF-compressed. If None, it is assumed to be
 ///     compressed.
-#[pyclass]
+#[pyclass(module = "oxbow.oxbow")]
 pub struct PyBcfScanner {
     src: PyObject,
     reader: Reader,
     scanner: BcfScanner,
+    compressed: bool,
 }
 
 #[pymethods]
@@ -352,7 +367,18 @@ impl PyBcfScanner {
             src,
             reader,
             scanner,
+            compressed,
         })
+    }
+
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+        Ok(py.None())
+    }
+
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+        let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
+        let kwargs = PyDict::new(py);
+        Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
     /// Return the names of the reference sequences.
