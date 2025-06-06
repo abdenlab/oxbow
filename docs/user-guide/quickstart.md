@@ -193,7 +193,6 @@ By default, all info fields are parsed. You can project any subset or ignore the
 (
     ox.from_vcf(
         "data/sample.vcf.gz",
-        compressed=True,
         info_fields=[],
         samples=[],
     )
@@ -205,7 +204,6 @@ By default, all info fields are parsed. You can project any subset or ignore the
 df = (
     ox.from_vcf(
         "data/sample.vcf.gz",
-        compressed=True,
         info_fields=["TYPE", "snpeff.Effect", "snpeff.Gene_Name", "snpeff.Transcript_BioType"],
         samples=[],
     )
@@ -227,7 +225,6 @@ Using the `samples` and `genotype_fields` arguments, you can project any subset 
 ```{code-cell} ipython3
 df = ox.from_vcf(
     "data/sample.vcf.gz",
-    compressed=True,
     info_fields=[],
     samples=['NA12891', 'NA12892'],
 ).pl()
@@ -245,7 +242,6 @@ You can also customize _how_ sample genotype data are nested by using the `genot
 ```{code-cell} ipython3
 df = ox.from_vcf(
     "data/sample.vcf.gz",
-    compressed=True,
     info_fields=[],
     samples=['NA12891', 'NA12892'],
     genotype_fields=['AD', 'DP', 'GQ', 'PL', 'TP'],
