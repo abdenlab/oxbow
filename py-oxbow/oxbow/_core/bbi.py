@@ -58,7 +58,18 @@ class BbiFile(DataSource):
             yield self._batchreader_builder(scanner.scan, scanner.field_names())
 
     @property
+    def chrom_names(self) -> list[str]:
+        """List of reference sequence names."""
+        return self.scanner().chrom_names()
+
+    @property
+    def chrom_sizes(self) -> list[tuple[str, int]]:
+        """List of reference sequence names and their lengths in bp."""
+        return self.scanner().chrom_sizes()
+
+    @property
     def zoom_levels(self):
+        """List of zoom levels available."""
         return self.scanner().zoom_levels()
 
     def zoom(

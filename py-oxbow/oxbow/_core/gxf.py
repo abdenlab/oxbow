@@ -92,6 +92,11 @@ class GxfFile(DataSource):
             **self._schema_kwargs,
         )
 
+    @property
+    def attribute_defs(self) -> list[tuple[str, str]]:
+        """List of definitions for interpreting attribute records."""
+        return self._schema_kwargs["attribute_defs"]
+
 
 class GtfFile(GxfFile):
     _scanner_type = PyGtfScanner

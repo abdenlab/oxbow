@@ -97,6 +97,21 @@ class AlignmentFile(DataSource):
             **self._schema_kwargs,
         )
 
+    @property
+    def chrom_names(self) -> list[str]:
+        """List of reference sequence names declared in the header."""
+        return self.scanner().chrom_names()
+
+    @property
+    def chrom_sizes(self) -> list[tuple[str, int]]:
+        """List of reference sequence names and their lengths in bp."""
+        return self.scanner().chrom_sizes()
+
+    @property
+    def tag_defs(self) -> list[tuple[str, str]]:
+        """List of definitions for interpreting tag records."""
+        return self._schema_kwargs["tag_defs"]
+
 
 class SamFile(AlignmentFile):
     _scanner_type = PySamScanner
