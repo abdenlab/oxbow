@@ -104,6 +104,31 @@ class VariantFile(DataSource):
             **self._schema_kwargs,
         )
 
+    @property
+    def chrom_names(self) -> list[str]:
+        """List of reference sequence names declared in the header."""
+        return self.scanner().chrom_names()
+
+    @property
+    def chrom_sizes(self) -> list[tuple[str, int]]:
+        """List of reference sequence names and their lengths in bp."""
+        return self.scanner().chrom_sizes()
+
+    @property
+    def info_field_defs(self) -> list[tuple[str, str, str]]:
+        """List of INFO field definitions in the VCF header."""
+        return self.scanner().info_field_defs()
+
+    @property
+    def genotype_field_defs(self) -> list[tuple[str, str, str]]:
+        """List of FORMAT field definitions in the VCF header."""
+        return self.scanner().genotype_field_defs()
+
+    @property
+    def samples(self) -> list[str]:
+        """List of sample IDs declared in the header."""
+        return self.scanner().sample_names()
+
 
 class VcfFile(VariantFile):
     _scanner_type = PyVcfScanner
