@@ -1,12 +1,10 @@
 # py-oxbow
 
-A Python interface for [oxbow](https://github.com/abdenlab/oxbow).
-Read specialized bioinformatic file formats into dataframes.
+The Python interface for [oxbow](https://github.com/abdenlab/oxbow). Read NGS file formats into dataframes.
 
 ## Installation
 
-> **Warning**: **oxbow** is new and under active development. It is not yet
-> ready for production as APIs are subject to change.
+> **Warning**: **oxbow** is under active development. APIs are not yet stable and are subject to change.
 
 ```sh
 pip install oxbow
