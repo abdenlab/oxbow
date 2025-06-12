@@ -1,15 +1,15 @@
 # Development
 
-In oxbow, data I/O is handled in Rust with rich features exposed via Python and a limited exposure to R. It makes extensive use of the [`noodles`](https://github.com/zaeleus/noodles) and [`bigtools`](https://github.com/jackh726/bigtools) crates to parse genomic file formats.
+In Oxbow, data I/O is handled in Rust and rich features are exposed via Python. There are currently minimal bindings to R. Oxbow makes extensive use of the [`noodles`](https://github.com/zaeleus/noodles) and [`bigtools`](https://github.com/jackh726/bigtools) crates to parse genomic file formats.
 
-The **oxbow** project a monorepo split into separate [Rust](https://github.com/abdenlab/oxbow/blob/main/py-oxbow), [Python](https://github.com/abdenlab/oxbow/blob/main/oxbow), and [R](https://github.com/abdenlab/oxbow/blob/main/r-oxbow) packages.
-
-You can download sample data by [following these instructions](https://github.com/abdenlab/oxbow/blob/main/fixtures/README.md).
+The overall project is organized as a multi-project "monorepo" split into separate [Rust](https://github.com/abdenlab/oxbow/blob/main/py-oxbow), [Python](https://github.com/abdenlab/oxbow/blob/main/oxbow), and [R](https://github.com/abdenlab/oxbow/blob/main/r-oxbow) packages.
 
 
 ## Oxbow (Rust + Python)
 
 ### Project management
+
+The core `oxbow` project is a pure Rust library. The code for the Python package in `py-oxbow` is a hybrid Rust-Python project. The latter requires the [`uv`](https://github.com/astral-sh/uv) package/project manager for development and relies on [PyO3](https://pyo3.rs/)'s [`maturin`](https://github.com/PyO3/maturin) as a Python build system.
 
 Ensure you have Rust installed on your system. You can install Rust using [`rustup`](https://rustup.rs/):
 
@@ -17,9 +17,7 @@ Ensure you have Rust installed on your system. You can install Rust using [`rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-`py-oxbow` is a hybrid Rust-Python project and requires [`uv`](https://github.com/astral-sh/uv) for development, relying on [PyO3](https://pyo3.rs/)'s [`maturin`](https://github.com/PyO3/maturin) as a Python build system. Dependencies are organized into [PEP 735](https://peps.python.org/pep-0735/)-style _dependency groups_ in the `pyproject.toml`.
-
-Install `uv` by following the instructions [here](https://docs.astral.sh/uv/getting-started/installation/). The following will create a virtual environment in `py-oxbow/.venv` with all dependency groups:
+Install `uv` by following the instructions [here](https://docs.astral.sh/uv/getting-started/installation/). The Python project's dependencies are organized into [PEP 735](https://peps.python.org/pep-0735/)-style _dependency groups_ in the `pyproject.toml`. The following will create a virtual environment in `py-oxbow/.venv` with all dependency groups:
 
 ```sh
 cd py-oxbow
@@ -101,9 +99,10 @@ To run tests on Rust code, we use `cargo`:
 cargo test
 ```
 
-For Python, we use [`pytest`](https://docs.pytest.org/):
+For Python, we use [`pytest`](https://docs.pytest.org/). Tests currently need to be run from within the tests directory.
 
 ```sh
+cd py-oxbow/tests
 uv run pytest
 ```
 

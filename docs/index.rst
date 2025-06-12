@@ -6,12 +6,10 @@ Oxbow
 .. card::
    :img-background: _static/oxbow-arrow-diagram.svg
    :shadow: none
-   :margin: 4
+   :margin: 2
 
-File formats are a major source of friction and headache for computational biologists. 
-Oxbow enhances the retrieval of genomic data from traditional sources. It leverages the `Apache Arrow <https://arrow.apache.org/>`_ in-memory format to unify the representation of those data sources and make them interoperable with the modern data ecosystem.
-Learn more in our `blog post <https://open.substack.com/pub/lifeinbytes/p/breaking-out-of-bioinformatic-data-silos?r=jue12&utm_campaign=post&utm_medium=web>`_.
-
+File formats are a major source of friction and headache in computational biology. 
+Oxbow makes it easier to retrieve and manipulate data stored in conventional genomic formats using modern data tooling.
 
 .. grid:: 1 1 2 2
    :gutter: 2

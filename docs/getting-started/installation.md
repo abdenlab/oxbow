@@ -1,71 +1,71 @@
 # Installation
 
+For most users, Oxbow is a **Python** package, designed for compatibility with Arrow-based tooling in the Python data ecosystem. However, the core of Oxbow is written in Rust and the Rust library can be used for more specialized use cases or other front-end integrations. There are currently minimal bindings for R.
+
 ## Python
 
-**From PyPI**
 
-To install the library using `pip`, run the following command:
+::::{tab-set}
 
+:::{tab-item} PyPI
 ```bash
 pip install oxbow
 ```
+:::
 
-**From source**
+:::{tab-item} From Source
+To build and install the library from source, you will first need a working [Rust toolchain](https://rustup.rs/) as well as [maturin](https://www.maturin.rs/).
 
-To install the library from source, clone the repository from GitHub:
+Clone the repository from GitHub:
 
 ```bash
 git clone https://github.com/abdenlab/oxbow.git
 ```
 
-The Python library is located in the `py-oxbow` directory. To install it, ensure you have Python 3.9 or later and `pip` installed on your system. Then, navigate to the `py-oxbow` directory and install the library:
-
-Using `pip`:
+The Python library is located in the `py-oxbow` directory. Navigate to it and install the library using `pip`:
 
 ```bash
 cd py-oxbow
 pip install .
 ```
 
-Using `uv`:
+or `uv`:
 
 ```bash
 cd py-oxbow
 uv sync
 ```
 
+Alternatively, you can instruct `pip` to clone and install directly from GitHub by specifying the branch name and sub-directory using the following syntax:
+
+```bash
+pip install 'git+https://github.com/abdenlab/oxbow.git@main#egg=oxbow&subdirectory=py-oxbow'
+```
+:::
+
+::::
+
 ## Rust
 
-**From crates.io**
 
-To install the library using the Rust package manager `cargo`, run the following command:
+::::{tab-set}
 
+:::{tab-item} Crates.io
 ```bash
 cargo install oxbow
 ```
+:::
 
-**From source**
+:::{tab-item} From Source
+To build and install the library from source, you will first need a working [Rust toolchain](https://rustup.rs/).
 
-To install the library from source, clone the repository from GitHub:
+Clone the repository from GitHub:
 
 ```bash
 git clone https://github.com/abdenlab/oxbow.git
 ```
 
-The Rust library is located in the `oxbow` directory. To build and install it, ensure you have Rust installed on your system. You can install Rust using `rustup`:
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-On Windows, you'll have to add the `i686-pc-windows-gnu` and `x86_64-pc-windows-gnu` targets:
-
-```sh
-rustup target add x86_64-pc-windows-gnu
-rustup target add i686-pc-windows-gnu
-```
-
-Once Rust is installed, navigate to the `oxbow` directory and build the library:
+The Rust library is located in the `oxbow` directory. Navigate to it and build the library using `cargo`:
 
 ```bash
 cd oxbow
@@ -78,14 +78,25 @@ To install the library system-wide, run:
 cargo install --path .
 ```
 
+:::
+
+::::
+
+
 ## R
 
-**From source**
+The R bindings to oxbow are currently not available on any package registry.
 
-The R bindings to oxbow are currently not available on any package registry. Before you can install this package, you need to install a working [Rust toolchain](https://rustup.rs/). Once Rust is working, you can install this package from GitHub via `devtools::install_github` or `remotes::install_github`:
+::::{tab-set}
+
+:::{tab-item} From Source
+
+Before you can install this package, you need have a working [Rust toolchain](https://rustup.rs/).
+Once Rust is working, you can install this package from GitHub via `devtools::install_github` or `remotes::install_github`.
 
 ```R
-> remotes::install_github("abdenlab/oxbow", subdir="r-oxbow")
+> library(devtools)
+> devtools::install_github("abdenlab/oxbow", subdir="r-oxbow")
 ```
 
 Or clone the repository from GitHub and install locally:
@@ -100,3 +111,6 @@ R
 > library(devtools)
 > devtools::install_local("r-oxbow")
 ```
+:::
+
+::::

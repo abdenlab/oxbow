@@ -36,7 +36,12 @@
 
    .. autosummary::
    
+      ~VcfFile.chrom_names
+      ~VcfFile.chrom_sizes
       ~VcfFile.columns
+      ~VcfFile.genotype_field_defs
+      ~VcfFile.info_field_defs
+      ~VcfFile.samples
       ~VcfFile.schema
    
    

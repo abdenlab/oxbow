@@ -36,7 +36,12 @@
 
    .. autosummary::
    
+      ~BcfFile.chrom_names
+      ~BcfFile.chrom_sizes
       ~BcfFile.columns
+      ~BcfFile.genotype_field_defs
+      ~BcfFile.info_field_defs
+      ~BcfFile.samples
       ~BcfFile.schema
    
    

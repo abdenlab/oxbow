@@ -36,6 +36,7 @@
 
    .. autosummary::
    
+      ~GtfFile.attribute_defs
       ~GtfFile.columns
       ~GtfFile.schema
    

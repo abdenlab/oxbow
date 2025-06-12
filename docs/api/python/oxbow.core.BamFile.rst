@@ -36,7 +36,10 @@
 
    .. autosummary::
    
+      ~BamFile.chrom_names
+      ~BamFile.chrom_sizes
       ~BamFile.columns
       ~BamFile.schema
+      ~BamFile.tag_defs
    
    

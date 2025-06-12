@@ -36,7 +36,10 @@
 
    .. autosummary::
    
+      ~SamFile.chrom_names
+      ~SamFile.chrom_sizes
       ~SamFile.columns
       ~SamFile.schema
+      ~SamFile.tag_defs
    
    

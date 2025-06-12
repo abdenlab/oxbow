@@ -37,6 +37,8 @@
 
    .. autosummary::
    
+      ~BigBedFile.chrom_names
+      ~BigBedFile.chrom_sizes
       ~BigBedFile.columns
       ~BigBedFile.schema
       ~BigBedFile.zoom_levels

@@ -37,6 +37,8 @@
 
    .. autosummary::
    
+      ~BigWigFile.chrom_names
+      ~BigWigFile.chrom_sizes
       ~BigWigFile.columns
       ~BigWigFile.schema
       ~BigWigFile.zoom_levels

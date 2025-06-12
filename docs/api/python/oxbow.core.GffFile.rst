@@ -36,6 +36,7 @@
 
    .. autosummary::
    
+      ~GffFile.attribute_defs
       ~GffFile.columns
       ~GffFile.schema
    
