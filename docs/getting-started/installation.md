@@ -51,8 +51,10 @@ pip install 'git+https://github.com/abdenlab/oxbow.git@main#egg=oxbow&subdirecto
 ::::{tab-set}
 
 :::{tab-item} Crates.io
-```bash
-cargo install oxbow
+To use oxbow in your Rust project, add oxbow to your `Cargo.toml` or run:
+
+```sh
+cargo add oxbow
 ```
 :::
 
