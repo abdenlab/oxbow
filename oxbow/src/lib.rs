@@ -1,6 +1,6 @@
 //! # oxbow
 //!
-//! **`oxbow`** reads specialized genomic data 🧬 as Apache Arrow 🏹.
+//! **`oxbow`** reads genomic data formats 🧬 as Apache Arrow 🏹.
 //!
 //! With the oxbow Rust library, you can serialize native formats into [Arrow IPC](https://arrow.apache.org/docs/python/ipc.html)
 //! , stream larger-than-memory files as Arrow [RecordBatches](https://docs.rs/arrow/latest/arrow/record_batch/struct.RecordBatch.html)
