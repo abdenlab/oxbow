@@ -2,5 +2,9 @@
   {
     "version": "dev",
     "url": "https://oxbow.readthedocs.io/en/latest/"
+  },
+  {
+    "version": "v0.4.0",
+    "url": "https://oxbow.readthedocs.io/en/v0.4.0/"
   }
 ]
