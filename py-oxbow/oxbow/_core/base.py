@@ -28,9 +28,9 @@ class DataSource:
         Additional keyword arguments for building the scanner.
     _schema_kwargs : dict
         Additional keyword arguments for assembling the schema.
-    _src : Callable[[], IO[Any]]
+    _src : Callable[[], IO[bytes]]
         A callable that returns the data source.
-    _index_src : Callable[[], IO[Any]]
+    _index_src : Callable[[], IO[bytes]]
         A callable that returns the index source.
     _batch_size : int
         The size of the batches to be read from the data source.
@@ -45,8 +45,8 @@ class DataSource:
 
     def __init__(
         self,
-        source: str | Callable[[], IO[Any] | str],
-        index: str | Callable[[], IO[Any] | str] | None = None,
+        source: str | Callable[[], IO[bytes] | str],
+        index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
         self._src = source
@@ -54,11 +54,11 @@ class DataSource:
         self._batch_size = batch_size
 
     @property
-    def _source(self) -> IO[Any] | str:
+    def _source(self) -> IO[bytes] | str:
         return self._src() if callable(self._src) else self._src
 
     @property
-    def _index(self) -> IO[Any] | str | None:
+    def _index(self) -> IO[bytes] | str | None:
         return (
             self._index_src()
             if (self._index_src and callable(self._index_src))
@@ -67,10 +67,12 @@ class DataSource:
 
     @property
     def schema(self) -> pa.Schema:
+        """The arrow schema of the projection."""
         return pa.schema(self.scanner().schema(**self._schema_kwargs))
 
     @property
     def columns(self) -> list[str]:
+        """The top-level column names of the projection."""
         return self.schema.names
 
     @property
@@ -279,10 +281,10 @@ class DataSource:
 
 
 def prepare_source_and_index(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
-    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
+    index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
-) -> tuple[str | Callable[[], IO[Any]], str | Callable[[], IO[Any]] | None, bool]:
+) -> tuple[str | Callable[[], IO[bytes]], str | Callable[[], IO[bytes]] | None, bool]:
     if isinstance(source, (str, pathlib.Path)):
         source = str(source)
         use_fsspec = (scheme := urlparse(source).scheme) and scheme in (

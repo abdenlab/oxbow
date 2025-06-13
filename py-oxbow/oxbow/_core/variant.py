@@ -5,7 +5,7 @@ DataSource classes for htslib variant call formats.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Any, Callable, Generator, Literal, Self
+from typing import IO, Callable, Generator, Literal, Self
 
 import pyarrow as pa
 
@@ -67,7 +67,7 @@ class VariantFile(DataSource):
 
     def __init__(
         self,
-        source: str | Callable[[], IO[Any] | str],
+        source: str | Callable[[], IO[bytes] | str],
         compressed: bool = False,
         *,
         fields=None,
@@ -76,7 +76,7 @@ class VariantFile(DataSource):
         genotype_fields: list[str] | None = None,
         genotype_by: Literal["sample", "field"] = "sample",
         regions: str | list[str] | None = None,
-        index: str | Callable[[], IO[Any] | str] | None = None,
+        index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
         super().__init__(source, index, batch_size)
@@ -116,12 +116,12 @@ class VariantFile(DataSource):
 
     @property
     def info_field_defs(self) -> list[tuple[str, str, str]]:
-        """List of INFO field definitions in the VCF header."""
+        """List of INFO field definitions declared in the header."""
         return self.scanner().info_field_defs()
 
     @property
     def genotype_field_defs(self) -> list[tuple[str, str, str]]:
-        """List of FORMAT field definitions in the VCF header."""
+        """List of FORMAT field definitions declared in the header."""
         return self.scanner().genotype_field_defs()
 
     @property
@@ -139,7 +139,7 @@ class BcfFile(VariantFile):
 
 
 def from_vcf(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
@@ -148,11 +148,11 @@ def from_vcf(
     genotype_fields: list[str] | None = None,
     genotype_by: Literal["sample", "field"] = "sample",
     regions: str | list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> VcfFile:
     """
-    Create a VCF (Variant Call Format) file data source.
+    Create a VCF file data source.
 
     Parameters
     ----------
@@ -160,26 +160,40 @@ def from_vcf(
         The URI or path to the VCF file, or a callable that opens the file
         as a file-like object.
     compression : Literal["infer", "bgzf", "gzip", None], default: "infer"
-        If "infer" and `source` is a URI or path, the file's compression is
-        guessed based on the file extension, where ".gz" or ".bgz" is
-        interpreted as BGZF. To decode vanilla GZIP, use "gzip". If None, the
-        source bytestream is assumed to be uncompressed. For more custom
-        decoding, provide a callable `source` instead.
+        Compression of the source bytestream. If "infer" and ``source`` is a
+        URI or path, the file's compression is guessed based on the extension,
+        where ".gz" or ".bgz" is interpreted as BGZF. Pass "gzip" to decode
+        regular GZIP. If None, the source bytestream is assumed to be
+        uncompressed. For more customized decoding, provide a callable
+        ``source`` instead.
     fields : list[str], optional
-        Specific fields to include from the VCF file.
-    info_fields : list[str], optional
-        INFO fields to extract from the VCF file.
-    samples : list[str], optional
-        A subset of samples to include.
-    genotype_fields : list[str], optional
-        FORMAT fields to extract genotype-specific information.
-    genotype_by : Literal["sample", "field"], optional
-        Determines how genotype data is organized, by default "sample".
-    regions : list[str], optional
-        Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
+        Specific fixed fields to project. By default, all fixed fields are
+        included.
+    info_fields : list[str], optional [default: None]
+        INFO fields to project. These will be nested under an "info" column.
+        If None, all INFO fields declared in the header are included. To omit
+        all INFO fields, set ``info_fields=[]``.
+    samples : list[str], optional [default: None]
+        A subset of samples to include in the genotype output. If None, all
+        samples declared in the header are included. To omit all sample
+        genotype data, set ``samples=[]``.
+    genotype_fields : list[str], optional [default: None]
+        Genotype (aka "FORMAT") fields to project for each sample. If None, all
+        FORMAT fields declared in the header are included.
+    genotype_by : Literal["sample", "field"], optional [default: "sample"]
+        Determines how genotype-specific data is organized. If "sample", each
+        sample is provided as a separate column with nested FORMAT fields. If
+        "field", each FORMAT field is provided as a separate column with nested
+        sample name fields.
+    regions : str | list[str], optional
+        One or more genomic regions to query. Only applicable if an associated
+        index file is available.
     index : str, pathlib.Path, or Callable, optional
-        The index file associated with the VCF file.
-    batch_size : int, optional
+        An optional index file associated with the VCF file. If ``source`` is a
+        URI or path, is BGZF-compressed, and the index file shares the same
+        name with a ".tbi" or ".csi" extension, the index file is automatically
+        detected.
+    batch_size : int, optional [default: 131072]
         The number of records to read in each batch.
 
     Returns
@@ -215,7 +229,7 @@ def from_vcf(
 
 
 def from_bcf(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["bgzf", None] = "bgzf",
     *,
     fields: list[str] | None = None,
@@ -224,37 +238,50 @@ def from_bcf(
     genotype_fields: list[str] | None = None,
     genotype_by: Literal["sample", "field"] = "sample",
     regions: str | list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BcfFile:
     """
-    Create a BCF (Binary Call Format) file data source.
+    Create a BCF file data source.
 
     Parameters
     ----------
     source : str, pathlib.Path, or Callable
-        The URI or path to the VCF file, or a callable that opens the file
+        The URI or path to the BCF file, or a callable that opens the file
         as a file-like object.
     compression : Literal["bgzf", None], default: "bgzf"
         Compression of the source bytestream. By default, BCF sources are
         assumed to be BGZF-compressed. If None, the source is assumed to be
-        uncompressed. For more custom decoding, provide a callable `source`
+        uncompressed. For more custom decoding, provide a callable ``source``
         instead.
     fields : list[str], optional
-        Specific fields to include from the BCF file.
-    info_fields : list[str], optional
-        INFO fields to extract from the BCF file.
-    samples : list[str], optional
-        A subset of samples to include.
-    genotype_fields : list[str], optional
-        FORMAT fields to extract genotype-specific information.
-    genotype_by : Literal["sample", "field"], optional
-        Determines how genotype data is organized, by default "sample".
-    regions : list[str], optional
-        Genomic regions to query, specified as strings (e.g., "chr1:1000-2000").
+        Specific fixed fields to project. By default, all fixed fields are
+        included.
+    info_fields : list[str], optional [default: None]
+        INFO fields to project. These will be nested under an "info" column.
+        If None, all INFO fields declared in the header are included. To omit
+        all INFO fields, set ``info_fields=[]``.
+    samples : list[str], optional [default: None]
+        A subset of samples to include in the genotype output. If None, all
+        samples declared in the header are included. To omit all sample
+        genotype data, set ``samples=[]``.
+    genotype_fields : list[str], optional [default: None]
+        Genotype (aka "FORMAT") fields to project for each sample. If None, all
+        FORMAT fields declared in the header are included.
+    genotype_by : Literal["sample", "field"], optional [default: "sample"]
+        Determines how genotype-specific data is organized. If "sample", each
+        sample is provided as a separate column with nested FORMAT fields. If
+        "field", each FORMAT field is provided as a separate column with nested
+        sample name fields.
+    regions : str | list[str], optional
+        One or more genomic regions to query. Only applicable if an associated
+        index file is available.
     index : str, optional
-        The index file associated with the BCF file.
-    batch_size : int, optional
+        An optional index file associated with the BCF file. If ``source`` is a
+        URI or path, is BGZF-compressed, and the index file shares the same
+        name with a ".csi" extension, the index file is automatically
+        detected.
+    batch_size : int, optional [default: 131072]
         The number of records to read in each batch.
 
     Returns
@@ -264,9 +291,9 @@ def from_bcf(
 
     Notes
     -----
-    The BCF format is a binary representation of the Variant Call Format (VCF),
-    designed for efficient storage and processing of genomic variant data.
-    It is commonly used in large-scale sequencing projects.
+    The Binary Call Format (BCF) is a binary representation of the Variant Call
+    Format (VCF), designed for efficient storage and processing of genomic
+    variant data. It is commonly used in large-scale sequencing projects.
 
     See Also
     --------

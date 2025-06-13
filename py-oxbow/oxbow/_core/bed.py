@@ -5,7 +5,7 @@ DataSource classes for the BED family of formats.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Any, Callable, Generator, Literal, Self
+from typing import IO, Callable, Generator, Literal, Self
 
 import pyarrow as pa
 
@@ -58,13 +58,13 @@ class BedFile(DataSource):
 
     def __init__(
         self,
-        source: str | Callable[[], IO[Any] | str],
+        source: str | Callable[[], IO[bytes] | str],
         bed_schema: str = "bed3+",
         compressed: bool = False,
         *,
         fields: list[str] | None = None,
         regions: str | list[str] | None = None,
-        index: str | Callable[[], IO[Any] | str] | None = None,
+        index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
         super().__init__(source, index, batch_size)
@@ -88,13 +88,13 @@ class BedFile(DataSource):
 
 
 def from_bed(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     bed_schema: str = "bed3+",
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
     regions: str | list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BedFile:
     """
@@ -105,26 +105,35 @@ def from_bed(
     source : str, pathlib.Path, or Callable
         The URI or path to the BED file, or a callable that opens the file
         as a file-like object.
-    bed_schema : str, optional
-        Schema for the BED file format, by default "bed3+".
+    bed_schema : str, optional [default: "bed3+"]
+        Schema for intepreting the BED file. The default is "bed3+", which
+        includes the first three standard fields (chrom, start, end) and
+        any additional data is lumped into a single "rest" column.
     compression : Literal["infer", "bgzf", "gzip", None], default: "infer"
-        If "infer" and `source` is a URI or path, the file's compression is
-        guessed based on the file extension, where ".gz" or ".bgz" is
-        interpreted as BGZF. To decode vanilla GZIP, use "gzip". If None, the
-        source bytestream is assumed to be uncompressed. For more custom
-        decoding, provide a callable `source` instead.
+        Compression of the source bytestream. If "infer" and ``source`` is a
+        URI or path, the file's compression is guessed based on the extension,
+        where ".gz" or ".bgz" is interpreted as BGZF. Pass "gzip" to decode
+        regular GZIP. If None, the source bytestream is assumed to be
+        uncompressed. For more customized decoding, provide a callable
+        ``source`` instead.
     fields : list[str], optional
-        Names of the fields to project.
-    regions : list[str], optional
-        Genomic regions to query.
+        Specific fields to project as columns. By default, all available fields
+        are included.
+    regions : str | list[str], optional
+        One or more genomic regions to query. Only applicable if an associated
+        index file is available.
     index : str, pathlib.Path, or Callable, optional
-        Index file for the BED file, by default None.
-    batch_size : int, optional
-        Size of the batch to read.
+        An optional index file associated with the GTF file. If ``source`` is a
+        URI or path, is BGZF-compressed, and the index file shares the same
+        name with a ".tbi" or ".csi" extension, the index file is automatically
+        detected.
+    batch_size : int, optional [default: 131072]
+        The number of records to read in each batch.
 
     Returns
     -------
     BedFile
+        A data source object representing the BED file.
 
     See also
     --------

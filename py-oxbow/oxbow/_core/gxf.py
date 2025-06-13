@@ -5,7 +5,7 @@ DataSource classes for GTF/GFF3 formats.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Any, Callable, Generator, Literal, Self
+from typing import IO, Callable, Generator, Literal, Self
 
 import pyarrow as pa
 
@@ -61,14 +61,14 @@ class GxfFile(DataSource):
 
     def __init__(
         self,
-        source: str | Callable[[], IO[Any] | str],
+        source: str | Callable[[], IO[bytes] | str],
         compressed: bool = False,
         *,
         fields: list[str] | None = None,
         attribute_defs: list[tuple[str, str]] | None = None,
         attribute_scan_rows: int = 1024,
         regions: str | list[str] | None = None,
-        index: str | Callable[[], IO[Any] | str] | None = None,
+        index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
         super().__init__(source, index, batch_size)
@@ -107,14 +107,14 @@ class GffFile(GxfFile):
 
 
 def from_gtf(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
     attribute_defs: list[tuple[str, str]] | None = None,
     attribute_scan_rows: int = 1024,
-    regions: list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
+    regions: str | list[str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> GtfFile:
     """
@@ -126,27 +126,38 @@ def from_gtf(
         The URI or path to the GTF file, or a callable that opens the file
         as a file-like object.
     compression : Literal["infer", "bgzf", "gzip", None], default: "infer"
-        If "infer" and `source` is a URI or path, the file's compression is
-        guessed based on the file extension, where ".gz" or ".bgz" is
-        interpreted as BGZF. To decode vanilla GZIP, use "gzip". If None, the
-        source bytestream is assumed to be uncompressed. For more custom
-        decoding, provide a callable `source` instead.
+        Compression of the source bytestream. If "infer" and ``source`` is a
+        URI or path, the file's compression is guessed based on the extension,
+        where ".gz" or ".bgz" is interpreted as BGZF. Pass "gzip" to decode
+        regular GZIP. If None, the source bytestream is assumed to be
+        uncompressed. For more customized decoding, provide a callable
+        ``source`` instead.
     fields : list[str], optional
-        Names of the fields to project.
-    attribute_defs : dict, optional
-        Attribute definitions for the file.
-    attribute_scan_rows : int, optional
-        Number of rows to scan for attribute definitions, by default 1024.
-    regions : list[str], optional
-        Genomic regions to query.
+        Specific fixed fields to project. By default, all fixed fields are
+        included.
+    attribute_defs : list[tuple[str, str]], optional [default: None]
+        Definitions for variable attribute fields to project. These will be
+        nested in an "attributes" column. If None, attribute definitions are
+        discovered by scanning records in the file, which is controlled by the
+        ``attribute_scan_rows`` parameter. To omit attributes entirely,
+        set ``attribute_defs=[]``.
+    attribute_scan_rows : int, optional [default: 1024]
+        Number of rows to scan for attribute definitions.
+    regions : str | list[str], optional
+        One or more genomic regions to query. Only applicable if an associated
+        index file is available.
     index : str, pathlib.Path, or Callable, optional
-        Index file for the GTF file, by default None.
-    batch_size : int, optional
-        Size of the batch to read.
+        An optional index file associated with the GTF file. If ``source`` is a
+        URI or path, is BGZF-compressed, and the index file shares the same
+        name with a ".tbi" or ".csi" extension, the index file is automatically
+        detected.
+    batch_size : int, optional [default: 131072]
+        The number of records to read in each batch.
 
     Returns
     -------
     GtfFile
+        A data source object representing the GTF file.
 
     See also
     --------
@@ -171,14 +182,14 @@ def from_gtf(
 
 
 def from_gff(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
     attribute_defs: list[tuple[str, str]] | None = None,
     attribute_scan_rows: int = 1024,
-    regions: list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
+    regions: str | list[str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> GffFile:
     """
@@ -190,27 +201,38 @@ def from_gff(
         The URI or path to the GFF file, or a callable that opens the file
         as a file-like object.
     compression : Literal["infer", "bgzf", "gzip", None], default: "infer"
-        If "infer" and `source` is a URI or path, the file's compression is
-        guessed based on the file extension, where ".gz" or ".bgz" is
-        interpreted as BGZF. To decode vanilla GZIP, use "gzip". If None, the
-        source bytestream is assumed to be uncompressed. For more custom
-        decoding, provide a callable `source` instead.
+        Compression of the source bytestream. If "infer" and ``source`` is a
+        URI or path, the file's compression is guessed based on the extension,
+        where ".gz" or ".bgz" is interpreted as BGZF. Pass "gzip" to decode
+        regular GZIP. If None, the source bytestream is assumed to be
+        uncompressed. For more customized decoding, provide a callable
+        ``source`` instead.
     fields : list[str], optional
-        Names of the fields to project.
-    attribute_defs : dict, optional
-        Attribute definitions for the file.
-    attribute_scan_rows : int, optional
-        Number of rows to scan for attribute definitions, by default 1024.
-    regions : list[str], optional
-        Genomic regions to query.
+        Specific fixed fields to project. By default, all fixed fields are
+        included.
+    attribute_defs : list[tuple[str, str]], optional [default: None]
+        Definitions for variable attribute fields to project. These will be
+        nested in an "attributes" column. If None, attribute definitions are
+        discovered by scanning records in the file, which is controlled by the
+        ``attribute_scan_rows`` parameter. To omit attributes entirely,
+        set ``attribute_defs=[]``.
+    attribute_scan_rows : int, optional [default: 1024]
+        Number of rows to scan for attribute definitions.
+    regions : str | list[str], optional
+        One or more genomic regions to query. Only applicable if an associated
+        index file is available.
     index : str, pathlib.Path, or Callable, optional
-        Index file for the GFF file, by default None.
-    batch_size : int, optional
-        Size of the batch to read.
+        An optional index file associated with the GTF file. If ``source`` is a
+        URI or path, is BGZF-compressed, and the index file shares the same
+        name with a ".tbi" or ".csi" extension, the index file is automatically
+        detected.
+    batch_size : int, optional [default: 131072]
+        The number of records to read in each batch.
 
     Returns
     -------
     GffFile
+        A data source object representing the GFF file.
 
     See also
     --------

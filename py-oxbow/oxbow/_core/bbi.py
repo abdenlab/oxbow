@@ -5,7 +5,7 @@ DataSource classes for BBI (BigWig and BigBed) formats and their zoom levels.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Any, Callable, Generator, Self
+from typing import IO, Callable, Generator, Self
 
 import pyarrow as pa
 
@@ -103,7 +103,7 @@ class BigBedFile(BbiFile):
 
     def __init__(
         self,
-        source: str | Callable[[], IO[Any] | str],
+        source: str | Callable[[], IO[bytes] | str],
         schema: str = "bed3+",
         *,
         fields: list[str] | None = None,
@@ -134,7 +134,7 @@ class BigWigFile(BbiFile):
 
     def __init__(
         self,
-        source: str | Callable[[], IO[Any] | str],
+        source: str | Callable[[], IO[bytes] | str],
         *,
         fields: list[str] | None = None,
         regions: str | list[str] | None = None,
@@ -231,11 +231,11 @@ class BbiZoom(DataSource):
 
 
 def from_bigbed(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     schema: str = "bed3+",
     *,
     fields: list[str] | None = None,
-    regions: list[str] | None = None,
+    regions: str | list[str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BigBedFile:
     """
@@ -246,24 +246,31 @@ def from_bigbed(
     source : str, pathlib.Path, or Callable
         The URI or path to the BigBed file, or a callable that opens the file
         as a file-like object.
-    bed_schema : str, optional
-        Schema for the BED file format, by default "bed3+".
+    bed_schema : str, optional [default: "bed3+"]
+        Schema for intepreting the BED fields. The default is "bed3+", which
+        includes the first three standard fields (chrom, start, end) and
+        any additional data is lumped into a single "rest" column. If the
+        BigBed file contains an AutoSql definition of its fields, pass
+        "autosql" to use it.
     fields : list[str], optional
-        Names of the fields to project.
+        Specific fields to project as columns. By default, all available fields
+        are included.
     regions : list[str], optional
-        Genomic regions to query.
-    batch_size : int, optional
-        Size of the batch to read.
+        One or more genomic regions to query. Only applicable if an associated
+        index file is available.
+    batch_size : int, optional [default: 131072]
+        The number of records to read in each batch.
 
     Returns
     -------
     BigBedFile
+        A data source object representing the BigBed file.
 
     See also
     --------
     from_bed : Create a BED file data source.
     from_bigwig : Create a BigWig file data source.
-    BbiFile.zoom : Create a data source for a BBI file zoom level.
+    :meth:`bbi.BigBedFile.zoom` : Create a data source for a zoom level.
     """
     source, *_ = prepare_source_and_index(source, None, None)
     return BigBedFile(
@@ -276,10 +283,10 @@ def from_bigbed(
 
 
 def from_bigwig(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     *,
     fields: list[str] | None = None,
-    regions: list[str] | None = None,
+    regions: str | list[str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BigWigFile:
     """
@@ -291,21 +298,24 @@ def from_bigwig(
         The URI or path to the BigWig file, or a callable that opens the file
         as a file-like object.
     fields : list[str], optional
-        Names of the fields to project.
-    regions : list[str], optional
-        Genomic regions to query.
-    batch_size : int, optional
-        Size of the batch to read.
+        Specific fields to project as columns. By default, all available fields
+        are included.
+    regions : str | list[str], optional
+        One or more genomic regions to query. Only applicable if an associated
+        index file is available.
+    batch_size : int, optional [default: 131072]
+        The number of records to read in each batch.
 
     Returns
     -------
     BigWigFile
+        A data source object representing the BigWig file.
 
     See also
     --------
     from_bed : Create a BED file data source.
     from_bigbed : Create a BigBed file data source.
-    BbiFile.zoom : Create a data source for a BBI file zoom level.
+    :meth:`bbi.BigWigFile.zoom` : Create a data source for a zoom level.
     """
     source, *_ = prepare_source_and_index(source, None, None)
     return BigWigFile(

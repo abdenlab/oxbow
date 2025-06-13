@@ -5,7 +5,7 @@ DataSource classes for htslib alignment formats.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Any, Callable, Generator, Literal, Self
+from typing import IO, Callable, Generator, Literal, Self
 
 import pyarrow as pa
 
@@ -66,14 +66,14 @@ class AlignmentFile(DataSource):
 
     def __init__(
         self,
-        source: str | Callable[[], IO[Any] | str],
+        source: str | Callable[[], IO[bytes] | str],
         compressed: bool = False,
         *,
         fields: list[str] | None = None,
         tag_defs: list[tuple[str, str]] | None = None,
         tag_scan_rows: int = 1024,
         regions: str | list[str] | None = None,
-        index: str | Callable[[], IO[Any] | str] | None = None,
+        index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
         super().__init__(source, index, batch_size)
@@ -122,18 +122,18 @@ class BamFile(AlignmentFile):
 
 
 def from_sam(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
-    tag_defs: Any = None,
+    tag_defs: list[tuple[str, str]] = None,
     tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> SamFile:
     """
-    Create a SAM (Sequence Alignment Map) file data source.
+    Create a SAM file data source.
 
     Parameters
     ----------
@@ -141,23 +141,32 @@ def from_sam(
         The URI or path to the SAM file, or a callable that opens the file
         as a file-like object.
     compression : Literal["infer", "bgzf", "gzip", None], default: "infer"
-        If "infer" and `source` is a URI or path, the file's compression is
-        guessed based on the file extension, where ".gz" or ".bgz" is
-        interpreted as BGZF. To decode vanilla GZIP, use "gzip". If None, the
-        source bytestream is assumed to be uncompressed. For more custom
-        decoding, provide a callable `source` instead.
+        Compression of the source bytestream. If "infer" and ``source`` is a
+        URI or path, the file's compression is guessed based on the extension,
+        where ".gz" or ".bgz" is interpreted as BGZF. Pass "gzip" to decode
+        regular GZIP. If None, the source bytestream is assumed to be
+        uncompressed. For more customized decoding, provide a callable
+        ``source`` instead.
     fields : list[str], optional
-        Specific fields to extract from the SAM file, by default None.
-    tag_defs : Any, optional
-        Definitions for custom tags, by default None.
-    tag_scan_rows : int, optional
-        Number of rows to scan for tags, by default 1024.
+        Specific fixed fields to project. By default, all fixed fields are
+        included.
+    tag_defs : list[tuple[str, str]], optional [default: None]
+        Definitions for variable tag fields to project. These will be nested in
+        a "tags" column. If None, tag definitions are discovered by scanning
+        records in the file, which is controlled by the ``tag_scan_rows``
+        parameter. To omit tags entirely, set ``tag_defs=[]``.
+    tag_scan_rows : int, optional [default: 1024]
+        Number of rows to scan for tag definitions.
     regions : str | list[str], optional
-        Specific regions to extract from the SAM file, by default None.
+        One or more genomic regions to query. Only applicable if an associated
+        index file is available.
     index : str, pathlib.Path, or Callable, optional
-        Index file for the SAM file, by default None.
-    batch_size : int, optional
-        The size of the batches to read.
+        An optional index file associated with the SAM file. If ``source`` is a
+        URI or path, is BGZF-compressed, and the index file shares the same
+        name with a ".tbi" or ".csi" extension, the index file is automatically
+        detected.
+    batch_size : int, optional [default: 131072]
+        The number of records to read in each batch.
 
     Returns
     -------
@@ -166,8 +175,8 @@ def from_sam(
 
     Notes
     -----
-    SAM is a widely used text-based format for storing biological sequences
-    aligned to a reference sequence.
+    Sequence Alignment Map (SAM) is a widely used text-based format for
+    storing biological sequences aligned to a reference sequence.
 
     See also
     --------
@@ -189,18 +198,18 @@ def from_sam(
 
 
 def from_bam(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["bgzf", None] = "bgzf",
     *,
     fields: list[str] | None = None,
-    tag_defs: Any = None,
+    tag_defs: list[tuple[str, str]] = None,
     tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BamFile:
     """
-    Create a BAM (Binary Alignment Map) file data source.
+    Create a BAM file data source.
 
     Parameters
     ----------
@@ -210,29 +219,37 @@ def from_bam(
     compression : Literal["bgzf", None], default: "bgzf"
         Compression of the source bytestream. By default, BAM sources are
         assumed to be BGZF-compressed. If None, the source is assumed to be
-        uncompressed. For more custom decoding, provide a callable `source`
+        uncompressed. For more custom decoding, provide a callable ``source``
         instead.
     fields : list[str], optional
-        Specific fields to extract from the BAM file, by default None.
-    tag_defs : Any, optional
-        Definitions for custom tags, by default None.
-    tag_scan_rows : int, optional
-        Number of rows to scan for tags, by default 1024.
+        Specific fixed fields to project. By default, all fixed fields are
+        included.
+    tag_defs : list[tuple[str, str]], optional [default: None]
+        Definitions for variable tag fields to project. These will be nested in
+        a "tags" column. If None, tag definitions are discovered by scanning
+        records in the file, which is controlled by the ``tag_scan_rows``
+        parameter. To omit tags entirely, set ``tag_defs=[]``.
+    tag_scan_rows : int, optional [default: 1024]
+        Number of rows to scan for tag definitions.
     regions : str | list[str], optional
-        Specific regions to extract from the BAM file, by default None.
+        One or more genomic regions to query. Only applicable if an associated
+        index file is available.
     index : str, pathlib.Path, or Callable, optional
-        Index file for the BAM file, by default None.
-    batch_size : int, optional
-        The size of the batches to read.
+        An optional index file associated with the SAM file. If ``source`` is a
+        URI or path, is BGZF-compressed, and the index file shares the same
+        name with a ".tbi" or ".csi" extension, the index file is automatically
+        detected.
+    batch_size : int, optional [default: 131072]
+        The number of records to read in each batch.
 
     Returns
     -------
     BamFile
-         A data source object representing the BAM file.
+        A data source object representing the BAM file.
 
     Notes
     -----
-    BAM is a compressed binary representation of SAM files.
+    Binary Alignment Map (BAM) is a binary representation of SAM files.
 
     See also
     --------

@@ -5,7 +5,7 @@ DataSource classes for sequence file formats, including FASTA and FASTQ.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Any, Callable, Generator, Literal, Self
+from typing import IO, Callable, Generator, Literal, Self
 
 import pyarrow as pa
 
@@ -100,13 +100,13 @@ class FastaFile(SequenceFile):
 
     def __init__(
         self,
-        source: str | Callable[[], IO[Any] | str],
+        source: str | Callable[[], IO[bytes] | str],
         compressed: bool = False,
         *,
         fields: list[str] | None = None,
         regions: str | list[str] | None = None,
-        index: str | Callable[[], IO[Any] | str] | None = None,
-        gzi: str | Callable[[], IO[Any]] | None = None,
+        index: str | Callable[[], IO[bytes] | str] | None = None,
+        gzi: str | Callable[[], IO[bytes]] | None = None,
         batch_size: int = 1,
     ):
         super().__init__(
@@ -125,7 +125,7 @@ class FastqFile(SequenceFile):
 
     def __init__(
         self,
-        source: str | Callable[[], IO[Any] | str],
+        source: str | Callable[[], IO[bytes] | str],
         compressed: bool = False,
         *,
         fields: list[str] | None = None,
@@ -146,13 +146,13 @@ class FastqFile(SequenceFile):
 
 
 def from_fasta(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
     regions: str | list[str] | None = None,
-    index: str | pathlib.Path | Callable[[], IO[Any] | str] | None = None,
-    gzi: str | Callable[[], IO[Any]] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
+    gzi: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = 1,
 ) -> FastaFile:
     """
@@ -163,28 +163,37 @@ def from_fasta(
     source : str, pathlib.Path, or Callable
         The URI or path to the FASTA file, or a callable that opens the file
         as a file-like object.
-    compression : Literal["infer", "gzip", "bgzf", None], default: "infer"
-        If "infer" and `source` is a URI or path, the file's compression is
-        guessed based on the file extension, where ".gz" or ".bgz" is
-        interpreted as BGZF. To decode vanilla GZIP, use "gzip". If None, the
-        source bytestream is assumed to be uncompressed. For more custom
-        decoding, provide a callable `source` instead.
+    compression : Literal["infer", "bgzf", "gzip", None], default: "infer"
+        Compression of the source bytestream. If "infer" and ``source`` is a
+        URI or path, the file's compression is guessed based on the extension,
+        where ".gz" or ".bgz" is interpreted as BGZF. Pass "gzip" to decode
+        regular GZIP. If None, the source bytestream is assumed to be
+        uncompressed. For more customized decoding, provide a callable
+        ``source`` instead.
     fields : list[str], optional
-        Names of the fields to project.
-    regions : list[tuple[int, int]], optional
-        Genomic regions to query.
-    index : str, optional
-        The FAI index file.
-    gzi : str, optional
-        The GZI index file for compressed sources.
+        Specific fields to project. By default, all fields are included.
+    regions : list[str], optional
+        Provide one or more genomic ranges to slice subsequences as output
+        records. Only applicable if an associated index file is available.
+    index : str, pathlib.Path, or Callable, optional
+        An optional FAI index file associated with the FASTA file. If
+        ``source`` is a URI or path and the index file shares the same name
+        with a ".fai" extension, the index file is automatically detected.
+        If the FASTA file is BGZF-compressed, a GZI index file is also
+        required.
+    gzi : str, pathlib.Path, or Callable, optional
+        An optional GZI index file associated with a BGZF-compressed FASTA
+        file. This is required in addition to the FAI index file for random
+        access.
     batch_size : int, optional [default: 1]
-        The size of the batches to read. Since sequences for FASTA files
-        can be very long, the default batch size is set to 1 to generate one
-        sequence record at a time.
+        The number of records to read in each batch. Since sequences for FASTA
+        files can be very long, the default batch size is set to 1 to generate
+        one sequence record at a time.
 
     Returns
     -------
     FastaFile
+        A data source object representing the FASTA file.
 
     See also
     --------
@@ -205,7 +214,7 @@ def from_fasta(
 
 
 def from_fastq(
-    source: str | pathlib.Path | Callable[[], IO[Any] | str],
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
@@ -220,22 +229,23 @@ def from_fastq(
         The URI or path to the FASTQ file, or a callable that opens the file
         as a file-like object.
     compression : Literal["infer", "gzip", None], default: "infer"
-        If "infer" and `source` is a URI or path, the file's compression is
-        guessed based on the file extension. For more custom decoding, provide
-        a callable `source` instead.
+        Compression of the source bytestream. If "infer" and `source` is a URI
+        or path, the file's compression is guessed based on the file extension.
+        For more custom decoding, provide a callable ``source`` instead.
     fields : list[str], optional
-        Names of the fields to project.
-    batch_size : int, optional
-        The size of the batches to read.
+        Specific fields to project. By default, all fields are included.
+    batch_size : int, optional [default: 131072]
+        The number of records to read in each batch.
 
     Returns
     -------
     FastqFile
+        A data source object representing the FASTQ file.
 
     Notes
     -----
     Indexed FASTQ files are not supported. Hence, range queries are disallowed
-    and files compressed using either plain GZIP or BGZF are decoded using a
+    and files compressed using either regular GZIP or BGZF are decoded using a
     standard GZIP decoder.
 
     See also
