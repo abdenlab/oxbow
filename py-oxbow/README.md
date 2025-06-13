@@ -1,10 +1,10 @@
 # py-oxbow
 
-The Python interface for [oxbow](https://github.com/abdenlab/oxbow). Read NGS file formats into dataframes.
-
-## Installation
+The Python interface for [oxbow](https://github.com/abdenlab/oxbow).
 
 > **Warning**: **oxbow** is under active development. APIs are not yet stable and are subject to change.
+
+## Installation
 
 ```sh
 pip install oxbow
@@ -42,25 +42,27 @@ virtual environment:
 uvx maturin develop --uv # --release (for non-debug build)
 ```
 
-You can then test the build interactively:
+### Linting and formatting
 
+We use [`ruff`](https://astral.sh/ruff) for linting and formatting Python code.
+
+To validate the code style:
 ```sh
-uv run python
-# >>> import oxbow as ox
+uv run ruff check
 ```
 
-or running one of the example notebooks:
-
+To format:
 ```sh
-uv run jupyter lab ./notebooks/bench.ipynb
+uv run ruff format
 ```
 
 ### Running Tests
 
 Tests use `pytest` and require only the dev dependency group (default, no
-`--group` necessary):
+`--group` necessary). Currently, tests must be run from within the `tests` directory to correctly generate manifests.
 
 ```sh
+cd tests
 uv run pytest
 ```
 
