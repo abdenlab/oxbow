@@ -1,10 +1,20 @@
 [package]
 name = "oxbow"
-version = "0.4.0-rc.1"
+version = "0.4.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-readme = "../README.md"
-description = "Read specialized bioinformatic file formats as data frames in R, Python, and more."
+readme = "./README.md"
+description = "Read conventional genomic file formats as data frames and more via Apache Arrow."
+homepage = "https://oxbow.readthedocs.io/"
+repository = "https://abdenlab.github.io/oxbow/"
+keywords = ["genomics", "ngs", "bioinformatics", "dataframe", "arrow"]
+categories = [
+    "data-structures",
+    "encoding",
+    "science::bioinformatics::genomics", 
+    "science::bioinformatics::sequence-analysis",
+    "parsing",
+]
 
 [dependencies]
 arrow = { workspace = true }
