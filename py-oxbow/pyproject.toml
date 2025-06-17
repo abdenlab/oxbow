@@ -24,6 +24,7 @@ dependencies = [
     "pandas>=2.2.3",
     "pyarrow>=19.0.1",
     "fsspec>=2025.5.1",
+    "typing_extensions",
 ]
 
 [project.urls]

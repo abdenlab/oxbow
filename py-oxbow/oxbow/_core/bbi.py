@@ -5,7 +5,12 @@ DataSource classes for BBI (BigWig and BigBed) formats and their zoom levels.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Callable, Generator, Self
+from typing import IO, Callable, Generator
+
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 import pyarrow as pa
 

@@ -3,7 +3,12 @@ from __future__ import annotations
 import pathlib
 import warnings
 from abc import abstractmethod
-from typing import IO, Any, Callable, Generator, Iterable, Literal, Self
+from typing import IO, Any, Callable, Generator, Iterable, Literal
+
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 from urllib.parse import urlparse
 
 import fsspec
