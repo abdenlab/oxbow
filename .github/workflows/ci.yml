@@ -70,21 +70,12 @@ jobs:
   LintPython:
     name: "Lint Python"
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: 
-          - '3.9'
-          - '3.10'
-          - '3.11'
-          - '3.12'
-          - '3.13'
 
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
           pyproject-file: "py-oxbow/pyproject.toml"
-          python-version: ${{ matrix.python-version }}
       - run: |
           cd py-oxbow
           uv run --no-default-groups --only-group=dev ruff format --check
