@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import chain
-from typing import Callable, Final, Iterator
+from typing import Callable, Final, Iterator, Union
 
 import pyarrow as pa
 import pyarrow.dataset as ds
@@ -37,7 +37,7 @@ DEFAULT_BATCH_SIZE: Final = 2**17
 DEFAULT_BATCH_READAHEAD: Final = 16
 DEFAULT_FRAGMENT_READAHEAD: Final = 4
 
-RecordBatchIter = pa.RecordBatchReader | Iterator[pa.RecordBatch]
+RecordBatchIter = Union[pa.RecordBatchReader, Iterator[pa.RecordBatch]]
 
 
 class BatchReaderFragment:

@@ -3,7 +3,13 @@ from __future__ import annotations
 import pathlib
 import warnings
 from abc import abstractmethod
-from typing import IO, Any, Callable, Generator, Iterable, Literal, Self
+from typing import IO, Any, Callable, Generator, Iterable, Literal
+
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
+
 from urllib.parse import urlparse
 
 import fsspec
@@ -294,18 +300,17 @@ def prepare_source_and_index(
             "s3",
             "file",
         )
-        match compression:
-            case "infer":
-                bgzf_compressed = str(source).endswith(".gz") or str(source).endswith(
-                    ".bgz"
-                )
-            case "bgzf":
-                bgzf_compressed = True
-            case "gzip":
-                bgzf_compressed = False
-                use_fsspec = True
-            case _:
-                bgzf_compressed = False
+        if compression == "infer":
+            bgzf_compressed = str(source).endswith(".gz") or str(source).endswith(
+                ".bgz"
+            )
+        elif compression == "bgzf":
+            bgzf_compressed = True
+        elif compression == "gzip":
+            bgzf_compressed = False
+            use_fsspec = True
+        else:
+            bgzf_compressed = False
 
         if use_fsspec:
             src = lambda: fsspec.open(  # noqa: E731
@@ -317,22 +322,21 @@ def prepare_source_and_index(
             src = source
     elif callable(source):
         src = source
-        match compression:
-            case "infer":
-                warnings.warn(
-                    "Compression inference is not supported for callable sources. "
-                    "Assuming bytestream returned by source is uncompressed."
-                )
-                bgzf_compressed = False
-            case "bgzf":
-                bgzf_compressed = True
-            case "gzip":
-                raise ValueError(
-                    "'gzip' compression is not supported for callable sources. "
-                    "The callable should handle decompression in this case."
-                )
-            case _:
-                bgzf_compressed = False
+        if compression == "infer":
+            warnings.warn(
+                "Compression inference is not supported for callable sources. "
+                "Assuming bytestream returned by source is uncompressed."
+            )
+            bgzf_compressed = False
+        elif compression == "bgzf":
+            bgzf_compressed = True
+        elif compression == "gzip":
+            raise ValueError(
+                "'gzip' compression is not supported for callable sources. "
+                "The callable should handle decompression in this case."
+            )
+        else:
+            bgzf_compressed = False
     else:
         raise TypeError(
             "`source` must be a str, pathlib.Path, or a callable returning "
