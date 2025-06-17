@@ -322,22 +322,21 @@ def prepare_source_and_index(
             src = source
     elif callable(source):
         src = source
-        match compression:
-            case "infer":
-                warnings.warn(
-                    "Compression inference is not supported for callable sources. "
-                    "Assuming bytestream returned by source is uncompressed."
-                )
-                bgzf_compressed = False
-            case "bgzf":
-                bgzf_compressed = True
-            case "gzip":
-                raise ValueError(
-                    "'gzip' compression is not supported for callable sources. "
-                    "The callable should handle decompression in this case."
-                )
-            case _:
-                bgzf_compressed = False
+        if compression == "infer":
+            warnings.warn(
+                "Compression inference is not supported for callable sources. "
+                "Assuming bytestream returned by source is uncompressed."
+            )
+            bgzf_compressed = False
+        elif compression == "bgzf":
+            bgzf_compressed = True
+        elif compression == "gzip":
+            raise ValueError(
+                "'gzip' compression is not supported for callable sources. "
+                "The callable should handle decompression in this case."
+            )
+        else:
+            bgzf_compressed = False
     else:
         raise TypeError(
             "`source` must be a str, pathlib.Path, or a callable returning "
