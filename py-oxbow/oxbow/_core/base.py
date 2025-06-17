@@ -299,18 +299,17 @@ def prepare_source_and_index(
             "s3",
             "file",
         )
-        match compression:
-            case "infer":
-                bgzf_compressed = str(source).endswith(".gz") or str(source).endswith(
-                    ".bgz"
-                )
-            case "bgzf":
-                bgzf_compressed = True
-            case "gzip":
-                bgzf_compressed = False
-                use_fsspec = True
-            case _:
-                bgzf_compressed = False
+        if compression == "infer":
+            bgzf_compressed = str(source).endswith(".gz") or str(source).endswith(
+                ".bgz"
+            )
+        elif compression == "bgzf":
+            bgzf_compressed = True
+        elif compression == "gzip":
+            bgzf_compressed = False
+            use_fsspec = True
+        else:
+            bgzf_compressed = False
 
         if use_fsspec:
             src = lambda: fsspec.open(  # noqa: E731
