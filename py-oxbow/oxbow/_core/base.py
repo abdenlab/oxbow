@@ -9,6 +9,7 @@ try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
+
 from urllib.parse import urlparse
 
 import fsspec

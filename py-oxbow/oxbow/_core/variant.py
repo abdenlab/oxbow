@@ -5,7 +5,12 @@ DataSource classes for htslib variant call formats.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Callable, Generator, Literal, Self
+from typing import IO, Callable, Generator, Literal
+
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 import pyarrow as pa
 
