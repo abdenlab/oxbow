@@ -1654,7 +1654,10 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "dask", version = "2024.8.0", source = { registry = "https://pypi.org/simple" }, extra = ["dataframe"], marker = "python_full_version < '3.10'" },
+    { name = "dask", version = "2025.5.1", source = { registry = "https://pypi.org/simple" }, extra = ["dataframe"], marker = "python_full_version >= '3.10'" },
     { name = "debugpy" },
+    { name = "duckdb" },
     { name = "pytest" },
     { name = "pytest-manifest" },
     { name = "pytest-mock" },
@@ -1690,7 +1693,9 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "dask", extras = ["dataframe"], specifier = ">=2024.8.0" },
     { name = "debugpy", specifier = "==1.8.13" },
+    { name = "duckdb", specifier = ">=1.3.0" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-manifest", specifier = "==0.1" },
     { name = "pytest-mock" },

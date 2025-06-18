@@ -40,6 +40,8 @@ dev = [
     "pytest-manifest==0.1",
     "pytest-mock",
     "ruff>=0.11.2",
+    "dask[dataframe]>=2024.8.0",
+    "duckdb>=1.3.0",
 ]
 docs = [
     "dask[dataframe]>=2024.8.0",
