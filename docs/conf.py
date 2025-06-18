@@ -69,6 +69,7 @@ exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store", 
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
+html_context = {"version": f"Python: v{oxbow.__version__} | Rust: v{crate_version}"}
 html_theme = "sphinx_book_theme"
 html_theme_options = {
     "logo": {
@@ -78,7 +79,7 @@ html_theme_options = {
     "repository_url": "https://github.com/abdenlab/oxbow",
     "use_repository_button": True,
     "home_page_in_toc": True,
-    "extra_footer": f"Python: {oxbow.__version__} | Rust: {crate_version}",
+    "primary_sidebar_end": ["version"],
 }
 html_favicon = "_static/favicon.ico"
 
