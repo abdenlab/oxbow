@@ -13,6 +13,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.abspath(".."))
 
 import oxbow
+import toml
 
 # Warning: do not change the path here. To use autodoc, you need to install the
 # package first.
@@ -23,6 +24,10 @@ project = "oxbow"
 copyright = f"2023-{datetime.now().year}, Oxbow Developers"
 author = "Oxbow Developers"
 
+cargo_toml_path = os.path.join(os.path.dirname(__file__), "..", "oxbow", "Cargo.toml")
+with open(cargo_toml_path, "r") as f:
+    cargo_toml = toml.load(f)
+crate_version = cargo_toml.get("package", {}).get("version", "unknown")
 
 # -- General configuration ---------------------------------------------------
 
@@ -62,24 +67,6 @@ exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store", 
 
 # -- Options for HTML output -------------------------------------------------
 
-# Define the version we use for matching in the version switcher.
-version_match = os.environ.get("READTHEDOCS_VERSION")
-release = oxbow.__version__
-# If READTHEDOCS_VERSION doesn't exist, we're not on RTD
-# If it is an integer, we're in a PR build and the version isn't correct.
-# If it's "latest" → change to "dev" (that's what we want the switcher to call it)
-if not version_match or version_match.isdigit() or version_match == "latest":
-    # For local development, infer the version to match from the package.
-    if "dev" in release or "rc" in release:
-        version_match = "dev"
-        # We want to keep the relative reference if we are in dev mode
-        # but we want the whole url if we are effectively in a released version
-        json_url = "_static/switcher.json"
-    else:
-        version_match = f"v{release}"
-elif version_match == "stable":
-    version_match = f"v{release}"
-
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = "sphinx_book_theme"
@@ -90,11 +77,8 @@ html_theme_options = {
     },
     "repository_url": "https://github.com/abdenlab/oxbow",
     "use_repository_button": True,
-    "switcher": {
-        "json_url": "https://oxbow.readthedocs.io/en/latest/_static/switcher.json",
-        "version_match": version_match,
-    },
-    "primary_sidebar_end": ["version-switcher"],
+    "home_page_in_toc": True,
+    "extra_footer": f"Python: {oxbow.__version__} | Rust: {crate_version}",
 }
 html_favicon = "_static/favicon.ico"
 
