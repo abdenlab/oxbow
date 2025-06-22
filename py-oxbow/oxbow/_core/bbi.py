@@ -23,22 +23,23 @@ from oxbow.oxbow import (
 
 
 class BbiFile(DataSource):
-    _regions: list[str] | None
-
     def _batchreader_builder(
         self,
-        scan_fn: Callable,
-        field_names: list[str],
         region: str | None = None,
     ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
         def builder(columns, batch_size):
+            scanner = self.scanner()
+            field_names = scanner.field_names()
             scan_kwargs = self._schema_kwargs.copy()
 
             if columns is not None:
                 scan_kwargs["fields"] = [col for col in columns if col in field_names]
 
             if region is not None:
+                scan_fn = scanner.scan_query
                 scan_kwargs["region"] = region
+            else:
+                scan_fn = scanner.scan
 
             stream = scan_fn(**scan_kwargs, batch_size=batch_size)
             return pa.RecordBatchReader.from_stream(
@@ -54,13 +55,9 @@ class BbiFile(DataSource):
     ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
         if self._regions:
             for region in self._regions:
-                scanner = self.scanner()
-                yield self._batchreader_builder(
-                    scanner.scan_query, scanner.field_names(), region
-                )
+                yield self._batchreader_builder(region)
         else:
-            scanner = self.scanner()
-            yield self._batchreader_builder(scanner.scan, scanner.field_names())
+            yield self._batchreader_builder()
 
     @property
     def chrom_names(self) -> list[str]:
