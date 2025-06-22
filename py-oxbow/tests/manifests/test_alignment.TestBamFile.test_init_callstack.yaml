@@ -5,8 +5,8 @@ BamFile("data/does-not-exist.bam", compressed=True): |-
         ->  oxbow._core.base.DataSource.scanner()
             ->  oxbow._core.base.DataSource._source
             <-  'data/does-not-exist.bam'
-        !!  PanicException("called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: 'No such file or directory' }")
-    !!  PanicException("called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: 'No such file or directory' }")
+        !!  FileNotFoundError("No such file or directory (os error 2)")
+    !!  FileNotFoundError("No such file or directory (os error 2)")
 BamFile("data/malformed.bam", compressed=True): |-
     ->  oxbow._core.alignment.AlignmentFile.__init__("data/malformed.bam", compressed=True)
         ->  oxbow._core.base.DataSource.__init__("data/malformed.bam", None, 131072)
@@ -14,8 +14,8 @@ BamFile("data/malformed.bam", compressed=True): |-
         ->  oxbow._core.base.DataSource.scanner()
             ->  oxbow._core.base.DataSource._source
             <-  'data/malformed.bam'
-        !!  PanicException("called `Result::unwrap()` on an `Err` value: Error { kind: UnexpectedEof, message: 'failed to fill whole buffer' }")
-    !!  PanicException("called `Result::unwrap()` on an `Err` value: Error { kind: UnexpectedEof, message: 'failed to fill whole buffer' }")
+        !!  OSError("failed to fill whole buffer")
+    !!  OSError("failed to fill whole buffer")
 BamFile("data/sample.bam", compressed=True): |-
     ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.bam", compressed=True)
         ->  oxbow._core.base.DataSource.__init__("data/sample.bam", None, 131072)

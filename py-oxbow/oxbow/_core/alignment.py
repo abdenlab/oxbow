@@ -21,11 +21,11 @@ from oxbow.oxbow import PyBamScanner, PySamScanner
 class AlignmentFile(DataSource):
     def _batchreader_builder(
         self,
-        scan_fn: Callable,
-        field_names: list[str],
         region: str | None = None,
     ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
         def builder(columns, batch_size):
+            scanner = self.scanner()
+            field_names = scanner.field_names()
             scan_kwargs = self._schema_kwargs.copy()
 
             if columns is not None:
@@ -39,8 +39,14 @@ class AlignmentFile(DataSource):
                     )
 
             if region is not None:
-                scan_kwargs["region"] = region
                 scan_kwargs["index"] = self._index
+                if region == "*":
+                    scan_fn = scanner.scan_unmapped
+                else:
+                    scan_fn = scanner.scan_query
+                    scan_kwargs["region"] = region
+            else:
+                scan_fn = scanner.scan
 
             stream = scan_fn(**scan_kwargs, batch_size=batch_size)
             return pa.RecordBatchReader.from_stream(
@@ -56,18 +62,9 @@ class AlignmentFile(DataSource):
     ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
         if self._regions:
             for region in self._regions:
-                scanner = self.scanner()
-                if region == "*":
-                    yield self._batchreader_builder(
-                        scanner.scan_unmapped, scanner.field_names()
-                    )
-                else:
-                    yield self._batchreader_builder(
-                        scanner.scan_query, scanner.field_names(), region
-                    )
+                yield self._batchreader_builder(region)
         else:
-            scanner = self.scanner()
-            yield self._batchreader_builder(scanner.scan, scanner.field_names())
+            yield self._batchreader_builder()
 
     def __init__(
         self,
