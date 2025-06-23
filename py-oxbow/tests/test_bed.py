@@ -1,3 +1,5 @@
+import cloudpickle
+import fsspec
 import pytest
 from pytest_manifest import Manifest
 
@@ -29,6 +31,18 @@ class TestBedFile:
         for filepath in ("data/sample.bed",):
             fragments = ox.BedFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
+
+    def test_serialized_fragments(self):
+        fragments = ox.BedFile(
+            lambda: fsspec.open("data/sample.bed.gz", mode="rb").open(),
+            index=lambda: fsspec.open("data/sample.bed.gz.tbi", mode="rb").open(),
+            compressed=True,
+            regions=["chr1"],
+        ).fragments()
+
+        fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments] == [3]
 
     @pytest.mark.parametrize(
         "fields",
