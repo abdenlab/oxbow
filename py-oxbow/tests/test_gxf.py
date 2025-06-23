@@ -1,3 +1,5 @@
+import cloudpickle
+import fsspec
 import pytest
 from pytest_manifest import Manifest
 
@@ -29,6 +31,18 @@ class TestGtfFile:
         for filepath in ("data/sample.gtf",):
             fragments = ox.GtfFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
+
+    def test_serialized_fragments(self):
+        fragments = ox.GtfFile(
+            lambda: fsspec.open("data/sample.sorted.gtf.gz", mode="rb").open(),
+            index=lambda: fsspec.open("data/sample.sorted.gtf.gz.tbi", mode="rb").open(),
+            compressed=True,
+            regions=["chr1", "chr5"],
+        ).fragments()
+
+        fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments] == [3, 2]
 
     @pytest.mark.parametrize(
         "fields",
@@ -125,6 +139,18 @@ class TestGffFile:
         for filepath in ("data/sample.gff",):
             fragments = ox.GffFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
+
+    def test_serialized_fragments(self):
+        fragments = ox.GffFile(
+            lambda: fsspec.open("data/sample.sorted.gff.gz", mode="rb").open(),
+            index=lambda: fsspec.open("data/sample.sorted.gff.gz.tbi", mode="rb").open(),
+            compressed=True,
+            regions=["chr1"],
+        ).fragments()
+
+        fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments] == [2]
 
     @pytest.mark.parametrize(
         "fields",
