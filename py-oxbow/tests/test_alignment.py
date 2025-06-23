@@ -1,3 +1,5 @@
+import cloudpickle
+import fsspec
 import pytest
 from pytest_manifest import Manifest
 from utils import Input
@@ -26,9 +28,21 @@ class TestSamFile:
         [("foo",), ("foo", "bar"), ("foo", "bar", "baz"), ("*",), None],
     )
     def test_fragments(self, regions):
-        for filepath in ("data/sample.bw",):
-            fragments = ox.BigWigFile(filepath, regions=regions).fragments()
+        for filepath in ("data/sample.sam",):
+            fragments = ox.SamFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
+
+    def test_serialized_fragments(self):
+        fragments = ox.SamFile(
+            lambda: fsspec.open("data/sample.sam.gz", mode="rb").open(),
+            index=lambda: fsspec.open("data/sample.sam.gz.bai", mode="rb").open(),
+            compressed=True,
+            regions=["chr1", "chr2"],
+        ).fragments()
+
+        fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments] == [2, 1]
 
     @pytest.mark.parametrize(
         "fields",
@@ -57,10 +71,6 @@ class TestSamFile:
 
         file = ox.SamFile("data/sample.sam.gz", compressed=True, batch_size=3)
         assert len(next((file.batches()))) <= 3
-
-        # file = ox.SamFile("data/sample.sam.gz", compressed=False, batch_size=3)
-        # with pytest.raises(OSError):
-        #     next((file.batches()))
 
         with pytest.raises(FileNotFoundError):
             file = ox.SamFile("doesnotexist.sam", compressed=False, batch_size=3)
