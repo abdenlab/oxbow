@@ -150,6 +150,18 @@ class TestBamFile:
             ).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
 
+    def test_serialized_fragments(self):
+        fragments = ox.BamFile(
+            lambda: fsspec.open("data/sample.bam", mode="rb").open(),
+            index=lambda: fsspec.open("data/sample.bam.bai", mode="rb").open(),
+            compressed=True,
+            regions=["chr1"],
+        ).fragments()
+
+        fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments] == [4]
+
     def test_input_encodings(self):
         file = ox.BamFile("data/sample.bam", compressed=True, batch_size=3)
         assert len(next((file.batches()))) <= 3
