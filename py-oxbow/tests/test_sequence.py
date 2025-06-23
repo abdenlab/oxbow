@@ -1,3 +1,5 @@
+import cloudpickle
+import fsspec
 import pytest
 from pytest_manifest import Manifest
 
@@ -32,6 +34,18 @@ class TestFastaFile:
             "data/sample.fasta", index="data/sample.fasta.fai", regions=regions
         ).fragments()
         assert len(fragments) == 1
+
+    def test_serialized_fragments(self):
+        fragments = ox.FastaFile(
+            lambda: fsspec.open("data/sample.fasta", mode="rb").open(),
+            index=lambda: fsspec.open("data/sample.fasta.fai", mode="rb").open(),
+            compressed=False,
+            regions=["seq2", "seq10"],
+        ).fragments()
+
+        fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments] == [2]
 
     @pytest.mark.parametrize(
         "fields",
