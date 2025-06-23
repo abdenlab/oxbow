@@ -35,11 +35,11 @@ fields=None:
         rname:
         - chr1
         - chr1
-        - chr1
+        - chr2
         rnext:
         - null
         - null
-        - chr1
+        - chr2
         seq:
         - ATAGCTCTCAGC
         - TAGGC
@@ -62,4 +62,4 @@ fields=['qname', 'rname', 'mapq']:
         rname:
         - chr1
         - chr1
-        - chr1
+        - chr2

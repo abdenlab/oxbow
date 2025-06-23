@@ -1,3 +1,5 @@
+import cloudpickle
+import fsspec
 import pytest
 from pytest_manifest import Manifest
 
@@ -33,6 +35,19 @@ class TestVcfFile:
         for filepath in ("data/sample.vcf",):
             fragments = ox.VcfFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
+
+    def test_serialized_fragments(self):
+        fragments = ox.VcfFile(
+            lambda: fsspec.open("data/sample.vcf.gz", mode="rb").open(),
+            index=lambda: fsspec.open("data/sample.vcf.gz.tbi", mode="rb").open(),
+            compressed=True,
+            samples=["NA12878i", "NA12891", "NA12892"],
+            regions=["X:51000000-51100000", "X:21000000-21001000"],
+        ).fragments()
+
+        fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments] == [2, 0]
 
     @pytest.mark.parametrize(
         "fields",
@@ -146,6 +161,19 @@ class TestBcfFile:
                 filepath, compressed=True, regions=regions
             ).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
+
+    def test_serialized_fragments(self):
+        fragments = ox.BcfFile(
+            lambda: fsspec.open("data/sample.bcf", mode="rb").open(),
+            index=lambda: fsspec.open("data/sample.bcf.csi", mode="rb").open(),
+            compressed=True,
+            samples=["HG00096", "HG00101", "HG00103"],
+            regions=["Y:9089648-14384313", "Y:21000000-21001000"],
+        ).fragments()
+
+        fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments] == [9, 0]
 
     @pytest.mark.parametrize(
         "fields",
