@@ -35,7 +35,7 @@ issues = "https://github.com/abdenlab/oxbow/issues"
 
 [dependency-groups]
 dev = [
-    "debugpy==1.8.13",
+    "debugpy==1.8.16",
     "pytest>=8.3.5",
     "pytest-manifest==0.1",
     "pytest-mock",
