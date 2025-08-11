@@ -1,3 +1,5 @@
+import cloudpickle
+import fsspec
 import pytest
 from pytest_manifest import Manifest
 
@@ -29,6 +31,16 @@ class TestBigBedFile:
         for filepath in ("data/sample.bb",):
             fragments = ox.BigBedFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
+
+    def test_serialized_fragments(self):
+        fragments = ox.BigBedFile(
+            lambda: fsspec.open("data/sample.bb", mode="rb").open(),
+            regions=["chr21"],
+        ).fragments()
+
+        fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments] == [100]
 
     @pytest.mark.parametrize(
         "fields",
@@ -95,6 +107,16 @@ class TestBigWigFile:
         for filepath in ("data/sample.bw",):
             fragments = ox.BigWigFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
+
+    def test_serialized_fragments(self):
+        fragments = ox.BigWigFile(
+            lambda: fsspec.open("data/sample.bw", mode="rb").open(),
+            regions=["chr21"],
+        ).fragments()
+
+        fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments] == [100]
 
     @pytest.mark.parametrize(
         "fields",
