@@ -400,9 +400,10 @@ class BatchReaderFragment:
 
         return (
             normalize_token(self.__class__),
+            self._make_batchreader,
             self._schema,
-            self._partition_expression,
             self._batch_size,
+            self._partition_expression,
         )
 
 
