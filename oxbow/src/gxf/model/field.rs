@@ -150,7 +150,7 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for FieldBuilder {
                 builder.append_option(start);
             }
             Self::End(builder) => {
-                let end = record.start().ok().map(|pos| usize::from(pos) as i32);
+                let end = record.end().ok().map(|pos| usize::from(pos) as i32);
                 builder.append_option(end);
             }
             Self::Score(builder) => {
