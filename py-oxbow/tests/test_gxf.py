@@ -35,7 +35,9 @@ class TestGtfFile:
     def test_serialized_fragments(self):
         fragments = ox.GtfFile(
             lambda: fsspec.open("data/sample.sorted.gtf.gz", mode="rb").open(),
-            index=lambda: fsspec.open("data/sample.sorted.gtf.gz.tbi", mode="rb").open(),
+            index=lambda: fsspec.open(
+                "data/sample.sorted.gtf.gz.tbi", mode="rb"
+            ).open(),
             compressed=True,
             regions=["chr1", "chr5"],
         ).fragments()
@@ -143,7 +145,9 @@ class TestGffFile:
     def test_serialized_fragments(self):
         fragments = ox.GffFile(
             lambda: fsspec.open("data/sample.sorted.gff.gz", mode="rb").open(),
-            index=lambda: fsspec.open("data/sample.sorted.gff.gz.tbi", mode="rb").open(),
+            index=lambda: fsspec.open(
+                "data/sample.sorted.gff.gz.tbi", mode="rb"
+            ).open(),
             compressed=True,
             regions=["chr1"],
         ).fragments()
