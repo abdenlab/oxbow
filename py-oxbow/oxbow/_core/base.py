@@ -157,7 +157,7 @@ class DataSource:
                 schema,
                 batch_size=self._batch_size,
                 tokenize=(
-                    self.__class__.__name__,
+                    # deterministic only if source and index are str
                     self._source,
                     self._index,
                     self._regions[i]

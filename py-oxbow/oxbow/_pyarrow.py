@@ -391,12 +391,16 @@ class BatchReaderFragment:
 
     def __dask_tokenize__(self):
         """
-        Tokenize the fragment for Dask.
+        Return a representation of the fragment for Dask to tokenize.
 
         Returns
         -------
         tuple
-            A tuple representing the tokenized fragment.
+            A tuple that fully and deterministically represents the fragment.
+
+        Notes
+        -----
+        https://docs.dask.org/en/stable/custom-collections.html#implementing-deterministic-hashing
         """
         from dask.base import normalize_token
 
@@ -409,7 +413,10 @@ class BatchReaderFragment:
                 self._partition_expression,
             )
         else:
-            return self._tokenize
+            return (
+                normalize_token(self.__class__),
+                *self._tokenize
+            )
 
 
 class BatchReaderDataset(Dataset):
