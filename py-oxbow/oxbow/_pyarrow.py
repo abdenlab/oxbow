@@ -413,10 +413,7 @@ class BatchReaderFragment:
                 self._partition_expression,
             )
         else:
-            return (
-                normalize_token(self.__class__),
-                *self._tokenize
-            )
+            return (normalize_token(self.__class__), *self._tokenize)
 
 
 class BatchReaderDataset(Dataset):
