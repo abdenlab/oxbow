@@ -150,9 +150,25 @@ class DataSource:
         list of BatchReaderFragment
             A list of fragments representing parts of the data source.
         """
+        schema = self.schema
         return [
-            BatchReaderFragment(builder, self.schema, batch_size=self._batch_size)
-            for builder in self._batchreader_builders
+            BatchReaderFragment(
+                builder,
+                schema,
+                batch_size=self._batch_size,
+                tokenize=(
+                    # deterministic only if source and index are str
+                    self._source,
+                    self._index,
+                    self._regions[i]
+                    if hasattr(self, "_regions") and self._regions
+                    else None,
+                    self._scanner_kwargs,
+                    self._schema_kwargs,
+                    self._batch_size,
+                ),
+            )
+            for i, builder in enumerate(self._batchreader_builders)
         ]
 
     def dataset(self) -> BatchReaderDataset:

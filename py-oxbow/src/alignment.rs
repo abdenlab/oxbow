@@ -381,9 +381,9 @@ impl PyBamScanner {
     #[new]
     #[pyo3(signature = (src, compressed=true))]
     fn new(py: Python, src: PyObject, compressed: bool) -> PyResult<Self> {
-        let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed).unwrap();
+        let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bam::io::Reader::from(reader);
-        let header = fmt_reader.read_header().unwrap();
+        let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
         let scanner = BamScanner::new(header);
         Ok(Self {

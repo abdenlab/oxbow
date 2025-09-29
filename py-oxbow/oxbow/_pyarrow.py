@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import chain
-from typing import Callable, Final, Iterator, Union
+from typing import Any, Callable, Final, Iterator, Union
 
 import pyarrow as pa
 import pyarrow.dataset as ds
@@ -73,6 +73,7 @@ class BatchReaderFragment:
         schema: pa.Schema,
         batch_size: int = DEFAULT_BATCH_SIZE,
         partition_expression: ds.Expression = None,
+        tokenize: Any = None,
     ):
         """
         Create a BatchReaderFragment from a BatchReader factory function.
@@ -103,6 +104,7 @@ class BatchReaderFragment:
             self._partition_expression = partition_expression
         else:
             self._partition_expression = ds.scalar(True)
+        self._tokenize = tokenize
 
     @property
     def physical_schema(self):
@@ -389,21 +391,29 @@ class BatchReaderFragment:
 
     def __dask_tokenize__(self):
         """
-        Tokenize the fragment for Dask.
+        Return a representation of the fragment for Dask to tokenize.
 
         Returns
         -------
         tuple
-            A tuple representing the tokenized fragment.
+            A tuple that fully and deterministically represents the fragment.
+
+        Notes
+        -----
+        https://docs.dask.org/en/stable/custom-collections.html#implementing-deterministic-hashing
         """
         from dask.base import normalize_token
 
-        return (
-            normalize_token(self.__class__),
-            self._schema,
-            self._partition_expression,
-            self._batch_size,
-        )
+        if self._tokenize is None:
+            return (
+                normalize_token(self.__class__),
+                self._make_batchreader,
+                self._schema,
+                self._batch_size,
+                self._partition_expression,
+            )
+        else:
+            return (normalize_token(self.__class__), *self._tokenize)
 
 
 class BatchReaderDataset(Dataset):
