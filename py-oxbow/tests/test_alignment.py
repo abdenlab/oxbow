@@ -35,7 +35,7 @@ class TestSamFile:
     def test_serialized_fragments(self):
         fragments = ox.SamFile(
             lambda: fsspec.open("data/sample.sam.gz", mode="rb").open(),
-            index=lambda: fsspec.open("data/sample.sam.gz.bai", mode="rb").open(),
+            index=lambda: fsspec.open("data/sample.sam.gz.tbi", mode="rb").open(),
             compressed=True,
             regions=["chr1", "chr2"],
         ).fragments()
