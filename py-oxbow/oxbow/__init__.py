@@ -3,6 +3,7 @@ from importlib.metadata import PackageNotFoundError, version
 from oxbow._core.alignment import (
     from_bam,
     from_sam,
+    from_cram,
 )
 from oxbow._core.bbi import (
     from_bigbed,
@@ -29,6 +30,7 @@ from oxbow.oxbow import (
     read_bed,
     read_bigbed,
     read_bigwig,
+    read_cram,
     read_fasta,
     read_fastq,
     read_gff,
@@ -49,6 +51,7 @@ __all__ = [
     "from_bed",
     "from_bigbed",
     "from_bigwig",
+    "from_cram",
     "from_fasta",
     "from_fastq",
     "from_gff",
@@ -59,6 +62,7 @@ __all__ = [
     "read_fastq",
     "read_sam",
     "read_bam",
+    "read_cram",
     "read_bcf",
     "read_vcf",
     "read_bed",
