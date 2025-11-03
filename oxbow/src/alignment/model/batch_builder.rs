@@ -135,7 +135,6 @@ impl BatchBuilder {
             let tags = StructArray::from(tag_arrays);
             name_to_array.push(("tags", Arc::new(tags)));
         }
-
         RecordBatch::try_from_iter(name_to_array)
     }
 }
@@ -212,6 +211,37 @@ impl Push<&noodles::bam::Record> for BatchBuilder {
                         }
                     }
                     // tag is not present in this record
+                    None => {
+                        builder.append_null();
+                    }
+                };
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Append a CRAM record to the batch.
+impl Push<&noodles::cram::Record> for BatchBuilder {
+    fn push(&mut self, record: &noodles::cram::Record) -> io::Result<()> {
+        use noodles::sam::alignment::record::data::field::Value;
+        // fixed fields
+        for (_, builder) in self.field_builders.iter_mut() {
+            builder.push(record, &self.header)?;
+        }
+
+        // tags (optional)
+        if !self.tag_defs.is_empty() {
+            let data = record.data();
+            for (def, builder) in self.tag_builders.iter_mut() {
+                let tag = Tag::from(def.into_bytes());
+                match data.get(&tag) {
+                    // tag is present in this record buffer
+                    Some(value_buf) => {
+                        let value = Value::from(value_buf);
+                        builder.append_value(&value)?;
+                    }
+                    // tag is not present in this record buffer
                     None => {
                         builder.append_null();
                     }

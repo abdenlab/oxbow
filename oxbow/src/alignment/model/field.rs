@@ -333,6 +333,67 @@ impl Push<&noodles::bam::Record> for FieldBuilder {
     }
 }
 
+/// Append a field value from a CRAM record to the column.
+impl Push<&noodles::cram::Record> for FieldBuilder {
+    fn push(
+        &mut self,
+        record: &noodles::cram::Record,
+        header: &noodles::sam::Header,
+    ) -> io::Result<()> {
+        match self {
+            Self::Qname(builder) => {
+                builder.append_option(record.name().map(|name| name.to_string()));
+            }
+            Self::Flag(builder) => {
+                builder.append_value(record.flags().bits());
+            }
+            Self::Rname(builder) => {
+                let header_refs = header.reference_sequences();
+                let rname = record
+                    .reference_sequence(header_refs)
+                    .and_then(|result| result.ok().map(|(name, _)| String::from_utf8_lossy(name)));
+                builder.append_option(rname);
+            }
+            Self::Pos(builder) => {
+                let start = record.alignment_start().map(|pos| pos.get() as i32);
+                builder.append_option(start);
+            }
+            Self::Mapq(builder) => {
+                builder.append_option(record.mapping_quality().map(|mq| mq.into()));
+            }
+            Self::Cigar(builder) => {
+                builder.append_option(get_cigar(record.cigar()));
+            }
+            Self::Rnext(builder) => {
+                let header_refs = header.reference_sequences();
+                let rnext = record
+                    .mate_reference_sequence(header_refs)
+                    .and_then(|result| result.ok().map(|(name, _)| String::from_utf8_lossy(name)));
+                builder.append_option(rnext);
+            }
+            Self::Pnext(builder) => {
+                let start = record.mate_alignment_start().map(|pos| pos.get() as i32);
+                builder.append_option(start);
+            }
+            Self::Tlen(builder) => {
+                builder.append_value(record.template_length());
+            }
+            Self::Seq(builder) => {
+                let seq = record.sequence().iter().collect::<Vec<u8>>();
+                builder.append_option(String::from_utf8(seq).ok());
+            }
+            Self::Qual(builder) => {
+                builder.append_option(get_quality_scores(record.quality_scores()));
+            }
+            Self::End(builder) => {
+                let end = record.alignment_end().map(|pos| pos.get() as i32);
+                builder.append_option(end);
+            }
+        }
+        Ok(())
+    }
+}
+
 /// Serialize parsed quality scores to a string.
 fn get_quality_scores(quality_scores: impl QualityScores) -> Option<String> {
     const OFFSET: u8 = b'!';
