@@ -15,7 +15,7 @@ except ImportError:
 import pyarrow as pa
 
 from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
-from oxbow.oxbow import PyBamScanner, PySamScanner
+from oxbow.oxbow import PyBamScanner, PySamScanner, PyCramScanner
 
 
 class AlignmentFile(DataSource):
@@ -123,6 +123,10 @@ class BamFile(AlignmentFile):
     _scanner_type = PyBamScanner
 
 
+class CramFile(AlignmentFile):
+    _scanner_type = PyCramScanner
+
+
 def from_sam(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
@@ -183,6 +187,7 @@ def from_sam(
     See also
     --------
     from_bam : Create a BAM file data source.
+    from_cram : Create a CRAM file data source.
     """
     source, index, bgzf_compressed = prepare_source_and_index(
         source, index, compression
@@ -256,6 +261,7 @@ def from_bam(
     See also
     --------
     from_sam : Create a SAM file data source.
+    from_cram : Create a CRAM file data source.
     """
     source, index, bgzf_compressed = prepare_source_and_index(
         source, index, compression
@@ -268,5 +274,79 @@ def from_bam(
         tag_scan_rows=tag_scan_rows,
         regions=regions,
         index=index,
+        batch_size=batch_size,
+    )
+
+
+def from_cram(
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
+    *,
+    fields: list[str] | None = None,
+    tag_defs: list[tuple[str, str]] = None,
+    tag_scan_rows: int = 1024,
+    regions: str | list[str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
+    reference: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
+    reference_index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
+    batch_size: int = DEFAULT_BATCH_SIZE,
+) -> CramFile:
+    """
+    Create a CRAM file data source.
+
+    Parameters
+    ----------
+    source : str, pathlib.Path, or Callable
+        The URI or path to the CRAM file, or a callable that opens the file
+        as a file-like object.
+    fields : list[str], optional
+        Specific fixed fields to project. By default, all fixed fields are
+        included.
+    tag_defs : list[tuple[str, str]], optional [default: None]
+        Definitions for variable tag fields to project. These will be nested in
+        a "tags" column. If None, tag definitions are discovered by scanning
+        records in the file, which is controlled by the ``tag_scan_rows``
+        parameter. To omit tags entirely, set ``tag_defs=[]``.
+    tag_scan_rows : int, optional [default: 1024]
+        Number of rows to scan for tag definitions.
+    regions : str | list[str], optional
+        One or more genomic regions to query. Only applicable if an associated
+        index file is available.
+    index : str, pathlib.Path, or Callable, optional
+        An optional index file associated with the CRAM file. If ``source`` is
+        a URI or path and the index file shares the same name with a ".crai"
+        the index file is automatically detected.
+    batch_size : int, optional [default: 131072]
+        The number of records to read in each batch.
+
+    Returns
+    -------
+    CramFile
+        A data source object representing the CRAM file.
+
+    Notes
+    -----
+    CRAM is a compressed binary format for storing sequence alignments.
+
+    See also
+    --------
+    from_sam : Create a SAM file data source.
+    from_bam : Create a BAM file data source.
+    """
+    source, index, _ = prepare_source_and_index(
+        source, index, False
+    )
+    if reference is not None or reference_index is not None:
+        raise ValueError(
+            "CRAM files with an external reference are not yet supported."
+        )
+    return CramFile(
+        source=source,
+        fields=fields,
+        tag_defs=tag_defs,
+        tag_scan_rows=tag_scan_rows,
+        regions=regions,
+        index=index,
+        # reference=reference,
+        # reference_index=reference_index,
         batch_size=batch_size,
     )
