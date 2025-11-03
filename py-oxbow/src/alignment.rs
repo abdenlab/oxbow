@@ -10,9 +10,10 @@ use pyo3_arrow::PySchema;
 
 use noodles::bgzf::io::Seek as _;
 use noodles::core::Region;
+use noodles::fasta::repository::adapters::IndexedReader as FastaIndexedReaderAdapter;
 
 use crate::util::{pyobject_to_bufreader, resolve_index, Reader};
-use oxbow::alignment::{BamScanner, SamScanner};
+use oxbow::alignment::{BamScanner, CramScanner, SamScanner};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
 
@@ -701,6 +702,268 @@ impl PyBamScanner {
     }
 }
 
+/// A CRAM file scanner.
+///
+/// Parameters
+/// ----------
+/// obj : str or file-like
+///     The path to the BAM file or a file-like object.
+#[pyclass]
+pub struct PyCramScanner {
+    src: PyObject,
+    reader: Reader,
+    scanner: CramScanner,
+}
+
+#[pymethods]
+impl PyCramScanner {
+    #[new]
+    #[allow(unused_variables)]
+    #[pyo3(signature = (src, compressed=None))]
+    fn new(py: Python, src: PyObject, compressed: Option<bool>) -> PyResult<Self> {
+        let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
+        let mut fmt_reader = noodles::cram::io::Reader::new(reader);
+        let header = fmt_reader.read_header()?;
+        let reader = fmt_reader.into_inner();
+        let scanner = CramScanner::new(header);
+        Ok(Self {
+            src,
+            reader,
+            scanner,
+        })
+    }
+
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+        Ok(py.None())
+    }
+
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+        let args = (self.src.clone_ref(py),);
+        let kwargs = PyDict::new(py);
+        Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
+    }
+
+    /// Return the names of the reference sequences.
+    fn chrom_names(&self) -> Vec<String> {
+        self.scanner.chrom_names()
+    }
+
+    /// Return the names of the reference sequences and their lengths in bp.
+    fn chrom_sizes(&self) -> Vec<(String, u32)> {
+        self.scanner.chrom_sizes()
+    }
+
+    /// Return the names of the fixed fields.
+    fn field_names(&self) -> Vec<String> {
+        self.scanner.field_names()
+    }
+
+    /// Return the Arrow schema.
+    ///
+    /// Parameters
+    /// ----------
+    /// fields : list[str], optional
+    ///    Names of the fixed fields to project.
+    /// tag_defs : list[tuple[str, str]], optional
+    ///    Definitions of tag fields to project.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 Schema (pycapsule)
+    #[pyo3(signature = (fields=None, tag_defs=None))]
+    fn schema(
+        &self,
+        fields: Option<Vec<String>>,
+        tag_defs: Option<Vec<(String, String)>>,
+    ) -> PyResult<PySchema> {
+        let schema = self.scanner.schema(fields, tag_defs)?;
+        Ok(PySchema::new(Arc::new(schema)))
+    }
+
+    /// Discover tag definitions by sniffing `scan_rows` records.
+    ///
+    /// The reader stream is reset to its original position after scanning.
+    ///
+    /// Parameters
+    /// ----------
+    /// scan_rows : int, optional [default: 1024]
+    ///    The number of records to scan.
+    ///
+    /// Returns
+    /// -------
+    /// list[tuple[str, str]]
+    ///     A list of tag definitions, where each definition is a tuple of the
+    ///     tag name and the SAM tag type code.
+    #[pyo3(signature = (scan_rows=1024))]
+    fn tag_defs(&mut self, scan_rows: Option<usize>) -> PyResult<Vec<(String, String)>> {
+        let mut reader = self.reader.clone();
+        match &mut reader {
+            Reader::File(_) | Reader::PyFileLike(_) => {
+                let pos = reader.stream_position()?;
+                let mut fmt_reader = noodles::cram::io::Reader::new(reader);
+                let defs = self.scanner.tag_defs(&mut fmt_reader, scan_rows)?;
+                fmt_reader
+                    .into_inner()
+                    .seek(std::io::SeekFrom::Start(pos))?;
+                Ok(defs)
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+
+    /// Scan batches of records from the file.
+    ///
+    /// Parameters
+    /// ----------
+    /// reference : path or file-like, optional
+    ///     The external reference FASTA file to use for decoding bases in the
+    ///     CRAM records. If not provided, sequence bases or references must be
+    ///     embedded in the CRAM file.
+    /// reference_index : path or file-like, optional
+    ///     The index file for the reference FASTA file.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// tag_defs : list[tuple[str, str]], optional
+    ///     Definitions of tag fields to project.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, records are scanned
+    ///     until EOF.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
+    #[pyo3(signature = (reference=None, reference_index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn scan(
+        &mut self,
+        py: Python,
+        reference: Option<PyObject>,
+        reference_index: Option<PyObject>,
+        fields: Option<Vec<String>>,
+        tag_defs: Option<Vec<(String, String)>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> PyResult<PyRecordBatchReader> {
+        let reader = self.reader.clone();
+        let fmt_reader = match reference {
+            Some(fa) => {
+                let fai = noodles::fasta::fai::io::Reader::new(pyobject_to_bufreader(
+                    py,
+                    reference_index.unwrap(),
+                    false,
+                )?)
+                .read_index()?;
+                let fa_reader = pyobject_to_bufreader(py, fa, false)?;
+                let fa_indexed_reader = noodles::fasta::io::IndexedReader::new(fa_reader, fai);
+                let adapter = FastaIndexedReaderAdapter::new(fa_indexed_reader);
+                let repo = noodles::fasta::Repository::new(adapter);
+                noodles::cram::io::reader::Builder::default()
+                    .set_reference_sequence_repository(repo)
+                    .build_from_reader(reader)
+            }
+            None => noodles::cram::io::Reader::new(reader),
+        };
+        let batch_reader = self
+            .scanner
+            .scan(fmt_reader, fields, tag_defs, batch_size, limit)?;
+        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+        Ok(py_batch_reader)
+    }
+
+    /// Scan batches of records from a genomic range.
+    ///
+    /// This operation requires an index file.
+    ///
+    /// Parameters
+    /// ----------
+    /// region : str
+    ///     Genomic region in the format "chr:start-end".
+    /// index : path or file-like, optional
+    ///     The index file to use for querying the region. If None and the
+    ///     source was provided as a path, we will attempt to load the index
+    ///     from the same path with an additional extension.
+    /// reference : path or file-like, optional
+    ///     The external reference FASTA file to use for decoding bases in the
+    ///     CRAM records. If not provided, sequence bases or references must be
+    ///     embedded in the CRAM file.
+    /// reference_index : path or file-like, optional
+    ///     The index file for the reference FASTA file.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// tag_defs : list[tuple[str, str]], optional
+    ///     Definitions of tag fields to project.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
+    #[pyo3(signature = (region, index, reference=None, reference_index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn scan_query(
+        &mut self,
+        py: Python,
+        region: String,
+        index: PyObject,
+        reference: Option<PyObject>,
+        reference_index: Option<PyObject>,
+        fields: Option<Vec<String>>,
+        tag_defs: Option<Vec<(String, String)>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> PyResult<PyRecordBatchReader> {
+        let region = region
+            .parse::<Region>()
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let index_file = pyobject_to_bufreader(py, index, false)?;
+        let mut index_reader = noodles::cram::crai::io::Reader::new(index_file);
+        let index = index_reader.read_index()?;
+        let repo = match reference {
+            Some(fa) => {
+                let fai = noodles::fasta::fai::io::Reader::new(pyobject_to_bufreader(
+                    py,
+                    reference_index.unwrap(),
+                    false,
+                )?)
+                .read_index()?;
+                let fa_reader = pyobject_to_bufreader(py, fa, false)?;
+                let fa_indexed_reader = noodles::fasta::io::IndexedReader::new(fa_reader, fai);
+                let adapter = FastaIndexedReaderAdapter::new(fa_indexed_reader);
+                noodles::fasta::Repository::new(adapter)
+            }
+            None => noodles::fasta::Repository::default(),
+        };
+
+        match self.reader.clone() {
+            Reader::File(reader) => {
+                let fmt_reader = noodles::cram::io::Reader::new(reader);
+                let batch_reader = self.scanner.scan_query(
+                    fmt_reader, repo, region, index, fields, tag_defs, batch_size, limit,
+                )?;
+                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+                Ok(py_batch_reader)
+            }
+            Reader::PyFileLike(reader) => {
+                let fmt_reader = noodles::cram::io::Reader::new(reader);
+                let batch_reader = self.scanner.scan_query(
+                    fmt_reader, repo, region, index, fields, tag_defs, batch_size, limit,
+                )?;
+                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+                Ok(py_batch_reader)
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+}
+
 /// Return Arrow IPC format from a SAM file.
 ///
 /// Parameters
@@ -862,6 +1125,100 @@ pub fn read_bam(
         let fmt_reader = noodles::bam::io::Reader::from(reader);
         let batches = scanner.scan(fmt_reader, fields, tag_defs, None, None)?;
         batches_to_ipc(batches)
+    };
+
+    ipc.map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
+}
+
+#[pyfunction]
+#[pyo3(signature = (src, region=None, index=None, reference=None, reference_index=None, fields=None, tag_defs=None))]
+#[allow(clippy::too_many_arguments)]
+pub fn read_cram(
+    py: Python,
+    src: PyObject,
+    region: Option<String>,
+    index: Option<PyObject>,
+    reference: Option<PyObject>,
+    reference_index: Option<PyObject>,
+    fields: Option<Vec<String>>,
+    tag_defs: Option<Vec<(String, String)>>,
+) -> PyResult<Vec<u8>> {
+    let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
+    let mut fmt_reader = noodles::cram::io::Reader::new(reader);
+    let header = fmt_reader.read_header()?;
+    let scanner = CramScanner::new(header);
+    let reader = fmt_reader.into_inner();
+
+    let repo = match reference {
+        Some(fa) => {
+            let fai = noodles::fasta::fai::io::Reader::new(pyobject_to_bufreader(
+                py,
+                reference_index.unwrap(),
+                false,
+            )?)
+            .read_index()?;
+            let fa_reader = pyobject_to_bufreader(py, fa, false)?;
+            let fa_indexed_reader = noodles::fasta::io::IndexedReader::new(fa_reader, fai);
+            let adapter = FastaIndexedReaderAdapter::new(fa_indexed_reader);
+            noodles::fasta::Repository::new(adapter)
+        }
+        None => noodles::fasta::Repository::default(),
+    };
+
+    let ipc = if let Some(region) = region {
+        let region = region
+            .parse::<Region>()
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+
+        match reader {
+            Reader::File(reader) => {
+                let fmt_reader = noodles::cram::io::reader::Builder::default()
+                    .set_reference_sequence_repository(repo.clone())
+                    .build_from_reader(reader);
+                let index_file = pyobject_to_bufreader(py, index.unwrap(), false)?;
+                let mut index_reader = noodles::cram::crai::io::Reader::new(index_file);
+                let index = index_reader.read_index()?;
+                let batches = scanner.scan_query(
+                    fmt_reader, repo, region, index, fields, tag_defs, None, None,
+                )?;
+                batches_to_ipc(batches)
+            }
+            Reader::PyFileLike(reader) => {
+                let fmt_reader = noodles::cram::io::reader::Builder::default()
+                    .set_reference_sequence_repository(repo.clone())
+                    .build_from_reader(reader);
+                let index_file = pyobject_to_bufreader(py, index.unwrap(), false)?;
+                let mut index_reader = noodles::cram::crai::io::Reader::new(index_file);
+                let index = index_reader.read_index()?;
+                let batches = scanner.scan_query(
+                    fmt_reader, repo, region, index, fields, tag_defs, None, None,
+                )?;
+                batches_to_ipc(batches)
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+    } else {
+        match reader {
+            Reader::File(reader) => {
+                let fmt_reader = noodles::cram::io::reader::Builder::default()
+                    .set_reference_sequence_repository(repo.clone())
+                    .build_from_reader(reader);
+                let batches = scanner.scan(fmt_reader, fields, tag_defs, None, None)?;
+                batches_to_ipc(batches)
+            }
+            Reader::PyFileLike(reader) => {
+                let fmt_reader = noodles::cram::io::reader::Builder::default()
+                    .set_reference_sequence_repository(repo.clone())
+                    .build_from_reader(reader);
+                let batches = scanner.scan(fmt_reader, fields, tag_defs, None, None)?;
+                batches_to_ipc(batches)
+            }
+            _ => {
+                unreachable!()
+            }
+        }
     };
 
     ipc.map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
