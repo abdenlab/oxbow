@@ -9,7 +9,7 @@ mod bed;
 mod gxf;
 mod sequence;
 mod variant;
-use crate::alignment::{read_bam, read_sam, PyBamScanner, PySamScanner};
+use crate::alignment::{read_bam, read_cram, read_sam, PyBamScanner, PyCramScanner, PySamScanner};
 use crate::bbi::{
     read_bigbed, read_bigwig, PyBBIFileType, PyBBIZoomScanner, PyBigBedScanner, PyBigWigScanner,
 };
@@ -29,6 +29,7 @@ fn oxbow_sandbox(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFastqScanner>()?;
     m.add_class::<PySamScanner>()?;
     m.add_class::<PyBamScanner>()?;
+    m.add_class::<PyCramScanner>()?;
     m.add_class::<PyVcfScanner>()?;
     m.add_class::<PyBcfScanner>()?;
     m.add_class::<PyGffScanner>()?;
@@ -42,6 +43,7 @@ fn oxbow_sandbox(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_fastq, m)?)?;
     m.add_function(wrap_pyfunction!(read_sam, m)?)?;
     m.add_function(wrap_pyfunction!(read_bam, m)?)?;
+    m.add_function(wrap_pyfunction!(read_cram, m)?)?;
     m.add_function(wrap_pyfunction!(read_gff, m)?)?;
     m.add_function(wrap_pyfunction!(read_gtf, m)?)?;
     m.add_function(wrap_pyfunction!(read_vcf, m)?)?;
