@@ -143,7 +143,8 @@ impl Scanner {
 
     /// Returns an iterator over batches of records satisfying a genomic range predicate.
     ///
-    /// This operation requires a CRAI Index.
+    /// This operation requires a CRAI Index and the FASTA reference repository must be
+    /// provided separately from the CRAM reader.
     ///
     /// The scan will traverse one or more CRAM data containers and slices and
     /// filter for records that overlap the given region. The cursor will stop
