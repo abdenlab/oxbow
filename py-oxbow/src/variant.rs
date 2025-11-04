@@ -245,7 +245,7 @@ impl PyVcfScanner {
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -288,7 +288,7 @@ impl PyVcfScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -569,7 +569,7 @@ impl PyBcfScanner {
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -612,7 +612,7 @@ impl PyBcfScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -726,7 +726,7 @@ pub fn read_vcf(
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -743,7 +743,7 @@ pub fn read_vcf(
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -837,7 +837,7 @@ pub fn read_bcf(
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -854,7 +854,7 @@ pub fn read_bcf(
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,

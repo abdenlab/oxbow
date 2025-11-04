@@ -275,7 +275,7 @@ impl PyFastaScanner {
         batch_size: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
         // Load FAI index.
-        let index = resolve_faidx(py, self.src.clone_ref(py), index)?;
+        let index = resolve_faidx(py, &self.src, index)?;
         let reader = self.reader.clone();
 
         // Parse the genomic ranges.
@@ -394,7 +394,7 @@ pub fn read_fasta(
     let scanner = FastaScanner::new();
 
     let ipc = if let Some(regions) = regions {
-        let index = resolve_faidx(py, src, index)?;
+        let index = resolve_faidx(py, &src, index)?;
         let regions: Vec<Region> = regions
             .into_iter()
             .map(|s| {

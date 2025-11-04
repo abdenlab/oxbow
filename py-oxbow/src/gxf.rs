@@ -213,7 +213,7 @@ impl PyGtfScanner {
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -250,7 +250,7 @@ impl PyGtfScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -484,7 +484,7 @@ impl PyGffScanner {
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -521,7 +521,7 @@ impl PyGffScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -602,7 +602,7 @@ pub fn read_gtf(
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -616,7 +616,7 @@ pub fn read_gtf(
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -682,7 +682,7 @@ pub fn read_gff(
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -696,7 +696,7 @@ pub fn read_gff(
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,

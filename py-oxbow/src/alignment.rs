@@ -10,9 +10,10 @@ use pyo3_arrow::PySchema;
 
 use noodles::bgzf::io::Seek as _;
 use noodles::core::Region;
-use noodles::fasta::repository::adapters::IndexedReader as FastaIndexedReaderAdapter;
 
-use crate::util::{pyobject_to_bufreader, resolve_index, Reader};
+use crate::util::{
+    pyobject_to_bufreader, resolve_cram_index, resolve_fasta_repository, resolve_index, Reader,
+};
 use oxbow::alignment::{BamScanner, CramScanner, SamScanner};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
@@ -223,7 +224,7 @@ impl PySamScanner {
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -248,7 +249,7 @@ impl PySamScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -314,7 +315,7 @@ impl PySamScanner {
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -335,7 +336,7 @@ impl PySamScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -564,7 +565,7 @@ impl PyBamScanner {
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -589,7 +590,7 @@ impl PyBamScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -655,7 +656,7 @@ impl PyBamScanner {
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -676,7 +677,7 @@ impl PyBamScanner {
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
-                let index = resolve_index(py, self.src.clone_ref(py), index)?;
+                let index = resolve_index(py, &self.src, index)?;
                 let py_batch_reader = match index {
                     IndexType::Linear(index) => {
                         let batch_reader = self
@@ -850,24 +851,10 @@ impl PyCramScanner {
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
         let reader = self.reader.clone();
-        let fmt_reader = match reference {
-            Some(fa) => {
-                let fai = noodles::fasta::fai::io::Reader::new(pyobject_to_bufreader(
-                    py,
-                    reference_index.unwrap(),
-                    false,
-                )?)
-                .read_index()?;
-                let fa_reader = pyobject_to_bufreader(py, fa, false)?;
-                let fa_indexed_reader = noodles::fasta::io::IndexedReader::new(fa_reader, fai);
-                let adapter = FastaIndexedReaderAdapter::new(fa_indexed_reader);
-                let repo = noodles::fasta::Repository::new(adapter);
-                noodles::cram::io::reader::Builder::default()
-                    .set_reference_sequence_repository(repo)
-                    .build_from_reader(reader)
-            }
-            None => noodles::cram::io::Reader::new(reader),
-        };
+        let repo = resolve_fasta_repository(py, reference, reference_index)?;
+        let fmt_reader = noodles::cram::io::reader::Builder::default()
+            .set_reference_sequence_repository(repo)
+            .build_from_reader(reader);
         let batch_reader = self
             .scanner
             .scan(fmt_reader, fields, tag_defs, batch_size, limit)?;
@@ -904,13 +891,13 @@ impl PyCramScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (region, index, reference=None, reference_index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (region, index=None, reference=None, reference_index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
     #[allow(clippy::too_many_arguments)]
     fn scan_query(
         &mut self,
         py: Python,
         region: String,
-        index: PyObject,
+        index: Option<PyObject>,
         reference: Option<PyObject>,
         reference_index: Option<PyObject>,
         fields: Option<Vec<String>>,
@@ -921,24 +908,8 @@ impl PyCramScanner {
         let region = region
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
-        let index_file = pyobject_to_bufreader(py, index, false)?;
-        let mut index_reader = noodles::cram::crai::io::Reader::new(index_file);
-        let index = index_reader.read_index()?;
-        let repo = match reference {
-            Some(fa) => {
-                let fai = noodles::fasta::fai::io::Reader::new(pyobject_to_bufreader(
-                    py,
-                    reference_index.unwrap(),
-                    false,
-                )?)
-                .read_index()?;
-                let fa_reader = pyobject_to_bufreader(py, fa, false)?;
-                let fa_indexed_reader = noodles::fasta::io::IndexedReader::new(fa_reader, fai);
-                let adapter = FastaIndexedReaderAdapter::new(fa_indexed_reader);
-                noodles::fasta::Repository::new(adapter)
-            }
-            None => noodles::fasta::Repository::default(),
-        };
+        let index = resolve_cram_index(py, &self.src, index)?;
+        let repo = resolve_fasta_repository(py, reference, reference_index)?;
 
         match self.reader.clone() {
             Reader::File(reader) => {
@@ -1006,7 +977,7 @@ pub fn read_sam(
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -1020,7 +991,7 @@ pub fn read_sam(
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -1089,7 +1060,7 @@ pub fn read_bam(
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -1103,7 +1074,7 @@ pub fn read_bam(
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
-                let index = resolve_index(py, src.clone_ref(py), index)?;
+                let index = resolve_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader,
                     region,
@@ -1130,6 +1101,21 @@ pub fn read_bam(
     ipc.map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
 }
 
+/// Return Arrow IPC format from a CRAM file.
+///
+/// Parameters
+/// ----------
+/// src : str or file-like
+///     The path to the source file or a file-like object.
+/// fields : list[str], optional
+///     Names of the fixed fields to project.
+/// tag_defs : list[tuple[str, str]], optional
+///    Definitions of tag fields to project.
+///
+/// Returns
+/// -------
+/// bytes
+///     Arrow IPC
 #[pyfunction]
 #[pyo3(signature = (src, region=None, index=None, reference=None, reference_index=None, fields=None, tag_defs=None))]
 #[allow(clippy::too_many_arguments)]
@@ -1149,21 +1135,7 @@ pub fn read_cram(
     let scanner = CramScanner::new(header);
     let reader = fmt_reader.into_inner();
 
-    let repo = match reference {
-        Some(fa) => {
-            let fai = noodles::fasta::fai::io::Reader::new(pyobject_to_bufreader(
-                py,
-                reference_index.unwrap(),
-                false,
-            )?)
-            .read_index()?;
-            let fa_reader = pyobject_to_bufreader(py, fa, false)?;
-            let fa_indexed_reader = noodles::fasta::io::IndexedReader::new(fa_reader, fai);
-            let adapter = FastaIndexedReaderAdapter::new(fa_indexed_reader);
-            noodles::fasta::Repository::new(adapter)
-        }
-        None => noodles::fasta::Repository::default(),
-    };
+    let repo = resolve_fasta_repository(py, reference, reference_index)?;
 
     let ipc = if let Some(region) = region {
         let region = region
@@ -1172,24 +1144,16 @@ pub fn read_cram(
 
         match reader {
             Reader::File(reader) => {
-                let fmt_reader = noodles::cram::io::reader::Builder::default()
-                    .set_reference_sequence_repository(repo.clone())
-                    .build_from_reader(reader);
-                let index_file = pyobject_to_bufreader(py, index.unwrap(), false)?;
-                let mut index_reader = noodles::cram::crai::io::Reader::new(index_file);
-                let index = index_reader.read_index()?;
+                let fmt_reader = noodles::cram::io::Reader::new(reader);
+                let index = resolve_cram_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader, repo, region, index, fields, tag_defs, None, None,
                 )?;
                 batches_to_ipc(batches)
             }
             Reader::PyFileLike(reader) => {
-                let fmt_reader = noodles::cram::io::reader::Builder::default()
-                    .set_reference_sequence_repository(repo.clone())
-                    .build_from_reader(reader);
-                let index_file = pyobject_to_bufreader(py, index.unwrap(), false)?;
-                let mut index_reader = noodles::cram::crai::io::Reader::new(index_file);
-                let index = index_reader.read_index()?;
+                let fmt_reader = noodles::cram::io::Reader::new(reader);
+                let index = resolve_cram_index(py, &src, index)?;
                 let batches = scanner.scan_query(
                     fmt_reader, repo, region, index, fields, tag_defs, None, None,
                 )?;
