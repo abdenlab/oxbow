@@ -8,6 +8,7 @@ use noodles::bgzf::gzi::Index as GzIndex;
 use noodles::bgzf::io::Seek as BgzfSeek;
 use noodles::bgzf::VirtualPosition;
 use noodles::fasta::fai::Index as FaIndex;
+use noodles::fasta::repository::adapters::IndexedReader as FastaIndexedReaderAdapter;
 
 use crate::filelike::PyFileLikeObject;
 use oxbow::util::index::IndexType;
@@ -153,10 +154,9 @@ pub fn pyobject_to_bufreader(
     }
 }
 
-#[allow(dead_code)]
 pub fn resolve_index(
     py: Python,
-    source: PyObject,
+    source: &PyObject,
     index: Option<PyObject>,
 ) -> std::io::Result<IndexType> {
     match index {
@@ -186,9 +186,46 @@ pub fn resolve_index(
     }
 }
 
+pub fn resolve_cram_index(
+    py: Python,
+    source: &PyObject,
+    index: Option<PyObject>,
+) -> std::io::Result<noodles::cram::crai::Index> {
+    match index {
+        // Index file not provided
+        None => match source.downcast_bound::<PyString>(py) {
+            // If source is a path, try to find companion index file path
+            Ok(py_string) => {
+                let source_path = py_string.to_string();
+                let index_path = format!("{}.crai", source_path);
+                let index_file = std::fs::File::open(&index_path)?;
+                let mut index_reader = noodles::cram::crai::io::Reader::new(index_file);
+                index_reader.read_index()
+            }
+            _ => Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "No CRAI index file found.",
+            )),
+        },
+        // Index file explicitly provided
+        Some(index) => {
+            if let Ok(py_string) = index.downcast_bound::<PyString>(py) {
+                let index_path = py_string.to_string();
+                let index_file = std::fs::File::open(&index_path)?;
+                let mut index_reader = noodles::cram::crai::io::Reader::new(index_file);
+                index_reader.read_index()
+            } else {
+                let pyfile = PyFileLikeObject::new(index, true, false, true)?;
+                let mut index_reader = noodles::cram::crai::io::Reader::new(pyfile);
+                index_reader.read_index()
+            }
+        }
+    }
+}
+
 pub fn resolve_faidx(
     py: Python,
-    source: PyObject,
+    source: &PyObject,
     faidx: Option<PyObject>,
 ) -> std::io::Result<FaIndex> {
     match faidx {
@@ -221,5 +258,23 @@ pub fn resolve_faidx(
                 index_reader.read_index()
             }
         }
+    }
+}
+
+pub fn resolve_fasta_repository(
+    py: Python,
+    reference: Option<PyObject>,
+    reference_index: Option<PyObject>,
+) -> PyResult<noodles::fasta::Repository> {
+    match reference {
+        Some(fa) => {
+            let fai = resolve_faidx(py, &fa, reference_index)?;
+            let reader = pyobject_to_bufreader(py, fa, false)?;
+            let fa_reader = noodles::fasta::io::IndexedReader::new(reader, fai);
+            let adapter = FastaIndexedReaderAdapter::new(fa_reader);
+            let repo = noodles::fasta::Repository::new(adapter);
+            Ok(repo)
+        }
+        None => Ok(noodles::fasta::Repository::default()),
     }
 }
