@@ -332,13 +332,9 @@ def from_cram(
     from_sam : Create a SAM file data source.
     from_bam : Create a BAM file data source.
     """
-    source, index, _ = prepare_source_and_index(
-        source, index, False
-    )
+    source, index, _ = prepare_source_and_index(source, index, False)
     if reference is not None or reference_index is not None:
-        raise ValueError(
-            "CRAM files with an external reference are not yet supported."
-        )
+        raise ValueError("CRAM files with an external reference are not yet supported.")
     return CramFile(
         source=source,
         fields=fields,
