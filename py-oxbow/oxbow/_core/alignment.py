@@ -315,6 +315,15 @@ def from_cram(
         An optional index file associated with the CRAM file. If ``source`` is
         a URI or path and the index file shares the same name with a ".crai"
         the index file is automatically detected.
+    reference : str, pathlib.Path, or Callable, optional
+        The URI or path to the FASTA reference file used for CRAM encoding, or
+        a callable that opens the file as a file-like object. Required if the
+        CRAM file does not contain an embedded reference.
+    reference_index : str, pathlib.Path, or Callable, optional
+        The URI or path to the FASTA reference index file, or a callable that
+        opens the file as a file-like object. If ``reference`` is provided as a
+        URI or path and the index file shares the same name with a ".fai"
+        extension, the index file is automatically detected.
     batch_size : int, optional [default: 131072]
         The number of records to read in each batch.
 
