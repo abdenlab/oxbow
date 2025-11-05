@@ -132,7 +132,7 @@ def from_sam(
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
-    tag_defs: list[tuple[str, str]] = None,
+    tag_defs: list[tuple[str, str]] | None = None,
     tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
@@ -209,7 +209,7 @@ def from_bam(
     compression: Literal["bgzf", None] = "bgzf",
     *,
     fields: list[str] | None = None,
-    tag_defs: list[tuple[str, str]] = None,
+    tag_defs: list[tuple[str, str]] | None = None,
     tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
@@ -282,12 +282,12 @@ def from_cram(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     *,
     fields: list[str] | None = None,
-    tag_defs: list[tuple[str, str]] = None,
+    tag_defs: list[tuple[str, str]] | None = None,
     tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
-    reference: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
-    reference_index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
+    reference: None = None,
+    reference_index: None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> CramFile:
     """
@@ -335,6 +335,13 @@ def from_cram(
     Notes
     -----
     CRAM is a compressed binary format for storing sequence alignments.
+
+    .. warning::
+
+        External reference sequences (``reference`` and ``reference_index``)
+        are not yet supported via the high-level API. Either ensure that the
+        CRAM file contains an embedded reference or contains full sequences, or
+        use the low-level API to provide an external reference.
 
     See also
     --------
