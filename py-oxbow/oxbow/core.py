@@ -6,6 +6,7 @@ from oxbow._core.alignment import (
     AlignmentFile,
     BamFile,
     SamFile,
+    CramFile,
 )
 from oxbow._core.base import DataSource
 from oxbow._core.bbi import (
@@ -36,6 +37,7 @@ from oxbow.oxbow import (
     PyBedScanner,
     PyBigBedScanner,
     PyBigWigScanner,
+    PyCramScanner,
     PyFastaScanner,
     PyFastqScanner,
     PyGffScanner,
@@ -53,6 +55,7 @@ __all__ = [
     "BigWigFile",
     "BbiZoom",
     "DataSource",
+    "CramFile",
     "FastaFile",
     "FastqFile",
     "FileType",
@@ -64,6 +67,7 @@ __all__ = [
     "PyBedScanner",
     "PyBigBedScanner",
     "PyBigWigScanner",
+    "PyCramScanner",
     "PyFastaScanner",
     "PyFastqScanner",
     "PyGffScanner",
