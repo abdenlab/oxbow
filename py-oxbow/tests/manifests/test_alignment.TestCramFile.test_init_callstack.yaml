@@ -1,0 +1,27 @@
+CramFile("data/does-not-exist.cram"): |-
+    ->  oxbow._core.alignment.AlignmentFile.__init__("data/does-not-exist.cram")
+        ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.cram", None, 131072)
+        <-  None
+        ->  oxbow._core.base.DataSource.scanner()
+            ->  oxbow._core.base.DataSource._source
+            <-  'data/does-not-exist.cram'
+        !!  FileNotFoundError("No such file or directory (os error 2)")
+    !!  FileNotFoundError("No such file or directory (os error 2)")
+CramFile("data/malformed.cram"): |-
+    ->  oxbow._core.alignment.AlignmentFile.__init__("data/malformed.cram")
+        ->  oxbow._core.base.DataSource.__init__("data/malformed.cram", None, 131072)
+        <-  None
+        ->  oxbow._core.base.DataSource.scanner()
+            ->  oxbow._core.base.DataSource._source
+            <-  'data/malformed.cram'
+        <-  builtins.PyCramScanner.<object>
+    <-  None
+CramFile("data/sample.cram"): |-
+    ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.cram")
+        ->  oxbow._core.base.DataSource.__init__("data/sample.cram", None, 131072)
+        <-  None
+        ->  oxbow._core.base.DataSource.scanner()
+            ->  oxbow._core.base.DataSource._source
+            <-  'data/sample.cram'
+        <-  builtins.PyCramScanner.<object>
+    <-  None

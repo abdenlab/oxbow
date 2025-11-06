@@ -205,3 +205,85 @@ class TestBamFile:
             regions=regions,
         )
         file.pl()
+
+
+class TestCramFile:
+    @pytest.mark.parametrize(
+        "filepath",
+        ["data/sample.cram", "data/malformed.cram", "data/does-not-exist.cram"],
+    )
+    def test_init_callstack(self, filepath, wiretap, manifest: Manifest):
+        with wiretap(ox.CramFile) as stack:
+            try:
+                ox.CramFile(filepath)
+            except BaseException:
+                pass
+            finally:
+                assert (
+                    manifest[f"{ox.CramFile.__name__}({Input(filepath)})"]
+                ) == "\n".join([c.serialize() for c in stack])
+
+    @pytest.mark.parametrize(
+        "fields",
+        [
+            None,
+            ["qname", "rname", "mapq"],
+            ["qname", "rname", "foo"],
+        ],
+    )
+    def test_batches(self, fields, manifest: Manifest):
+        batches = ox.CramFile(
+            "data/sample.cram", fields=fields, compressed=True
+        ).batches()
+        try:
+            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
+        except OSError as e:
+            actual = str(e)
+
+        assert manifest[f"fields={fields}"] == actual
+
+    @pytest.mark.parametrize(
+        "regions",
+        [["foo"], ["foo", "bar"], ["foo", "bar", "baz"], ["*"], None],
+    )
+    def test_fragments(self, regions):
+        for filepath in ("data/sample.cram",):
+            fragments = ox.CramFile(
+                filepath,
+                regions=regions,
+            ).fragments()
+            assert len(fragments) == (len(regions) if regions else 1)
+
+    def test_serialized_fragments(self):
+        fragments = ox.CramFile(
+            lambda: fsspec.open("data/sample.cram", mode="rb").open(),
+            index=lambda: fsspec.open("data/sample.cram.crai", mode="rb").open(),
+            regions=["chr1"],
+        ).fragments()
+
+        fragments1 = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments1] == [2]
+
+    @pytest.mark.parametrize(
+        "regions",
+        [
+            ["chr1"],
+            ["chr1:17-32"],
+            ["chr1:17-32", "chr1:30-37"],
+        ],
+    )
+    def test_input_with_regions(self, regions):
+        file = ox.CramFile(
+            "data/sample.cram",
+            index="data/sample.cram.crai",
+            regions=regions,
+        )
+        file.pl()
+
+        file = ox.CramFile(
+            "data/sample.cram",
+            index=None,  # inferred from name
+            regions=regions,
+        )
+        file.pl()
