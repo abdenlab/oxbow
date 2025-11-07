@@ -77,6 +77,7 @@ from_bcf.__module__ = __name__
 from_bed.__module__ = __name__
 from_bigbed.__module__ = __name__
 from_bigwig.__module__ = __name__
+from_cram.__module__ = __name__
 from_fasta.__module__ = __name__
 from_fastq.__module__ = __name__
 from_gff.__module__ = __name__

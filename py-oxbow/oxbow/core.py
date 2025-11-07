@@ -99,6 +99,7 @@ PyVcfScanner.__module__ = __name__
 PyBedScanner.__module__ = __name__
 PyBigBedScanner.__module__ = __name__
 PyBigWigScanner.__module__ = __name__
+PyCramScanner.__module__ = __name__
 PyGffScanner.__module__ = __name__
 PyGtfScanner.__module__ = __name__
 PyBBIZoomScanner.__module__ = __name__

@@ -14,7 +14,7 @@ CramFile("data/malformed.cram"): |-
         ->  oxbow._core.base.DataSource.scanner()
             ->  oxbow._core.base.DataSource._source
             <-  'data/malformed.cram'
-        <-  builtins.PyCramScanner.<object>
+        <-  oxbow.core.PyCramScanner.<object>
     <-  None
 CramFile("data/sample.cram"): |-
     ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.cram")
@@ -23,5 +23,5 @@ CramFile("data/sample.cram"): |-
         ->  oxbow._core.base.DataSource.scanner()
             ->  oxbow._core.base.DataSource._source
             <-  'data/sample.cram'
-        <-  builtins.PyCramScanner.<object>
+        <-  oxbow.core.PyCramScanner.<object>
     <-  None
