@@ -20,7 +20,7 @@ impl BatchBuilder {
     ///
     /// # Arguments
     /// * `field_names` - Optional vector of field names to project. If `None`, the default field
-    ///     names are used.
+    ///   names are used.
     /// * `capacity` - The number of rows to preallocate for a batch.
     ///
     /// # Returns
@@ -52,7 +52,7 @@ impl BatchBuilder {
     ///
     /// # Arguments
     /// * `field_names` - Optional vector of field names to project. If `None`, the default field
-    ///     names are used.
+    ///   names are used.
     /// * `capacity` - The number of rows to preallocate for a batch.
     ///
     /// # Returns
