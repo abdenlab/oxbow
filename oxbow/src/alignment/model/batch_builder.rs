@@ -50,7 +50,7 @@ impl BatchBuilder {
             let builder = match field {
                 Field::Rname | Field::Rnext => {
                     FieldBuilder::with_refs(field.clone(), capacity, &ref_names)
-                        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+                        .map_err(io::Error::other)?
                 }
                 _ => FieldBuilder::new(field.clone(), capacity),
             };

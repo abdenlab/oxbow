@@ -60,10 +60,10 @@ impl PyFileLikeObject {
 fn to_io_error(py: Python<'_>, e: PyErr) -> io::Error {
     match e.value(py).call_method0("__str__") {
         Ok(repr) => match repr.extract::<String>() {
-            Ok(s) => io::Error::new(io::ErrorKind::Other, s),
-            Err(_e) => io::Error::new(io::ErrorKind::Other, "An unknown error has occurred"),
+            Ok(s) => io::Error::other(s),
+            Err(_e) => io::Error::other("An unknown error has occurred"),
         },
-        _ => io::Error::new(io::ErrorKind::Other, "An unknown error has occurred"),
+        _ => io::Error::other("An unknown error has occurred"),
     }
 }
 
@@ -95,7 +95,7 @@ impl Write for PyFileLikeObject {
                 .map_err(|e| to_io_error(py, e))?;
 
             if number_bytes_written.is_none(py) {
-                return Err(io::Error::new(io::ErrorKind::Other, "no bytes written"));
+                return Err(io::Error::other("no bytes written"));
             }
 
             number_bytes_written
