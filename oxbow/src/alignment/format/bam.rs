@@ -155,7 +155,7 @@ impl Scanner {
         let batch_builder = BatchBuilder::new(self.header(), fields, tag_defs, batch_size)?;
 
         let reference_sequence_id = resolve_chrom_id(&self.header, region.name())?;
-        let chunks = index.query(reference_sequence_id, interval).unwrap();
+        let chunks = index.query(reference_sequence_id, interval)?;
         let bgzf_reader = fmt_reader.into_inner();
         let query_reader = BgzfChunkReader::new(bgzf_reader, chunks);
         let fmt_reader = noodles::bam::io::Reader::from(query_reader);
