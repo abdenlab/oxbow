@@ -60,7 +60,7 @@ impl Scanner {
             .collect()
     }
 
-    /// Returns the standard field names.
+    /// Returns the fixed field names.
     pub fn field_names(&self) -> Vec<String> {
         DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
     }
@@ -112,7 +112,7 @@ impl Scanner {
         Ok(tag_scanner.collect())
     }
 
-    /// Returns an iterator yielding batches of records.
+    /// Returns an iterator yielding record batches.
     ///
     /// The scan will begin at the current position of the reader and will
     /// move the cursor to the end of the last record scanned.

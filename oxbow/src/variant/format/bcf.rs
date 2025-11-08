@@ -152,7 +152,7 @@ impl Scanner {
 }
 
 impl Scanner {
-    /// Returns an iterator yielding batches of records.
+    /// Returns an iterator yielding record batches.
     ///
     /// The scan will begin at the current position of the reader and will
     /// move the cursor to the end of the last record scanned.

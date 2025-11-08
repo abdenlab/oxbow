@@ -60,7 +60,7 @@ impl Scanner {
             .collect()
     }
 
-    /// Returns the standard field names.
+    /// Returns the fixed field names.
     pub fn field_names(&self) -> Vec<String> {
         DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
     }

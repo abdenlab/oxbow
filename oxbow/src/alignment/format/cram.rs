@@ -42,7 +42,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    /// Creates a SAM scanner from a SAM header.
+    /// Creates a CRAM scanner from a SAM header.
     pub fn new(header: noodles::sam::Header) -> Self {
         Self { header }
     }
@@ -141,7 +141,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator over batches of records satisfying a genomic range predicate.
+    /// Returns an iterator over batches of records satisfying a genomic range query.
     ///
     /// This operation requires a CRAI Index and the FASTA reference repository must be
     /// provided separately from the CRAM reader.

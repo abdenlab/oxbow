@@ -26,7 +26,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    /// Creates a BigBed scanner from a BED schema and BBI file info.
+    /// Creates a BigWig scanner from BBI file info.
     pub fn new(info: bigtools::BBIFileInfo) -> Self {
         let bed_schema = "bedGraph".parse().unwrap();
         Self { bed_schema, info }
