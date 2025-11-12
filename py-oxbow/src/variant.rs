@@ -7,10 +7,9 @@ use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
-use noodles::bgzf::VirtualPosition;
 use noodles::core::Region;
 
-use crate::util::{pyobject_to_bufreader, resolve_index, Reader};
+use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
 use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
@@ -193,7 +192,38 @@ impl PyVcfScanner {
         Ok(py_batch_reader)
     }
 
+    /// Scan batches of records from specified byte ranges in the file.
+    ///
+    /// The byte positions must align with record boundaries.
+    ///
+    /// Parameters
+    /// ----------
+    /// byte_ranges : list[tuple[int, int]]
+    ///     List of (start, end) byte position tuples to read from.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// info_fields : list[str], optional
+    ///     Names of the INFO fields to project.
+    /// genotype_fields : list[str], optional
+    ///     Names of the sample-specific genotype fields to project.
+    /// samples : list[str], optional
+    ///     Names of the samples to include in the genotype fields.
+    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
+    ///     How to project the genotype fields. If "sample", the columns
+    ///     correspond to the samples. If "field", the columns correspond to
+    ///     the genotype fields.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     in the specified ranges are scanned.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (byte_ranges, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
+    #[allow(clippy::too_many_arguments)]
     fn scan_byte_ranges(
         &mut self,
         byte_ranges: Vec<(u64, u64)>,
@@ -226,10 +256,44 @@ impl PyVcfScanner {
         Ok(py_batch_reader)
     }
 
+    /// Scan batches of records from virtual position ranges in a BGZF file.
+    ///
+    /// The virtual positions must align with record boundaries. That means
+    /// that the compressed offset must point to the beginning of a BGZF block
+    /// and the uncompressed offset must point to the beginning or end of a
+    /// record decoded within the block.
+    ///
+    /// Parameters
+    /// ----------
+    /// vpos_ranges : list[tuple[int, int]]
+    ///     List of (start, end) virtual position tuples to read from.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// info_fields : list[str], optional
+    ///     Names of the INFO fields to project.
+    /// genotype_fields : list[str], optional
+    ///     Names of the sample-specific genotype fields to project.
+    /// samples : list[str], optional
+    ///     Names of the samples to include in the genotype fields.
+    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
+    ///     How to project the genotype fields. If "sample", the columns
+    ///     correspond to the samples. If "field", the columns correspond to
+    ///     the genotype fields.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     in the specified ranges are scanned.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (vpos_ranges, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
+    #[allow(clippy::too_many_arguments)]
     fn scan_virtual_ranges(
         &mut self,
-        vpos_ranges: Vec<(u64, u64)>,
+        vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
         fields: Option<Vec<String>>,
         info_fields: Option<Vec<String>>,
         genotype_fields: Option<Vec<String>>,
@@ -241,14 +305,14 @@ impl PyVcfScanner {
         let genotype_by = resolve_genotype_by(genotype_by)?;
         let vpos_ranges = vpos_ranges
             .into_iter()
-            .map(|(start, end)| (VirtualPosition::from(start), VirtualPosition::from(end)))
+            .map(|(start, end)| (start.to_virtual_position(), end.to_virtual_position()))
             .collect();
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_vpos_ranges(
+                    .scan_virtual_ranges(
                         fmt_reader,
                         vpos_ranges,
                         fields,
@@ -267,7 +331,7 @@ impl PyVcfScanner {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_vpos_ranges(
+                    .scan_virtual_ranges(
                         fmt_reader,
                         vpos_ranges,
                         fields,
@@ -611,7 +675,38 @@ impl PyBcfScanner {
         Ok(py_batch_reader)
     }
 
+    /// Scan batches of records from specified byte ranges in the file.
+    ///
+    /// The byte positions must align with record boundaries.
+    ///
+    /// Parameters
+    /// ----------
+    /// byte_ranges : list[tuple[int, int]]
+    ///     List of (start, end) byte position tuples to read from.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// info_fields : list[str], optional
+    ///     Names of the INFO fields to project.
+    /// genotype_fields : list[str], optional
+    ///     Names of the sample-specific genotype fields to project.
+    /// samples : list[str], optional
+    ///     Names of the samples to include in the genotype fields.
+    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
+    ///     How to project the genotype fields. If "sample", the columns
+    ///     correspond to the samples. If "field", the columns correspond to
+    ///     the genotype fields.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     in the specified ranges are scanned.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (byte_ranges, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
+    #[allow(clippy::too_many_arguments)]
     fn scan_byte_ranges(
         &mut self,
         byte_ranges: Vec<(u64, u64)>,
@@ -644,10 +739,44 @@ impl PyBcfScanner {
         Ok(py_batch_reader)
     }
 
+    /// Scan batches of records from virtual position ranges in a BGZF file.
+    ///
+    /// The virtual positions must align with record boundaries. That means
+    /// that the compressed offset must point to the beginning of a BGZF block
+    /// and the uncompressed offset must point to the beginning or end of a
+    /// record decoded within the block.
+    ///
+    /// Parameters
+    /// ----------
+    /// vpos_ranges : list[tuple[int, int]]
+    ///     List of (start, end) virtual position tuples to read from.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// info_fields : list[str], optional
+    ///     Names of the INFO fields to project.
+    /// genotype_fields : list[str], optional
+    ///     Names of the sample-specific genotype fields to project.
+    /// samples : list[str], optional
+    ///     Names of the samples to include in the genotype fields.
+    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
+    ///     How to project the genotype fields. If "sample", the columns
+    ///     correspond to the samples. If "field", the columns correspond to
+    ///     the genotype fields.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     in the specified ranges are scanned.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (vpos_ranges, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
+    #[allow(clippy::too_many_arguments)]
     fn scan_virtual_ranges(
         &mut self,
-        vpos_ranges: Vec<(u64, u64)>,
+        vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
         fields: Option<Vec<String>>,
         info_fields: Option<Vec<String>>,
         genotype_fields: Option<Vec<String>>,
@@ -659,14 +788,14 @@ impl PyBcfScanner {
         let genotype_by = resolve_genotype_by(genotype_by)?;
         let vpos_ranges = vpos_ranges
             .into_iter()
-            .map(|(start, end)| (VirtualPosition::from(start), VirtualPosition::from(end)))
+            .map(|(start, end)| (start.to_virtual_position(), end.to_virtual_position()))
             .collect();
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_vpos_ranges(
+                    .scan_virtual_ranges(
                         fmt_reader,
                         vpos_ranges,
                         fields,
@@ -685,7 +814,7 @@ impl PyBcfScanner {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_vpos_ranges(
+                    .scan_virtual_ranges(
                         fmt_reader,
                         vpos_ranges,
                         fields,

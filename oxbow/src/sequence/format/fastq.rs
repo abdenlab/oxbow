@@ -103,7 +103,7 @@ impl Scanner {
     ///
     /// The scan will traverse the specified virtual position ranges without filtering by genomic
     /// coordinates. This is useful when you have pre-computed virtual offsets from a custom index.
-    pub fn scan_vpos_ranges<R: Read + Seek>(
+    pub fn scan_virtual_ranges<R: Read + Seek>(
         &self,
         fmt_reader: noodles::fastq::io::Reader<noodles::bgzf::Reader<R>>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,

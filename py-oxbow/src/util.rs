@@ -278,3 +278,23 @@ pub fn resolve_fasta_repository(
         None => Ok(noodles::fasta::Repository::default()),
     }
 }
+
+#[derive(FromPyObject)]
+pub enum PyVirtualPosition {
+    /// Encoded u64 virtual position
+    Encoded(u64),
+    /// Decoded (compressed_offset, uncompressed_offset)
+    Decoded((u64, u16)),
+}
+
+impl PyVirtualPosition {
+    pub fn to_virtual_position(&self) -> VirtualPosition {
+        match self {
+            PyVirtualPosition::Encoded(vpos) => VirtualPosition::from(*vpos),
+            PyVirtualPosition::Decoded((compressed, uncompressed)) => {
+                VirtualPosition::try_from((*compressed, *uncompressed))
+                    .expect("Invalid virtual position")
+            }
+        }
+    }
+}

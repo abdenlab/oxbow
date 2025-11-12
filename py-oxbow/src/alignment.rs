@@ -9,11 +9,11 @@ use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
 use noodles::bgzf::io::Seek as _;
-use noodles::bgzf::VirtualPosition;
 use noodles::core::Region;
 
 use crate::util::{
-    pyobject_to_bufreader, resolve_cram_index, resolve_fasta_repository, resolve_index, Reader,
+    pyobject_to_bufreader, resolve_cram_index, resolve_fasta_repository, resolve_index,
+    PyVirtualPosition, Reader,
 };
 use oxbow::alignment::{BamScanner, CramScanner, SamScanner};
 use oxbow::util::batches_to_ipc;
@@ -180,6 +180,28 @@ impl PySamScanner {
         Ok(py_batch_reader)
     }
 
+    /// Scan batches of records from specified byte ranges in the file.
+    ///
+    /// The byte positions must align with record boundaries.
+    ///
+    /// Parameters
+    /// ----------
+    /// byte_ranges : list[tuple[int, int]]
+    ///     List of (start, end) byte position tuples to read from.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// tag_defs : list[tuple[str, str]], optional
+    ///     Definitions of tag fields to project.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     in the specified ranges are scanned.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (byte_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
     fn scan_byte_ranges(
         &mut self,
@@ -199,10 +221,35 @@ impl PySamScanner {
         Ok(py_batch_reader)
     }
 
+    /// Scan batches of records from virtual position ranges in a BGZF file.
+    ///
+    /// The virtual positions must align with record boundaries. That means
+    /// that the compressed offset must point to the beginning of a BGZF block
+    /// and the uncompressed offset must point to the beginning or end of a
+    /// record decoded within the block.
+    ///
+    /// Parameters
+    /// ----------
+    /// vpos_ranges : list[tuple[int, int]]
+    ///     List of (start, end) virtual position tuples to read from.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// tag_defs : list[tuple[str, str]], optional
+    ///     Definitions of tag fields to project.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     in the specified ranges are scanned.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (vpos_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
     fn scan_virtual_ranges(
         &mut self,
-        vpos_ranges: Vec<(u64, u64)>,
+        vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
@@ -210,14 +257,21 @@ impl PySamScanner {
     ) -> PyResult<PyRecordBatchReader> {
         let vpos_ranges = vpos_ranges
             .into_iter()
-            .map(|(start, end)| (VirtualPosition::from(start), VirtualPosition::from(end)))
+            .map(|(start, end)| (start.to_virtual_position(), end.to_virtual_position()))
             .collect();
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_vpos_ranges(fmt_reader, vpos_ranges, fields, tag_defs, batch_size, limit)
+                    .scan_virtual_ranges(
+                        fmt_reader,
+                        vpos_ranges,
+                        fields,
+                        tag_defs,
+                        batch_size,
+                        limit,
+                    )
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                 Ok(py_batch_reader)
@@ -226,7 +280,14 @@ impl PySamScanner {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_vpos_ranges(fmt_reader, vpos_ranges, fields, tag_defs, batch_size, limit)
+                    .scan_virtual_ranges(
+                        fmt_reader,
+                        vpos_ranges,
+                        fields,
+                        tag_defs,
+                        batch_size,
+                        limit,
+                    )
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                 Ok(py_batch_reader)
@@ -581,6 +642,28 @@ impl PyBamScanner {
         Ok(py_batch_reader)
     }
 
+    /// Scan batches of records from specified byte ranges in the file.
+    ///
+    /// The byte positions must align with record boundaries.
+    ///
+    /// Parameters
+    /// ----------
+    /// byte_ranges : list[tuple[int, int]]
+    ///     List of (start, end) byte position tuples to read from.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// tag_defs : list[tuple[str, str]], optional
+    ///     Definitions of tag fields to project.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     in the specified ranges are scanned.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (byte_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
     fn scan_byte_ranges(
         &mut self,
@@ -603,7 +686,7 @@ impl PyBamScanner {
     #[pyo3(signature = (vpos_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
     fn scan_virtual_ranges(
         &mut self,
-        vpos_ranges: Vec<(u64, u64)>,
+        vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
@@ -611,14 +694,21 @@ impl PyBamScanner {
     ) -> PyResult<PyRecordBatchReader> {
         let vpos_ranges = vpos_ranges
             .into_iter()
-            .map(|(start, end)| (VirtualPosition::from(start), VirtualPosition::from(end)))
+            .map(|(start, end)| (start.to_virtual_position(), end.to_virtual_position()))
             .collect();
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_vpos_ranges(fmt_reader, vpos_ranges, fields, tag_defs, batch_size, limit)
+                    .scan_virtual_ranges(
+                        fmt_reader,
+                        vpos_ranges,
+                        fields,
+                        tag_defs,
+                        batch_size,
+                        limit,
+                    )
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                 Ok(py_batch_reader)
@@ -627,7 +717,14 @@ impl PyBamScanner {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_vpos_ranges(fmt_reader, vpos_ranges, fields, tag_defs, batch_size, limit)
+                    .scan_virtual_ranges(
+                        fmt_reader,
+                        vpos_ranges,
+                        fields,
+                        tag_defs,
+                        batch_size,
+                        limit,
+                    )
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
                 Ok(py_batch_reader)

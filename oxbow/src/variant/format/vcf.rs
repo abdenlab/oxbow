@@ -247,6 +247,7 @@ impl Scanner {
     /// The scan will traverse the specified byte ranges without filtering by genomic coordinates.
     /// This is useful when you have pre-computed file offsets from a custom index. The byte ranges
     /// must align with record boundaries.
+    #[allow(clippy::too_many_arguments)]
     pub fn scan_byte_ranges<R: BufRead + Seek>(
         &self,
         fmt_reader: noodles::vcf::io::Reader<R>,
@@ -285,7 +286,8 @@ impl Scanner {
     ///
     /// The scan will traverse the specified virtual position ranges without filtering by genomic
     /// coordinates. This is useful when you have pre-computed virtual offsets from a custom index.
-    pub fn scan_vpos_ranges<R: Read + Seek>(
+    #[allow(clippy::too_many_arguments)]
+    pub fn scan_virtual_ranges<R: Read + Seek>(
         &self,
         fmt_reader: noodles::vcf::io::Reader<noodles::bgzf::Reader<R>>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
