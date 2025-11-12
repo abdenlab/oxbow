@@ -1,4 +1,4 @@
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Read, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema;
@@ -6,6 +6,9 @@ use arrow::datatypes::Schema;
 use crate::sequence::batch_iterator::BatchIterator;
 use crate::sequence::model::batch_builder::BatchBuilder;
 use crate::sequence::model::field::FASTQ_DEFAULT_FIELD_NAMES;
+use crate::util::query::{BgzfChunkReader, ByteRangeReader};
+use noodles::bgzf::VirtualPosition;
+use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 
 /// A FASTQ scanner.
 ///
@@ -68,7 +71,63 @@ impl Scanner {
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
         Ok(batch_iter)
     }
+
+    /// Returns an iterator yielding record batches from specified byte ranges.
+    ///
+    /// This operation requires a seekable (typically uncompressed) source.
+    ///
+    /// The scan will traverse the specified byte ranges without filtering by genomic coordinates.
+    /// This is useful when you have pre-computed file offsets from a custom index. The byte ranges
+    /// must align with record boundaries.
+    pub fn scan_byte_ranges<R: BufRead + Seek>(
+        &self,
+        fmt_reader: noodles::fastq::io::Reader<R>,
+        byte_ranges: Vec<(u64, u64)>,
+        fields: Option<Vec<String>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> io::Result<impl RecordBatchReader> {
+        let batch_size = batch_size.unwrap_or(1024);
+        let batch_builder = BatchBuilder::new_fastq(fields, batch_size)?;
+
+        let inner_reader = fmt_reader.into_inner();
+        let range_reader = ByteRangeReader::new(inner_reader, byte_ranges);
+        let fmt_reader = noodles::fastq::io::Reader::new(range_reader);
+        let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
+        Ok(batch_iter)
+    }
+
+    /// Returns an iterator yielding record batches from specified virtual position ranges.
+    ///
+    /// This operation requires a BGZF-compressed source.
+    ///
+    /// The scan will traverse the specified virtual position ranges without filtering by genomic
+    /// coordinates. This is useful when you have pre-computed virtual offsets from a custom index.
+    pub fn scan_vpos_ranges<R: Read + Seek>(
+        &self,
+        fmt_reader: noodles::fastq::io::Reader<noodles::bgzf::Reader<R>>,
+        vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
+        fields: Option<Vec<String>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> io::Result<impl RecordBatchReader> {
+        let batch_size = batch_size.unwrap_or(1024);
+        let batch_builder = BatchBuilder::new_fastq(fields, batch_size)?;
+
+        // Convert virtual position tuples to Chunks
+        let chunks: Vec<Chunk> = vpos_ranges
+            .into_iter()
+            .map(|(start, end)| Chunk::new(start, end))
+            .collect();
+
+        let bgzf_reader = fmt_reader.into_inner();
+        let range_reader = BgzfChunkReader::new(bgzf_reader, chunks);
+        let fmt_reader = noodles::fastq::io::Reader::new(range_reader);
+        let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
+        Ok(batch_iter)
+    }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
