@@ -9,6 +9,7 @@ use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
 use noodles::bgzf::io::Seek as _;
+use noodles::bgzf::VirtualPosition;
 use noodles::core::Region;
 
 use crate::util::{
@@ -177,6 +178,63 @@ impl PySamScanner {
             .map_err(PyErr::new::<PyValueError, _>)?;
         let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
         Ok(py_batch_reader)
+    }
+
+    #[pyo3(signature = (byte_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    fn scan_byte_ranges(
+        &mut self,
+        byte_ranges: Vec<(u64, u64)>,
+        fields: Option<Vec<String>>,
+        tag_defs: Option<Vec<(String, String)>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> PyResult<PyRecordBatchReader> {
+        let reader = self.reader.clone();
+        let fmt_reader = noodles::sam::io::Reader::new(reader);
+        let batch_reader = self
+            .scanner
+            .scan_byte_ranges(fmt_reader, byte_ranges, fields, tag_defs, batch_size, limit)
+            .map_err(PyErr::new::<PyValueError, _>)?;
+        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+        Ok(py_batch_reader)
+    }
+
+    #[pyo3(signature = (vpos_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    fn scan_virtual_ranges(
+        &mut self,
+        vpos_ranges: Vec<(u64, u64)>,
+        fields: Option<Vec<String>>,
+        tag_defs: Option<Vec<(String, String)>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> PyResult<PyRecordBatchReader> {
+        let vpos_ranges = vpos_ranges
+            .into_iter()
+            .map(|(start, end)| (VirtualPosition::from(start), VirtualPosition::from(end)))
+            .collect();
+        match self.reader.clone() {
+            Reader::BgzfFile(bgzf_reader) => {
+                let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
+                let batch_reader = self
+                    .scanner
+                    .scan_vpos_ranges(fmt_reader, vpos_ranges, fields, tag_defs, batch_size, limit)
+                    .map_err(PyErr::new::<PyValueError, _>)?;
+                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+                Ok(py_batch_reader)
+            }
+            Reader::BgzfPyFileLike(bgzf_reader) => {
+                let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
+                let batch_reader = self
+                    .scanner
+                    .scan_vpos_ranges(fmt_reader, vpos_ranges, fields, tag_defs, batch_size, limit)
+                    .map_err(PyErr::new::<PyValueError, _>)?;
+                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+                Ok(py_batch_reader)
+            }
+            _ => Err(PyErr::new::<PyValueError, _>(
+                "Scanning virtual position ranges is only supported for bgzf-compressed sources.",
+            )),
+        }
     }
 
     /// Scan batches of records from a genomic range query on a BGZF-encoded file.
@@ -521,6 +579,63 @@ impl PyBamScanner {
             .map_err(PyErr::new::<PyValueError, _>)?;
         let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
         Ok(py_batch_reader)
+    }
+
+    #[pyo3(signature = (byte_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    fn scan_byte_ranges(
+        &mut self,
+        byte_ranges: Vec<(u64, u64)>,
+        fields: Option<Vec<String>>,
+        tag_defs: Option<Vec<(String, String)>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> PyResult<PyRecordBatchReader> {
+        let reader = self.reader.clone();
+        let fmt_reader = noodles::bam::io::Reader::from(reader);
+        let batch_reader = self
+            .scanner
+            .scan_byte_ranges(fmt_reader, byte_ranges, fields, tag_defs, batch_size, limit)
+            .map_err(PyErr::new::<PyValueError, _>)?;
+        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+        Ok(py_batch_reader)
+    }
+
+    #[pyo3(signature = (vpos_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    fn scan_virtual_ranges(
+        &mut self,
+        vpos_ranges: Vec<(u64, u64)>,
+        fields: Option<Vec<String>>,
+        tag_defs: Option<Vec<(String, String)>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> PyResult<PyRecordBatchReader> {
+        let vpos_ranges = vpos_ranges
+            .into_iter()
+            .map(|(start, end)| (VirtualPosition::from(start), VirtualPosition::from(end)))
+            .collect();
+        match self.reader.clone() {
+            Reader::BgzfFile(bgzf_reader) => {
+                let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
+                let batch_reader = self
+                    .scanner
+                    .scan_vpos_ranges(fmt_reader, vpos_ranges, fields, tag_defs, batch_size, limit)
+                    .map_err(PyErr::new::<PyValueError, _>)?;
+                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+                Ok(py_batch_reader)
+            }
+            Reader::BgzfPyFileLike(bgzf_reader) => {
+                let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
+                let batch_reader = self
+                    .scanner
+                    .scan_vpos_ranges(fmt_reader, vpos_ranges, fields, tag_defs, batch_size, limit)
+                    .map_err(PyErr::new::<PyValueError, _>)?;
+                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+                Ok(py_batch_reader)
+            }
+            _ => Err(PyErr::new::<PyValueError, _>(
+                "Scanning virtual position ranges is only supported for bgzf-compressed sources.",
+            )),
+        }
     }
 
     /// Scan batches of records from a genomic range query on a BGZF-encoded file.
