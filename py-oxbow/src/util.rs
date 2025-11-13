@@ -281,10 +281,27 @@ pub fn resolve_fasta_repository(
 
 #[derive(FromPyObject)]
 pub enum PyVirtualPosition {
-    /// Encoded u64 virtual position
+    /// Packed u64 virtual position
     Encoded(u64),
     /// Decoded (compressed_offset, uncompressed_offset)
     Decoded((u64, u16)),
+}
+
+impl<'py> IntoPyObject<'py> for PyVirtualPosition {
+    type Target = PyAny;
+    type Output = Bound<'py, PyAny>;
+    type Error = std::convert::Infallible;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        let obj = match self {
+            PyVirtualPosition::Encoded(vpos) => vpos.into_pyobject(py).unwrap().into_any(),
+            PyVirtualPosition::Decoded((compressed, uncompressed)) => (compressed, uncompressed)
+                .into_pyobject(py)
+                .unwrap()
+                .into_any(),
+        };
+        Ok(obj)
+    }
 }
 
 impl PyVirtualPosition {
