@@ -16,6 +16,7 @@ use crate::bbi::{
 use crate::bed::{read_bed, PyBedScanner};
 use crate::gxf::{read_gff, read_gtf, PyGffScanner, PyGtfScanner};
 use crate::sequence::{read_fasta, read_fastq, PyFastaScanner, PyFastqScanner};
+use crate::util::partition_from_index;
 use crate::variant::{read_bcf, read_vcf, PyBcfScanner, PyVcfScanner};
 
 /////////////////
@@ -51,6 +52,7 @@ fn oxbow_sandbox(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_bed, m)?)?;
     m.add_function(wrap_pyfunction!(read_bigbed, m)?)?;
     m.add_function(wrap_pyfunction!(read_bigwig, m)?)?;
+    m.add_function(wrap_pyfunction!(partition_from_index, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }
