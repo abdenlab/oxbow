@@ -683,6 +683,31 @@ impl PyBamScanner {
         Ok(py_batch_reader)
     }
 
+    /// Scan batches of records from virtual position ranges in a BGZF file.
+    ///
+    /// The virtual positions must align with record boundaries. That means
+    /// that the compressed offset must point to the beginning of a BGZF block
+    /// and the uncompressed offset must point to the beginning or end of a
+    /// record decoded within the block.
+    ///
+    /// Parameters
+    /// ----------
+    /// vpos_ranges : list[tuple[int, int]]
+    ///     List of (start, end) virtual position tuples to read from.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// tag_defs : list[tuple[str, str]], optional
+    ///     Definitions of tag fields to project.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     in the specified ranges are scanned.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (vpos_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
     fn scan_virtual_ranges(
         &mut self,
@@ -696,6 +721,7 @@ impl PyBamScanner {
             .into_iter()
             .map(|(start, end)| (start.to_virtual_position(), end.to_virtual_position()))
             .collect();
+
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
