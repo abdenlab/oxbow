@@ -10,9 +10,9 @@ use pyo3_arrow::PySchema;
 use flate2::read::MultiGzDecoder;
 use noodles::bgzf::gzi::Reader as GziReader;
 use noodles::bgzf::IndexedReader as IndexedBgzfReader;
-use noodles::bgzf::VirtualPosition;
 use noodles::core::Region;
 
+use crate::util::PyVirtualPosition;
 use crate::util::{pyobject_to_bufreader, resolve_faidx, Reader};
 use oxbow::sequence::{FastaScanner, FastqScanner};
 use oxbow::util::batches_to_ipc;
@@ -187,14 +187,14 @@ impl PyFastqScanner {
     #[pyo3(signature = (vpos_ranges, fields=None, batch_size=1024, limit=None))]
     fn scan_virtual_ranges(
         &mut self,
-        vpos_ranges: Vec<(u64, u64)>,
+        vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
         fields: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
         let vpos_ranges = vpos_ranges
             .into_iter()
-            .map(|(start, end)| (VirtualPosition::from(start), VirtualPosition::from(end)))
+            .map(|(start, end)| (start.to_virtual_position(), end.to_virtual_position()))
             .collect();
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
