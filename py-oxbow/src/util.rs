@@ -305,12 +305,13 @@ impl<'py> IntoPyObject<'py> for PyVirtualPosition {
 }
 
 impl PyVirtualPosition {
-    pub fn to_virtual_position(&self) -> VirtualPosition {
+    pub fn to_virtual_position(&self) -> PyResult<VirtualPosition> {
         match self {
-            PyVirtualPosition::Encoded(vpos) => VirtualPosition::from(*vpos),
+            PyVirtualPosition::Encoded(vpos) => Ok(VirtualPosition::from(*vpos)),
             PyVirtualPosition::Decoded((compressed, uncompressed)) => {
-                VirtualPosition::try_from((*compressed, *uncompressed))
-                    .expect("Invalid virtual position")
+                VirtualPosition::try_from((*compressed, *uncompressed)).map_err(|_| {
+                    PyErr::new::<pyo3::exceptions::PyValueError, _>("Invalid virtual position")
+                })
             }
         }
     }

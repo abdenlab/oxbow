@@ -308,8 +308,8 @@ impl PyVcfScanner {
         let genotype_by = resolve_genotype_by(genotype_by)?;
         let vpos_ranges = vpos_ranges
             .into_iter()
-            .map(|(start, end)| (start.to_virtual_position(), end.to_virtual_position()))
-            .collect();
+            .map(|(start, end)| Ok((start.to_virtual_position()?, end.to_virtual_position()?)))
+            .collect::<PyResult<Vec<_>>>()?;
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
@@ -794,8 +794,8 @@ impl PyBcfScanner {
         let genotype_by = resolve_genotype_by(genotype_by)?;
         let vpos_ranges = vpos_ranges
             .into_iter()
-            .map(|(start, end)| (start.to_virtual_position(), end.to_virtual_position()))
-            .collect();
+            .map(|(start, end)| Ok((start.to_virtual_position()?, end.to_virtual_position()?)))
+            .collect::<PyResult<Vec<_>>>()?;
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);

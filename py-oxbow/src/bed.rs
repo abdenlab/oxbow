@@ -213,8 +213,8 @@ impl PyBedScanner {
     ) -> PyResult<PyRecordBatchReader> {
         let vpos_ranges = vpos_ranges
             .into_iter()
-            .map(|(start, end)| (start.to_virtual_position(), end.to_virtual_position()))
-            .collect();
+            .map(|(start, end)| Ok((start.to_virtual_position()?, end.to_virtual_position()?)))
+            .collect::<PyResult<Vec<_>>>()?;
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
