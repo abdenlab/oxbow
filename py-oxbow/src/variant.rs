@@ -265,8 +265,11 @@ impl PyVcfScanner {
     ///
     /// Parameters
     /// ----------
-    /// vpos_ranges : list[tuple[int, int]]
-    ///     List of (start, end) virtual position tuples to read from.
+    /// vpos_ranges : list[tuple[vpos, vpos]]
+    ///     List of virtual position ranges as pairs. Each virtual position can
+    ///     be given as either a packed virtual position (int), or an unpacked
+    ///     tuple of ints ``(c, u)`` specifying the compressed and uncompressed
+    ///     offsets, respectively.
     /// fields : list[str], optional
     ///     Names of the fixed fields to project.
     /// info_fields : list[str], optional
@@ -748,8 +751,11 @@ impl PyBcfScanner {
     ///
     /// Parameters
     /// ----------
-    /// vpos_ranges : list[tuple[int, int]]
-    ///     List of (start, end) virtual position tuples to read from.
+    /// vpos_ranges : list[tuple[vpos, vpos]]
+    ///     List of virtual position ranges as pairs. Each virtual position can
+    ///     be given as either a packed virtual position (int), or an unpacked
+    ///     tuple of ints ``(c, u)`` specifying the compressed and uncompressed
+    ///     offsets, respectively.
     /// fields : list[str], optional
     ///     Names of the fixed fields to project.
     /// info_fields : list[str], optional
