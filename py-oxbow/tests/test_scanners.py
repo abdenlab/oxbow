@@ -45,6 +45,28 @@ class TestPySamScanner:
         scanner = pickle.loads(pickle.dumps(ox.PySamScanner("data/sample.sam")))
         assert isinstance(scanner, ox.PySamScanner)
 
+    def test_scan_byte_ranges(self):
+        scanner = ox.PySamScanner("data/sample.sam")
+        schema = scanner.schema()
+        stream = scanner.scan_byte_ranges([(36, 123)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 2
+
+    def test_scan_virtual_ranges(self):
+        scanner = ox.PySamScanner("data/sample.sam.gz", compressed=True)
+        schema = scanner.schema()
+        # unpacked virtual positions
+        stream = scanner.scan_virtual_ranges([((53, 0), (53, 87))])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 2
+        # packed virtual positions
+        stream = scanner.scan_virtual_ranges([(3473408, 3473495)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch2 = reader.read_next_batch()
+        assert batch.to_pydict() == batch2.to_pydict()
+
 
 class TestPyBamScanner:
     @pytest.mark.parametrize(
@@ -82,6 +104,28 @@ class TestPyBamScanner:
     def test_pickle(self):
         scanner = pickle.loads(pickle.dumps(ox.PyBamScanner("data/sample.bam")))
         assert isinstance(scanner, ox.PyBamScanner)
+
+    def test_scan_byte_ranges(self):
+        scanner = ox.PyBamScanner("data/sample.ubam", compressed=False)
+        schema = scanner.schema()
+        stream = scanner.scan_byte_ranges([(130, 339)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 2
+
+    def test_scan_virtual_ranges(self):
+        scanner = ox.PyBamScanner("data/sample.bam")
+        schema = scanner.schema()
+        # unpacked virtual positions
+        stream = scanner.scan_virtual_ranges([((643, 977), (643, 1693))])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 3
+        # packed virtual positions
+        stream = scanner.scan_virtual_ranges([(42140625, 42141341)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch2 = reader.read_next_batch()
+        assert batch.to_pydict() == batch2.to_pydict()
 
 
 class TestPyBcfScanner:
@@ -146,6 +190,28 @@ class TestPyBcfScanner:
     def test_pickle(self):
         scanner = pickle.loads(pickle.dumps(ox.PyBcfScanner("data/sample.bcf")))
         assert isinstance(scanner, ox.PyBcfScanner)
+
+    def test_scan_byte_ranges(self):
+        scanner = ox.PyBcfScanner("data/sample.ubcf", compressed=False)
+        schema = scanner.schema()
+        stream = scanner.scan_byte_ranges([(100242, 102922)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 2
+
+    def test_scan_virtual_ranges(self):
+        scanner = ox.PyBcfScanner("data/sample.bcf")
+        schema = scanner.schema()
+        # unpacked virtual positions
+        stream = scanner.scan_virtual_ranges([((4713, 1341), (7244, 436))], samples=[])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 48
+        # packed virtual positions
+        stream = scanner.scan_virtual_ranges([(308872509, 474743220)], samples=[])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch2 = reader.read_next_batch()
+        assert batch.to_pydict() == batch2.to_pydict()
 
 
 class TestPyVcfScanner:
@@ -294,6 +360,28 @@ class TestPyVcfScanner:
         )
         assert isinstance(scanner, ox.PyVcfScanner)
 
+    def test_scan_byte_ranges(self):
+        scanner = ox.PyVcfScanner("data/sample.vcf")
+        schema = scanner.schema()
+        stream = scanner.scan_byte_ranges([(24785, 62317)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 23
+
+    def test_scan_virtual_ranges(self):
+        scanner = ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)
+        schema = scanner.schema()
+        # unpacked virtual positions
+        stream = scanner.scan_virtual_ranges([((6516, 2980), (6516, 10920))])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 5
+        # packed virtual positions
+        stream = scanner.scan_virtual_ranges([(427035556, 427043496)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch2 = reader.read_next_batch()
+        assert batch.to_pydict() == batch2.to_pydict()
+
 
 class TestPyFastaScanner:
     @pytest.mark.parametrize(
@@ -379,6 +467,28 @@ class TestPyFastqScanner:
         scanner = pickle.loads(pickle.dumps(ox.PyFastqScanner("data/sample.fastq")))
         assert isinstance(scanner, ox.PyFastqScanner)
 
+    def test_scan_byte_ranges(self):
+        scanner = ox.PyFastqScanner("data/sample.fastq")
+        schema = scanner.schema()
+        stream = scanner.scan_byte_ranges([(90, 270)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 2
+
+    def test_scan_virtual_ranges(self):
+        scanner = ox.PyFastqScanner("data/sample.fastq.bgz", compressed=True)
+        schema = scanner.schema()
+        # unpacked virtual positions
+        stream = scanner.scan_virtual_ranges([((37, 84), (37, 264))])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 2
+        # # packed virtual positions
+        stream = scanner.scan_virtual_ranges([(2424916, 2425096)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch2 = reader.read_next_batch()
+        assert batch.to_pydict() == batch2.to_pydict()
+
 
 class TestPyBedScanner:
     @pytest.mark.parametrize(
@@ -432,6 +542,30 @@ class TestPyBedScanner:
             pickle.dumps(ox.PyBedScanner("data/sample.bed", bed_schema="bed9"))
         )
         assert isinstance(scanner, ox.PyBedScanner)
+
+    def test_scan_byte_ranges(self):
+        scanner = ox.PyBedScanner("data/sample.bed", bed_schema="bed9")
+        schema = scanner.schema()
+        stream = scanner.scan_byte_ranges([(108, 211)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 2
+
+    def test_scan_virtual_ranges(self):
+        scanner = ox.PyBedScanner(
+            "data/sample.bed.gz", bed_schema="bed9", compressed=True
+        )
+        schema = scanner.schema()
+        # unpacked virtual positions
+        stream = scanner.scan_virtual_ranges([((0, 162), (0, 468))])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 6
+        # packed virtual positions
+        stream = scanner.scan_virtual_ranges([(162, 468)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch2 = reader.read_next_batch()
+        assert batch.to_pydict() == batch2.to_pydict()
 
 
 class TestPyBigBedScanner:
@@ -672,6 +806,28 @@ class TestPyGffScanner:
         scanner = pickle.loads(pickle.dumps(ox.PyGffScanner("data/sample.gff")))
         assert isinstance(scanner, ox.PyGffScanner)
 
+    def test_scan_byte_ranges(self):
+        scanner = ox.PyGffScanner("data/sample.gff")
+        schema = scanner.schema()
+        stream = scanner.scan_byte_ranges([(367, 1057)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 2
+
+    def test_scan_virtual_ranges(self):
+        scanner = ox.PyGffScanner("data/sample.sorted.gff.gz", compressed=True)
+        schema = scanner.schema()
+        # unpacked virtual positions
+        stream = scanner.scan_virtual_ranges([((0, 859), (0, 2445))])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 3
+        # packed virtual positions
+        stream = scanner.scan_virtual_ranges([(859, 2445)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch2 = reader.read_next_batch()
+        assert batch.to_pydict() == batch2.to_pydict()
+
 
 class TestPyGtfScanner:
     @pytest.mark.parametrize(
@@ -777,3 +933,25 @@ class TestPyGtfScanner:
     def test_pickle(self):
         scanner = pickle.loads(pickle.dumps(ox.PyGtfScanner("data/sample.gtf")))
         assert isinstance(scanner, ox.PyGtfScanner)
+
+    def test_scan_byte_ranges(self):
+        scanner = ox.PyGtfScanner("data/sample.gtf")
+        schema = scanner.schema()
+        stream = scanner.scan_byte_ranges([(475, 1771)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 3
+
+    def test_scan_virtual_ranges(self):
+        scanner = ox.PyGtfScanner("data/sample.sorted.gtf.gz", compressed=True)
+        schema = scanner.schema()
+        # unpacked virtual positions
+        stream = scanner.scan_virtual_ranges([((0, 978), (0, 2376))])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch = reader.read_next_batch()
+        assert batch.num_rows == 3
+        # packed virtual positions
+        stream = scanner.scan_virtual_ranges([(978, 2376)])
+        reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
+        batch2 = reader.read_next_batch()
+        assert batch.to_pydict() == batch2.to_pydict()

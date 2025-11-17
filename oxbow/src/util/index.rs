@@ -72,28 +72,28 @@ fn get_ref_last_position(rseq: &ReferenceSequence<impl RefIndex>) -> bgzf::Virtu
     rend
 }
 
-/// Get all the virtual position offsets from a linear reference sequence index.
+/// Get the sorted decoded virtual positions from a linear reference sequence index.
 fn get_offsets_from_linear_index(rseq: &ReferenceSequence<LinearRefIndex>) -> Vec<(u64, u16)> {
     let mut offsets: Vec<(u64, u16)> = Vec::new();
     let rend = get_ref_last_position(rseq);
     for offset in rseq.index() {
-        let a = offset.compressed();
-        let b = offset.uncompressed();
-        if a == 0 && b == 0 {
+        let u = offset.compressed();
+        let c = offset.uncompressed();
+        if u == 0 && c == 0 {
             continue;
         }
-        offsets.push((a, b));
+        offsets.push((u, c));
     }
     offsets.push((rend.compressed(), rend.uncompressed()));
 
     // Remove duplicates and sort by compressed, then uncompressed
     let offsets_uniq: HashSet<(u64, u16)> = offsets.drain(..).collect();
     let mut offsets_uniq: Vec<(u64, u16)> = offsets_uniq.into_iter().collect();
-    offsets_uniq.sort_by_key(|&(a, b)| (a, b));
+    offsets_uniq.sort_by_key(|&(u, c)| (u, c));
     offsets_uniq
 }
 
-/// Get the virtual positions of the chunk bounds of a binned reference sequence index.
+/// Get the sorted decoded virtual positions from the chunk bounds of a binned reference sequence index.
 fn get_offsets_from_binned_index(rseq: &ReferenceSequence<BinnedRefIndex>) -> Vec<(u64, u16)> {
     let mut offsets: Vec<(u64, u16)> = Vec::new();
     let rend = get_ref_last_position(rseq);
@@ -108,28 +108,31 @@ fn get_offsets_from_binned_index(rseq: &ReferenceSequence<BinnedRefIndex>) -> Ve
     // Remove duplicates and sort by compressed, then uncompressed
     let offsets_uniq: HashSet<(u64, u16)> = offsets.drain(..).collect();
     let mut offsets_uniq: Vec<(u64, u16)> = offsets_uniq.into_iter().collect();
-    offsets_uniq.sort_by_key(|&(a, b)| (a, b));
+    offsets_uniq.sort_by_key(|&(u, c)| (u, c));
     offsets_uniq
 }
 
-/// Merge overlapping or consecutive chunks until each chunk exceeds `chunksize`.
-fn consolidate_chunks(offsets: &[(u64, u16)], chunksize: u64) -> Vec<(u64, u16)> {
-    let mut consolidated = Vec::new();
-    let mut last_offset = 0;
+/// Prune out boundaries from a virtual position partition until pieces meet or exceed `chunksize`
+/// compressed bytes.
+fn prune_partition(vpositions: &[(u64, u16)], chunksize: u64) -> Vec<(u64, u16)> {
+    let mut pruned = Vec::new();
+    let mut last_compressed = 0;
 
-    consolidated.push(offsets[0]);
-    for &(offset, value) in &offsets[1..offsets.len() - 1] {
-        if offset >= last_offset + chunksize {
-            consolidated.push((offset, value));
-            last_offset = offset;
+    pruned.push(vpositions[0]);
+    for &(compressed, uncompressed) in &vpositions[1..vpositions.len() - 1] {
+        if compressed >= last_compressed + chunksize {
+            pruned.push((compressed, uncompressed));
+            last_compressed = compressed;
         }
     }
-    consolidated.push(offsets[offsets.len() - 1]);
+    pruned.push(vpositions[vpositions.len() - 1]);
 
-    consolidated
+    pruned
 }
 
-/// Partition a BGZF file into roughly equal-sized chunks based on its index.
+/// Partition a BGZF file into roughly equal chunks based on the known record bounds in its index.
+///
+/// If `chunksize` is 0, all index boundary positions are returned (sorted and deduplicated).
 pub fn partition_from_index(index: &IndexType, chunksize: u64) -> Vec<(u64, u16)> {
     let mut partition: Vec<(u64, u16)> = Vec::new();
 
@@ -140,8 +143,12 @@ pub fn partition_from_index(index: &IndexType, chunksize: u64) -> Vec<(u64, u16)
                     continue;
                 }
                 let offsets = get_offsets_from_linear_index(rseq);
-                let consolidated = consolidate_chunks(&offsets, chunksize);
-                partition.extend(consolidated);
+                let pruned_offsets = if chunksize > 0 {
+                    prune_partition(&offsets, chunksize)
+                } else {
+                    offsets
+                };
+                partition.extend(pruned_offsets);
             }
         }
         IndexType::Binned(ix) => {
@@ -150,16 +157,21 @@ pub fn partition_from_index(index: &IndexType, chunksize: u64) -> Vec<(u64, u16)
                     continue;
                 }
                 let offsets = get_offsets_from_binned_index(rseq);
-                let consolidated = consolidate_chunks(&offsets, chunksize);
-                partition.extend(consolidated);
+                let pruned_offsets = if chunksize > 0 {
+                    prune_partition(&offsets, chunksize)
+                } else {
+                    offsets
+                };
+                partition.extend(pruned_offsets);
             }
         }
     }
 
-    // Remove duplicates and sort by compressed, then uncompressed
+    // Remove duplicates and sort by compressed, then uncompressed across all reference sequences
     let partition: HashSet<(u64, u16)> = partition.drain(..).collect();
     let mut partition: Vec<(u64, u16)> = partition.into_iter().collect();
-    partition.sort_by_key(|&(a, b)| (a, b));
+    partition.sort_by_key(|&(u, c)| (u, c));
+
     partition
 }
 

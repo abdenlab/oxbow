@@ -9,7 +9,7 @@ use pyo3_arrow::PySchema;
 
 use noodles::core::Region;
 
-use crate::util::{pyobject_to_bufreader, resolve_index, Reader};
+use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
 use oxbow::bed::{BedScanner, BedSchema};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
@@ -137,6 +137,107 @@ impl PyBedScanner {
             .map_err(PyErr::new::<PyValueError, _>)?;
         let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
         Ok(py_batch_reader)
+    }
+
+    /// Scan batches of records from specified byte ranges in the file.
+    ///
+    /// The byte positions must align with record boundaries.
+    ///
+    /// Parameters
+    /// ----------
+    /// byte_ranges : list[tuple[int, int]]
+    ///     List of (start, end) byte position tuples to read from.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     in the specified ranges are scanned.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
+    #[pyo3(signature = (byte_ranges, fields=None, batch_size=1024, limit=None))]
+    fn scan_byte_ranges(
+        &mut self,
+        byte_ranges: Vec<(u64, u64)>,
+        fields: Option<Vec<String>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> PyResult<PyRecordBatchReader> {
+        let reader = self.reader.clone();
+        let fmt_reader = noodles::bed::io::Reader::new(reader);
+        let batch_reader = self
+            .scanner
+            .scan_byte_ranges(fmt_reader, byte_ranges, fields, batch_size, limit)
+            .map_err(PyErr::new::<PyValueError, _>)?;
+        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+        Ok(py_batch_reader)
+    }
+
+    /// Scan batches of records from virtual position ranges in a BGZF file.
+    ///
+    /// The virtual positions must align with record boundaries. That means
+    /// that the compressed offset must point to the beginning of a BGZF block
+    /// and the uncompressed offset must point to the beginning or end of a
+    /// record decoded within the block.
+    ///
+    /// Parameters
+    /// ----------
+    /// vpos_ranges : list[tuple[vpos, vpos]]
+    ///     List of virtual position ranges as pairs. Each virtual position can
+    ///     be given as either a packed virtual position (int), or an unpacked
+    ///     tuple of ints ``(c, u)`` specifying the compressed and uncompressed
+    ///     offsets, respectively.
+    /// fields : list[str], optional
+    ///     Names of the fixed fields to project.
+    /// batch_size : int, optional [default: 1024]
+    ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     in the specified ranges are scanned.
+    ///
+    /// Returns
+    /// -------
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
+    #[pyo3(signature = (vpos_ranges, fields=None, batch_size=1024, limit=None))]
+    fn scan_virtual_ranges(
+        &mut self,
+        vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
+        fields: Option<Vec<String>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> PyResult<PyRecordBatchReader> {
+        let vpos_ranges = vpos_ranges
+            .into_iter()
+            .map(|(start, end)| Ok((start.to_virtual_position()?, end.to_virtual_position()?)))
+            .collect::<PyResult<Vec<_>>>()?;
+        match self.reader.clone() {
+            Reader::BgzfFile(bgzf_reader) => {
+                let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
+                let batch_reader = self
+                    .scanner
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, fields, batch_size, limit)
+                    .map_err(PyErr::new::<PyValueError, _>)?;
+                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+                Ok(py_batch_reader)
+            }
+            Reader::BgzfPyFileLike(bgzf_reader) => {
+                let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
+                let batch_reader = self
+                    .scanner
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, fields, batch_size, limit)
+                    .map_err(PyErr::new::<PyValueError, _>)?;
+                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+                Ok(py_batch_reader)
+            }
+            _ => Err(PyErr::new::<PyValueError, _>(
+                "Scanning virtual position ranges is only supported for bgzf-compressed sources.",
+            )),
+        }
     }
 
     /// Scan batches of records from a genomic range query on a BGZF-encoded file.
