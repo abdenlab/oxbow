@@ -195,33 +195,24 @@ impl PyFastqScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
+        if !self.compressed {
+            return Err(PyErr::new::<PyValueError, _>(
+                "scan_virtual_ranges requires a BGZF-compressed source.",
+            ));
+        }
         let vpos_ranges = vpos_ranges
             .into_iter()
             .map(|(start, end)| Ok((start.to_virtual_position()?, end.to_virtual_position()?)))
             .collect::<PyResult<Vec<_>>>()?;
-        match self.reader.clone() {
-            Reader::BgzfFile(bgzf_reader) => {
-                let fmt_reader = noodles::fastq::io::Reader::new(bgzf_reader);
-                let batch_reader = self
-                    .scanner
-                    .scan_virtual_ranges(fmt_reader, vpos_ranges, fields, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
-                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                Ok(py_batch_reader)
-            }
-            Reader::BgzfPyFileLike(bgzf_reader) => {
-                let fmt_reader = noodles::fastq::io::Reader::new(bgzf_reader);
-                let batch_reader = self
-                    .scanner
-                    .scan_virtual_ranges(fmt_reader, vpos_ranges, fields, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
-                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                Ok(py_batch_reader)
-            }
-            _ => Err(PyErr::new::<PyValueError, _>(
-                "Scanning virtual position ranges is only supported for bgzf-compressed sources.",
-            )),
-        }
+        let reader = self.reader.clone();
+        let bgzf_reader = noodles::bgzf::Reader::new(reader);
+        let fmt_reader = noodles::fastq::io::Reader::new(bgzf_reader);
+        let batch_reader = self
+            .scanner
+            .scan_virtual_ranges(fmt_reader, vpos_ranges, fields, batch_size, limit)
+            .map_err(PyErr::new::<PyValueError, _>)?;
+        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
+        Ok(py_batch_reader)
     }
 }
 
