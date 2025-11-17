@@ -341,7 +341,8 @@ def from_cram(
         External reference sequences (``reference`` and ``reference_index``)
         are not yet supported via the high-level API. Either ensure that the
         CRAM file contains an embedded reference or contains full sequences, or
-        use the low-level API to provide an external reference.
+        use the low-level API (:class:`oxbow.core.PyCramScanner`) to provide an
+        external reference.
 
     See also
     --------

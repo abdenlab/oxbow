@@ -23,7 +23,9 @@
       ~PyBcfScanner.info_field_names
       ~PyBcfScanner.sample_names
       ~PyBcfScanner.scan
+      ~PyBcfScanner.scan_byte_ranges
       ~PyBcfScanner.scan_query
+      ~PyBcfScanner.scan_virtual_ranges
       ~PyBcfScanner.schema
    
    

@@ -17,7 +17,9 @@
       ~PyGffScanner.attribute_defs
       ~PyGffScanner.field_names
       ~PyGffScanner.scan
+      ~PyGffScanner.scan_byte_ranges
       ~PyGffScanner.scan_query
+      ~PyGffScanner.scan_virtual_ranges
       ~PyGffScanner.schema
    
    

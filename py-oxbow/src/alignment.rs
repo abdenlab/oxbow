@@ -951,7 +951,7 @@ impl PyBamScanner {
 /// Parameters
 /// ----------
 /// obj : str or file-like
-///     The path to the BAM file or a file-like object.
+///     The path to the CRAM file or a file-like object.
 #[pyclass]
 pub struct PyCramScanner {
     src: PyObject,
