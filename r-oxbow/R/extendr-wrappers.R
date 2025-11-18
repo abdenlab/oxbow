@@ -22,6 +22,9 @@ read_sam_impl <- function(path, region, index, fields, scan_rows) .Call(wrap__re
 #' Return Arrow IPC format from a BAM file.
 read_bam_impl <- function(path, region, index, fields, scan_rows) .Call(wrap__read_bam_impl, path, region, index, fields, scan_rows)
 
+#' Return Arrow IPC format from a CRAM file.
+read_cram_impl <- function(path, reference, reference_index, region, index, fields, scan_rows) .Call(wrap__read_cram_impl, path, reference, reference_index, region, index, fields, scan_rows)
+
 #' Return Arrow IPC format from a VCF file.
 read_vcf_impl <- function(path, region, index, fields, info_fields, genotype_fields, samples, genotype_by) .Call(wrap__read_vcf_impl, path, region, index, fields, info_fields, genotype_fields, samples, genotype_by)
 

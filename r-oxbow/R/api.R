@@ -22,6 +22,12 @@ read_bam <- function(path, region = NULL, index = NULL, fields = NULL, scan_rows
   read_bam_impl(path, region, index, fields, scan_rows)
 }
 
+#' Return Arrow IPC format from a CRAM file.
+#' @export
+read_cram <- function(path, reference = NULL, reference_index = NULL, region = NULL, index = NULL, fields = NULL, scan_rows = NULL) {
+  read_cram_impl(path, reference, reference_index, region, index, fields, scan_rows)
+}
+
 #' Return Arrow IPC format from a VCF file.
 #' @export
 read_vcf <- function(path, region = NULL, index = NULL, fields = NULL, info_field = NULL, genotype_fields = NULL, genotype_by = "sample") {
