@@ -1,4 +1,4 @@
-use std::io::BufReader;
+use std::io::{BufReader, Seek};
 
 use extendr_api::prelude::*;
 
@@ -6,7 +6,7 @@ use flate2::bufread::MultiGzDecoder;
 use noodles::bgzf::IndexedReader as IndexedBgzfReader;
 use noodles::core::Region;
 
-use oxbow::alignment::{BamScanner, SamScanner};
+use oxbow::alignment::{BamScanner, CramScanner, SamScanner};
 use oxbow::bbi::{BigBedScanner, BigWigScanner};
 use oxbow::bed::BedScanner;
 use oxbow::gxf::{GffScanner, GtfScanner};
@@ -213,6 +213,80 @@ pub fn read_bam_impl(
             .get_mut()
             .seek(std::io::SeekFrom::Start(pos))
             .unwrap();
+        let batches = scanner
+            .scan(fmt_reader, fields, Some(tag_defs), None, None)
+            .unwrap();
+        batches_to_ipc(batches)
+    };
+
+    ipc.unwrap()
+}
+
+/// Return Arrow IPC format from a CRAM file.
+#[extendr]
+pub fn read_cram_impl(
+    path: &str,
+    reference: Option<String>,
+    reference_index: Option<String>,
+    region: Option<String>,
+    index: Option<String>,
+    fields: Option<Vec<String>>,
+    scan_rows: Option<usize>,
+) -> Vec<u8> {
+    let scan_rows = Some(scan_rows.unwrap_or(1024));
+    let reader = std::fs::File::open(path)
+        .map(|f| BufReader::with_capacity(BUFFER_SIZE_BYTES, f))
+        .unwrap();
+
+    // Build FASTA repository
+    let repo = match reference {
+        Some(ref_path) => {
+            let fai_path = reference_index.unwrap_or(format!("{}.fai", ref_path));
+            let fai =
+                noodles::fasta::fai::read(fai_path).expect("Could not read FASTA index file.");
+            let fa_reader = std::fs::File::open(ref_path)
+                .map(|f| BufReader::with_capacity(BUFFER_SIZE_BYTES, f))
+                .unwrap();
+            let fa_indexed_reader = noodles::fasta::io::IndexedReader::new(fa_reader, fai);
+            use noodles::fasta::repository::adapters::IndexedReader as FastaIndexedReaderAdapter;
+            let adapter = FastaIndexedReaderAdapter::new(fa_indexed_reader);
+            noodles::fasta::Repository::new(adapter)
+        }
+        None => noodles::fasta::Repository::default(),
+    };
+
+    let ipc = if let Some(region) = region {
+        let index_path = index.unwrap_or(format!("{}.crai", path));
+        let index = noodles::cram::crai::read(index_path).expect("Could not read CRAI index file.");
+        let region = region.parse::<Region>().unwrap();
+        let mut fmt_reader = noodles::cram::io::reader::Builder::default()
+            .set_reference_sequence_repository(repo.clone())
+            .build_from_reader(reader);
+        let header = fmt_reader.read_header().unwrap();
+        let scanner = CramScanner::new(header);
+        let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
+        let batches = scanner
+            .scan_query(
+                fmt_reader,
+                repo,
+                region,
+                index,
+                fields,
+                Some(tag_defs),
+                None,
+                None,
+            )
+            .unwrap();
+        batches_to_ipc(batches)
+    } else {
+        let mut fmt_reader = noodles::cram::io::reader::Builder::default()
+            .set_reference_sequence_repository(repo.clone())
+            .build_from_reader(reader);
+        let header = fmt_reader.read_header().unwrap();
+        let scanner = CramScanner::new(header);
+        let pos = fmt_reader.position().unwrap();
+        let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
+        fmt_reader.seek(std::io::SeekFrom::Start(pos)).unwrap();
         let batches = scanner
             .scan(fmt_reader, fields, Some(tag_defs), None, None)
             .unwrap();
@@ -637,6 +711,7 @@ extendr_module! {
     fn read_fastq_impl;
     fn read_sam_impl;
     fn read_bam_impl;
+    fn read_cram_impl;
     fn read_vcf_impl;
     fn read_bcf_impl;
     fn read_gtf_impl;
