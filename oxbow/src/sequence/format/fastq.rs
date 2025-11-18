@@ -34,7 +34,7 @@ impl Default for Scanner {
 }
 
 impl Scanner {
-    // Creates a FASTQ scanner.
+    /// Creates a FASTQ scanner.
     pub fn new() -> Self {
         Self {}
     }

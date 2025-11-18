@@ -36,7 +36,7 @@ impl Default for Scanner {
 }
 
 impl Scanner {
-    // Creates a FASTA scanner.
+    /// Creates a FASTA scanner.
     pub fn new() -> Self {
         Self {}
     }

@@ -8,7 +8,7 @@ use arrow::record_batch::RecordBatchReader;
 use crate::alignment::model::BatchBuilder;
 use crate::alignment::model::Push as _;
 
-/// A record batch iterator yielding SAM or BAM records from a readable stream.
+/// An iterator yielding alignment record batches from a readable stream.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,

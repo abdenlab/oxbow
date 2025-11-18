@@ -123,7 +123,7 @@ impl Scanner {
         Ok(tag_scanner.collect())
     }
 
-    /// Returns an iterator over record batches.
+    /// Returns an iterator yielding record batches.
     ///
     /// The scan will begin at the current position of the reader and will
     /// move the cursor to the end of the last record scanned.
@@ -141,7 +141,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator over batches of records satisfying a genomic range query.
+    /// Returns an iterator yielding record batches satisfying a genomic range query.
     ///
     /// This operation requires a CRAI Index and the FASTA reference repository must be
     /// provided separately from the CRAM reader.

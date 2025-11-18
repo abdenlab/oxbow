@@ -12,7 +12,7 @@ use crate::bed::model::BatchBuilder;
 use crate::bed::model::Push as _;
 use crate::util::query::BgzfChunkReader;
 
-/// A record batch iterator yielding BED records that intersect a genomic range.
+/// An iterator yielding BED record batches that intersect a genomic range.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,

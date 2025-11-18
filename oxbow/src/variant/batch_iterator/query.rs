@@ -10,7 +10,7 @@ use crate::util::query::BgzfChunkReader;
 use crate::variant::model::BatchBuilder;
 use crate::variant::model::Push as _;
 
-/// An iterator over records of an indexed file that intersects a given region.
+/// An iterator yielding variant call record batches that intersect a genomic range.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,

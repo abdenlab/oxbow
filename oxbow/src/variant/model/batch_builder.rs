@@ -40,6 +40,7 @@ pub struct BatchBuilder {
 }
 
 impl BatchBuilder {
+    /// Creates a new `BatchBuilder` for VCF/BCF records.
     pub fn new(
         header: noodles::vcf::Header,
         field_names: Option<Vec<String>>,
@@ -596,7 +597,7 @@ mod tests {
         let contig = Map::<Contig>::new();
         let info = Map::<Info>::from("DP");
         let format = Map::<Format>::from("GT");
-        
+
         Header::builder()
             .add_contig("sq0", contig.clone())
             .add_info("DP", info)

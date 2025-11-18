@@ -146,7 +146,7 @@ pub trait Push<T> {
     fn push(&mut self, record: T) -> io::Result<()>;
 }
 
-/// Appends a BED record to the batch.
+/// Append a BED record to the batch.
 impl Push<&noodles::bed::Record<3>> for BatchBuilder {
     fn push(&mut self, record: &noodles::bed::Record<3>) -> io::Result<()> {
         // standard fields

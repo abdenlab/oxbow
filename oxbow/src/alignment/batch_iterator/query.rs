@@ -10,7 +10,7 @@ use crate::alignment::model::BatchBuilder;
 use crate::alignment::model::Push as _;
 use crate::util::query::BgzfChunkReader;
 
-/// A record batch iterator yielding SAM or BAM records that intersect a genomic range.
+/// An iterator yielding alignment record batches that intersect a genomic range.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,

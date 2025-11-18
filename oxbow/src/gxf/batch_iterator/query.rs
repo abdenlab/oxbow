@@ -12,7 +12,7 @@ use crate::gxf::model::BatchBuilder;
 use crate::gxf::model::Push as _;
 use crate::util::query::BgzfChunkReader;
 
-/// An iterator over records of an indexed file that intersects a given region.
+/// An iterator yielding GXF record batches that intersect a genomic range.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,

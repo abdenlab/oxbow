@@ -8,7 +8,7 @@ use arrow::record_batch::RecordBatchReader;
 use crate::gxf::model::BatchBuilder;
 use crate::gxf::model::Push as _;
 
-/// An iterator over all records a GTF/GFF file starting at the current position.
+/// An iterator yielding GXF record batches from a readable stream.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,

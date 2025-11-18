@@ -146,7 +146,7 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for BatchBuilder {
                             }
                             // attribute could not be parsed
                             Err(_) => {
-                                eprintln!("Error parsing tag: {:?}", def.name);
+                                eprintln!("Error parsing attribute: {:?}", def.name);
                                 builder.append_null();
                             }
                         }

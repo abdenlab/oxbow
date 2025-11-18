@@ -8,7 +8,7 @@ use arrow::record_batch::RecordBatchReader;
 use crate::bed::model::BatchBuilder;
 use crate::bed::model::Push as _;
 
-/// A record batch iterator yielding BED records from a readable stream.
+/// An iterator yielding BED record batches from a readable stream.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,

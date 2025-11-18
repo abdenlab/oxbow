@@ -8,7 +8,7 @@ use arrow::record_batch::RecordBatchReader;
 use crate::variant::model::BatchBuilder;
 use crate::variant::model::Push;
 
-/// An iterator over all records a variant file starting at the current position.
+/// An iterator yielding variant call record batches from a readable stream.
 pub struct BatchIterator<R> {
     reader: R,
     builder: BatchBuilder,

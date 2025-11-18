@@ -173,7 +173,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator yielding batches of records corresponding to unaligned reads.
+    /// Returns an iterator yielding record batches of unaligned reads.
     ///
     /// This operation requires a BGZF source and an Index.
     ///

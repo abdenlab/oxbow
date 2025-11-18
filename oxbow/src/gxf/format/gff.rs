@@ -116,7 +116,7 @@ impl Scanner {
         Ok(attr_scanner.collect())
     }
 
-    /// Returns an iterator over record batches.
+    /// Returns an iterator yielding record batches.
     ///
     /// The scan will begin at the current position of the reader and will
     /// move the cursor to the end of the last record scanned.
@@ -134,7 +134,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator over record batches satisfying a genomic range query.
+    /// Returns an iterator yielding record batches satisfying a genomic range query.
     ///
     /// This operation requires a BGZF source and an Index.
     ///
