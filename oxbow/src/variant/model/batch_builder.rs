@@ -596,14 +596,14 @@ mod tests {
         let contig = Map::<Contig>::new();
         let info = Map::<Info>::from("DP");
         let format = Map::<Format>::from("GT");
-        let header = Header::builder()
+        
+        Header::builder()
             .add_contig("sq0", contig.clone())
             .add_info("DP", info)
             .add_format("GT", format)
             .add_sample_name("sample1")
             .add_sample_name("sample2")
-            .build();
-        header
+            .build()
     }
 
     fn create_test_vcfrecord(header: &Header) -> VcfRecord {

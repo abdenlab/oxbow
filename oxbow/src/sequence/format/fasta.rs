@@ -156,7 +156,7 @@ mod tests {
         ]);
 
         let scanner = Scanner::new();
-        let regions = vec!["seq1:1-4", "seq2:1-4", "seq3:1-4"];
+        let regions = ["seq1:1-4", "seq2:1-4", "seq3:1-4"];
         let regions: Vec<Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
         let mut batch_iter = scanner
             .scan_query(fmt_reader, regions, index, None, Some(2))
