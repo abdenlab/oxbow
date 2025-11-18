@@ -18,7 +18,7 @@ use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
 ///
 /// Parameters
 /// ----------
-/// src : PyObject
+/// src : str or file-like
 ///    The path to the VCF file or a file-like object.
 /// compressed : bool, optional [default: False]
 ///    Whether the source is BGZF-compressed.
@@ -58,7 +58,7 @@ impl PyVcfScanner {
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
-    /// Return the names of the references sequences.
+    /// Return the names of the reference sequences.
     fn chrom_names(&self) -> Vec<String> {
         self.scanner.chrom_names()
     }
@@ -381,6 +381,9 @@ impl PyVcfScanner {
     ///     the genotype fields.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     intersecting the query range are scanned.
     ///
     /// Returns
     /// -------
@@ -574,7 +577,7 @@ impl PyBcfScanner {
         self.scanner.genotype_field_defs()
     }
 
-    /// Return the definitions of the FORMAT fields.
+    /// Return the names of the FORMAT fields.
     fn genotype_field_names(&self) -> Vec<String> {
         self.scanner.genotype_field_names()
     }
@@ -867,6 +870,9 @@ impl PyBcfScanner {
     ///     the genotype fields.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     intersecting the query range are scanned.
     ///
     /// Returns
     /// -------

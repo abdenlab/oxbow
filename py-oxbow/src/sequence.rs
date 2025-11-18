@@ -341,8 +341,6 @@ impl PyFastaScanner {
     ///     A GZI index file to use if the source is BGZF-encoded.
     /// fields : list[str], optional
     ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     ///

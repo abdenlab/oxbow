@@ -784,6 +784,9 @@ impl PyBamScanner {
     ///     Definitions of tag fields to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     intersecting the query range are scanned.
     ///
     /// Returns
     /// -------
@@ -950,7 +953,7 @@ impl PyBamScanner {
 ///
 /// Parameters
 /// ----------
-/// obj : str or file-like
+/// src : str or file-like
 ///     The path to the CRAM file or a file-like object.
 #[pyclass]
 pub struct PyCramScanner {
@@ -1129,6 +1132,9 @@ impl PyCramScanner {
     ///     Definitions of tag fields to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     intersecting the query range are scanned.
     ///
     /// Returns
     /// -------

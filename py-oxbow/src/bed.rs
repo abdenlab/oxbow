@@ -18,7 +18,7 @@ use oxbow::util::index::IndexType;
 ///
 /// Parameters
 /// ----------
-/// stc : str or file-like
+/// src : str or file-like
 ///     The path to the BED file or a file-like object.
 /// bed_schema : str
 ///     The BED schema specifier, e.g., "bed6+3".
@@ -36,7 +36,7 @@ use oxbow::util::index::IndexType;
 /// - ``bed{n}+``: `n` standard fields followed by an undefined number of custom fields.
 ///
 /// While the 12 standard fields have defined types, custom fields are
-/// intepreted as text. ``bed{n}+`` custom fields are collapsed into a single
+/// interpreted as text. ``bed{n}+`` custom fields are collapsed into a single
 /// field named `rest`.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBedScanner {
@@ -94,8 +94,6 @@ impl PyBedScanner {
     /// ----------
     /// fields : list[str], optional
     ///    Names of the BED fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///    Definitions of tag fields to project.
     ///
     /// Returns
     /// -------
@@ -256,6 +254,9 @@ impl PyBedScanner {
     ///     Names of the BED fields to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     intersecting the query range are scanned.
     ///
     /// Returns
     /// -------
@@ -353,7 +354,7 @@ impl PyBedScanner {
 /// - ``bed{n}+``: `n` standard fields followed by an undefined number of custom fields.
 ///
 /// While the 12 standard fields have defined types, custom fields are
-/// intepreted as text. ``bed{n}+`` custom fields are collapsed into a single
+/// interpreted as text. ``bed{n}+`` custom fields are collapsed into a single
 /// field named `rest`.
 #[pyfunction]
 #[pyo3(signature = (src, bed_schema, region=None, index=None, fields=None, compressed=false))]

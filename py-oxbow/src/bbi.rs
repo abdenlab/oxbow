@@ -27,7 +27,7 @@ pub enum PyBBIFileType {
 ///
 /// Parameters
 /// ----------
-/// obj : str or file-like
+/// src : str or file-like
 ///     The path to the BigWig file or a file-like object.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigWigScanner {
@@ -166,6 +166,9 @@ impl PyBigWigScanner {
     ///     Names of the fixed fields to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     intersecting the query range are scanned.
     ///
     /// Returns
     /// -------
@@ -386,6 +389,9 @@ impl PyBigBedScanner {
     ///     Names of the fixed fields to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     intersecting the query range are scanned.
     ///
     /// Returns
     /// -------
@@ -589,6 +595,9 @@ impl PyBBIZoomScanner {
     ///     Names of the fixed fields to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     intersecting the query range are scanned.
     ///
     /// Returns
     /// -------

@@ -20,7 +20,7 @@ use oxbow::util::index::IndexType;
 ///
 /// Parameters
 /// ----------
-/// obj : str or file-like
+/// src : str or file-like
 ///     The path to the GTF file or a file-like object.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed. If None, it is assumed to be
@@ -124,7 +124,7 @@ impl PyGtfScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PySchema
+    /// arro3 Schema (pycapsule)
     #[pyo3(signature = (fields=None, attribute_defs=None))]
     fn schema(
         &self,
@@ -151,9 +151,9 @@ impl PyGtfScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
-    #[pyo3(signature = (fields=None, attribute_defs=None,batch_size=1024, limit=None))]
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
+    #[pyo3(signature = (fields=None, attribute_defs=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
         fields: Option<Vec<String>>,
@@ -317,11 +317,14 @@ impl PyGtfScanner {
     ///    Definitions of attribute fields to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     intersecting the query range are scanned.
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (region, index=None, fields=None, attribute_defs=None, batch_size=1024, limit=None))]
     #[allow(clippy::too_many_arguments)]
     fn scan_query(
@@ -424,8 +427,8 @@ impl PyGtfScanner {
 ///
 /// Parameters
 /// ----------
-/// obj : str or file-like
-///     The path to the GTF file or a file-like object.
+/// src : str or file-like
+///     The path to the GFF file or a file-like object.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed. If None, it is assumed to be
 ///     uncompressed.
@@ -523,7 +526,7 @@ impl PyGffScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PySchema
+    /// arro3 Schema (pycapsule)
     #[pyo3(signature = (fields=None, attribute_defs=None))]
     fn schema(
         &self,
@@ -550,8 +553,8 @@ impl PyGffScanner {
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (fields=None, attribute_defs=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
@@ -716,11 +719,14 @@ impl PyGffScanner {
     ///    Definitions of attribute fields to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
+    /// limit : int, optional
+    ///     The maximum number of records to scan. If None, all records
+    ///     intersecting the query range are scanned.
     ///
     /// Returns
     /// -------
-    /// pyo3_arrow.PyRecordBatchReader
-    ///     A PyCapsule stream iterator for the record batches.
+    /// arro3 RecordBatchReader (pycapsule)
+    ///     An iterator yielding Arrow record batches.
     #[pyo3(signature = (region, index=None, fields=None, attribute_defs=None, batch_size=1024, limit=None))]
     #[allow(clippy::too_many_arguments)]
     fn scan_query(
@@ -827,7 +833,7 @@ impl PyGffScanner {
 ///     The path to the source file or a file-like object.
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
-/// tag_defs : list[tuple[str, str]], optional
+/// attr_defs : list[tuple[str, str]], optional
 ///    Definitions of attribute fields to project.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed.
