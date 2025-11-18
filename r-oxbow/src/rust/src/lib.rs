@@ -129,7 +129,9 @@ pub fn read_sam_impl(
         let mut fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
         let header = fmt_reader.read_header().unwrap();
         let scanner = SamScanner::new(header);
+        let pos = fmt_reader.get_mut().virtual_position();
         let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
+        fmt_reader.get_mut().seek(pos).unwrap();
         let batches = scanner
             .scan(fmt_reader, fields, Some(tag_defs), None, None)
             .unwrap();
@@ -138,7 +140,12 @@ pub fn read_sam_impl(
         let mut fmt_reader = noodles::sam::io::Reader::new(reader);
         let header = fmt_reader.read_header().unwrap();
         let scanner = SamScanner::new(header);
+        let pos = fmt_reader.get_mut().stream_position().unwrap();
         let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
+        fmt_reader
+            .get_mut()
+            .seek(std::io::SeekFrom::Start(pos))
+            .unwrap();
         let batches = scanner
             .scan(fmt_reader, fields, Some(tag_defs), None, None)
             .unwrap();
@@ -189,7 +196,9 @@ pub fn read_bam_impl(
         let mut fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
         let header = fmt_reader.read_header().unwrap();
         let scanner = BamScanner::new(header);
+        let pos = fmt_reader.get_mut().virtual_position();
         let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
+        fmt_reader.get_mut().seek(pos).unwrap();
         let batches = scanner
             .scan(fmt_reader, fields, Some(tag_defs), None, None)
             .unwrap();
@@ -198,7 +207,12 @@ pub fn read_bam_impl(
         let mut fmt_reader = noodles::bam::io::Reader::from(reader);
         let header = fmt_reader.read_header().unwrap();
         let scanner = BamScanner::new(header);
+        let pos = fmt_reader.get_mut().stream_position().unwrap();
         let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
+        fmt_reader
+            .get_mut()
+            .seek(std::io::SeekFrom::Start(pos))
+            .unwrap();
         let batches = scanner
             .scan(fmt_reader, fields, Some(tag_defs), None, None)
             .unwrap();
@@ -419,7 +433,9 @@ pub fn read_gtf_impl(
         let bgzf_reader = noodles::bgzf::Reader::new(reader);
         let mut fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
         let scanner = GtfScanner::new(None);
+        let pos = fmt_reader.get_mut().virtual_position();
         let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
+        fmt_reader.get_mut().seek(pos).unwrap();
         let batches = scanner
             .scan(fmt_reader, fields, Some(attr_defs), None, None)
             .unwrap();
@@ -427,7 +443,12 @@ pub fn read_gtf_impl(
     } else {
         let mut fmt_reader = noodles::gtf::io::Reader::new(reader);
         let scanner = GtfScanner::new(None);
+        let pos = fmt_reader.get_mut().stream_position().unwrap();
         let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
+        fmt_reader
+            .get_mut()
+            .seek(std::io::SeekFrom::Start(pos))
+            .unwrap();
         let batches = scanner
             .scan(fmt_reader, fields, Some(attr_defs), None, None)
             .unwrap();
@@ -476,7 +497,9 @@ pub fn read_gff_impl(
         let bgzf_reader = noodles::bgzf::Reader::new(reader);
         let mut fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
         let scanner = GffScanner::new(None);
+        let pos = fmt_reader.get_mut().virtual_position();
         let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
+        fmt_reader.get_mut().seek(pos).unwrap();
         let batches = scanner
             .scan(fmt_reader, fields, Some(attr_defs), None, None)
             .unwrap();
@@ -484,7 +507,12 @@ pub fn read_gff_impl(
     } else {
         let mut fmt_reader = noodles::gff::io::Reader::new(reader);
         let scanner = GffScanner::new(None);
+        let pos = fmt_reader.get_mut().stream_position().unwrap();
         let attr_defs = scanner.attribute_defs(&mut fmt_reader, scan_rows).unwrap();
+        fmt_reader
+            .get_mut()
+            .seek(std::io::SeekFrom::Start(pos))
+            .unwrap();
         let batches = scanner
             .scan(fmt_reader, fields, Some(attr_defs), None, None)
             .unwrap();
