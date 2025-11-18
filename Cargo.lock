@@ -1713,7 +1713,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "oxbow"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "arrow",
  "bigtools",
@@ -1825,7 +1825,7 @@ dependencies = [
 
 [[package]]
 name = "py-oxbow"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "bigtools",
  "flate2",
@@ -1936,7 +1936,7 @@ checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
 
 [[package]]
 name = "r-oxbow"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bigtools",
  "extendr-api",
