@@ -89,10 +89,10 @@ where
 ///
 /// ```ignore
 /// let reader = scanner.scan(file, None, None, None, None)?;
-/// let safe_reader = unwind_safe(reader);
+/// let safe_reader = err_on_unwind(reader);
 /// let py_reader = PyRecordBatchReader::new(safe_reader);
 /// ```
-pub(crate) fn unwind_safe<R>(reader: R) -> Box<UnwindCatchingRecordBatchReader<R>>
+pub(crate) fn err_on_unwind<R>(reader: R) -> Box<UnwindCatchingRecordBatchReader<R>>
 where
     R: RecordBatchReader,
 {
@@ -173,10 +173,10 @@ mod tests {
     }
 
     #[test]
-    fn test_unwind_safe_normal_reader() {
+    fn test_err_on_unwind_normal_reader() {
         // Test that a normal reader works through the wrapper
         let reader = MockReader::new(3);
-        let mut safe_reader = unwind_safe(reader);
+        let mut safe_reader = err_on_unwind(reader);
 
         // Should be able to read all 3 batches
         assert!(safe_reader.next().is_some());
@@ -186,10 +186,10 @@ mod tests {
     }
 
     #[test]
-    fn test_unwind_safe_catches_panic() {
+    fn test_err_on_unwind_catches_panic() {
         // Test that a panicking reader has its panic caught and converted to an error
         let reader = PanickingReader::new("test panic message".to_string());
-        let mut safe_reader = unwind_safe(reader);
+        let mut safe_reader = err_on_unwind(reader);
 
         // The first call should return Some(Err(...)) instead of panicking
         let result = safe_reader.next();

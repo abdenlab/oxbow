@@ -9,7 +9,7 @@ use pyo3_arrow::PySchema;
 
 use noodles::core::Region;
 
-use crate::error::unwind_safe;
+use crate::error::err_on_unwind;
 use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
 use oxbow::bed::{BedScanner, BedSchema};
 use oxbow::util::batches_to_ipc;
@@ -134,7 +134,7 @@ impl PyBedScanner {
             .scanner
             .scan(fmt_reader, fields, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+        Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
     /// Scan batches of records from specified byte ranges in the file.
@@ -171,7 +171,7 @@ impl PyBedScanner {
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, fields, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+        Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
     /// Scan batches of records from virtual position ranges in a BGZF file.
@@ -219,7 +219,7 @@ impl PyBedScanner {
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, fields, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+                Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
@@ -227,7 +227,7 @@ impl PyBedScanner {
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, fields, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+                Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
                 "Scanning virtual position ranges is only supported for bgzf-compressed sources.",
@@ -283,14 +283,14 @@ impl PyBedScanner {
                             .scanner
                             .scan_query(fmt_reader, region, index, fields, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, fields, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -304,14 +304,14 @@ impl PyBedScanner {
                             .scanner
                             .scan_query(fmt_reader, region, index, fields, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, fields, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)

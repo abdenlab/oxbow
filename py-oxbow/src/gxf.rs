@@ -11,7 +11,7 @@ use pyo3_arrow::PySchema;
 
 use noodles::core::Region;
 
-use crate::error::unwind_safe;
+use crate::error::err_on_unwind;
 use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
 use oxbow::gxf::{GffScanner, GtfScanner};
 use oxbow::util::batches_to_ipc;
@@ -168,7 +168,7 @@ impl PyGtfScanner {
             .scanner
             .scan(fmt_reader, fields, attribute_defs, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+        Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
     /// Scan batches of records from specified byte ranges in the file.
@@ -215,7 +215,7 @@ impl PyGtfScanner {
                 limit,
             )
             .map_err(PyErr::new::<PyValueError, _>)?;
-        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+        Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
     /// Scan batches of records from virtual position ranges in a BGZF file.
@@ -273,7 +273,7 @@ impl PyGtfScanner {
                         limit,
                     )
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+                Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
@@ -288,7 +288,7 @@ impl PyGtfScanner {
                         limit,
                     )
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+                Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
                 "Scanning virtual position ranges is only supported for bgzf-compressed sources.",
@@ -356,7 +356,7 @@ impl PyGtfScanner {
                                 limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
@@ -371,7 +371,7 @@ impl PyGtfScanner {
                                 limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -393,7 +393,7 @@ impl PyGtfScanner {
                                 limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
@@ -408,7 +408,7 @@ impl PyGtfScanner {
                                 limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -566,7 +566,7 @@ impl PyGffScanner {
             .scanner
             .scan(fmt_reader, fields, attribute_defs, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+        Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
     /// Scan batches of records from specified byte ranges in the file.
@@ -613,7 +613,7 @@ impl PyGffScanner {
                 limit,
             )
             .map_err(PyErr::new::<PyValueError, _>)?;
-        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+        Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
     /// Scan batches of records from virtual position ranges in a BGZF file.
@@ -671,7 +671,7 @@ impl PyGffScanner {
                         limit,
                     )
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+                Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
@@ -686,7 +686,7 @@ impl PyGffScanner {
                         limit,
                     )
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
+                Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
                 "Scanning virtual position ranges is only supported for bgzf-compressed sources.",
@@ -754,7 +754,7 @@ impl PyGffScanner {
                                 limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
@@ -769,7 +769,7 @@ impl PyGffScanner {
                                 limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -791,7 +791,7 @@ impl PyGffScanner {
                                 limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
@@ -806,7 +806,7 @@ impl PyGffScanner {
                                 limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(unwind_safe(batch_reader))
+                        PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
