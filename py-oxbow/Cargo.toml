@@ -12,6 +12,7 @@ doc = false
 
 [dependencies]
 oxbow = { workspace = true }
+arrow = { workspace = true }
 bigtools = { workspace = true }
 flate2 = { workspace = true }
 noodles = { workspace = true }

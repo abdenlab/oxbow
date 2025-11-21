@@ -12,8 +12,8 @@ use noodles::bgzf::gzi::Reader as GziReader;
 use noodles::bgzf::IndexedReader as IndexedBgzfReader;
 use noodles::core::Region;
 
-use crate::util::PyVirtualPosition;
-use crate::util::{pyobject_to_bufreader, resolve_faidx, Reader};
+use crate::error::err_on_unwind;
+use crate::util::{pyobject_to_bufreader, resolve_faidx, PyVirtualPosition, Reader};
 use oxbow::sequence::{FastaScanner, FastqScanner};
 use oxbow::util::batches_to_ipc;
 
@@ -112,14 +112,14 @@ impl PyFastqScanner {
                 .scanner
                 .scan(fmt_reader, fields, batch_size, limit)
                 .map_err(PyErr::new::<PyValueError, _>)?;
-            Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
+            Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         } else {
             let fmt_reader = noodles::fastq::io::Reader::new(reader);
             let batch_reader = self
                 .scanner
                 .scan(fmt_reader, fields, batch_size, limit)
                 .map_err(PyErr::new::<PyValueError, _>)?;
-            Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
+            Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         }
     }
 
@@ -157,8 +157,7 @@ impl PyFastqScanner {
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, fields, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-        Ok(py_batch_reader)
+        Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
     /// Scan batches of records from virtual position ranges in a BGZF file.
@@ -211,8 +210,7 @@ impl PyFastqScanner {
             .scanner
             .scan_virtual_ranges(fmt_reader, vpos_ranges, fields, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-        Ok(py_batch_reader)
+        Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 }
 
@@ -314,14 +312,14 @@ impl PyFastaScanner {
                 .scanner
                 .scan(fmt_reader, fields, batch_size, limit)
                 .map_err(PyErr::new::<PyValueError, _>)?;
-            Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
+            Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         } else {
             let fmt_reader = noodles::fasta::io::Reader::new(reader);
             let batch_reader = self
                 .scanner
                 .scan(fmt_reader, fields, batch_size, limit)
                 .map_err(PyErr::new::<PyValueError, _>)?;
-            Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
+            Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         }
     }
 
@@ -395,14 +393,14 @@ impl PyFastaScanner {
                 .scanner
                 .scan_query(fmt_reader, regions, index, fields, batch_size)
                 .map_err(PyErr::new::<PyValueError, _>)?;
-            Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
+            Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         } else {
             let fmt_reader = noodles::fasta::io::Reader::new(reader);
             let batch_reader = self
                 .scanner
                 .scan_query(fmt_reader, regions, index, fields, batch_size)
                 .map_err(PyErr::new::<PyValueError, _>)?;
-            Ok(PyRecordBatchReader::new(Box::new(batch_reader)))
+            Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         }
     }
 }

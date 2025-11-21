@@ -6,6 +6,7 @@ mod util;
 mod alignment;
 mod bbi;
 mod bed;
+mod error;
 mod gxf;
 mod sequence;
 mod variant;
