@@ -11,6 +11,7 @@ use pyo3_arrow::PySchema;
 use bigtools::bed::autosql::parse::parse_autosql;
 use noodles::core::Region;
 
+use crate::error::unwind_safe;
 use crate::util::{pyobject_to_bufreader, Reader};
 use oxbow::bbi::model::base::field::FieldDef;
 use oxbow::bbi::{BBIReader, BBIZoomScanner, BedSchema, BigBedScanner, BigWigScanner};
@@ -152,8 +153,7 @@ impl PyBigWigScanner {
             .scanner
             .scan(fmt_reader, fields, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-        Ok(py_batch_reader)
+        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
     }
 
     /// Scan batches of records from a genomic range query.
@@ -193,8 +193,7 @@ impl PyBigWigScanner {
             .scanner
             .scan_query(fmt_reader, region, fields, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-        Ok(py_batch_reader)
+        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
     }
 }
 
@@ -375,8 +374,7 @@ impl PyBigBedScanner {
             .scanner
             .scan(fmt_reader, fields, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-        Ok(py_batch_reader)
+        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
     }
 
     /// Scan batches of records from a genomic range query.
@@ -416,8 +414,7 @@ impl PyBigBedScanner {
             .scanner
             .scan_query(fmt_reader, region, fields, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-        Ok(py_batch_reader)
+        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
     }
 }
 
@@ -569,8 +566,7 @@ impl PyBBIZoomScanner {
                     .scanner
                     .scan(reader, fields, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                let py_batch_reader = PyRecordBatchReader::new(batch_reader);
-                Ok(py_batch_reader)
+                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
             }
             PyBBIFileType::BigWig => {
                 let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
@@ -579,8 +575,7 @@ impl PyBBIZoomScanner {
                     .scanner
                     .scan(reader, fields, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                Ok(py_batch_reader)
+                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
             }
         }
     }
@@ -625,8 +620,7 @@ impl PyBBIZoomScanner {
                     .scanner
                     .scan_query(reader, region, fields, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                Ok(py_batch_reader)
+                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
             }
             PyBBIFileType::BigWig => {
                 let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
@@ -635,8 +629,7 @@ impl PyBBIZoomScanner {
                     .scanner
                     .scan_query(reader, region, fields, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                Ok(py_batch_reader)
+                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
             }
         }
     }

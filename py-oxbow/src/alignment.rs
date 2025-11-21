@@ -11,6 +11,7 @@ use pyo3_arrow::PySchema;
 use noodles::bgzf::io::Seek as _;
 use noodles::core::Region;
 
+use crate::error::unwind_safe;
 use crate::util::{
     pyobject_to_bufreader, resolve_cram_index, resolve_fasta_repository, resolve_index,
     PyVirtualPosition, Reader,
@@ -176,8 +177,7 @@ impl PySamScanner {
             .scanner
             .scan(fmt_reader, fields, tag_defs, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-        Ok(py_batch_reader)
+        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
     }
 
     /// Scan batches of records from specified byte ranges in the file.
@@ -217,8 +217,7 @@ impl PySamScanner {
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, fields, tag_defs, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-        Ok(py_batch_reader)
+        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
     }
 
     /// Scan batches of records from virtual position ranges in a BGZF file.
@@ -276,8 +275,7 @@ impl PySamScanner {
                         limit,
                     )
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                Ok(py_batch_reader)
+                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
@@ -292,8 +290,7 @@ impl PySamScanner {
                         limit,
                     )
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                Ok(py_batch_reader)
+                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
                 "Scanning virtual position ranges is only supported for bgzf-compressed sources.",
@@ -355,7 +352,7 @@ impl PySamScanner {
                                 fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
@@ -364,7 +361,7 @@ impl PySamScanner {
                                 fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -380,7 +377,7 @@ impl PySamScanner {
                                 fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
@@ -389,7 +386,7 @@ impl PySamScanner {
                                 fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -444,14 +441,14 @@ impl PySamScanner {
                             .scanner
                             .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -465,14 +462,14 @@ impl PySamScanner {
                             .scanner
                             .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -641,8 +638,7 @@ impl PyBamScanner {
             .scanner
             .scan(fmt_reader, fields, tag_defs, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-        Ok(py_batch_reader)
+        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
     }
 
     /// Scan batches of records from specified byte ranges in the file.
@@ -682,8 +678,7 @@ impl PyBamScanner {
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, fields, tag_defs, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
-        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-        Ok(py_batch_reader)
+        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
     }
 
     /// Scan batches of records from virtual position ranges in a BGZF file.
@@ -741,8 +736,7 @@ impl PyBamScanner {
                         limit,
                     )
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                Ok(py_batch_reader)
+                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
@@ -757,8 +751,7 @@ impl PyBamScanner {
                         limit,
                     )
                     .map_err(PyErr::new::<PyValueError, _>)?;
-                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                Ok(py_batch_reader)
+                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
                 "Scanning virtual position ranges is only supported for bgzf-compressed sources.",
@@ -820,7 +813,7 @@ impl PyBamScanner {
                                 fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
@@ -829,7 +822,7 @@ impl PyBamScanner {
                                 fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -845,7 +838,7 @@ impl PyBamScanner {
                                 fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
@@ -854,7 +847,7 @@ impl PyBamScanner {
                                 fmt_reader, region, index, fields, tag_defs, batch_size, limit,
                             )
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -909,14 +902,14 @@ impl PyBamScanner {
                             .scanner
                             .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -930,14 +923,14 @@ impl PyBamScanner {
                             .scanner
                             .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
-                        PyRecordBatchReader::new(Box::new(batch_reader))
+                        PyRecordBatchReader::new(unwind_safe(batch_reader))
                     }
                 };
                 Ok(py_batch_reader)
@@ -1104,8 +1097,7 @@ impl PyCramScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, fields, tag_defs, batch_size, limit)?;
-        let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-        Ok(py_batch_reader)
+        Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
     }
 
     /// Scan batches of records from a genomic range.
@@ -1166,16 +1158,14 @@ impl PyCramScanner {
                 let batch_reader = self.scanner.scan_query(
                     fmt_reader, repo, region, index, fields, tag_defs, batch_size, limit,
                 )?;
-                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                Ok(py_batch_reader)
+                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
             }
             Reader::PyFileLike(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
                 let batch_reader = self.scanner.scan_query(
                     fmt_reader, repo, region, index, fields, tag_defs, batch_size, limit,
                 )?;
-                let py_batch_reader = PyRecordBatchReader::new(Box::new(batch_reader));
-                Ok(py_batch_reader)
+                Ok(PyRecordBatchReader::new(unwind_safe(batch_reader)))
             }
             _ => {
                 unreachable!()
