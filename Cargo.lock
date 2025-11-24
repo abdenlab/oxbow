@@ -1827,6 +1827,7 @@ dependencies = [
 name = "py-oxbow"
 version = "0.5.0"
 dependencies = [
+ "arrow",
  "bigtools",
  "flate2",
  "noodles",
