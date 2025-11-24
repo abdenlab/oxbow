@@ -4,11 +4,28 @@ use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatchReader;
 
 /// An Arrow RecordBatchReader wrapper that converts panics to errors during iteration.
+///
+/// Once a panic is caught, the reader becomes unusable and will return `None` on all
+/// subsequent calls to `next()`, as the inner reader's state may be corrupted.
 pub(crate) struct UnwindCatchingRecordBatchReader<R>
 where
     R: RecordBatchReader,
 {
     inner: R,
+    panicked: bool,
+}
+
+impl<R> UnwindCatchingRecordBatchReader<R>
+where
+    R: RecordBatchReader,
+{
+    /// Creates a new UnwindCatchingRecordBatchReader wrapping the given reader.
+    pub(crate) fn new(inner: R) -> Self {
+        Self {
+            inner,
+            panicked: false,
+        }
+    }
 }
 
 impl<R> RecordBatchReader for UnwindCatchingRecordBatchReader<R>
@@ -27,9 +44,15 @@ where
     type Item = Result<arrow::record_batch::RecordBatch, ArrowError>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        // If we've already caught a panic, the reader is poisoned and unusable
+        if self.panicked {
+            return None;
+        }
+
         match panic::catch_unwind(AssertUnwindSafe(|| self.inner.next())) {
             Ok(opt) => opt,
             Err(payload) => {
+                self.panicked = true;
                 let message = if let Some(s) = payload.downcast_ref::<&str>() {
                     format!("Panic in RecordBatchReader: {}", s)
                 } else if let Some(s) = payload.downcast_ref::<String>() {
@@ -53,29 +76,31 @@ where
 /// # Purpose
 ///
 /// Generally, if Rust is called from foreign code and a panic occurs that unwinds across an FFI
-/// boundary, the process will abort. For our [`RecordBatchReader`] implementations, which return
-/// Arrow record batches via iteration, this is undesirable behavior: for example, a panic during
-/// iteration in a Jupyter environment would kill the Python kernel process. Therefore, we would
-/// like to handle panics gracefully.
+/// boundary, the process it is embedded in will abort. For our [`RecordBatchReader`]
+/// implementations, which return Arrow record batches via iteration, this is undesirable behavior:
+/// for example, a panic during iteration in a Jupyter environment would kill the Python kernel
+/// process. Therefore, we would like to propagate panics in a defined way to the FFI caller.
 ///
 /// We export Oxbow's RecordBatchReaders to Python using the [`pyo3_arrow::PyRecordBatchReader`]
 /// wrapper. If we only cared about the Rust-Python boundary, we wouldn't need to worry because PyO3
-/// already catches panics and converts them into Python
-/// [exceptions](https://pyo3.rs/main/doc/pyo3/panic/struct.panicexception).
+/// already catches panics and converts them into Python exceptions [`pyo3::panic::PanicException`].
 ///
 /// However, [`pyo3_arrow::PyRecordBatchReader`] also implements the
 /// [Arrow C Stream Interface](https://arrow.apache.org/docs/format/CStreamInterface.html), which
 /// provides a "capsule" object that can be consumed by code within other Python extension modules,
 /// such as `pyarrow`, written in other languages (e.g., C/C++). If a panic were to occur while such
 /// code reads record batches through the Arrow C Stream API, it would unwind across a different FFI
-/// boundary, which would again kill the process.
+/// boundary without getting caught, which again would abort the process.
 ///
 /// To prevent this from happening, the returned wrapper uses [`std::panic::catch_unwind`] to
 /// intercept any unwinding panics that occur while reading record batches, converting them into
 /// [`arrow::error::ArrowError`], as required by the [`RecordBatchReader`] trait. A consumer of the
-/// RecordBatchReader through the Arrow C Stream Interface should be able to receive information
+/// RecordBatchReader through the Arrow C Stream Interface will be able to receive information
 /// about the error and handle or propagate it appropriately, while a Python caller using the
-/// exported RecordBatchReader directly would still receive a Python exception, as desired.
+/// exported PyRecordBatchReader directly would still receive a Python exception, as desired;
+/// however, rather than pyo3's `PanicException`, the exception raised would be derived from
+/// `ArrowError`. The iterator is poisoned after a panic so that subsequent calls to `next()` will
+/// return `None`.
 ///
 /// # Arguments
 ///
@@ -96,7 +121,7 @@ pub(crate) fn err_on_unwind<R>(reader: R) -> Box<UnwindCatchingRecordBatchReader
 where
     R: RecordBatchReader,
 {
-    Box::new(UnwindCatchingRecordBatchReader { inner: reader })
+    Box::new(UnwindCatchingRecordBatchReader::new(reader))
 }
 
 #[cfg(test)]
@@ -201,5 +226,22 @@ mod tests {
         // Check that the error message contains our panic message
         let err_msg = err.unwrap_err().to_string();
         assert!(err_msg.contains("test panic message"));
+    }
+
+    #[test]
+    fn test_reader_unusable_after_panic() {
+        // Test that after catching a panic, the reader returns None on subsequent calls
+        let reader = PanickingReader::new("initial panic".to_string());
+        let mut safe_reader = err_on_unwind(reader);
+
+        // First call returns the error
+        let result = safe_reader.next();
+        assert!(result.is_some());
+        assert!(result.unwrap().is_err());
+
+        // All subsequent calls should return None (reader is poisoned)
+        assert!(safe_reader.next().is_none());
+        assert!(safe_reader.next().is_none());
+        assert!(safe_reader.next().is_none());
     }
 }
