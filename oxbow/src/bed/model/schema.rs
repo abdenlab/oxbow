@@ -75,12 +75,16 @@ impl BedSchema {
         self.m
     }
 
-    pub fn field_names(&self) -> Vec<String> {
-        let mut names = DEFAULT_FIELD_NAMES
+    pub fn standard_field_names(&self) -> Vec<String> {
+        DEFAULT_FIELD_NAMES
             .iter()
             .take(self.n)
             .map(|name| name.to_string())
-            .collect::<Vec<String>>();
+            .collect()
+    }
+
+    pub fn custom_field_names(&self) -> Vec<String> {
+        let mut names = Vec::new();
         if let Some(m) = self.m {
             for i in 1..=m {
                 names.push(format!("BED{}+{}", self.n, i));
@@ -88,6 +92,12 @@ impl BedSchema {
         } else {
             names.push("rest".to_string());
         }
+        names
+    }
+
+    pub fn field_names(&self) -> Vec<String> {
+        let mut names = self.standard_field_names();
+        names.extend(self.custom_field_names());
         names
     }
 }
