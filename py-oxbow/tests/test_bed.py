@@ -108,3 +108,48 @@ class TestBedFile:
             regions=regions,
         )
         file.pl()
+
+    def test_projections(self):
+        ds = ox.BedFile(
+            "data/sample.bed", bed_schema="bed4", fields=["name", "end", "start"]
+        )
+        batch = next(ds.batches())
+        assert list(batch.schema.names) == ["name", "end", "start"]
+        with pytest.raises(OSError):
+            next(
+                ox.BedFile(
+                    "data/sample.bed", bed_schema="bed4", fields=["rest"]
+                ).batches()
+            )
+
+        ds = ox.BedFile(
+            "data/sample.bed",
+            bed_schema="bed4+2",
+            fields=["BED4+2", "end", "BED4+1", "start"],
+        )
+        batch = next(ds.batches())
+        # Extended fields get shuffled to the end in the order provided
+        assert list(batch.schema.names) == ["end", "start", "BED4+2", "BED4+1"]
+        with pytest.raises(OSError):
+            next(
+                ox.BedFile(
+                    "data/sample.bed", bed_schema="bed4", fields=["BED4+3"]
+                ).batches()
+            )
+        with pytest.raises(OSError):
+            next(
+                ox.BedFile(
+                    "data/sample.bed", bed_schema="bed4", fields=["rest"]
+                ).batches()
+            )
+
+        ds = ox.BedFile("data/sample.bed", bed_schema="bed4+", fields=["end", "start"])
+        batch = next(ds.batches())
+        assert list(batch.schema.names) == ["end", "start"]
+
+        ds = ox.BedFile(
+            "data/sample.bed", bed_schema="bed4+", fields=["end", "rest", "start"]
+        )
+        batch = next(ds.batches())
+        # Extended fields get shuffled to the end
+        assert list(batch.schema.names) == ["end", "start", "rest"]
