@@ -501,7 +501,15 @@ class TestPyBedScanner:
                     None,
                     ("chrom", "start", "end"),
                 ],
-                bed_schema=["bed3", "bed3+3", "bed3+6", "bed6", "bed9"],
+                bed_schema=[
+                    "bed3",
+                    "bed3+",
+                    "bed3+3",
+                    "bed3+6",
+                    "bed6",
+                    "bed6+",
+                    "bed9",
+                ],
             ),
         ],
     )
@@ -542,6 +550,20 @@ class TestPyBedScanner:
             pickle.dumps(ox.PyBedScanner("data/sample.bed", bed_schema="bed9"))
         )
         assert isinstance(scanner, ox.PyBedScanner)
+
+    def test_project_rest(self):
+        for bed_schema in ["bed6", "bed6+3", "bed9"]:
+            scanner = ox.PyBedScanner("data/sample.bed", bed_schema=bed_schema)
+            schema = scanner.schema()
+            assert "rest" not in [field.name for field in schema]
+
+        scanner = ox.PyBedScanner("data/sample.bed", bed_schema="bed6+")
+        schema = scanner.schema()
+        assert "rest" in [field.name for field in schema]
+
+        reader = scanner.scan(fields=("start", "rest", "end"))
+        batch = reader.read_next_batch()
+        assert "rest" in batch.schema.names
 
     def test_scan_byte_ranges(self):
         scanner = ox.PyBedScanner("data/sample.bed", bed_schema="bed9")
