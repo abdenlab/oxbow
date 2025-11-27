@@ -27,13 +27,11 @@ class BedFile(DataSource):
     ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
         def builder(columns, batch_size):
             scanner = self.scanner()
-            # field_names = scanner.field_names()
+            field_names = scanner.field_names()
             scan_kwargs = self._schema_kwargs.copy()
 
-            # TODO: Subsetting BED fields is not supported yet.
-            # rest column is not handled properly.
-            # if columns is not None:
-            #     scan_kwargs["fields"] = [col for col in columns if col in field_names]
+            if columns is not None:
+                scan_kwargs["fields"] = [col for col in columns if col in field_names]
 
             if region is not None:
                 scan_fn = scanner.scan_query
