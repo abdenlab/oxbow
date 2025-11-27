@@ -30,6 +30,14 @@ Oxbow makes it easier to retrieve and manipulate data stored in conventional gen
 
       Learn more about how to use Oxbow.
 
+   .. grid-item-card:: Examples
+      :img-bottom: _static/icon_code.svg
+      :class-img-bottom: card-icon dark-light
+      :link: examples/index
+      :link-type: doc
+
+      Practical examples and tutorials.
+
    .. grid-item-card:: Contribute
       :img-bottom: _static/icon_branch.svg
       :class-img-bottom: card-icon dark-light
@@ -58,6 +66,12 @@ Oxbow makes it easier to retrieve and manipulate data stored in conventional gen
    :hidden:
 
    user-guide/index
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   examples/index
 
 .. toctree::
    :maxdepth: 2
