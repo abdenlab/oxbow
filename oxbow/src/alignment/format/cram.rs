@@ -7,7 +7,6 @@ use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use noodles::core::region::Interval;
 
-use crate::alignment::batch_iterator::BatchIterator;
 use crate::alignment::model::batch_builder::Push;
 use crate::alignment::model::field::DEFAULT_FIELD_NAMES;
 use crate::alignment::model::tag::TagScanner;
@@ -28,14 +27,12 @@ use crate::alignment::model::BatchBuilder;
 /// let repository = noodles::fasta::Repository::new(adapter);
 ///
 /// let inner = File::open("sample.cram").unwrap();
-/// let mut fmt_reader = noodles::cram::io::reader::Builder::default()
-///     .set_reference_sequence_repository(repository)
-///     .build_from_reader(inner);
+/// let mut fmt_reader = noodles::cram::io::Reader::new(inner);
 /// let header = fmt_reader.read_header().unwrap();
 ///
 /// let scanner = Scanner::new(header);
 /// let tag_defs = scanner.tag_defs(&mut fmt_reader, Some(1000)).unwrap();
-/// let batches = scanner.scan(fmt_reader, None, Some(tag_defs), None, Some(1000));
+/// let batches = scanner.scan(fmt_reader, repository, None, Some(tag_defs), None, Some(1000));
 /// ```
 pub struct Scanner {
     header: noodles::sam::Header,
@@ -130,6 +127,7 @@ impl Scanner {
     pub fn scan<R: Read>(
         &self,
         fmt_reader: noodles::cram::io::Reader<R>,
+        repo: noodles::fasta::Repository,
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
@@ -137,7 +135,14 @@ impl Scanner {
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = BatchBuilder::new(self.header(), fields, tag_defs, batch_size)?;
-        let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
+        let batch_iter = BatchIterator::new(
+            fmt_reader,
+            self.header(),
+            &repo,
+            batch_builder,
+            batch_size,
+            limit,
+        );
         Ok(batch_iter)
     }
 
@@ -170,7 +175,7 @@ impl Scanner {
         let batch_iter = QueryBatchIterator::new(
             fmt_reader,
             self.header(),
-            repo,
+            &repo,
             index,
             reference_sequence_id,
             interval,
@@ -182,7 +187,151 @@ impl Scanner {
     }
 }
 
-pub struct QueryBatchIterator<R: std::io::Read + std::io::Seek> {
+pub struct BatchIterator<R>
+where
+    R: Read,
+{
+    records: CramRecords<R>,
+    builder: BatchBuilder,
+    batch_size: usize,
+    limit: usize,
+    count: usize,
+}
+
+impl<R> BatchIterator<R>
+where
+    R: Read,
+{
+    pub fn new(
+        reader: noodles::cram::io::Reader<R>,
+        header: noodles::sam::Header,
+        repo: &noodles::fasta::Repository,
+        builder: BatchBuilder,
+        batch_size: usize,
+        limit: Option<usize>,
+    ) -> Self {
+        Self {
+            records: CramRecords::new(reader, header, repo.clone()),
+            builder,
+            batch_size,
+            limit: limit.unwrap_or(usize::MAX),
+            count: 0,
+        }
+    }
+}
+
+impl<R> RecordBatchReader for BatchIterator<R>
+where
+    R: Read,
+    Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
+{
+    fn schema(&self) -> arrow::datatypes::SchemaRef {
+        Arc::new(self.builder.get_arrow_schema())
+    }
+}
+
+impl<R> Iterator for BatchIterator<R>
+where
+    R: Read,
+{
+    type Item = Result<RecordBatch, ArrowError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut count = 0;
+        while count < self.batch_size && self.count < self.limit {
+            match self.records.next() {
+                Some(Ok(record)) => {
+                    match self.builder.push(&record) {
+                        Ok(_) => {
+                            self.count += 1;
+                            count += 1;
+                        }
+                        Err(e) => return Some(Err(e.into())),
+                    };
+                }
+                Some(Err(e)) => return Some(Err(e.into())),
+                None => break,
+            }
+        }
+
+        if count == 0 {
+            None
+        } else {
+            let batch = self.builder.finish();
+            Some(batch)
+        }
+    }
+}
+
+pub struct CramRecords<R>
+where
+    R: Read,
+{
+    reader: noodles::cram::io::Reader<R>,
+    repo: noodles::fasta::Repository,
+    header: noodles::sam::Header,
+    container: noodles::cram::Container,
+    records: std::vec::IntoIter<noodles::sam::alignment::RecordBuf>,
+    eof: bool,
+}
+
+impl<R> CramRecords<R>
+where
+    R: Read,
+{
+    pub fn new(
+        reader: noodles::cram::io::Reader<R>,
+        header: noodles::sam::Header,
+        repo: noodles::fasta::Repository,
+    ) -> Self {
+        Self {
+            reader,
+            header,
+            repo,
+            container: noodles::cram::Container::default(),
+            records: Vec::new().into_iter(),
+            eof: false,
+        }
+    }
+}
+
+impl<R> Iterator for CramRecords<R>
+where
+    R: Read,
+{
+    type Item = io::Result<noodles::sam::alignment::RecordBuf>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.eof {
+            return None;
+        }
+        loop {
+            match self.records.next() {
+                Some(record) => return Some(Ok(record)),
+                None => match read_container_records(
+                    &mut self.reader,
+                    &self.repo,
+                    &self.header,
+                    &mut self.container,
+                ) {
+                    Ok(None) => {
+                        self.eof = true;
+                        return None;
+                    }
+                    Ok(Some(records)) => {
+                        self.records = records.into_iter();
+                    }
+                    Err(e) => return Some(Err(e)),
+                },
+            }
+        }
+    }
+}
+
+pub struct QueryBatchIterator<R>
+where
+    R: Read + Seek,
+{
     query: CramQuery<R>,
     builder: BatchBuilder,
     batch_size: usize,
@@ -190,12 +339,15 @@ pub struct QueryBatchIterator<R: std::io::Read + std::io::Seek> {
     count: usize,
 }
 
-impl<R: std::io::Read + std::io::Seek> QueryBatchIterator<R> {
+impl<R> QueryBatchIterator<R>
+where
+    R: Read + Seek,
+{
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         fmt_reader: noodles::cram::io::Reader<R>,
         header: noodles::sam::Header,
-        repo: noodles::fasta::Repository,
+        repo: &noodles::fasta::Repository,
         index: noodles::cram::crai::Index,
         reference_sequence_id: usize,
         interval: Interval,
@@ -207,7 +359,7 @@ impl<R: std::io::Read + std::io::Seek> QueryBatchIterator<R> {
             fmt_reader,
             header,
             index,
-            repo,
+            repo.clone(),
             reference_sequence_id,
             interval,
         );
@@ -221,8 +373,9 @@ impl<R: std::io::Read + std::io::Seek> QueryBatchIterator<R> {
     }
 }
 
-impl<R: std::io::Read + std::io::Seek> RecordBatchReader for QueryBatchIterator<R>
+impl<R> RecordBatchReader for QueryBatchIterator<R>
 where
+    R: Read + Seek,
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
@@ -232,7 +385,7 @@ where
 
 impl<R> Iterator for QueryBatchIterator<R>
 where
-    R: std::io::Read + std::io::Seek,
+    R: Read + Seek,
 {
     type Item = Result<RecordBatch, ArrowError>;
 
@@ -273,7 +426,8 @@ where
     repo: noodles::fasta::Repository,
     reference_sequence_id: usize,
     interval: noodles::core::region::Interval,
-    records: std::vec::IntoIter<noodles::cram::Record>,
+    container: noodles::cram::Container,
+    records: std::vec::IntoIter<noodles::sam::alignment::RecordBuf>,
 }
 
 impl<R> CramQuery<R>
@@ -295,57 +449,9 @@ where
             repo,
             reference_sequence_id,
             interval,
+            container: noodles::cram::Container::default(),
             records: Vec::new().into_iter(),
         }
-    }
-
-    fn read_next_container(&mut self) -> Option<io::Result<()>> {
-        let index_record = self.index.next()?;
-
-        if index_record.reference_sequence_id() != Some(self.reference_sequence_id) {
-            return Some(Ok(()));
-        }
-
-        if let Err(e) = self.reader.seek(SeekFrom::Start(index_record.offset())) {
-            return Some(Err(e));
-        }
-
-        let container = match self.reader.read_data_container() {
-            Ok(Some(c)) => c,
-            Ok(None) => return None,
-            Err(e) => return Some(Err(e)),
-        };
-
-        let records = container
-            .slices()
-            .iter()
-            .map(|slice| {
-                let compression_header = container.compression_header();
-                slice.records(compression_header).and_then(|mut records| {
-                    slice.resolve_records(
-                        &self.repo,
-                        &self.header,
-                        compression_header,
-                        &mut records,
-                    )?;
-
-                    Ok(records)
-                })
-            })
-            .collect::<Result<Vec<_>, _>>();
-
-        let records = match records {
-            Ok(records) => records,
-            Err(e) => return Some(Err(e)),
-        };
-
-        self.records = records
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>()
-            .into_iter();
-
-        Some(Ok(()))
     }
 }
 
@@ -353,7 +459,7 @@ impl<R> Iterator for CramQuery<R>
 where
     R: Read + Seek,
 {
-    type Item = io::Result<noodles::cram::Record>;
+    type Item = io::Result<noodles::sam::alignment::RecordBuf>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -367,11 +473,36 @@ where
                         }
                     }
                 }
-                None => match self.read_next_container() {
-                    Some(Ok(())) => {}
-                    Some(Err(e)) => return Some(Err(e)),
-                    None => return None,
-                },
+                None => {
+                    // Find the next index record with matching reference_sequence_id and seek to
+                    // the corresponding container
+                    let Some(index_record) = self
+                        .index
+                        .find(|c| c.reference_sequence_id() == Some(self.reference_sequence_id))
+                    else {
+                        return None;
+                    };
+                    if let Err(e) = self.reader.seek(SeekFrom::Start(index_record.offset())) {
+                        return Some(Err(e));
+                    }
+
+                    // Read the container and update records iterator
+                    match read_container_records(
+                        &mut self.reader,
+                        &self.repo,
+                        &self.header,
+                        &mut self.container,
+                    ) {
+                        Ok(Some(records)) => {
+                            self.records = records.into_iter();
+                        }
+                        Ok(None) => {
+                            // EOF container should not happen as we just seeked to a data container
+                            unreachable!();
+                        }
+                        Err(e) => return Some(Err(e)),
+                    }
+                }
             }
         }
     }
@@ -394,4 +525,57 @@ fn resolve_chrom_id(
         ));
     };
     Ok(id)
+}
+
+/// Reads records from the next container in the CRAM reader.
+///
+/// The reader's cursor should be positioned at the start of a container and will be advanced to
+/// the end of the container after reading.
+///
+/// # Returns
+/// * Result containing a vector of records if successful.
+/// * Result containing `None` if the end-of-file container is reached.
+fn read_container_records<R: Read>(
+    reader: &mut noodles::cram::io::Reader<R>,
+    repo: &noodles::fasta::Repository,
+    header: &noodles::sam::Header,
+    container: &mut noodles::cram::Container,
+) -> io::Result<Option<Vec<noodles::sam::alignment::RecordBuf>>> {
+    if reader.read_container(container)? == 0 {
+        return Ok(None); // EOF container
+    }
+
+    let compression_header = container.compression_header()?;
+    let records = container
+        .slices()
+        .map(|result| {
+            let slice = result?;
+
+            let (core_data_src, external_data_srcs) = slice.decode_blocks()?;
+
+            slice
+                .records(
+                    repo.clone(),
+                    header,
+                    &compression_header,
+                    &core_data_src,
+                    &external_data_srcs,
+                )
+                .and_then(|records| {
+                    records
+                        .into_iter()
+                        .map(|record| {
+                            noodles::sam::alignment::RecordBuf::try_from_alignment_record(
+                                header, &record,
+                            )
+                        })
+                        .collect::<io::Result<Vec<_>>>()
+                })
+        })
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+
+    Ok(Some(records))
 }

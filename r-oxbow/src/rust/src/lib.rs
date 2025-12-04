@@ -288,7 +288,7 @@ pub fn read_cram_impl(
         let tag_defs = scanner.tag_defs(&mut fmt_reader, scan_rows).unwrap();
         fmt_reader.seek(std::io::SeekFrom::Start(pos)).unwrap();
         let batches = scanner
-            .scan(fmt_reader, fields, Some(tag_defs), None, None)
+            .scan(fmt_reader, repo, fields, Some(tag_defs), None, None)
             .unwrap();
         batches_to_ipc(batches)
     };

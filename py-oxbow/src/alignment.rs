@@ -1091,12 +1091,10 @@ impl PyCramScanner {
     ) -> PyResult<PyRecordBatchReader> {
         let reader = self.reader.clone();
         let repo = resolve_fasta_repository(py, reference, reference_index)?;
-        let fmt_reader = noodles::cram::io::reader::Builder::default()
-            .set_reference_sequence_repository(repo)
-            .build_from_reader(reader);
+        let fmt_reader = noodles::cram::io::Reader::new(reader);
         let batch_reader = self
             .scanner
-            .scan(fmt_reader, fields, tag_defs, batch_size, limit)?;
+            .scan(fmt_reader, repo, fields, tag_defs, batch_size, limit)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -1405,17 +1403,13 @@ pub fn read_cram(
     } else {
         match reader {
             Reader::File(reader) => {
-                let fmt_reader = noodles::cram::io::reader::Builder::default()
-                    .set_reference_sequence_repository(repo.clone())
-                    .build_from_reader(reader);
-                let batches = scanner.scan(fmt_reader, fields, tag_defs, None, None)?;
+                let fmt_reader = noodles::cram::io::Reader::new(reader);
+                let batches = scanner.scan(fmt_reader, repo, fields, tag_defs, None, None)?;
                 batches_to_ipc(batches)
             }
             Reader::PyFileLike(reader) => {
-                let fmt_reader = noodles::cram::io::reader::Builder::default()
-                    .set_reference_sequence_repository(repo.clone())
-                    .build_from_reader(reader);
-                let batches = scanner.scan(fmt_reader, fields, tag_defs, None, None)?;
+                let fmt_reader = noodles::cram::io::Reader::new(reader);
+                let batches = scanner.scan(fmt_reader, repo, fields, tag_defs, None, None)?;
                 batches_to_ipc(batches)
             }
             _ => {
