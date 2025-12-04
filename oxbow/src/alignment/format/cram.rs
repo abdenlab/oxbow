@@ -476,12 +476,10 @@ where
                 None => {
                     // Find the next index record with matching reference_sequence_id and seek to
                     // the corresponding container
-                    let Some(index_record) = self
+                    let index_record = self
                         .index
-                        .find(|c| c.reference_sequence_id() == Some(self.reference_sequence_id))
-                    else {
-                        return None;
-                    };
+                        .find(|c| c.reference_sequence_id() == Some(self.reference_sequence_id))?;
+
                     if let Err(e) = self.reader.seek(SeekFrom::Start(index_record.offset())) {
                         return Some(Err(e));
                     }
