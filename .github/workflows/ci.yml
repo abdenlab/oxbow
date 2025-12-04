@@ -61,7 +61,7 @@ jobs:
       - run: rustup update
       - uses: astral-sh/setup-uv@v7
         with:
-          pyproject-file: "py-oxbow/pyproject.toml"
+          working-directory: "py-oxbow"
           python-version: ${{ matrix.python-version }}
       - run: |
           cd py-oxbow/tests
@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
         with:
-          pyproject-file: "py-oxbow/pyproject.toml"
+          working-directory: "py-oxbow"
       - run: |
           cd py-oxbow
           uv run --no-default-groups --only-group=dev ruff format --check
