@@ -28,7 +28,7 @@ use oxbow::util::index::IndexType;
 ///     uncompressed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyGtfScanner {
-    src: PyObject,
+    src: Py<PyAny>,
     reader: Reader,
     scanner: GtfScanner,
     compressed: bool,
@@ -38,7 +38,7 @@ pub struct PyGtfScanner {
 impl PyGtfScanner {
     #[new]
     #[pyo3(signature = (src, compressed=false))]
-    fn new(py: Python, src: PyObject, compressed: Option<bool>) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, compressed: Option<bool>) -> PyResult<Self> {
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let scanner = GtfScanner::new(None);
@@ -50,11 +50,11 @@ impl PyGtfScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
@@ -328,7 +328,7 @@ impl PyGtfScanner {
         &mut self,
         py: Python,
         region: &str,
-        index: Option<PyObject>,
+        index: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         attribute_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
@@ -431,7 +431,7 @@ impl PyGtfScanner {
 ///     uncompressed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyGffScanner {
-    src: PyObject,
+    src: Py<PyAny>,
     reader: Reader,
     scanner: GffScanner,
     compressed: bool,
@@ -441,7 +441,7 @@ pub struct PyGffScanner {
 impl PyGffScanner {
     #[new]
     #[pyo3(signature = (src, compressed=false))]
-    fn new(py: Python, src: PyObject, compressed: Option<bool>) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, compressed: Option<bool>) -> PyResult<Self> {
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed).unwrap();
         let scanner = GffScanner::new(None);
@@ -453,11 +453,11 @@ impl PyGffScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
@@ -726,7 +726,7 @@ impl PyGffScanner {
         &mut self,
         py: Python,
         region: &str,
-        index: Option<PyObject>,
+        index: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         attribute_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
@@ -839,9 +839,9 @@ impl PyGffScanner {
 #[pyo3(signature = (src, region=None, index=None, fields=None, attr_defs=None, compressed=false))]
 pub fn read_gtf(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     region: Option<String>,
-    index: Option<PyObject>,
+    index: Option<Py<PyAny>>,
     fields: Option<Vec<String>>,
     attr_defs: Option<Vec<(String, String)>>,
     compressed: bool,
@@ -919,9 +919,9 @@ pub fn read_gtf(
 #[pyo3(signature = (src, region=None, index=None, fields=None, attr_defs=None, compressed=false))]
 pub fn read_gff(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     region: Option<String>,
-    index: Option<PyObject>,
+    index: Option<Py<PyAny>>,
     fields: Option<Vec<String>>,
     attr_defs: Option<Vec<(String, String)>>,
     compressed: bool,

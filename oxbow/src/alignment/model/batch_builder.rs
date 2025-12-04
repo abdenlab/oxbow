@@ -222,8 +222,8 @@ impl Push<&noodles::bam::Record> for BatchBuilder {
 }
 
 /// Append a CRAM record to the batch.
-impl Push<&noodles::cram::Record> for BatchBuilder {
-    fn push(&mut self, record: &noodles::cram::Record) -> io::Result<()> {
+impl Push<&noodles::sam::alignment::RecordBuf> for BatchBuilder {
+    fn push(&mut self, record: &noodles::sam::alignment::RecordBuf) -> io::Result<()> {
         use noodles::sam::alignment::record::data::field::Value;
         // fixed fields
         for (_, builder) in self.field_builders.iter_mut() {

@@ -30,7 +30,7 @@ use oxbow::util::index::IndexType;
 ///     Whether the source is BGZF-compressed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PySamScanner {
-    src: PyObject,
+    src: Py<PyAny>,
     reader: Reader,
     scanner: SamScanner,
     compressed: bool,
@@ -40,7 +40,7 @@ pub struct PySamScanner {
 impl PySamScanner {
     #[new]
     #[pyo3(signature = (src, compressed=false))]
-    fn new(py: Python, src: PyObject, compressed: bool) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::sam::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
@@ -54,11 +54,11 @@ impl PySamScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
@@ -330,7 +330,7 @@ impl PySamScanner {
         &mut self,
         py: Python,
         region: String,
-        index: Option<PyObject>,
+        index: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
@@ -425,7 +425,7 @@ impl PySamScanner {
     fn scan_unmapped(
         &mut self,
         py: Python,
-        index: Option<PyObject>,
+        index: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
@@ -491,7 +491,7 @@ impl PySamScanner {
 ///     Whether the source is BGZF-compressed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBamScanner {
-    src: PyObject,
+    src: Py<PyAny>,
     reader: Reader,
     scanner: BamScanner,
     compressed: bool,
@@ -501,7 +501,7 @@ pub struct PyBamScanner {
 impl PyBamScanner {
     #[new]
     #[pyo3(signature = (src, compressed=true))]
-    fn new(py: Python, src: PyObject, compressed: bool) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bam::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
@@ -515,11 +515,11 @@ impl PyBamScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
@@ -791,7 +791,7 @@ impl PyBamScanner {
         &mut self,
         py: Python,
         region: String,
-        index: Option<PyObject>,
+        index: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
@@ -886,7 +886,7 @@ impl PyBamScanner {
     fn scan_unmapped(
         &mut self,
         py: Python,
-        index: Option<PyObject>,
+        index: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
@@ -950,7 +950,7 @@ impl PyBamScanner {
 ///     The path to the CRAM file or a file-like object.
 #[pyclass]
 pub struct PyCramScanner {
-    src: PyObject,
+    src: Py<PyAny>,
     reader: Reader,
     scanner: CramScanner,
 }
@@ -960,7 +960,7 @@ impl PyCramScanner {
     #[new]
     #[allow(unused_variables)]
     #[pyo3(signature = (src, compressed=None))]
-    fn new(py: Python, src: PyObject, compressed: Option<bool>) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, compressed: Option<bool>) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let mut fmt_reader = noodles::cram::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
@@ -973,11 +973,11 @@ impl PyCramScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py),);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
@@ -1082,8 +1082,8 @@ impl PyCramScanner {
     fn scan(
         &mut self,
         py: Python,
-        reference: Option<PyObject>,
-        reference_index: Option<PyObject>,
+        reference: Option<Py<PyAny>>,
+        reference_index: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
@@ -1091,12 +1091,10 @@ impl PyCramScanner {
     ) -> PyResult<PyRecordBatchReader> {
         let reader = self.reader.clone();
         let repo = resolve_fasta_repository(py, reference, reference_index)?;
-        let fmt_reader = noodles::cram::io::reader::Builder::default()
-            .set_reference_sequence_repository(repo)
-            .build_from_reader(reader);
+        let fmt_reader = noodles::cram::io::Reader::new(reader);
         let batch_reader = self
             .scanner
-            .scan(fmt_reader, fields, tag_defs, batch_size, limit)?;
+            .scan(fmt_reader, repo, fields, tag_defs, batch_size, limit)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -1138,9 +1136,9 @@ impl PyCramScanner {
         &mut self,
         py: Python,
         region: String,
-        index: Option<PyObject>,
-        reference: Option<PyObject>,
-        reference_index: Option<PyObject>,
+        index: Option<Py<PyAny>>,
+        reference: Option<Py<PyAny>>,
+        reference_index: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         batch_size: Option<usize>,
@@ -1195,9 +1193,9 @@ impl PyCramScanner {
 #[pyo3(signature = (src, region=None, index=None, fields=None, tag_defs=None, compressed=false))]
 pub fn read_sam(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     region: Option<String>,
-    index: Option<PyObject>,
+    index: Option<Py<PyAny>>,
     fields: Option<Vec<String>>,
     tag_defs: Option<Vec<(String, String)>>,
     compressed: bool,
@@ -1278,9 +1276,9 @@ pub fn read_sam(
 #[pyo3(signature = (src, region=None, index=None, fields=None, tag_defs=None, compressed=true))]
 pub fn read_bam(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     region: Option<String>,
-    index: Option<PyObject>,
+    index: Option<Py<PyAny>>,
     fields: Option<Vec<String>>,
     tag_defs: Option<Vec<(String, String)>>,
     compressed: bool,
@@ -1360,11 +1358,11 @@ pub fn read_bam(
 #[allow(clippy::too_many_arguments)]
 pub fn read_cram(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     region: Option<String>,
-    index: Option<PyObject>,
-    reference: Option<PyObject>,
-    reference_index: Option<PyObject>,
+    index: Option<Py<PyAny>>,
+    reference: Option<Py<PyAny>>,
+    reference_index: Option<Py<PyAny>>,
     fields: Option<Vec<String>>,
     tag_defs: Option<Vec<(String, String)>>,
 ) -> PyResult<Vec<u8>> {
@@ -1405,17 +1403,13 @@ pub fn read_cram(
     } else {
         match reader {
             Reader::File(reader) => {
-                let fmt_reader = noodles::cram::io::reader::Builder::default()
-                    .set_reference_sequence_repository(repo.clone())
-                    .build_from_reader(reader);
-                let batches = scanner.scan(fmt_reader, fields, tag_defs, None, None)?;
+                let fmt_reader = noodles::cram::io::Reader::new(reader);
+                let batches = scanner.scan(fmt_reader, repo, fields, tag_defs, None, None)?;
                 batches_to_ipc(batches)
             }
             Reader::PyFileLike(reader) => {
-                let fmt_reader = noodles::cram::io::reader::Builder::default()
-                    .set_reference_sequence_repository(repo.clone())
-                    .build_from_reader(reader);
-                let batches = scanner.scan(fmt_reader, fields, tag_defs, None, None)?;
+                let fmt_reader = noodles::cram::io::Reader::new(reader);
+                let batches = scanner.scan(fmt_reader, repo, fields, tag_defs, None, None)?;
                 batches_to_ipc(batches)
             }
             _ => {

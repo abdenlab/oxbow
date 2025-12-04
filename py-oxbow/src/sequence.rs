@@ -27,7 +27,7 @@ use oxbow::util::batches_to_ipc;
 ///     Whether the source is GZIP-compressed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyFastqScanner {
-    src: PyObject,
+    src: Py<PyAny>,
     reader: Reader,
     scanner: FastqScanner,
     compressed: bool,
@@ -37,7 +37,7 @@ pub struct PyFastqScanner {
 impl PyFastqScanner {
     #[new]
     #[pyo3(signature = (src, compressed=false))]
-    fn new(py: Python, src: PyObject, compressed: bool) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
         let _src = src.clone_ref(py);
         let reader = pyobject_to_bufreader(py, src, false)?;
         let scanner = FastqScanner::new();
@@ -49,11 +49,11 @@ impl PyFastqScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
@@ -224,7 +224,7 @@ impl PyFastqScanner {
 ///     Whether the source is BGZF-compressed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyFastaScanner {
-    src: PyObject,
+    src: Py<PyAny>,
     reader: Reader,
     scanner: FastaScanner,
     compressed: bool,
@@ -234,7 +234,7 @@ pub struct PyFastaScanner {
 impl PyFastaScanner {
     #[new]
     #[pyo3(signature = (src, compressed=false))]
-    fn new(py: Python, src: PyObject, compressed: bool) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let scanner = FastaScanner::new();
         Ok(Self {
@@ -245,11 +245,11 @@ impl PyFastaScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
@@ -358,8 +358,8 @@ impl PyFastaScanner {
         &mut self,
         py: Python,
         regions: Vec<String>,
-        index: Option<PyObject>,
-        gzi: Option<PyObject>,
+        index: Option<Py<PyAny>>,
+        gzi: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         batch_size: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -424,7 +424,7 @@ impl PyFastaScanner {
 #[pyo3(signature = (src, fields=None, compressed=false))]
 pub fn read_fastq(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     fields: Option<Vec<String>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
@@ -472,10 +472,10 @@ pub fn read_fastq(
 #[pyo3(signature = (src, regions=None, index=None, gzi=None, fields=None, compressed=false))]
 pub fn read_fasta(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     regions: Option<Vec<String>>,
-    index: Option<PyObject>,
-    gzi: Option<PyObject>,
+    index: Option<Py<PyAny>>,
+    gzi: Option<Py<PyAny>>,
     fields: Option<Vec<String>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {

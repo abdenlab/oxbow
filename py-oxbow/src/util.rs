@@ -129,10 +129,10 @@ impl Reader {
 
 pub fn pyobject_to_bufreader(
     py: Python,
-    obj: PyObject,
+    obj: Py<PyAny>,
     compressed: bool,
 ) -> std::io::Result<Reader> {
-    if let Ok(string_ref) = obj.downcast_bound::<PyString>(py) {
+    if let Ok(string_ref) = obj.cast_bound::<PyString>(py) {
         let path = string_ref.to_string_lossy().into_owned();
         let file = std::fs::File::open(path)?;
         let reader = BufReader::with_capacity(BUFFER_SIZE_BYTES, file);
@@ -156,12 +156,12 @@ pub fn pyobject_to_bufreader(
 
 pub fn resolve_index(
     py: Python,
-    source: &PyObject,
-    index: Option<PyObject>,
+    source: &Py<PyAny>,
+    index: Option<Py<PyAny>>,
 ) -> std::io::Result<IndexType> {
     match index {
         // Index file not provided
-        None => match source.downcast_bound::<PyString>(py) {
+        None => match source.cast_bound::<PyString>(py) {
             // If source is a path, try to find companion index file path
             Ok(py_string) => {
                 let source_path = py_string.to_string();
@@ -174,7 +174,7 @@ pub fn resolve_index(
         },
         // Index file explicitly provided
         Some(index) => {
-            if let Ok(py_string) = index.downcast_bound::<PyString>(py) {
+            if let Ok(py_string) = index.cast_bound::<PyString>(py) {
                 let path = py_string.to_string();
                 let index_file = std::fs::File::open(&path)?;
                 index_from_reader(index_file)
@@ -188,12 +188,12 @@ pub fn resolve_index(
 
 pub fn resolve_cram_index(
     py: Python,
-    source: &PyObject,
-    index: Option<PyObject>,
+    source: &Py<PyAny>,
+    index: Option<Py<PyAny>>,
 ) -> std::io::Result<noodles::cram::crai::Index> {
     match index {
         // Index file not provided
-        None => match source.downcast_bound::<PyString>(py) {
+        None => match source.cast_bound::<PyString>(py) {
             // If source is a path, try to find companion index file path
             Ok(py_string) => {
                 let source_path = py_string.to_string();
@@ -209,7 +209,7 @@ pub fn resolve_cram_index(
         },
         // Index file explicitly provided
         Some(index) => {
-            if let Ok(py_string) = index.downcast_bound::<PyString>(py) {
+            if let Ok(py_string) = index.cast_bound::<PyString>(py) {
                 let index_path = py_string.to_string();
                 let index_file = std::fs::File::open(&index_path)?;
                 let mut index_reader = noodles::cram::crai::io::Reader::new(index_file);
@@ -225,12 +225,12 @@ pub fn resolve_cram_index(
 
 pub fn resolve_faidx(
     py: Python,
-    source: &PyObject,
-    faidx: Option<PyObject>,
+    source: &Py<PyAny>,
+    faidx: Option<Py<PyAny>>,
 ) -> std::io::Result<FaIndex> {
     match faidx {
         // Index file not provided
-        None => match source.downcast_bound::<PyString>(py) {
+        None => match source.cast_bound::<PyString>(py) {
             // If source is a path, try to find companion index file path
             Ok(py_string) => {
                 let source_path = py_string.to_string();
@@ -246,7 +246,7 @@ pub fn resolve_faidx(
         },
         // Index file explicitly provided
         Some(faidx) => {
-            if let Ok(py_string) = faidx.downcast_bound::<PyString>(py) {
+            if let Ok(py_string) = faidx.cast_bound::<PyString>(py) {
                 let index_path = py_string.to_string();
                 let reader = BufReader::new(std::fs::File::open(&index_path)?);
                 let mut index_reader = noodles::fasta::fai::io::Reader::new(reader);
@@ -263,8 +263,8 @@ pub fn resolve_faidx(
 
 pub fn resolve_fasta_repository(
     py: Python,
-    reference: Option<PyObject>,
-    reference_index: Option<PyObject>,
+    reference: Option<Py<PyAny>>,
+    reference_index: Option<Py<PyAny>>,
 ) -> PyResult<noodles::fasta::Repository> {
     match reference {
         Some(fa) => {
@@ -341,11 +341,11 @@ impl PyVirtualPosition {
 #[pyo3(signature = (index, chunksize=0, decoded=false))]
 pub fn partition_from_index(
     py: Python,
-    index: PyObject,
+    index: Py<PyAny>,
     chunksize: u64,
     decoded: bool,
 ) -> PyResult<Vec<PyVirtualPosition>> {
-    let index = if let Ok(py_string) = index.downcast_bound::<PyString>(py) {
+    let index = if let Ok(py_string) = index.cast_bound::<PyString>(py) {
         let path = py_string.to_string();
         let index_file = std::fs::File::open(&path)
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;

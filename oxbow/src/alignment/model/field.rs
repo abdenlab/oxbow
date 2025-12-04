@@ -333,11 +333,11 @@ impl Push<&noodles::bam::Record> for FieldBuilder {
     }
 }
 
-/// Append a field value from a CRAM record to the column.
-impl Push<&noodles::cram::Record> for FieldBuilder {
+/// Append a field value from an alignment RecordBuf to the column.
+impl Push<&noodles::sam::alignment::RecordBuf> for FieldBuilder {
     fn push(
         &mut self,
-        record: &noodles::cram::Record,
+        record: &noodles::sam::alignment::RecordBuf,
         header: &noodles::sam::Header,
     ) -> io::Result<()> {
         match self {
@@ -348,9 +348,8 @@ impl Push<&noodles::cram::Record> for FieldBuilder {
                 builder.append_value(record.flags().bits());
             }
             Self::Rname(builder) => {
-                let header_refs = header.reference_sequences();
                 let rname = record
-                    .reference_sequence(header_refs)
+                    .reference_sequence(header)
                     .and_then(|result| result.ok().map(|(name, _)| String::from_utf8_lossy(name)));
                 builder.append_option(rname);
             }
@@ -365,9 +364,8 @@ impl Push<&noodles::cram::Record> for FieldBuilder {
                 builder.append_option(get_cigar(record.cigar()));
             }
             Self::Rnext(builder) => {
-                let header_refs = header.reference_sequences();
                 let rnext = record
-                    .mate_reference_sequence(header_refs)
+                    .mate_reference_sequence(header)
                     .and_then(|result| result.ok().map(|(name, _)| String::from_utf8_lossy(name)));
                 builder.append_option(rnext);
             }

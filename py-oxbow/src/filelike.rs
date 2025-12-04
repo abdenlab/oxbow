@@ -3,21 +3,21 @@ use std::io::{self, Read, Seek, SeekFrom, Write};
 use pyo3::{
     exceptions::PyTypeError,
     types::{PyAnyMethods, PyBytes, PyBytesMethods},
-    PyErr, PyObject, PyResult, Python,
+    Py, PyAny, PyErr, PyResult, Python,
 };
 
 /// Represents a file-like object in python. This simply wraps the Rust io
 /// traits, calling into python io methods.
 pub struct PyFileLikeObject {
-    inner: PyObject,
+    inner: Py<PyAny>,
 }
 
 impl PyFileLikeObject {
     /// Creates a `PyFileLikeObject`, validating that it conforms to some
     /// required set of methods (one or more of `read`, `write`, or `seek`).
     /// Will return a `TypeError` if object does not have the required methods.
-    pub fn new(object: PyObject, read: bool, write: bool, seek: bool) -> PyResult<Self> {
-        Python::with_gil(|py| {
+    pub fn new(object: Py<PyAny>, read: bool, write: bool, seek: bool) -> PyResult<Self> {
+        Python::attach(|py| {
             if read && object.getattr(py, "read").is_err() {
                 return Err(PyErr::new::<PyTypeError, _>(
                     "Object does not have a .read() method.",
@@ -41,17 +41,17 @@ impl PyFileLikeObject {
     }
 
     #[allow(dead_code)]
-    pub fn get_ref(&self) -> &PyObject {
+    pub fn get_ref(&self) -> &Py<PyAny> {
         &self.inner
     }
 
     #[allow(dead_code)]
-    pub fn get_mut(&mut self) -> &mut PyObject {
+    pub fn get_mut(&mut self) -> &mut Py<PyAny> {
         &mut self.inner
     }
 
     #[allow(dead_code)]
-    pub fn into_inner(self) -> PyObject {
+    pub fn into_inner(self) -> Py<PyAny> {
         self.inner
     }
 }
@@ -69,15 +69,14 @@ fn to_io_error(py: Python<'_>, e: PyErr) -> io::Error {
 
 impl Read for PyFileLikeObject {
     fn read(&mut self, mut buf: &mut [u8]) -> Result<usize, io::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let res = self
                 .inner
                 .call_method1(py, "read", (buf.len(),))
                 .map_err(|e| to_io_error(py, e))?;
 
-            let pybytes: &pyo3::Bound<PyBytes> = res
-                .downcast_bound(py)
-                .map_err(|e| to_io_error(py, e.into()))?;
+            let pybytes: &pyo3::Bound<PyBytes> =
+                res.cast_bound(py).map_err(|e| to_io_error(py, e.into()))?;
 
             let bytes = pybytes.as_bytes();
             buf.write_all(bytes)?;
@@ -88,7 +87,7 @@ impl Read for PyFileLikeObject {
 
 impl Write for PyFileLikeObject {
     fn write(&mut self, buf: &[u8]) -> Result<usize, io::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let number_bytes_written = self
                 .inner
                 .call_method1(py, "write", (buf,))
@@ -105,7 +104,7 @@ impl Write for PyFileLikeObject {
     }
 
     fn flush(&mut self) -> Result<(), io::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             self.inner
                 .call_method0(py, "flush")
                 .map_err(|e| to_io_error(py, e))?;
@@ -117,7 +116,7 @@ impl Write for PyFileLikeObject {
 
 impl Seek for PyFileLikeObject {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, io::Error> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let (whence, offset) = match pos {
                 SeekFrom::Start(i) => (0, i as i64),
                 SeekFrom::Current(i) => (1, i),
@@ -137,7 +136,7 @@ impl Seek for PyFileLikeObject {
 impl Clone for PyFileLikeObject {
     fn clone(&self) -> Self {
         PyFileLikeObject {
-            inner: Python::with_gil(|py| self.inner.clone_ref(py)),
+            inner: Python::attach(|py| self.inner.clone_ref(py)),
         }
     }
 }
