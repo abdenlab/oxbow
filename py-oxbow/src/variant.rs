@@ -25,7 +25,7 @@ use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
 ///    Whether the source is BGZF-compressed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyVcfScanner {
-    src: PyObject,
+    src: Py<PyAny>,
     reader: Reader,
     scanner: VcfScanner,
     compressed: bool,
@@ -35,7 +35,7 @@ pub struct PyVcfScanner {
 impl PyVcfScanner {
     #[new]
     #[pyo3(signature = (src, compressed=false))]
-    fn new(py: Python, src: PyObject, compressed: bool) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::vcf::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
@@ -49,11 +49,11 @@ impl PyVcfScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
@@ -392,7 +392,7 @@ impl PyVcfScanner {
         &mut self,
         py: Python,
         region: String,
-        index: Option<PyObject>,
+        index: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         info_fields: Option<Vec<String>>,
         genotype_fields: Option<Vec<String>>,
@@ -510,7 +510,7 @@ impl PyVcfScanner {
 ///     compressed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBcfScanner {
-    src: PyObject,
+    src: Py<PyAny>,
     reader: Reader,
     scanner: BcfScanner,
     compressed: bool,
@@ -520,7 +520,7 @@ pub struct PyBcfScanner {
 impl PyBcfScanner {
     #[new]
     #[pyo3(signature = (src, compressed=true))]
-    fn new(py: Python, src: PyObject, compressed: bool) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bcf::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
@@ -534,11 +534,11 @@ impl PyBcfScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python<'_>) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
@@ -877,7 +877,7 @@ impl PyBcfScanner {
         &mut self,
         py: Python,
         region: String,
-        index: Option<PyObject>,
+        index: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         info_fields: Option<Vec<String>>,
         genotype_fields: Option<Vec<String>>,
@@ -1026,9 +1026,9 @@ fn resolve_genotype_by(genotype_by: Option<String>) -> PyResult<Option<GenotypeB
 #[allow(clippy::too_many_arguments)]
 pub fn read_vcf(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     region: Option<String>,
-    index: Option<PyObject>,
+    index: Option<Py<PyAny>>,
     fields: Option<Vec<String>>,
     info_fields: Option<Vec<String>>,
     genotype_fields: Option<Vec<String>>,
@@ -1137,9 +1137,9 @@ pub fn read_vcf(
 #[allow(clippy::too_many_arguments)]
 pub fn read_bcf(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     region: Option<String>,
-    index: Option<PyObject>,
+    index: Option<Py<PyAny>>,
     fields: Option<Vec<String>>,
     info_fields: Option<Vec<String>>,
     genotype_fields: Option<Vec<String>>,

@@ -32,7 +32,7 @@ pub enum PyBBIFileType {
 ///     The path to the BigWig file or a file-like object.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigWigScanner {
-    _src: PyObject,
+    _src: Py<PyAny>,
     reader: Reader,
     scanner: BigWigScanner,
 }
@@ -41,7 +41,7 @@ pub struct PyBigWigScanner {
 impl PyBigWigScanner {
     #[new]
     #[pyo3(signature = (src))]
-    fn new(py: Python, src: PyObject) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
         let info = fmt_reader.info().clone();
@@ -54,11 +54,11 @@ impl PyBigWigScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self._src.clone_ref(py),);
         let kwargs = PyDict::new(py);
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
@@ -96,7 +96,7 @@ impl PyBigWigScanner {
     /// PyBBIZoomScanner
     ///     A scanner for the specified zoom level.
     fn get_zoom(&mut self, zoom_level: u32) -> PyResult<PyBBIZoomScanner> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let py_zoom = PyBBIZoomScanner::new(
                 py,
                 self._src.clone_ref(py),
@@ -212,7 +212,7 @@ impl PyBigWigScanner {
 ///     records, if it exists.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigBedScanner {
-    _src: PyObject,
+    _src: Py<PyAny>,
     _schema: Option<String>,
     reader: Reader,
     scanner: BigBedScanner,
@@ -222,7 +222,7 @@ pub struct PyBigBedScanner {
 impl PyBigBedScanner {
     #[new]
     #[pyo3(signature = (src, schema="bed3+"))]
-    fn new(py: Python, src: PyObject, schema: Option<&str>) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, schema: Option<&str>) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let mut fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
         let bed_schema = match schema {
@@ -259,11 +259,11 @@ impl PyBigBedScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (
             self._src.clone_ref(py),
             self._schema.clone().into_py_any(py)?,
@@ -317,7 +317,7 @@ impl PyBigBedScanner {
     /// PyBBIZoomScanner
     ///     A scanner for the specified zoom level.
     fn get_zoom(&mut self, zoom_level: u32) -> PyResult<PyBBIZoomScanner> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let py_zoom = PyBBIZoomScanner::new(
                 py,
                 self._src.clone_ref(py),
@@ -423,7 +423,7 @@ impl PyBigBedScanner {
 /// Can only be initialized from a BigBed or BigWig scanner.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBBIZoomScanner {
-    src: PyObject,
+    src: Py<PyAny>,
     reader: Reader,
     bbi_type: PyBBIFileType,
     zoom_level: u32,
@@ -433,9 +433,9 @@ pub struct PyBBIZoomScanner {
 #[pymethods]
 impl PyBBIZoomScanner {
     #[new]
-    pub fn new(py: Python, src: PyObject, bbi_type: PyBBIFileType, zoom_level: u32) -> Self {
+    pub fn new(py: Python, src: Py<PyAny>, bbi_type: PyBBIFileType, zoom_level: u32) -> Self {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)
-            .expect("Failed to convert PyObject to BufReader");
+            .expect("Failed to convert Py<PyAny> to BufReader");
         match bbi_type {
             PyBBIFileType::BigBed => {
                 let fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
@@ -498,11 +498,11 @@ impl PyBBIZoomScanner {
         }
     }
 
-    fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (
             self.src.clone_ref(py),
             self.bbi_type.clone().into_py_any(py)?,
@@ -652,7 +652,7 @@ impl PyBBIZoomScanner {
 #[pyo3(signature = (src, region=None, fields=None))]
 pub fn read_bigwig(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     region: Option<String>,
     fields: Option<Vec<String>>,
 ) -> PyResult<Vec<u8>> {
@@ -704,7 +704,7 @@ pub fn read_bigwig(
 #[pyo3(signature = (src, bed_schema="bed3+", region=None, fields=None))]
 pub fn read_bigbed(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     bed_schema: &str,
     region: Option<String>,
     fields: Option<Vec<String>>,

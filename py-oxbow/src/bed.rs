@@ -41,7 +41,7 @@ use oxbow::util::index::IndexType;
 /// field named `rest`.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBedScanner {
-    src: PyObject,
+    src: Py<PyAny>,
     reader: Reader,
     scanner: BedScanner,
     bed_schema: String,
@@ -52,7 +52,7 @@ pub struct PyBedScanner {
 impl PyBedScanner {
     #[new]
     #[pyo3(signature = (src, bed_schema, compressed=false))]
-    fn new(py: Python, src: PyObject, bed_schema: String, compressed: bool) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, bed_schema: String, compressed: bool) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let _bed_schema: BedSchema = bed_schema.parse().unwrap();
         let scanner = BedScanner::new(_bed_schema);
@@ -65,11 +65,11 @@ impl PyBedScanner {
         })
     }
 
-    fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
+    fn __getstate__(&self, py: Python) -> PyResult<Py<PyAny>> {
         Ok(py.None())
     }
 
-    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(PyObject, PyObject)> {
+    fn __getnewargs_ex__(&self, py: Python) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (
             self.src.clone_ref(py),
             self.bed_schema.clone().into_py_any(py)?,
@@ -264,7 +264,7 @@ impl PyBedScanner {
         &mut self,
         py: Python,
         region: &str,
-        index: Option<PyObject>,
+        index: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
@@ -357,10 +357,10 @@ impl PyBedScanner {
 #[pyo3(signature = (src, bed_schema, region=None, index=None, fields=None, compressed=false))]
 pub fn read_bed(
     py: Python,
-    src: PyObject,
+    src: Py<PyAny>,
     bed_schema: String,
     region: Option<String>,
-    index: Option<PyObject>,
+    index: Option<Py<PyAny>>,
     fields: Option<Vec<String>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
