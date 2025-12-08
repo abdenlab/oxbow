@@ -95,7 +95,7 @@ Oxbow handles multiple ranges as separate **fragments**. For more details, see t
 
 ## Column projection
 
-Oxbow lets you select only the columns you need and will not parse the others. This is referred to as column "projection".
+Oxbow lets you select only the columns you need and will not parse the others.
 
 ```{code-cell} ipython3
 import polars as pl
@@ -109,7 +109,7 @@ ox.from_bam(
 ).pl()
 ```
 
-The lazy data structures returned by a data source are able to push the column projection operation down to oxbow. In the following example, only the four fields passed to the polars `LazyFrame.select` method will be parsed when the output gets computed.
+In data systems lingo, selecting columns is also known as "projection". The lazy data structures returned by an oxbow data source are able to "push down" the projection operation to oxbow to prevent full record parsing. In the following example, only the four fields passed to the polars `LazyFrame.select` method will be parsed when the output gets computed.
 
 ```{code-cell} ipython3
 df = (
