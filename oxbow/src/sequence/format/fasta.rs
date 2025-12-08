@@ -20,7 +20,7 @@ use crate::sequence::model::field::FASTA_DEFAULT_FIELD_NAMES;
 ///
 /// let inner = File::open("sample.fa").map(BufReader::new).unwrap();
 /// let fmt_reader = noodles::fasta::io::Reader::new(inner);
-/// let index = noodles::fasta::fai::read("sample.fa.fai").unwrap();
+/// let index = noodles::fasta::fai::fs::read("sample.fa.fai").unwrap();
 ///
 /// let scanner = Scanner::default();
 /// let regions = vec!["chr1:1-1000", "chr1:1001-2000", "chr1:2001-3000", "chr1:3001-4000"];

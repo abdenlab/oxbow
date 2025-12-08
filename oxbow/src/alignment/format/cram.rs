@@ -270,7 +270,7 @@ where
     reader: noodles::cram::io::Reader<R>,
     repo: noodles::fasta::Repository,
     header: noodles::sam::Header,
-    container: noodles::cram::Container,
+    container: noodles::cram::io::reader::Container,
     records: std::vec::IntoIter<noodles::sam::alignment::RecordBuf>,
     eof: bool,
 }
@@ -288,7 +288,7 @@ where
             reader,
             header,
             repo,
-            container: noodles::cram::Container::default(),
+            container: noodles::cram::io::reader::Container::default(),
             records: Vec::new().into_iter(),
             eof: false,
         }
@@ -426,7 +426,7 @@ where
     repo: noodles::fasta::Repository,
     reference_sequence_id: usize,
     interval: noodles::core::region::Interval,
-    container: noodles::cram::Container,
+    container: noodles::cram::io::reader::Container,
     records: std::vec::IntoIter<noodles::sam::alignment::RecordBuf>,
 }
 
@@ -449,7 +449,7 @@ where
             repo,
             reference_sequence_id,
             interval,
-            container: noodles::cram::Container::default(),
+            container: noodles::cram::io::reader::Container::default(),
             records: Vec::new().into_iter(),
         }
     }
@@ -537,7 +537,7 @@ fn read_container_records<R: Read>(
     reader: &mut noodles::cram::io::Reader<R>,
     repo: &noodles::fasta::Repository,
     header: &noodles::sam::Header,
-    container: &mut noodles::cram::Container,
+    container: &mut noodles::cram::io::reader::Container,
 ) -> io::Result<Option<Vec<noodles::sam::alignment::RecordBuf>>> {
     if reader.read_container(container)? == 0 {
         return Ok(None); // EOF container

@@ -202,7 +202,7 @@ mod tests {
     fn create_bed_record() -> noodles::bed::Record<3> {
         let mut record = noodles::bed::Record::default();
         let buf = b"chr1\t100\t200\tfoo\tbar\n".to_vec();
-        let mut reader = noodles::bed::Reader::<3, Cursor<Vec<u8>>>::new(Cursor::new(buf));
+        let mut reader = noodles::bed::io::Reader::<3, Cursor<Vec<u8>>>::new(Cursor::new(buf));
         reader.read_record(&mut record).unwrap();
         record
     }

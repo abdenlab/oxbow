@@ -76,7 +76,7 @@ impl Scanner {
     /// of the last record scanned.
     pub fn scan_query<R: BufRead + Seek>(
         &self,
-        fmt_reader: noodles::bed::io::Reader<3, noodles::bgzf::Reader<R>>,
+        fmt_reader: noodles::bed::io::Reader<3, noodles::bgzf::io::Reader<R>>,
         region: noodles::core::Region,
         index: impl BinningIndex,
         fields: Option<Vec<String>>,
@@ -145,7 +145,7 @@ impl Scanner {
     /// coordinates. This is useful when you have pre-computed virtual offsets from a custom index.
     pub fn scan_virtual_ranges<R: Read + Seek>(
         &self,
-        fmt_reader: noodles::bed::io::Reader<3, noodles::bgzf::Reader<R>>,
+        fmt_reader: noodles::bed::io::Reader<3, noodles::bgzf::io::Reader<R>>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
         fields: Option<Vec<String>>,
         batch_size: Option<usize>,
