@@ -144,7 +144,7 @@ impl Scanner {
     #[allow(clippy::too_many_arguments)]
     pub fn scan_query<R: BufRead + Seek>(
         &self,
-        fmt_reader: noodles::gff::io::Reader<noodles::bgzf::Reader<R>>,
+        fmt_reader: noodles::gff::io::Reader<noodles::bgzf::io::Reader<R>>,
         region: noodles::core::Region,
         index: impl BinningIndex,
         fields: Option<Vec<String>>,
@@ -215,7 +215,7 @@ impl Scanner {
     /// coordinates. This is useful when you have pre-computed virtual offsets from a custom index.
     pub fn scan_virtual_ranges<R: Read + Seek>(
         &self,
-        fmt_reader: noodles::gff::io::Reader<noodles::bgzf::Reader<R>>,
+        fmt_reader: noodles::gff::io::Reader<noodles::bgzf::io::Reader<R>>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
         fields: Option<Vec<String>>,
         attr_defs: Option<Vec<(String, String)>>,

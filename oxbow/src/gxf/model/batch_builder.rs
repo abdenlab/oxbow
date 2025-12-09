@@ -135,7 +135,7 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for BatchBuilder {
         if !self.attr_defs.is_empty() {
             let attrs = record.attributes();
             for (def, builder) in self.attr_builders.iter_mut() {
-                match attrs.get(&def.name) {
+                match attrs.get(def.name.as_bytes()) {
                     // attribute is present in this record
                     Some(result) => {
                         match result {
@@ -163,21 +163,36 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for BatchBuilder {
 }
 
 /// Append a GTF record to the batch.
-impl Push<&noodles::gtf::Record> for BatchBuilder {
+impl<'a> Push<&'a noodles::gtf::Record<'a>> for BatchBuilder {
     fn push(&mut self, record: &noodles::gtf::Record) -> io::Result<()> {
+        use noodles::gff::feature::record::Attributes as FeatureAttributes;
+        use noodles::gtf::record::Attributes as GtfAttributes;
+
         for (_, builder) in self.field_builders.iter_mut() {
             builder.push(record)?;
         }
 
         // attributes (optional)
         if !self.attr_defs.is_empty() {
-            let attrs = record.attributes();
+            let attrs = record.attributes()?;
             for (def, builder) in self.attr_builders.iter_mut() {
-                match attrs.get(&def.name) {
-                    Some(value) => {
-                        let value = AttributeValue::String(value.to_string());
-                        builder.append_value(&value)?;
+                match <GtfAttributes as FeatureAttributes>::get(&attrs, def.name.as_bytes()) {
+                    // attribute is present in this record
+                    Some(result) => {
+                        match result {
+                            // attribute parsed successfully
+                            Ok(value) => {
+                                let value = AttributeValue::from(value);
+                                builder.append_value(&value)?;
+                            }
+                            // attribute could not be parsed
+                            Err(_) => {
+                                eprintln!("Error parsing attribute: {:?}", def.name);
+                                builder.append_null();
+                            }
+                        }
                     }
+                    // attribute is not present in this record
                     None => {
                         builder.append_null();
                     }
@@ -192,12 +207,22 @@ impl Push<&noodles::gtf::Record> for BatchBuilder {
 mod tests {
     use super::*;
     use arrow::datatypes::{DataType, Field as ArrowField};
+    use noodles::gff::feature::RecordBuf;
 
-    fn gff_recordbuf_to_line(record_buf: &noodles::gff::RecordBuf) -> noodles::gff::Line {
+    fn recordbuf_to_gff_line(record_buf: &RecordBuf) -> noodles::gff::Line {
         let mut writer = noodles::gff::io::Writer::new(Vec::new());
         writer.write_record(record_buf).unwrap();
         let buf = writer.into_inner();
-        let mut reader = noodles::gff::Reader::new(std::io::Cursor::new(buf.as_slice()));
+        let mut reader = noodles::gff::io::Reader::new(std::io::Cursor::new(buf.as_slice()));
+        let line = reader.lines().next().unwrap().unwrap();
+        line
+    }
+
+    fn recordbuf_to_gtf_line(record_buf: &RecordBuf) -> noodles::gtf::Line {
+        let mut writer = noodles::gtf::io::Writer::new(Vec::new());
+        writer.write_record(record_buf).unwrap();
+        let buf = writer.into_inner();
+        let mut reader = noodles::gtf::io::Reader::new(std::io::Cursor::new(buf.as_slice()));
         let line = reader.lines().next().unwrap().unwrap();
         line
     }
@@ -241,8 +266,8 @@ mod tests {
 
         let mut batch_builder = BatchBuilder::new(field_names, attr_defs, capacity).unwrap();
 
-        let record_buf = noodles::gff::RecordBuf::default();
-        let line = gff_recordbuf_to_line(&record_buf);
+        let record_buf = RecordBuf::default();
+        let line = recordbuf_to_gff_line(&record_buf);
         let record = line.as_record().unwrap().unwrap();
         let result = batch_builder.push(&record);
         assert!(result.is_ok());
@@ -256,7 +281,9 @@ mod tests {
 
         let mut batch_builder = BatchBuilder::new(field_names, attr_defs, capacity).unwrap();
 
-        let record = noodles::gtf::Record::default();
+        let record_buf = RecordBuf::default();
+        let line = recordbuf_to_gtf_line(&record_buf);
+        let record = line.as_record().unwrap().unwrap();
         let result = batch_builder.push(&record);
         assert!(result.is_ok());
     }
@@ -269,7 +296,9 @@ mod tests {
 
         let mut batch_builder = BatchBuilder::new(field_names, attr_defs, capacity).unwrap();
 
-        let record = noodles::gtf::Record::default();
+        let record_buf = RecordBuf::default();
+        let line = recordbuf_to_gtf_line(&record_buf);
+        let record = line.as_record().unwrap().unwrap();
         batch_builder.push(&record).unwrap();
         let record_batch = batch_builder.finish();
         assert!(record_batch.is_ok());

@@ -4,9 +4,8 @@ use std::sync::Arc;
 
 use arrow::array::{ArrayRef, GenericStringBuilder, ListBuilder};
 use arrow::datatypes::{DataType, Field as ArrowField};
-
-use noodles::gff::record::attributes::field::Value as GffValue;
-use noodles::gtf::record::attributes::Entry as GtfEntry;
+use noodles::gff::feature::record::attributes::field::Value as FeatureAttributeValue;
+use noodles::gff::record::attributes::field::Value as GffAttributeValue;
 
 /// An GXF attribute definition.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -64,17 +63,22 @@ pub enum AttributeValue {
     Array(Vec<String>),
 }
 
-impl From<GtfEntry> for AttributeValue {
-    fn from(entry: GtfEntry) -> Self {
-        Self::String(entry.value().to_string())
+impl From<FeatureAttributeValue<'_>> for AttributeValue {
+    fn from(value: FeatureAttributeValue) -> Self {
+        match value {
+            FeatureAttributeValue::String(s) => Self::String(s.to_string()),
+            FeatureAttributeValue::Array(a) => {
+                Self::Array(a.iter().map(|s| s.unwrap().to_string()).collect())
+            }
+        }
     }
 }
 
-impl<'a> From<&'a GffValue<'a>> for AttributeValue {
-    fn from(value: &'a GffValue<'a>) -> Self {
+impl<'a> From<&'a GffAttributeValue<'a>> for AttributeValue {
+    fn from(value: &'a GffAttributeValue<'a>) -> Self {
         match value {
-            GffValue::String(s) => Self::String(s.to_string()),
-            GffValue::Array(a) => Self::Array(a.iter().map(|s| s.unwrap().to_string()).collect()),
+            GffAttributeValue::String(s) => Self::String(s.to_string()),
+            GffAttributeValue::Array(a) => Self::Array(a.iter().map(|s| s.to_string()).collect()),
         }
     }
 }
@@ -175,27 +179,34 @@ pub trait Push<T> {
     fn push(&mut self, record: T);
 }
 
-impl Push<noodles::gtf::Record> for AttributeScanner {
+impl Push<noodles::gtf::Record<'_>> for AttributeScanner {
     fn push(&mut self, record: noodles::gtf::Record) {
-        record.attributes().as_ref().iter().for_each(|entry| {
-            let key = entry.key();
-            self.attrs
-                .entry(key.to_string())
-                .or_insert_with(|| "String".to_string());
+        let attrs = match record.attributes() {
+            Ok(attrs) => attrs,
+            Err(_) => return,
+        };
+        attrs.iter().for_each(|result| {
+            if let Ok((key, _)) = result {
+                self.attrs
+                    .entry(key.to_string())
+                    .or_insert_with(|| "String".to_string());
+            };
         });
     }
 }
 
 impl Push<noodles::gff::Record<'_>> for AttributeScanner {
     fn push(&mut self, record: noodles::gff::Record) {
-        record.attributes().iter().for_each(|result| {
-            let (key, value) = result.unwrap();
-            self.attrs
-                .entry(key.to_string())
-                .or_insert_with(|| match value {
-                    GffValue::String(_) => "String".to_string(),
-                    GffValue::Array(_) => "Array".to_string(),
-                });
+        let attrs = record.attributes();
+        attrs.iter().for_each(|result| {
+            if let Ok((key, value)) = result {
+                self.attrs
+                    .entry(key.to_string())
+                    .or_insert_with(|| match value {
+                        GffAttributeValue::String(_) => "String".to_string(),
+                        GffAttributeValue::Array(_) => "Array".to_string(),
+                    });
+            };
         });
     }
 }
