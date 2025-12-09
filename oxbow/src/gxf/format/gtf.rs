@@ -87,19 +87,16 @@ impl Scanner {
         fmt_reader: &mut noodles::gtf::io::Reader<R>,
         scan_rows: Option<usize>,
     ) -> io::Result<Vec<(String, String)>> {
-        use noodles::gtf::Line;
         let lines = fmt_reader.lines();
         let mut attr_scanner = AttributeScanner::new();
         match scan_rows {
             None => {
                 for line in lines {
                     match line {
-                        Ok(line) => {
-                            match line {
-                                Line::Record(record) => attr_scanner.push(record),
-                                Line::Comment(_) => continue,
-                            };
-                        }
+                        Ok(line) => match line.as_record() {
+                            Some(result) => attr_scanner.push(result?),
+                            None => continue,
+                        },
                         Err(e) => eprintln!("Failed to read line: {}", e),
                     }
                 }
@@ -107,12 +104,10 @@ impl Scanner {
             Some(n) => {
                 for line in lines.take(n) {
                     match line {
-                        Ok(line) => {
-                            match line {
-                                Line::Record(record) => attr_scanner.push(record),
-                                Line::Comment(_) => continue,
-                            };
-                        }
+                        Ok(line) => match line.as_record() {
+                            Some(result) => attr_scanner.push(result?),
+                            None => continue,
+                        },
                         Err(e) => eprintln!("Failed to read line: {}", e),
                     }
                 }
@@ -149,7 +144,7 @@ impl Scanner {
     #[allow(clippy::too_many_arguments)]
     pub fn scan_query<R: BufRead + Seek>(
         &self,
-        fmt_reader: noodles::gtf::io::Reader<noodles::bgzf::Reader<R>>,
+        fmt_reader: noodles::gtf::io::Reader<noodles::bgzf::io::Reader<R>>,
         region: noodles::core::Region,
         index: impl BinningIndex,
         fields: Option<Vec<String>>,
@@ -220,7 +215,7 @@ impl Scanner {
     /// coordinates. This is useful when you have pre-computed virtual offsets from a custom index.
     pub fn scan_virtual_ranges<R: Read + Seek>(
         &self,
-        fmt_reader: noodles::gtf::io::Reader<noodles::bgzf::Reader<R>>,
+        fmt_reader: noodles::gtf::io::Reader<noodles::bgzf::io::Reader<R>>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
         fields: Option<Vec<String>>,
         attr_defs: Option<Vec<(String, String)>>,

@@ -7,7 +7,6 @@ use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use indexmap::IndexMap;
 use noodles::sam::alignment::record::data::field::Tag;
-use noodles::sam::alignment::record::Data;
 
 use super::field::Push as _;
 use super::field::{Field, FieldBuilder, DEFAULT_FIELD_NAMES};

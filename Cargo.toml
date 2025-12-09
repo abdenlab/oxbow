@@ -16,4 +16,4 @@ bstr = { version = "1.9.0", default-features = false, features = ["std"] }
 byteorder = "1.4.3"
 flate2 = "1.1.0"
 indexmap = "2.8.0"
-noodles = { version = "0.93", features = ["bam", "bcf", "bed", "bgzf", "core", "csi", "cram", "fasta", "fastq", "gff", "gtf", "sam", "tabix", "vcf"] }
+noodles = { version = "0.102", features = ["bam", "bcf", "bed", "bgzf", "core", "csi", "cram", "fasta", "fastq", "gff", "gtf", "sam", "tabix", "vcf"] }

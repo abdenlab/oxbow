@@ -196,7 +196,7 @@ impl Scanner {
     #[allow(clippy::too_many_arguments)]
     pub fn scan_query<R: BufRead + Seek>(
         &self,
-        fmt_reader: noodles::vcf::io::Reader<noodles::bgzf::Reader<R>>,
+        fmt_reader: noodles::vcf::io::Reader<noodles::bgzf::io::Reader<R>>,
         region: noodles::core::Region,
         index: impl BinningIndex,
         fields: Option<Vec<String>>,
@@ -289,7 +289,7 @@ impl Scanner {
     #[allow(clippy::too_many_arguments)]
     pub fn scan_virtual_ranges<R: Read + Seek>(
         &self,
-        fmt_reader: noodles::vcf::io::Reader<noodles::bgzf::Reader<R>>,
+        fmt_reader: noodles::vcf::io::Reader<noodles::bgzf::io::Reader<R>>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
         fields: Option<Vec<String>>,
         info_fields: Option<Vec<String>>,

@@ -206,7 +206,7 @@ mod tests {
     #[test]
     fn test_field_builder_push_fasta() {
         let record = noodles::fasta::Record::new(
-            noodles::fasta::record::Definition::new(b"s0", Some(b"description".to_vec())),
+            noodles::fasta::record::Definition::new(b"s0", Some(b"description".into())),
             noodles::fasta::record::Sequence::from(b"ACGT".to_vec()),
         );
         let mut builder = FieldBuilder::new(Field::Name, 10);
@@ -220,7 +220,7 @@ mod tests {
     #[test]
     fn test_field_builder_push_fasta_no_quality() {
         let record = noodles::fasta::Record::new(
-            noodles::fasta::record::Definition::new(b"s0", Some(b"description".to_vec())),
+            noodles::fasta::record::Definition::new(b"s0", Some(b"description".into())),
             noodles::fasta::record::Sequence::from(b"ACGT".to_vec()),
         );
         let mut builder = FieldBuilder::new(Field::Qual, 10);

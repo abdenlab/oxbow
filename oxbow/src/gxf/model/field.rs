@@ -5,6 +5,7 @@ use std::sync::Arc;
 use arrow::array::{ArrayRef, Float32Builder, GenericStringBuilder, Int32Builder, UInt8Builder};
 use arrow::datatypes::DataType;
 use arrow::datatypes::Field as ArrowField;
+use noodles::gff::feature::record::{Phase, Strand};
 
 pub const DEFAULT_FIELD_NAMES: [&str; 8] = [
     "seqid", "source", "type", "start", "end", "score", "strand", "frame",
@@ -134,15 +135,15 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for FieldBuilder {
     fn push(&mut self, record: &noodles::gff::Record) -> io::Result<()> {
         match self {
             Self::SeqId(builder) => {
-                let seq_id = record.reference_sequence_name();
-                builder.append_value(seq_id);
+                let seq_id = record.reference_sequence_name().to_string();
+                builder.append_value(&seq_id);
             }
             Self::Source(builder) => {
-                let source = record.source();
-                builder.append_value(source);
+                let source = record.source().to_string();
+                builder.append_value(&source);
             }
             Self::Type(builder) => {
-                let ty = record.ty();
+                let ty = record.ty().to_string();
                 builder.append_value(ty);
             }
             Self::Start(builder) => {
@@ -159,17 +160,17 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for FieldBuilder {
             }
             Self::Strand(builder) => {
                 let strand = match record.strand() {
-                    Ok(noodles::gff::record::Strand::Forward) => Some("+"),
-                    Ok(noodles::gff::record::Strand::Reverse) => Some("-"),
+                    Ok(Strand::Forward) => Some("+"),
+                    Ok(Strand::Reverse) => Some("-"),
                     _ => None,
                 };
                 builder.append_option(strand);
             }
             Self::Frame(builder) => {
                 let frame = match record.phase() {
-                    Some(Ok(noodles::gff::record::Phase::Zero)) => Some(0),
-                    Some(Ok(noodles::gff::record::Phase::One)) => Some(1),
-                    Some(Ok(noodles::gff::record::Phase::Two)) => Some(2),
+                    Some(Ok(Phase::Zero)) => Some(0),
+                    Some(Ok(Phase::One)) => Some(1),
+                    Some(Ok(Phase::Two)) => Some(2),
                     _ => None,
                 };
                 builder.append_option(frame);
@@ -180,45 +181,48 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for FieldBuilder {
 }
 
 /// Append a field value from a GTF record to the column.
-impl Push<&noodles::gtf::Record> for FieldBuilder {
+impl<'a> Push<&'a noodles::gtf::Record<'a>> for FieldBuilder {
     fn push(&mut self, record: &noodles::gtf::Record) -> io::Result<()> {
         match self {
             Self::SeqId(builder) => {
-                let seq_id = record.reference_sequence_name();
+                let seq_id = record.reference_sequence_name().to_string();
                 builder.append_value(seq_id);
             }
             Self::Source(builder) => {
-                let source = record.source();
+                let source = record.source().to_string();
                 builder.append_value(source);
             }
             Self::Type(builder) => {
-                let ty = record.ty();
+                let ty = record.ty().to_string();
                 builder.append_value(ty);
             }
             Self::Start(builder) => {
-                let start = usize::from(record.start()) as i32;
-                builder.append_value(start);
+                let start = record.start().ok().map(|pos| usize::from(pos) as i32);
+                builder.append_option(start);
             }
             Self::End(builder) => {
-                let end = usize::from(record.end()) as i32;
-                builder.append_value(end);
+                let end = record.end().ok().map(|pos| usize::from(pos) as i32);
+                builder.append_option(end);
             }
             Self::Score(builder) => {
-                builder.append_option(record.score());
+                let score = record.score().and_then(|score| score.ok());
+                builder.append_option(score);
             }
             Self::Strand(builder) => {
                 let strand = match record.strand() {
-                    Some(noodles::gtf::record::Strand::Forward) => Some("+"),
-                    Some(noodles::gtf::record::Strand::Reverse) => Some("-"),
+                    Ok(Strand::Forward) => Some("+"),
+                    Ok(Strand::Reverse) => Some("-"),
                     _ => None,
                 };
                 builder.append_option(strand);
             }
             Self::Frame(builder) => {
-                let frame = record.frame().map(|frame| {
-                    let n: u8 = frame.into();
-                    n
-                });
+                let frame = match record.phase() {
+                    Some(Ok(Phase::Zero)) => Some(0),
+                    Some(Ok(Phase::One)) => Some(1),
+                    Some(Ok(Phase::Two)) => Some(2),
+                    _ => None,
+                };
                 builder.append_option(frame);
             }
         }
@@ -229,6 +233,26 @@ impl Push<&noodles::gtf::Record> for FieldBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn new_gtf_line() -> noodles::gtf::Line {
+        let record_buf = noodles::gff::feature::RecordBuf::default();
+        let mut writer = noodles::gtf::io::Writer::new(Vec::new());
+        writer.write_record(&record_buf).unwrap();
+        let buf = writer.into_inner();
+        let mut reader = noodles::gtf::io::Reader::new(std::io::Cursor::new(buf.as_slice()));
+        let line = reader.lines().next().unwrap().unwrap();
+        line
+    }
+
+    fn new_gff_line() -> noodles::gff::Line {
+        let record_buf = noodles::gff::feature::RecordBuf::default();
+        let mut writer = noodles::gff::io::Writer::new(Vec::new());
+        writer.write_record(&record_buf).unwrap();
+        let buf = writer.into_inner();
+        let mut reader = noodles::gff::io::Reader::new(std::io::Cursor::new(buf.as_slice()));
+        let line = reader.lines().next().unwrap().unwrap();
+        line
+    }
 
     #[test]
     fn test_field_arrow_type() {
@@ -262,7 +286,7 @@ mod tests {
     }
 
     #[test]
-    fn test_field_builder_push_gtf() {
+    fn test_field_builder_push_gxf() {
         for field in [
             Field::SeqId,
             Field::Source,
@@ -274,7 +298,13 @@ mod tests {
             Field::Frame,
         ] {
             let mut builder = FieldBuilder::new(field, 10);
-            let record = noodles::gtf::Record::default();
+
+            let line = new_gtf_line();
+            let record = line.as_record().unwrap().unwrap();
+            assert!(builder.push(&record).is_ok());
+
+            let line = new_gff_line();
+            let record = line.as_record().unwrap().unwrap();
             assert!(builder.push(&record).is_ok());
         }
     }

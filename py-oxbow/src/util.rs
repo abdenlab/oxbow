@@ -20,8 +20,8 @@ pub const BUFFER_SIZE_BYTES: usize = const { 1024 * 1024 };
 pub enum Reader {
     File(BufReader<std::fs::File>),
     PyFileLike(BufReader<PyFileLikeObject>),
-    BgzfFile(noodles::bgzf::Reader<BufReader<std::fs::File>>),
-    BgzfPyFileLike(noodles::bgzf::Reader<BufReader<PyFileLikeObject>>),
+    BgzfFile(noodles::bgzf::io::Reader<BufReader<std::fs::File>>),
+    BgzfPyFileLike(noodles::bgzf::io::Reader<BufReader<PyFileLikeObject>>),
 }
 
 impl Read for Reader {
@@ -108,15 +108,17 @@ impl Reader {
             Self::BgzfFile(source) => {
                 let vpos = source.virtual_position();
                 let file = source.get_ref().get_ref().try_clone().unwrap();
-                let mut reader =
-                    noodles::bgzf::Reader::new(BufReader::with_capacity(BUFFER_SIZE_BYTES, file));
+                let mut reader = noodles::bgzf::io::Reader::new(BufReader::with_capacity(
+                    BUFFER_SIZE_BYTES,
+                    file,
+                ));
                 reader.seek_to_virtual_position(vpos).unwrap();
                 Self::BgzfFile(reader)
             }
             Self::BgzfPyFileLike(source) => {
                 let vpos = source.virtual_position();
                 let file_like = source.get_ref().get_ref().clone();
-                let mut reader = noodles::bgzf::Reader::new(BufReader::with_capacity(
+                let mut reader = noodles::bgzf::io::Reader::new(BufReader::with_capacity(
                     BUFFER_SIZE_BYTES,
                     file_like,
                 ));
@@ -137,7 +139,7 @@ pub fn pyobject_to_bufreader(
         let file = std::fs::File::open(path)?;
         let reader = BufReader::with_capacity(BUFFER_SIZE_BYTES, file);
         if compressed {
-            let reader = noodles::bgzf::Reader::new(reader);
+            let reader = noodles::bgzf::io::Reader::new(reader);
             Ok(Reader::BgzfFile(reader))
         } else {
             Ok(Reader::File(reader))
@@ -146,7 +148,7 @@ pub fn pyobject_to_bufreader(
         let file_like = PyFileLikeObject::new(obj, true, false, true)?;
         let reader = BufReader::with_capacity(BUFFER_SIZE_BYTES, file_like);
         if compressed {
-            let reader = noodles::bgzf::Reader::new(reader);
+            let reader = noodles::bgzf::io::Reader::new(reader);
             Ok(Reader::BgzfPyFileLike(reader))
         } else {
             Ok(Reader::PyFileLike(reader))

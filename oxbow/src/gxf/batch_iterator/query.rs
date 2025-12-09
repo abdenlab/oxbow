@@ -63,61 +63,7 @@ where
     type Item = Result<RecordBatch, ArrowError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut buf = String::new();
-        let mut count = 0;
-
-        while count < self.batch_size && self.count < self.limit {
-            buf.clear();
-            match self.reader.read_line(&mut buf) {
-                Ok(0) => break,
-                Ok(_) => {
-                    let line: noodles::gtf::Line = match buf.parse() {
-                        Ok(line) => line,
-                        Err(e) => return Some(Err(ArrowError::ExternalError(e.into()))),
-                    };
-                    match line {
-                        noodles::gtf::Line::Comment(_) => continue,
-                        noodles::gtf::Line::Record(record) => {
-                            match intersects_gtf(
-                                &self.header,
-                                &record,
-                                self.reference_sequence_id,
-                                self.interval,
-                            ) {
-                                Ok(true) => match self.builder.push(&record) {
-                                    Ok(()) => {
-                                        self.count += 1;
-                                        count += 1;
-                                    }
-                                    Err(e) => return Some(Err(e.into())),
-                                },
-                                Ok(false) => {}
-                                Err(e) => return Some(Err(e.into())),
-                            }
-                        }
-                    };
-                }
-                Err(e) => return Some(Err(e.into())),
-            };
-        }
-
-        if count == 0 {
-            None
-        } else {
-            let batch = self.builder.finish();
-            Some(batch)
-        }
-    }
-}
-
-impl<R> Iterator for BatchIterator<noodles::gff::io::Reader<BgzfChunkReader<R>>>
-where
-    R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek,
-{
-    type Item = Result<RecordBatch, ArrowError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut line = noodles::gff::Line::default();
+        let mut line = noodles::gtf::Line::default();
         let mut count = 0;
 
         while count < self.batch_size && self.count < self.limit {
@@ -126,7 +72,7 @@ where
                 Ok(_) => {
                     match line.as_record() {
                         Some(Ok(record)) => {
-                            match intersects_gff(
+                            match intersects(
                                 &self.header,
                                 &record,
                                 self.reference_sequence_id,
@@ -159,37 +105,66 @@ where
     }
 }
 
-pub fn intersects_gtf(
-    header: &noodles::csi::binning_index::index::Header,
-    record: &noodles::gtf::Record,
-    reference_sequence_id: usize,
-    region_interval: Interval,
-) -> io::Result<bool> {
-    let rname = record.reference_sequence_name().as_bytes();
-    match (
-        header.reference_sequence_names().get_index_of(rname),
-        record.start(),
-        record.end(),
-    ) {
-        (Some(id), start, end) => {
-            let alignment_interval = (start..=end).into();
-            Ok(id == reference_sequence_id && region_interval.intersects(alignment_interval))
+impl<R> Iterator for BatchIterator<noodles::gff::io::Reader<BgzfChunkReader<R>>>
+where
+    R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek,
+{
+    type Item = Result<RecordBatch, ArrowError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut line = noodles::gff::Line::default();
+        let mut count = 0;
+
+        while count < self.batch_size && self.count < self.limit {
+            match self.reader.read_line(&mut line) {
+                Ok(0) => break,
+                Ok(_) => {
+                    match line.as_record() {
+                        Some(Ok(record)) => {
+                            match intersects(
+                                &self.header,
+                                &record,
+                                self.reference_sequence_id,
+                                self.interval,
+                            ) {
+                                Ok(true) => match self.builder.push(&record) {
+                                    Ok(()) => {
+                                        self.count += 1;
+                                        count += 1;
+                                    }
+                                    Err(e) => return Some(Err(e.into())),
+                                },
+                                Ok(false) => {}
+                                Err(e) => return Some(Err(e.into())),
+                            }
+                        }
+                        _ => continue,
+                    };
+                }
+                Err(e) => return Some(Err(e.into())),
+            };
         }
-        _ => Ok(false),
+
+        if count == 0 {
+            None
+        } else {
+            let batch = self.builder.finish();
+            Some(batch)
+        }
     }
 }
 
-pub fn intersects_gff(
+pub fn intersects(
     header: &noodles::csi::binning_index::index::Header,
-    record: &noodles::gff::Record,
+    record: &impl noodles::gff::feature::Record,
     reference_sequence_id: usize,
     region_interval: Interval,
 ) -> io::Result<bool> {
-    let rname = record.reference_sequence_name().as_bytes();
+    let rname = record.reference_sequence_name();
     match (
         header.reference_sequence_names().get_index_of(rname),
-        record.start(),
-        record.end(),
+        record.feature_start(),
+        record.feature_end(),
     ) {
         (Some(id), Ok(start), Ok(end)) => {
             let alignment_interval = (start..=end).into();

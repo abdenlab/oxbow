@@ -8,8 +8,8 @@ use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
 use flate2::read::MultiGzDecoder;
-use noodles::bgzf::gzi::Reader as GziReader;
-use noodles::bgzf::IndexedReader as IndexedBgzfReader;
+use noodles::bgzf::gzi::io::Reader as GziReader;
+use noodles::bgzf::io::IndexedReader as IndexedBgzfReader;
 use noodles::core::Region;
 
 use crate::error::err_on_unwind;
@@ -204,7 +204,7 @@ impl PyFastqScanner {
             .map(|(start, end)| Ok((start.to_virtual_position()?, end.to_virtual_position()?)))
             .collect::<PyResult<Vec<_>>>()?;
         let reader = self.reader.clone();
-        let bgzf_reader = noodles::bgzf::Reader::new(reader);
+        let bgzf_reader = noodles::bgzf::io::Reader::new(reader);
         let fmt_reader = noodles::fastq::io::Reader::new(bgzf_reader);
         let batch_reader = self
             .scanner

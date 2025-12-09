@@ -26,13 +26,13 @@ pub enum IndexType {
 impl IndexType {
     pub fn from_path(path: &str) -> io::Result<Self> {
         if path.ends_with(".csi") {
-            let mut reader = File::open(path).map(csi::Reader::new)?;
+            let mut reader = File::open(path).map(csi::io::Reader::new)?;
             Ok(IndexType::Binned(reader.read_index()?))
         } else if path.ends_with(".tbi") {
-            let mut reader = File::open(path).map(tabix::Reader::new)?;
+            let mut reader = File::open(path).map(tabix::io::Reader::new)?;
             Ok(IndexType::Linear(reader.read_index()?))
         } else if path.ends_with(".bai") {
-            let mut reader = File::open(path).map(bai::Reader::new)?;
+            let mut reader = File::open(path).map(bai::io::Reader::new)?;
             Ok(IndexType::Linear(reader.read_index()?))
         } else {
             Err(io::Error::new(
@@ -186,18 +186,18 @@ where
     read.seek(SeekFrom::Start(0))?;
 
     if magic == b"BAI\x01" as &[u8] {
-        let mut bai_reader = noodles::bam::bai::Reader::new(read);
+        let mut bai_reader = noodles::bam::bai::io::Reader::new(read);
         return Ok(IndexType::Linear(bai_reader.read_index()?));
     }
 
     // Try CSI, then TBI if CSI fails.
-    let mut csi_reader = noodles::csi::Reader::new(read);
+    let mut csi_reader = noodles::csi::io::Reader::new(read);
     match csi_reader.read_index() {
         Ok(index) => Ok(IndexType::Binned(index)),
         Err(_) => {
             let mut read = csi_reader.into_inner().into_inner();
             read.seek(SeekFrom::Start(0))?;
-            let mut tabix_reader = noodles::tabix::Reader::new(read);
+            let mut tabix_reader = noodles::tabix::io::Reader::new(read);
             match tabix_reader.read_index() {
                 Ok(index) => Ok(IndexType::Linear(index)),
                 Err(_) => Err(io::Error::new(
