@@ -1,10 +1,9 @@
 [package]
 name = "py-oxbow"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "oxbow"
 crate-type = ["cdylib"]
@@ -13,8 +12,8 @@ doc = false
 [dependencies]
 oxbow = { workspace = true }
 arrow = { workspace = true }
+noodles = { workspace = true }
 bigtools = { workspace = true }
 flate2 = { workspace = true }
-noodles = { workspace = true }
 pyo3 = { version = "0.27", features = ["abi3-py39"] }
 pyo3-arrow = { version = "0.15", default-features = false }

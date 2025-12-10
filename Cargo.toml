@@ -11,9 +11,7 @@ oxbow = { path = "oxbow" }
 arrow = { version = "57" }
 arrow-array = { version = "57" }
 arrow-schema = { version = "57" }
-bigtools = { version = "0.5.6", features = ["read"] }
-bstr = { version = "1.9.0", default-features = false, features = ["std"] }
-byteorder = "1.4.3"
-flate2 = "1.1.0"
-indexmap = "2.8.0"
 noodles = { version = "0.102", features = ["bam", "bcf", "bed", "bgzf", "core", "csi", "cram", "fasta", "fastq", "gff", "gtf", "sam", "tabix", "vcf"] }
+bigtools = { version = "0.5.6", features = ["read"] }
+flate2 = "1.1.5"
+indexmap = "2.12.1"
