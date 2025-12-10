@@ -21,6 +21,5 @@ arrow = { workspace = true }
 arrow-array = { workspace = true }
 arrow-schema = { workspace = true }
 bigtools = { workspace = true}
-bstr = { workspace = true }
 indexmap = { workspace = true }
 noodles = { workspace = true }

@@ -6,7 +6,6 @@ use std::sync::Arc;
 use arrow::array::{ArrayRef, Float32Builder, GenericStringBuilder, Int64Builder, ListBuilder};
 use arrow::datatypes::{DataType, Field as ArrowField};
 
-use bstr::ByteSlice;
 use noodles::sam::alignment::record::data::field::value::array::Subtype;
 use noodles::sam::alignment::record::data::field::value::Array;
 use noodles::sam::alignment::record::data::field::{Tag, Type, Value};
@@ -282,13 +281,8 @@ impl TagBuilder {
             }
             Self::Hex(builder) => {
                 if let Value::Hex(v) = value {
-                    match v.to_str() {
-                        Ok(s) => {
-                            builder.append_value(s);
-                            Ok(())
-                        }
-                        Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
-                    }
+                    builder.append_value(v.to_string());
+                    Ok(())
                 } else {
                     Err(io::Error::new(
                         io::ErrorKind::InvalidInput,
@@ -336,13 +330,10 @@ impl TagBuilder {
                 )),
             },
             Self::String(builder) => match value {
-                Value::String(v) => match v.to_str() {
-                    Ok(s) => {
-                        builder.append_value(s);
-                        Ok(())
-                    }
-                    Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e)),
-                },
+                Value::String(v) => {
+                    builder.append_value(v.to_string());
+                    Ok(())
+                }
                 Value::Character(v) => {
                     builder.append_value(v.to_string());
                     Ok(())
@@ -641,7 +632,7 @@ impl TagScanner {
             .tags
             .iter()
             .map(|(tag, type_code)| {
-                let tag_name = format!("{}", &tag.as_ref().as_bstr());
+                let tag_name = std::str::from_utf8(tag.as_ref()).unwrap().to_string();
                 (tag_name, type_code.clone())
             })
             .collect();
