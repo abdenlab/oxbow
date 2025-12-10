@@ -1,6 +1,6 @@
 [package]
 name = "oxbow"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 readme = "./README.md"
@@ -21,6 +21,5 @@ arrow = { workspace = true }
 arrow-array = { workspace = true }
 arrow-schema = { workspace = true }
 bigtools = { workspace = true}
-bstr = { workspace = true }
 indexmap = { workspace = true }
 noodles = { workspace = true }
