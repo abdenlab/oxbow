@@ -6,3 +6,4 @@ https://oxbow-ngs.s3.us-east-2.amazonaws.com/ALL.chrY.phase3_shapeit2_mvncall_in
 https://oxbow-ngs.s3.us-east-2.amazonaws.com/ALL.chrY.phase3_shapeit2_mvncall_integrated.20130502.genotypes.bcf.csi
 https://oxbow-ngs.s3.us-east-2.amazonaws.com/valid.bigWig
 https://oxbow-ngs.s3.us-east-2.amazonaws.com/small.bigBed
+https://figshare.com/ndownloader/files/2133236
