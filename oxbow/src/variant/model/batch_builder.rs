@@ -315,6 +315,7 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
                         builder.append_value(value)?;
                     }
                     Some(None) => {
+                        // info field value is empty/missing (".")
                         builder.append_null();
                     }
                     None => {
