@@ -324,13 +324,16 @@ batch_size=2, samples=["NA12878i", "NA12891", "NA12892"]:
         snpeff.Amino_Acid_length: null
         snpeff.Codon_Change: null
         snpeff.ERRORS: null
-        snpeff.Effect: intergenic_region
-        snpeff.Effect_Impact: MODIFIER
+        snpeff.Effect:
+        - intergenic_region
+        snpeff.Effect_Impact:
+        - MODIFIER
         snpeff.Exon_Rank: null
         snpeff.Functional_Class: null
         snpeff.Gene_Coding: null
         snpeff.Gene_Name: null
-        snpeff.Genotype_Number: '1'
+        snpeff.Genotype_Number:
+        - '1'
         snpeff.Transcript_BioType: null
         snpeff.Transcript_ID: null
         snpeff.WARNINGS: null
@@ -416,19 +419,51 @@ batch_size=2, samples=["NA12878i", "NA12891", "NA12892"]:
         hgmd_2014.2.OMIM_ID: null
         hgmd_2014.2.PHEN: null
         hgmd_2014.2.PubMed: null
-        snpeff.Amino_Acid_Change: c.421A>G
-        snpeff.Amino_Acid_length: '305'
-        snpeff.Codon_Change: Aca/Gca
+        snpeff.Amino_Acid_Change:
+        - c.421A>G
+        - c.421A>G
+        - p.Thr141Ala/c.421A>G
+        snpeff.Amino_Acid_length:
+        - '305'
+        - '305'
+        - '305'
+        snpeff.Codon_Change:
+        - Aca/Gca
         snpeff.ERRORS: null
-        snpeff.Effect: sequence_feature[transmembrane_region:Transmembrane_region]
-        snpeff.Effect_Impact: LOW
-        snpeff.Exon_Rank: '1'
-        snpeff.Functional_Class: MISSENSE
-        snpeff.Gene_Coding: CODING
-        snpeff.Gene_Name: OR4F5
-        snpeff.Genotype_Number: '1'
-        snpeff.Transcript_BioType: protein_coding
-        snpeff.Transcript_ID: ENST00000335137
+        snpeff.Effect:
+        - sequence_feature[transmembrane_region:Transmembrane_region]
+        - sequence_feature[disulfide_bond]
+        - missense_variant
+        snpeff.Effect_Impact:
+        - LOW
+        - LOW
+        - MODERATE
+        snpeff.Exon_Rank:
+        - '1'
+        - '1'
+        - '1'
+        snpeff.Functional_Class:
+        - MISSENSE
+        snpeff.Gene_Coding:
+        - CODING
+        - CODING
+        - CODING
+        snpeff.Gene_Name:
+        - OR4F5
+        - OR4F5
+        - OR4F5
+        snpeff.Genotype_Number:
+        - '1'
+        - '1'
+        - '1'
+        snpeff.Transcript_BioType:
+        - protein_coding
+        - protein_coding
+        - protein_coding
+        snpeff.Transcript_ID:
+        - ENST00000335137
+        - ENST00000335137
+        - ENST00000335137
         snpeff.WARNINGS: null
     pos:
     - 65872

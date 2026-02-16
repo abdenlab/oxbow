@@ -195,19 +195,29 @@ region="X", index="data/sample.vcf.gz.csi", batch_size=2, samples=["NA12878i", "
         hgmd_2014.2.OMIM_ID: null
         hgmd_2014.2.PHEN: null
         hgmd_2014.2.PubMed: null
-        snpeff.Amino_Acid_Change: c.405-112delT
-        snpeff.Amino_Acid_length: '1493'
+        snpeff.Amino_Acid_Change:
+        - c.405-112delT
+        snpeff.Amino_Acid_length:
+        - '1493'
         snpeff.Codon_Change: null
         snpeff.ERRORS: null
-        snpeff.Effect: intron_variant
-        snpeff.Effect_Impact: MODIFIER
-        snpeff.Exon_Rank: '3'
+        snpeff.Effect:
+        - intron_variant
+        snpeff.Effect_Impact:
+        - MODIFIER
+        snpeff.Exon_Rank:
+        - '3'
         snpeff.Functional_Class: null
-        snpeff.Gene_Coding: CODING
-        snpeff.Gene_Name: SHROOM4
-        snpeff.Genotype_Number: '1'
-        snpeff.Transcript_BioType: protein_coding
-        snpeff.Transcript_ID: ENST00000376020
+        snpeff.Gene_Coding:
+        - CODING
+        snpeff.Gene_Name:
+        - SHROOM4
+        snpeff.Genotype_Number:
+        - '1'
+        snpeff.Transcript_BioType:
+        - protein_coding
+        snpeff.Transcript_ID:
+        - ENST00000376020
         snpeff.WARNINGS: null
     -   AC:
         - 3
@@ -291,19 +301,31 @@ region="X", index="data/sample.vcf.gz.csi", batch_size=2, samples=["NA12878i", "
         hgmd_2014.2.OMIM_ID: null
         hgmd_2014.2.PHEN: null
         hgmd_2014.2.PubMed: null
-        snpeff.Amino_Acid_Change: p.Thr8Thr/c.24A>G
-        snpeff.Amino_Acid_length: '164'
-        snpeff.Codon_Change: acA/acG
+        snpeff.Amino_Acid_Change:
+        - p.Thr8Thr/c.24A>G
+        snpeff.Amino_Acid_length:
+        - '164'
+        snpeff.Codon_Change:
+        - acA/acG
         snpeff.ERRORS: null
-        snpeff.Effect: synonymous_variant
-        snpeff.Effect_Impact: LOW
-        snpeff.Exon_Rank: '1'
-        snpeff.Functional_Class: SILENT
-        snpeff.Gene_Coding: CODING
-        snpeff.Gene_Name: NUDT10
-        snpeff.Genotype_Number: '1'
-        snpeff.Transcript_BioType: protein_coding
-        snpeff.Transcript_ID: ENST00000356450
+        snpeff.Effect:
+        - synonymous_variant
+        snpeff.Effect_Impact:
+        - LOW
+        snpeff.Exon_Rank:
+        - '1'
+        snpeff.Functional_Class:
+        - SILENT
+        snpeff.Gene_Coding:
+        - CODING
+        snpeff.Gene_Name:
+        - NUDT10
+        snpeff.Genotype_Number:
+        - '1'
+        snpeff.Transcript_BioType:
+        - protein_coding
+        snpeff.Transcript_ID:
+        - ENST00000356450
         snpeff.WARNINGS: null
     pos:
     - 50378779
@@ -511,19 +533,29 @@ region="X", index="data/sample.vcf.gz.tbi", batch_size=2, samples=["NA12878i", "
         hgmd_2014.2.OMIM_ID: null
         hgmd_2014.2.PHEN: null
         hgmd_2014.2.PubMed: null
-        snpeff.Amino_Acid_Change: c.405-112delT
-        snpeff.Amino_Acid_length: '1493'
+        snpeff.Amino_Acid_Change:
+        - c.405-112delT
+        snpeff.Amino_Acid_length:
+        - '1493'
         snpeff.Codon_Change: null
         snpeff.ERRORS: null
-        snpeff.Effect: intron_variant
-        snpeff.Effect_Impact: MODIFIER
-        snpeff.Exon_Rank: '3'
+        snpeff.Effect:
+        - intron_variant
+        snpeff.Effect_Impact:
+        - MODIFIER
+        snpeff.Exon_Rank:
+        - '3'
         snpeff.Functional_Class: null
-        snpeff.Gene_Coding: CODING
-        snpeff.Gene_Name: SHROOM4
-        snpeff.Genotype_Number: '1'
-        snpeff.Transcript_BioType: protein_coding
-        snpeff.Transcript_ID: ENST00000376020
+        snpeff.Gene_Coding:
+        - CODING
+        snpeff.Gene_Name:
+        - SHROOM4
+        snpeff.Genotype_Number:
+        - '1'
+        snpeff.Transcript_BioType:
+        - protein_coding
+        snpeff.Transcript_ID:
+        - ENST00000376020
         snpeff.WARNINGS: null
     -   AC:
         - 3
@@ -607,19 +639,31 @@ region="X", index="data/sample.vcf.gz.tbi", batch_size=2, samples=["NA12878i", "
         hgmd_2014.2.OMIM_ID: null
         hgmd_2014.2.PHEN: null
         hgmd_2014.2.PubMed: null
-        snpeff.Amino_Acid_Change: p.Thr8Thr/c.24A>G
-        snpeff.Amino_Acid_length: '164'
-        snpeff.Codon_Change: acA/acG
+        snpeff.Amino_Acid_Change:
+        - p.Thr8Thr/c.24A>G
+        snpeff.Amino_Acid_length:
+        - '164'
+        snpeff.Codon_Change:
+        - acA/acG
         snpeff.ERRORS: null
-        snpeff.Effect: synonymous_variant
-        snpeff.Effect_Impact: LOW
-        snpeff.Exon_Rank: '1'
-        snpeff.Functional_Class: SILENT
-        snpeff.Gene_Coding: CODING
-        snpeff.Gene_Name: NUDT10
-        snpeff.Genotype_Number: '1'
-        snpeff.Transcript_BioType: protein_coding
-        snpeff.Transcript_ID: ENST00000356450
+        snpeff.Effect:
+        - synonymous_variant
+        snpeff.Effect_Impact:
+        - LOW
+        snpeff.Exon_Rank:
+        - '1'
+        snpeff.Functional_Class:
+        - SILENT
+        snpeff.Gene_Coding:
+        - CODING
+        snpeff.Gene_Name:
+        - NUDT10
+        snpeff.Genotype_Number:
+        - '1'
+        snpeff.Transcript_BioType:
+        - protein_coding
+        snpeff.Transcript_ID:
+        - ENST00000356450
         snpeff.WARNINGS: null
     pos:
     - 50378779

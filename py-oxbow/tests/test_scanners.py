@@ -363,7 +363,7 @@ class TestPyVcfScanner:
     def test_scan_byte_ranges(self):
         scanner = ox.PyVcfScanner("data/sample.vcf")
         schema = scanner.schema()
-        stream = scanner.scan_byte_ranges([(24785, 62317)])
+        stream = scanner.scan_byte_ranges([(24785, 55935)])
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         batch = reader.read_next_batch()
         assert batch.num_rows == 23
@@ -372,12 +372,12 @@ class TestPyVcfScanner:
         scanner = ox.PyVcfScanner("data/sample.vcf.gz", compressed=True)
         schema = scanner.schema()
         # unpacked virtual positions
-        stream = scanner.scan_virtual_ranges([((6516, 2980), (6516, 10920))])
+        stream = scanner.scan_virtual_ranges([((6516, 2243), (6516, 4502))])
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         batch = reader.read_next_batch()
-        assert batch.num_rows == 5
+        assert batch.num_rows == 2
         # packed virtual positions
-        stream = scanner.scan_virtual_ranges([(427035556, 427043496)])
+        stream = scanner.scan_virtual_ranges([(427034819, 427037078)])
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         batch2 = reader.read_next_batch()
         assert batch.to_pydict() == batch2.to_pydict()
