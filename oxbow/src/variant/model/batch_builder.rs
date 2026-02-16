@@ -319,6 +319,7 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
                         builder.append_null();
                     }
                     None => {
+                        // info field not present in this record or parsing failed
                         builder.append_null();
                     }
                 }
