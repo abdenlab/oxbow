@@ -311,6 +311,7 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
             for (def, builder) in self.info_builders.iter_mut() {
                 match parsed.get(def.name.as_str()) {
                     Some(Some(value)) => {
+                        // info field was parsed successfully
                         builder.append_value(value)?;
                     }
                     Some(None) => {
