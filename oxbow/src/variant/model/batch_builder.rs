@@ -292,9 +292,7 @@ fn collect_info_fields<'a>(
     info: &'a dyn noodles::vcf::variant::record::Info,
     header: &'a noodles::vcf::Header,
 ) -> HashMap<&'a str, Option<InfoFieldValue<'a>>> {
-    info.iter(header)
-        .filter_map(|result| result.ok())
-        .collect()
+    info.iter(header).filter_map(|result| result.ok()).collect()
 }
 
 /// Append a VCF record to the batch.
