@@ -215,7 +215,38 @@ class DataSource:
         import polars as pl
 
         if lazy:
-            return pl.scan_pyarrow_dataset(self.dataset(), batch_size=self._batch_size)
+            from polars.io.plugins import register_io_source
+
+            builders = list(self._batchreader_builders)
+            arrow_schema = self.schema
+            default_batch_size = self._batch_size
+            polars_schema = pl.from_arrow(arrow_schema.empty_table()).schema
+
+            def io_source(with_columns, predicate, n_rows, batch_size):
+                rows_read = 0
+                bs = batch_size or default_batch_size
+                for builder in builders:
+                    reader = builder(with_columns, bs)
+                    while True:
+                        try:
+                            batch = reader.read_next_batch()
+                        except StopIteration:
+                            break
+                        df = pl.from_arrow(batch)
+                        if predicate is not None:
+                            df = df.filter(predicate)
+                        if n_rows is not None:
+                            remaining = n_rows - rows_read
+                            if remaining <= 0:
+                                return
+                            if len(df) > remaining:
+                                df = df.head(remaining)
+                        rows_read += len(df)
+                        yield df
+                        if n_rows is not None and rows_read >= n_rows:
+                            return
+
+            return register_io_source(io_source=io_source, schema=polars_schema)
         else:
             batches = list(self.batches())
             if not batches:
