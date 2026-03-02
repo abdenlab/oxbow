@@ -20,7 +20,7 @@ use crate::sequence::model::field::FASTA_DEFAULT_FIELD_NAMES;
 ///
 /// let inner = File::open("sample.fa").map(BufReader::new).unwrap();
 /// let fmt_reader = noodles::fasta::io::Reader::new(inner);
-/// let index = noodles::fasta::fai::read("sample.fa.fai").unwrap();
+/// let index = noodles::fasta::fai::fs::read("sample.fa.fai").unwrap();
 ///
 /// let scanner = Scanner::default();
 /// let regions = vec!["chr1:1-1000", "chr1:1001-2000", "chr1:2001-3000", "chr1:3001-4000"];
@@ -36,7 +36,7 @@ impl Default for Scanner {
 }
 
 impl Scanner {
-    // Creates a FASTA scanner.
+    /// Creates a FASTA scanner.
     pub fn new() -> Self {
         Self {}
     }
@@ -156,7 +156,7 @@ mod tests {
         ]);
 
         let scanner = Scanner::new();
-        let regions = vec!["seq1:1-4", "seq2:1-4", "seq3:1-4"];
+        let regions = ["seq1:1-4", "seq2:1-4", "seq3:1-4"];
         let regions: Vec<Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
         let mut batch_iter = scanner
             .scan_query(fmt_reader, regions, index, None, Some(2))

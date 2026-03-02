@@ -15,17 +15,17 @@ except ImportError:
 import pyarrow as pa
 
 from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
-from oxbow.oxbow import PyBamScanner, PySamScanner
+from oxbow.oxbow import PyBamScanner, PySamScanner, PyCramScanner
 
 
 class AlignmentFile(DataSource):
     def _batchreader_builder(
         self,
-        scan_fn: Callable,
-        field_names: list[str],
         region: str | None = None,
     ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
         def builder(columns, batch_size):
+            scanner = self.scanner()
+            field_names = scanner.field_names()
             scan_kwargs = self._schema_kwargs.copy()
 
             if columns is not None:
@@ -39,8 +39,14 @@ class AlignmentFile(DataSource):
                     )
 
             if region is not None:
-                scan_kwargs["region"] = region
                 scan_kwargs["index"] = self._index
+                if region == "*":
+                    scan_fn = scanner.scan_unmapped
+                else:
+                    scan_fn = scanner.scan_query
+                    scan_kwargs["region"] = region
+            else:
+                scan_fn = scanner.scan
 
             stream = scan_fn(**scan_kwargs, batch_size=batch_size)
             return pa.RecordBatchReader.from_stream(
@@ -56,18 +62,9 @@ class AlignmentFile(DataSource):
     ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
         if self._regions:
             for region in self._regions:
-                scanner = self.scanner()
-                if region == "*":
-                    yield self._batchreader_builder(
-                        scanner.scan_unmapped, scanner.field_names()
-                    )
-                else:
-                    yield self._batchreader_builder(
-                        scanner.scan_query, scanner.field_names(), region
-                    )
+                yield self._batchreader_builder(region)
         else:
-            scanner = self.scanner()
-            yield self._batchreader_builder(scanner.scan, scanner.field_names())
+            yield self._batchreader_builder()
 
     def __init__(
         self,
@@ -126,12 +123,16 @@ class BamFile(AlignmentFile):
     _scanner_type = PyBamScanner
 
 
+class CramFile(AlignmentFile):
+    _scanner_type = PyCramScanner
+
+
 def from_sam(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
-    tag_defs: list[tuple[str, str]] = None,
+    tag_defs: list[tuple[str, str]] | None = None,
     tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
@@ -186,6 +187,7 @@ def from_sam(
     See also
     --------
     from_bam : Create a BAM file data source.
+    from_cram : Create a CRAM file data source.
     """
     source, index, bgzf_compressed = prepare_source_and_index(
         source, index, compression
@@ -207,7 +209,7 @@ def from_bam(
     compression: Literal["bgzf", None] = "bgzf",
     *,
     fields: list[str] | None = None,
-    tag_defs: list[tuple[str, str]] = None,
+    tag_defs: list[tuple[str, str]] | None = None,
     tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
@@ -259,6 +261,7 @@ def from_bam(
     See also
     --------
     from_sam : Create a SAM file data source.
+    from_cram : Create a CRAM file data source.
     """
     source, index, bgzf_compressed = prepare_source_and_index(
         source, index, compression
@@ -271,5 +274,92 @@ def from_bam(
         tag_scan_rows=tag_scan_rows,
         regions=regions,
         index=index,
+        batch_size=batch_size,
+    )
+
+
+def from_cram(
+    source: str | pathlib.Path | Callable[[], IO[bytes] | str],
+    *,
+    fields: list[str] | None = None,
+    tag_defs: list[tuple[str, str]] | None = None,
+    tag_scan_rows: int = 1024,
+    regions: str | list[str] | None = None,
+    index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
+    reference: None = None,
+    reference_index: None = None,
+    batch_size: int = DEFAULT_BATCH_SIZE,
+) -> CramFile:
+    """
+    Create a CRAM file data source.
+
+    Parameters
+    ----------
+    source : str, pathlib.Path, or Callable
+        The URI or path to the CRAM file, or a callable that opens the file
+        as a file-like object.
+    fields : list[str], optional
+        Specific fixed fields to project. By default, all fixed fields are
+        included.
+    tag_defs : list[tuple[str, str]], optional [default: None]
+        Definitions for variable tag fields to project. These will be nested in
+        a "tags" column. If None, tag definitions are discovered by scanning
+        records in the file, which is controlled by the ``tag_scan_rows``
+        parameter. To omit tags entirely, set ``tag_defs=[]``.
+    tag_scan_rows : int, optional [default: 1024]
+        Number of rows to scan for tag definitions.
+    regions : str | list[str], optional
+        One or more genomic regions to query. Only applicable if an associated
+        index file is available.
+    index : str, pathlib.Path, or Callable, optional
+        An optional index file associated with the CRAM file. If ``source`` is
+        a URI or path and the index file shares the same name with a ".crai"
+        the index file is automatically detected.
+    reference : str, pathlib.Path, or Callable, optional
+        The URI or path to the FASTA reference file used for CRAM encoding, or
+        a callable that opens the file as a file-like object. Required if the
+        CRAM file does not contain an embedded reference.
+    reference_index : str, pathlib.Path, or Callable, optional
+        The URI or path to the FASTA reference index file, or a callable that
+        opens the file as a file-like object. If ``reference`` is provided as a
+        URI or path and the index file shares the same name with a ".fai"
+        extension, the index file is automatically detected.
+    batch_size : int, optional [default: 131072]
+        The number of records to read in each batch.
+
+    Returns
+    -------
+    CramFile
+        A data source object representing the CRAM file.
+
+    Notes
+    -----
+    CRAM is a compressed binary format for storing sequence alignments.
+
+    .. warning::
+
+        External reference sequences (``reference`` and ``reference_index``)
+        are not yet supported via the high-level API. Either ensure that the
+        CRAM file contains an embedded reference or contains full sequences, or
+        use the low-level API (:class:`oxbow.core.PyCramScanner`) to provide an
+        external reference.
+
+    See also
+    --------
+    from_sam : Create a SAM file data source.
+    from_bam : Create a BAM file data source.
+    """
+    source, index, _ = prepare_source_and_index(source, index, False)
+    if reference is not None or reference_index is not None:
+        raise ValueError("CRAM files with an external reference are not yet supported.")
+    return CramFile(
+        source=source,
+        fields=fields,
+        tag_defs=tag_defs,
+        tag_scan_rows=tag_scan_rows,
+        regions=regions,
+        index=index,
+        # reference=reference,
+        # reference_index=reference_index,
         batch_size=batch_size,
     )

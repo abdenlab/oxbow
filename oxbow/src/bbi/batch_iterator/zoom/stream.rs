@@ -133,7 +133,7 @@ where
     }
 }
 
-/// A record batch iterator yielding batches from a [`BBIZoomRecords`] iterator.
+/// An iterator yielding BBI zoom record batches from a [`BBIZoomRecords`] iterator.
 pub struct BatchIterator<B> {
     entries: BBIZoomRecords<B>,
     builder: BatchBuilder,

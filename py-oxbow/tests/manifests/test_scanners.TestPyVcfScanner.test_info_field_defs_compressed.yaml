@@ -260,59 +260,59 @@
     - String
 - !!python/tuple
     - snpeff.Amino_Acid_Change
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.Amino_Acid_length
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.Codon_Change
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.Effect_Impact
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.Effect
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.ERRORS
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.Exon_Rank
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.Functional_Class
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.Gene_Coding
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.Gene_Name
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.Genotype_Number
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.Transcript_BioType
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.Transcript_ID
-    - '1'
+    - .
     - String
 - !!python/tuple
     - snpeff.WARNINGS
-    - '1'
+    - .
     - String
 - !!python/tuple
     - TYPE

@@ -178,7 +178,7 @@ impl FromStr for BedSchema {
     /// - `BED{n}+{m}`: `n` standard fields followed by `m` custom fields.
     /// - `BED{n}+`: `n` standard fields followed by an undefined number of custom fields.
     /// - `bedGraph`: special case of a BED3+1, where the fourth field is a 32-bit floating point
-    ///    field named `value`.
+    ///   field named `value`.
     ///
     /// # Notes
     /// - For `BED{n}+m`, custom fields are named `BED{n}+1`, `BED{n}+2`, ..., `BED{n}+m`.

@@ -95,7 +95,7 @@ Oxbow handles multiple ranges as separate **fragments**. For more details, see t
 
 ## Column projection
 
-Oxbow lets you select only the columns you need and will not parse the others. This is referred to as column "projection".
+Oxbow lets you select only the columns you need and will not parse the others.
 
 ```{code-cell} ipython3
 import polars as pl
@@ -109,7 +109,7 @@ ox.from_bam(
 ).pl()
 ```
 
-The lazy data structures returned by a data source are able to push the column projection operation down to oxbow. In the following example, only the four fields passed to the polars `LazyFrame.select` method will be parsed when the output gets computed.
+In data systems lingo, selecting columns is also known as "projection". The lazy data structures returned by an oxbow data source are able to "push down" the projection operation to oxbow to prevent full record parsing. In the following example, only the four fields passed to the polars `LazyFrame.select` method will be parsed when the output gets computed.
 
 ```{code-cell} ipython3
 df = (
@@ -299,7 +299,16 @@ ds.zoom(ds.zoom_levels[1]).regions("chr21").pl()
 
 ## Remote files and file-like objects
 
-Instead of using file paths, `source` and `index` inputs to create a data source can alternatively be **callables** that open a binary I/O stream, i.e. any Python file-like object. 
+You can pull data directly from HTTP and cloud storage URLs. If needed, paths or URLs to index files must be given explicitly.
+
+```python
+ds = ox.from_bam(
+    "https://oxbow-ngs.s3.us-east-2.amazonaws.com/example.bam",
+    index="https://oxbow-ngs.s3.us-east-2.amazonaws.com/example.bam.bai"
+)
+```
+
+Instead of using file paths or URLs, the `source` and `index` inputs to create a data source can alternatively be **callables** that open a binary I/O stream, i.e. any Python file-like object.
 
 ```python
 ds = ox.from_bam(
@@ -308,7 +317,7 @@ ds = ox.from_bam(
 )
 ```
 
-This gives you the power to customize your own transports -- to read remote sources, diverse file system implementations, or different file encodings -- independently of oxbow itself. 
+This gives you the power to customize your own transports -- to read remote sources, diverse file system implementations, or different file encodings -- independently of oxbow itself!
 
 Libraries like [`fsspec`](https://filesystem-spec.readthedocs.io/) or [`smart_open`](https://pypi.org/project/smart-open/) can be used for this purpose.
 
@@ -330,6 +339,7 @@ ds = ox.from_bam(
     index=lambda : s3fs.open(s3_uri + ".bai", "rb"),
     tag_defs=[],
 )
+ds.regions("chr1:82744-85000").pl()
 ```
 
 (streams-and-fragments)=

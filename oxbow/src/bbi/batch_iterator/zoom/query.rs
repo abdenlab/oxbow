@@ -10,6 +10,7 @@ use noodles::core::region::Region;
 use crate::bbi::model::zoom::Push as _;
 use crate::bbi::model::zoom::{BBIZoomRecord, BatchBuilder};
 
+/// An iterator yielding BBI zoom record batches that intersect a genomic range.
 pub struct BatchIterator {
     builder: BatchBuilder,
     entries: Box<dyn Iterator<Item = Result<(String, ZoomRecord), ZoomIntervalError>> + Send>,

@@ -26,7 +26,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    /// Creates a BigBed scanner from a BED schema and BBI file info.
+    /// Creates a BigWig scanner from BBI file info.
     pub fn new(info: bigtools::BBIFileInfo) -> Self {
         let bed_schema = "bedGraph".parse().unwrap();
         Self { bed_schema, info }
@@ -77,7 +77,7 @@ impl Scanner {
         zoom_levels
     }
 
-    /// Returns an iterator over record batches.
+    /// Returns an iterator yielding record batches.
     pub fn scan<R: Read + Seek>(
         &self,
         fmt_reader: BigWigRead<R>,
@@ -91,7 +91,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator over record batches satisfying a genomic range query.
+    /// Returns an iterator yielding record batches satisfying a genomic range query.
     pub fn scan_query<R: Read + Seek + Send + 'static>(
         &self,
         fmt_reader: BigWigRead<R>,

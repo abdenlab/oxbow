@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io;
 use std::sync::Arc;
 
@@ -6,6 +7,7 @@ use arrow::datatypes::{DataType, Field as ArrowField, FieldRef, Schema};
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use indexmap::IndexMap;
+use noodles::vcf::variant::record::info::field::Value as InfoFieldValue;
 use noodles::vcf::variant::record::samples::series::value::Value as SampleFieldValue;
 use noodles::vcf::variant::record::samples::Sample;
 use noodles::vcf::variant::record::samples::Series;
@@ -40,6 +42,7 @@ pub struct BatchBuilder {
 }
 
 impl BatchBuilder {
+    /// Creates a new `BatchBuilder` for VCF/BCF records.
     pub fn new(
         header: noodles::vcf::Header,
         field_names: Option<Vec<String>>,
@@ -68,7 +71,7 @@ impl BatchBuilder {
         for field in &fields {
             let builder = match field {
                 Field::Chrom => FieldBuilder::with_refs(field.clone(), capacity, &ref_names)
-                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?,
+                    .map_err(io::Error::other)?,
                 _ => FieldBuilder::new(field.clone(), capacity),
             };
             field_builders.insert(field.clone(), builder);
@@ -279,6 +282,19 @@ pub trait Push<T> {
     fn push(&mut self, record: T) -> io::Result<()>;
 }
 
+/// Iterate through an INFO field once and collect all successfully parsed values.
+///
+/// This is more resilient than calling `info.get()` per field, because `get()` scans
+/// from the beginning each time and stops at the first tokenization error (e.g. `;;`
+/// in malformed VCF files). By using `iter()`, we recover all parseable fields on
+/// both sides of malformed tokens.
+fn collect_info_fields<'a>(
+    info: &'a dyn noodles::vcf::variant::record::Info,
+    header: &'a noodles::vcf::Header,
+) -> HashMap<&'a str, Option<InfoFieldValue<'a>>> {
+    info.iter(header).filter_map(|result| result.ok()).collect()
+}
+
 /// Append a VCF record to the batch.
 impl Push<&noodles::vcf::Record> for BatchBuilder {
     fn push(&mut self, record: &noodles::vcf::Record) -> io::Result<()> {
@@ -289,31 +305,22 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
         // info (optional)
         if !self.info_defs.is_empty() {
             let info = record.info();
+            let parsed = collect_info_fields(&info, &self.header);
             for (def, builder) in self.info_builders.iter_mut() {
-                match info.get(&self.header, &def.name) {
-                    // info field is present in this record
-                    Some(result) => {
-                        match result {
-                            // info field parsed successfully
-                            Ok(Some(value)) => {
-                                builder.append_value(&value)?;
-                            }
-                            // info field value is empty
-                            Ok(None) => {
-                                builder.append_null();
-                            }
-                            // info field could not be parsed
-                            Err(_) => {
-                                eprintln!("Error parsing INFO field: {:?}", def.name);
-                                builder.append_null();
-                            }
-                        }
+                match parsed.get(def.name.as_str()) {
+                    Some(Some(value)) => {
+                        // info field was parsed successfully
+                        builder.append_value(value)?;
                     }
-                    // info field is not present in this record
-                    None => {
+                    Some(None) => {
+                        // info field value is empty/missing (".")
                         builder.append_null();
                     }
-                };
+                    None => {
+                        // info field not present in this record or parsing failed
+                        builder.append_null();
+                    }
+                }
             }
         }
 
@@ -433,31 +440,19 @@ impl Push<&noodles::bcf::Record> for BatchBuilder {
         // info (optional)
         if !self.info_defs.is_empty() {
             let info = record.info();
+            let parsed = collect_info_fields(&info, &self.header);
             for (def, builder) in self.info_builders.iter_mut() {
-                match info.get(&self.header, &def.name) {
-                    // info field is present in this record
-                    Some(result) => {
-                        match result {
-                            // info field parsed successfully
-                            Ok(Some(value)) => {
-                                builder.append_value(&value)?;
-                            }
-                            // info field value is empty
-                            Ok(None) => {
-                                builder.append_null();
-                            }
-                            // info field could not be parsed
-                            Err(_) => {
-                                eprintln!("Error parsing INFO field: {:?}", def.name);
-                                builder.append_null();
-                            }
-                        }
+                match parsed.get(def.name.as_str()) {
+                    Some(Some(value)) => {
+                        builder.append_value(value)?;
                     }
-                    // info field is not present in this record
+                    Some(None) => {
+                        builder.append_null();
+                    }
                     None => {
                         builder.append_null();
                     }
-                };
+                }
             }
         }
 
@@ -596,14 +591,14 @@ mod tests {
         let contig = Map::<Contig>::new();
         let info = Map::<Info>::from("DP");
         let format = Map::<Format>::from("GT");
-        let header = Header::builder()
+
+        Header::builder()
             .add_contig("sq0", contig.clone())
             .add_info("DP", info)
             .add_format("GT", format)
             .add_sample_name("sample1")
             .add_sample_name("sample2")
-            .build();
-        header
+            .build()
     }
 
     fn create_test_vcfrecord(header: &Header) -> VcfRecord {
@@ -700,6 +695,68 @@ mod tests {
         assert_eq!(
             record_batch.num_columns(),
             batch_builder.get_arrow_fields().len()
+        );
+    }
+
+    #[test]
+    fn test_push_vcf_record_with_double_semicolons_in_info() {
+        use noodles::vcf::header::record::value::map::info::{Number, Type};
+
+        // Build a header with multiple INFO fields
+        let mut builder = Header::builder().add_contig("sq0", Map::<Contig>::new());
+        for (id, ty, number) in [
+            ("E_gnomAD", Type::Flag, Number::Count(0)),
+            ("MA", Type::String, Number::Count(1)),
+            ("MAF", Type::Float, Number::Count(1)),
+        ] {
+            let info = Map::<Info>::new(number, ty, "");
+            builder = builder.add_info(id, info);
+        }
+        let header = builder.build();
+
+        // Create a record with ;; in the INFO string (like Ensembl VCFs)
+        let line = b"sq0\t1\t.\tA\t.\t.\t.\tE_gnomAD;;MA=C;MAF=0.123\n";
+        let record = VcfRecord::try_from(&line[..]).unwrap();
+
+        let mut batch_builder = BatchBuilder::new(
+            header,
+            None,
+            None,
+            None,
+            Some(vec![]),
+            GenotypeBy::Sample,
+            10,
+        )
+        .unwrap();
+
+        // Should not error - fields on both sides of ;; should be recovered
+        batch_builder.push(&record).unwrap();
+        let batch = batch_builder.finish().unwrap();
+
+        assert_eq!(batch.num_rows(), 1);
+
+        // INFO fields are nested under an "info" struct column
+        let info_col = batch
+            .column_by_name("info")
+            .unwrap()
+            .as_any()
+            .downcast_ref::<StructArray>()
+            .unwrap();
+
+        // E_gnomAD is before ;; → should be parsed
+        assert!(
+            !info_col.column_by_name("E_gnomAD").unwrap().is_null(0),
+            "E_gnomAD should not be null"
+        );
+        // MA is after ;; → should also be parsed thanks to iter() recovery
+        assert!(
+            !info_col.column_by_name("MA").unwrap().is_null(0),
+            "MA should not be null"
+        );
+        // MAF is after ;; → should also be parsed
+        assert!(
+            !info_col.column_by_name("MAF").unwrap().is_null(0),
+            "MAF should not be null"
         );
     }
 }

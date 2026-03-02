@@ -27,6 +27,7 @@ The following functions return a data source object to read from files that may 
 
     oxbow.from_sam
     oxbow.from_bam
+    oxbow.from_cram
 
 
 .. rubric:: Variant call formats
@@ -74,6 +75,7 @@ The following functions convert genomic file formats to the Arrow IPC (aka Feath
     oxbow.read_fastq
     oxbow.read_sam
     oxbow.read_bam
+    oxbow.read_cram
     oxbow.read_vcf
     oxbow.read_bcf
     oxbow.read_gtf
@@ -97,6 +99,7 @@ The following classes are wrappers of the Rust "scanner" objects that can read a
     oxbow.core.PyFastqScanner
     oxbow.core.PySamScanner
     oxbow.core.PyBamScanner
+    oxbow.core.PyCramScanner
     oxbow.core.PyVcfScanner
     oxbow.core.PyBcfScanner
     oxbow.core.PyGtfScanner
@@ -130,6 +133,7 @@ PyArrow Datasets allow working with large datasets that do not fit in memory.
     oxbow.core.FastqFile
     oxbow.core.SamFile
     oxbow.core.BamFile
+    oxbow.core.CramFile
     oxbow.core.VcfFile
     oxbow.core.BcfFile
     oxbow.core.GtfFile

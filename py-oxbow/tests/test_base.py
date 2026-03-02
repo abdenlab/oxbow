@@ -172,18 +172,27 @@ def test_to_polars_eager():
 
 
 def test_to_polars_lazy():
-    class MockDataSource(ox.DataSource):
-        def dataset(self):
-            return BatchReaderDataset(
-                [
-                    BatchReaderFragment(
-                        MagicMock(), pa.schema([("name", pa.string())]), batch_size=10
-                    )
-                ]
-            )
+    arrow_schema = pa.schema([("name", pa.string())])
+    batch = pa.RecordBatch.from_pydict({"name": ["alice", "bob"]})
 
-    ds = MockDataSource("test.src", batch_size=10)
-    assert isinstance(ds.to_polars(lazy=True), pl.LazyFrame)
+    def mock_builder(columns, batch_size):
+        return pa.RecordBatchReader.from_batches(arrow_schema, [batch])
+
+    class MockDataSource(ox.DataSource):
+        @property
+        def _batchreader_builders(self):
+            return [mock_builder]
+
+        @property
+        def schema(self):
+            return arrow_schema
+
+    ds = MockDataSource("test.src")
+    lf = ds.to_polars(lazy=True)
+    assert isinstance(lf, pl.LazyFrame)
+    result = lf.collect()
+    assert isinstance(result, pl.DataFrame)
+    assert result.to_dict(as_series=False) == {"name": ["alice", "bob"]}
 
 
 def test_to_dask():

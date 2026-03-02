@@ -34,6 +34,7 @@
 //! ### Alignment formats
 //! - [`sam`](crate::alignment::SamScanner): Scan SAM files as Arrow RecordBatches.
 //! - [`bam`](crate::alignment::BamScanner): Scan BAM files as Arrow RecordBatches.
+//! - [`cram`](crate::alignment::CramScanner): Scan CRAM files as Arrow RecordBatches.
 //!
 //! ### Variant formats
 //! - [`vcf`](crate::variant::VcfScanner): Scan VCF files as Arrow RecordBatches.

@@ -73,7 +73,7 @@ where
     }
 }
 
-/// A record batch iterator yielding batches from a [`BigWigRecords`] iterator.
+/// An iterator yielding BigWig record batches from a [`BigWigRecords`] iterator.
 pub struct BigWigBatchIterator<R> {
     entries: BigWigRecords<R>,
     builder: BatchBuilder,
@@ -205,7 +205,7 @@ where
     }
 }
 
-/// A record batch iterator yielding batches from a [`BigBedRecords`] iterator.
+/// An iterator yielding BigBed record batches from a [`BigBedRecords`] iterator.
 pub struct BigBedBatchIterator<R> {
     entries: BigBedRecords<R>,
     builder: BatchBuilder,

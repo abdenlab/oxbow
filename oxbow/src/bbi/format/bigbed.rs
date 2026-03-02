@@ -76,7 +76,7 @@ impl Scanner {
         zoom_levels
     }
 
-    /// Returns an iterator over record batches.
+    /// Returns an iterator yielding record batches.
     pub fn scan<R: Read + Seek>(
         &self,
         fmt_reader: BigBedRead<R>,
@@ -90,7 +90,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator over record batches satisfying a genomic range query.
+    /// Returns an iterator yielding record batches satisfying a genomic range query.
     pub fn scan_query<R: Read + Seek + Send + 'static>(
         &self,
         fmt_reader: BigBedRead<R>,

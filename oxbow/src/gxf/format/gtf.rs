@@ -1,8 +1,10 @@
-use std::io::{self, BufRead, Seek};
+use std::io::{self, BufRead, Read, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema;
+use noodles::bgzf::VirtualPosition;
 use noodles::csi::binning_index;
+use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 use noodles::csi::BinningIndex;
 
 use crate::gxf::batch_iterator::{BatchIterator, QueryBatchIterator};
@@ -10,7 +12,7 @@ use crate::gxf::model::attribute::AttributeScanner;
 use crate::gxf::model::attribute::Push as _;
 use crate::gxf::model::field::DEFAULT_FIELD_NAMES;
 use crate::gxf::model::BatchBuilder;
-use crate::util::query::BgzfChunkReader;
+use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 
 /// A GTF scanner.
 ///
@@ -85,19 +87,16 @@ impl Scanner {
         fmt_reader: &mut noodles::gtf::io::Reader<R>,
         scan_rows: Option<usize>,
     ) -> io::Result<Vec<(String, String)>> {
-        use noodles::gtf::Line;
         let lines = fmt_reader.lines();
         let mut attr_scanner = AttributeScanner::new();
         match scan_rows {
             None => {
                 for line in lines {
                     match line {
-                        Ok(line) => {
-                            match line {
-                                Line::Record(record) => attr_scanner.push(record),
-                                Line::Comment(_) => continue,
-                            };
-                        }
+                        Ok(line) => match line.as_record() {
+                            Some(result) => attr_scanner.push(result?),
+                            None => continue,
+                        },
                         Err(e) => eprintln!("Failed to read line: {}", e),
                     }
                 }
@@ -105,12 +104,10 @@ impl Scanner {
             Some(n) => {
                 for line in lines.take(n) {
                     match line {
-                        Ok(line) => {
-                            match line {
-                                Line::Record(record) => attr_scanner.push(record),
-                                Line::Comment(_) => continue,
-                            };
-                        }
+                        Ok(line) => match line.as_record() {
+                            Some(result) => attr_scanner.push(result?),
+                            None => continue,
+                        },
                         Err(e) => eprintln!("Failed to read line: {}", e),
                     }
                 }
@@ -119,7 +116,7 @@ impl Scanner {
         Ok(attr_scanner.collect())
     }
 
-    /// Returns an iterator over record batches.
+    /// Returns an iterator yielding record batches.
     ///
     /// The scan will begin at the current position of the reader and will
     /// move the cursor to the end of the last record scanned.
@@ -137,7 +134,7 @@ impl Scanner {
         Ok(batch_iter)
     }
 
-    /// Returns an iterator over record batches satisfying a genomic range query.
+    /// Returns an iterator yielding record batches satisfying a genomic range query.
     ///
     /// This operation requires a BGZF source and an Index.
     ///
@@ -147,7 +144,7 @@ impl Scanner {
     #[allow(clippy::too_many_arguments)]
     pub fn scan_query<R: BufRead + Seek>(
         &self,
-        fmt_reader: noodles::gtf::io::Reader<noodles::bgzf::Reader<R>>,
+        fmt_reader: noodles::gtf::io::Reader<noodles::bgzf::io::Reader<R>>,
         region: noodles::core::Region,
         index: impl BinningIndex,
         fields: Option<Vec<String>>,
@@ -181,6 +178,63 @@ impl Scanner {
             batch_size,
             limit,
         );
+        Ok(batch_iter)
+    }
+
+    /// Returns an iterator yielding record batches from specified byte ranges.
+    ///
+    /// This operation requires a seekable (typically uncompressed) source.
+    ///
+    /// The scan will traverse the specified byte ranges without filtering by genomic coordinates.
+    /// This is useful when you have pre-computed file offsets from a custom index. The byte ranges
+    /// must align with record boundaries.
+    pub fn scan_byte_ranges<R: BufRead + Seek>(
+        &self,
+        fmt_reader: noodles::gtf::io::Reader<R>,
+        byte_ranges: Vec<(u64, u64)>,
+        fields: Option<Vec<String>>,
+        attr_defs: Option<Vec<(String, String)>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> io::Result<impl RecordBatchReader> {
+        let batch_size = batch_size.unwrap_or(1024);
+        let batch_builder = BatchBuilder::new(fields, attr_defs, batch_size)?;
+
+        let inner_reader = fmt_reader.into_inner();
+        let range_reader = ByteRangeReader::new(inner_reader, byte_ranges);
+        let fmt_reader = noodles::gtf::io::Reader::new(range_reader);
+        let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
+        Ok(batch_iter)
+    }
+
+    /// Returns an iterator yielding record batches from specified virtual position ranges.
+    ///
+    /// This operation requires a BGZF-compressed source.
+    ///
+    /// The scan will traverse the specified virtual position ranges without filtering by genomic
+    /// coordinates. This is useful when you have pre-computed virtual offsets from a custom index.
+    pub fn scan_virtual_ranges<R: Read + Seek>(
+        &self,
+        fmt_reader: noodles::gtf::io::Reader<noodles::bgzf::io::Reader<R>>,
+        vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
+        fields: Option<Vec<String>>,
+        attr_defs: Option<Vec<(String, String)>>,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> io::Result<impl RecordBatchReader> {
+        let batch_size = batch_size.unwrap_or(1024);
+        let batch_builder = BatchBuilder::new(fields, attr_defs, batch_size)?;
+
+        // Convert virtual position tuples to Chunks
+        let chunks: Vec<Chunk> = vpos_ranges
+            .into_iter()
+            .map(|(start, end)| Chunk::new(start, end))
+            .collect();
+
+        let bgzf_reader = fmt_reader.into_inner();
+        let range_reader = BgzfChunkReader::new(bgzf_reader, chunks);
+        let fmt_reader = noodles::gtf::io::Reader::new(range_reader);
+        let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
         Ok(batch_iter)
     }
 }

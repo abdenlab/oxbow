@@ -1,3 +1,5 @@
+import cloudpickle
+import fsspec
 import pytest
 from pytest_manifest import Manifest
 
@@ -29,6 +31,18 @@ class TestBedFile:
         for filepath in ("data/sample.bed",):
             fragments = ox.BedFile(filepath, regions=regions).fragments()
             assert len(fragments) == (len(regions) if regions else 1)
+
+    def test_serialized_fragments(self):
+        fragments = ox.BedFile(
+            lambda: fsspec.open("data/sample.bed.gz", mode="rb").open(),
+            index=lambda: fsspec.open("data/sample.bed.gz.tbi", mode="rb").open(),
+            compressed=True,
+            regions=["chr1"],
+        ).fragments()
+
+        fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
+
+        assert [f.count_rows() for f in fragments] == [3]
 
     @pytest.mark.parametrize(
         "fields",
@@ -94,3 +108,48 @@ class TestBedFile:
             regions=regions,
         )
         file.pl()
+
+    def test_projections(self):
+        ds = ox.BedFile(
+            "data/sample.bed", bed_schema="bed4", fields=["name", "end", "start"]
+        )
+        batch = next(ds.batches())
+        assert list(batch.schema.names) == ["name", "end", "start"]
+        with pytest.raises(OSError):
+            next(
+                ox.BedFile(
+                    "data/sample.bed", bed_schema="bed4", fields=["rest"]
+                ).batches()
+            )
+
+        ds = ox.BedFile(
+            "data/sample.bed",
+            bed_schema="bed4+2",
+            fields=["BED4+2", "end", "BED4+1", "start"],
+        )
+        batch = next(ds.batches())
+        # Extended fields get shuffled to the end in the order provided
+        assert list(batch.schema.names) == ["end", "start", "BED4+2", "BED4+1"]
+        with pytest.raises(OSError):
+            next(
+                ox.BedFile(
+                    "data/sample.bed", bed_schema="bed4", fields=["BED4+3"]
+                ).batches()
+            )
+        with pytest.raises(OSError):
+            next(
+                ox.BedFile(
+                    "data/sample.bed", bed_schema="bed4", fields=["rest"]
+                ).batches()
+            )
+
+        ds = ox.BedFile("data/sample.bed", bed_schema="bed4+", fields=["end", "start"])
+        batch = next(ds.batches())
+        assert list(batch.schema.names) == ["end", "start"]
+
+        ds = ox.BedFile(
+            "data/sample.bed", bed_schema="bed4+", fields=["end", "rest", "start"]
+        )
+        batch = next(ds.batches())
+        # Extended fields get shuffled to the end
+        assert list(batch.schema.names) == ["end", "start", "rest"]

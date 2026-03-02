@@ -20,7 +20,7 @@ impl BatchBuilder {
     ///
     /// # Arguments
     /// * `field_names` - Optional vector of field names to project. If `None`, the default field
-    ///     names are used.
+    ///   names are used.
     /// * `capacity` - The number of rows to preallocate for a batch.
     ///
     /// # Returns
@@ -52,7 +52,7 @@ impl BatchBuilder {
     ///
     /// # Arguments
     /// * `field_names` - Optional vector of field names to project. If `None`, the default field
-    ///     names are used.
+    ///   names are used.
     /// * `capacity` - The number of rows to preallocate for a batch.
     ///
     /// # Returns
@@ -172,7 +172,7 @@ mod tests {
         let mut batch_builder = BatchBuilder::new_fasta(None, capacity).unwrap();
 
         let record = noodles::fasta::Record::new(
-            noodles::fasta::record::Definition::new(b"s0", Some(b"description".to_vec())),
+            noodles::fasta::record::Definition::new(b"s0", Some(b"description".into())),
             noodles::fasta::record::Sequence::from(b"ACGT".to_vec()),
         );
         batch_builder.push(&record).unwrap();

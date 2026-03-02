@@ -4,9 +4,10 @@ use std::sync::Arc;
 
 use arrow::array::{ArrayRef, GenericStringBuilder, ListBuilder};
 use arrow::datatypes::{DataType, Field as ArrowField};
-
-use noodles::gff::record::attributes::field::Value as GffValue;
-use noodles::gtf::record::attributes::Entry as GtfEntry;
+use noodles::gff::feature::record::attributes::field::Value as FeatureAttributeValue;
+use noodles::gff::feature::record::Attributes as FeatureAttributes;
+use noodles::gff::record::attributes::field::Value as GffAttributeValue;
+use noodles::gtf::record::Attributes as GtfAttributes;
 
 /// An GXF attribute definition.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -57,6 +58,19 @@ impl AttributeType {
     }
 }
 
+impl std::fmt::Display for AttributeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::String => "String",
+                Self::Array => "Array",
+            }
+        )
+    }
+}
+
 /// Harmonizes GTF and GFF attribute values.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AttributeValue {
@@ -64,17 +78,22 @@ pub enum AttributeValue {
     Array(Vec<String>),
 }
 
-impl From<GtfEntry> for AttributeValue {
-    fn from(entry: GtfEntry) -> Self {
-        Self::String(entry.value().to_string())
+impl From<FeatureAttributeValue<'_>> for AttributeValue {
+    fn from(value: FeatureAttributeValue) -> Self {
+        match value {
+            FeatureAttributeValue::String(s) => Self::String(s.to_string()),
+            FeatureAttributeValue::Array(a) => {
+                Self::Array(a.iter().map(|s| s.unwrap().to_string()).collect())
+            }
+        }
     }
 }
 
-impl<'a> From<&'a GffValue<'a>> for AttributeValue {
-    fn from(value: &'a GffValue<'a>) -> Self {
+impl<'a> From<&'a GffAttributeValue<'a>> for AttributeValue {
+    fn from(value: &'a GffAttributeValue<'a>) -> Self {
         match value {
-            GffValue::String(s) => Self::String(s.to_string()),
-            GffValue::Array(a) => Self::Array(a.iter().map(|s| s.unwrap().to_string()).collect()),
+            GffAttributeValue::String(s) => Self::String(s.to_string()),
+            GffAttributeValue::Array(a) => Self::Array(a.iter().map(|s| s.to_string()).collect()),
         }
     }
 }
@@ -113,8 +132,8 @@ impl AttributeBuilder {
                 _ => Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
                     format!(
-                        "Type mismatch: expected builder for {:?}, got {:?}",
-                        value, self
+                        "Type mismatch: expected an attribute of type String, got {:?}",
+                        value
                     ),
                 )),
             },
@@ -127,6 +146,7 @@ impl AttributeBuilder {
                     Ok(())
                 }
                 AttributeValue::String(v) => {
+                    // interpret a scalar as a length-1 array
                     builder.values().append_value(v);
                     builder.append(true);
                     Ok(())
@@ -145,7 +165,7 @@ impl AttributeBuilder {
 
 /// A scanner to collect unique attribute definitions from a stream of GXF records.
 pub struct AttributeScanner {
-    attrs: BTreeMap<String, String>,
+    attrs: BTreeMap<String, AttributeType>,
 }
 
 impl Default for AttributeScanner {
@@ -165,7 +185,7 @@ impl AttributeScanner {
         let defs: Vec<(String, String)> = self
             .attrs
             .iter()
-            .map(|(key, attr_type)| (key.clone(), attr_type.clone()))
+            .map(|(key, attr_type)| (key.clone(), attr_type.to_string()))
             .collect();
         defs
     }
@@ -175,27 +195,49 @@ pub trait Push<T> {
     fn push(&mut self, record: T);
 }
 
-impl Push<noodles::gtf::Record> for AttributeScanner {
+impl Push<noodles::gtf::Record<'_>> for AttributeScanner {
     fn push(&mut self, record: noodles::gtf::Record) {
-        record.attributes().as_ref().iter().for_each(|entry| {
-            let key = entry.key();
-            self.attrs
-                .entry(key.to_string())
-                .or_insert_with(|| "String".to_string());
+        let attrs = match record.attributes() {
+            Ok(attrs) => attrs,
+            Err(_) => return,
+        };
+        <GtfAttributes as FeatureAttributes>::iter(&attrs).for_each(|result| {
+            if let Ok((key, value)) = result {
+                let attr_type = match value {
+                    FeatureAttributeValue::String(_) => AttributeType::String,
+                    FeatureAttributeValue::Array(_) => AttributeType::Array,
+                };
+                self.attrs
+                    .entry(key.to_string())
+                    .and_modify(|e| {
+                        if attr_type == AttributeType::Array && *e == AttributeType::String {
+                            *e = attr_type.clone();
+                        }
+                    })
+                    .or_insert(attr_type);
+            };
         });
     }
 }
 
 impl Push<noodles::gff::Record<'_>> for AttributeScanner {
     fn push(&mut self, record: noodles::gff::Record) {
-        record.attributes().iter().for_each(|result| {
-            let (key, value) = result.unwrap();
-            self.attrs
-                .entry(key.to_string())
-                .or_insert_with(|| match value {
-                    GffValue::String(_) => "String".to_string(),
-                    GffValue::Array(_) => "Array".to_string(),
-                });
+        let attrs = record.attributes();
+        attrs.iter().for_each(|result| {
+            if let Ok((key, value)) = result {
+                let attr_type = match value {
+                    GffAttributeValue::String(_) => AttributeType::String,
+                    GffAttributeValue::Array(_) => AttributeType::Array,
+                };
+                self.attrs
+                    .entry(key.to_string())
+                    .and_modify(|e| {
+                        if attr_type == AttributeType::Array && *e == AttributeType::String {
+                            *e = attr_type.clone();
+                        }
+                    })
+                    .or_insert(attr_type);
+            };
         });
     }
 }

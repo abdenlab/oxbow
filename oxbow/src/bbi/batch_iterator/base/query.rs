@@ -10,7 +10,7 @@ use noodles::core::Region;
 use crate::bbi::model::base::Push as _;
 use crate::bbi::model::base::{BatchBuilder, BigBedRecord, BigWigRecord};
 
-/// A record batch iterator yielding BigWig records that intersect a genomic range.
+/// An iterator yielding BigWig record batches that intersect a genomic range.
 pub struct BigWigBatchIterator {
     entries: Box<dyn Iterator<Item = Result<(String, bigtools::Value), BBIReadError>> + Send>,
     builder: BatchBuilder,
@@ -96,7 +96,7 @@ impl RecordBatchReader for BigWigBatchIterator {
     }
 }
 
-/// A record batch iterator yielding BigBed records that intersect a genomic range.
+/// An iterator yielding BigBed record batches that intersect a genomic range.
 pub struct BigBedBatchIterator {
     entries: Box<dyn Iterator<Item = Result<(String, bigtools::BedEntry), BBIReadError>> + Send>,
     builder: BatchBuilder,

@@ -18,7 +18,7 @@ pub struct BatchBuilder {
 }
 
 impl BatchBuilder {
-    // Creates a new `BatchBuilder` for BigWig or BigBed records.
+    /// Creates a new `BatchBuilder` for BigWig or BigBed records.
     pub fn new(
         schema: BedSchema,
         field_names: Option<Vec<String>>,

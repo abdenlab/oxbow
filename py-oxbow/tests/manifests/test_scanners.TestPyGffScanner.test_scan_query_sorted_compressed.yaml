@@ -1,20 +1,20 @@
 batch_size=1, fields=("seqid", "start", "end"), region="chr1":
     end:
-    - 497210
+    - 497299
     seqid:
     - chr1
     start:
     - 497210
 batch_size=1, fields=("seqid", "start", "end"), region="chr2":
     end:
-    - 70086978
+    - 70087015
     seqid:
     - chr2
     start:
     - 70086978
 batch_size=1, fields=None, region="chr1":
     end:
-    - 497210
+    - 497299
     frame:
     - null
     score:
@@ -31,7 +31,7 @@ batch_size=1, fields=None, region="chr1":
     - exon
 batch_size=1, fields=None, region="chr2":
     end:
-    - 70086978
+    - 70087015
     frame:
     - null
     score:
@@ -48,8 +48,8 @@ batch_size=1, fields=None, region="chr2":
     - exon
 batch_size=2, fields=("seqid", "start", "end"), region="chr1":
     end:
-    - 497210
-    - 25808580
+    - 497299
+    - 25808789
     seqid:
     - chr1
     - chr1
@@ -58,8 +58,8 @@ batch_size=2, fields=("seqid", "start", "end"), region="chr1":
     - 25808580
 batch_size=2, fields=("seqid", "start", "end"), region="chr2":
     end:
-    - 70086978
-    - 240025227
+    - 70087015
+    - 240025324
     seqid:
     - chr2
     - chr2
@@ -68,8 +68,8 @@ batch_size=2, fields=("seqid", "start", "end"), region="chr2":
     - 240025227
 batch_size=2, fields=None, region="chr1":
     end:
-    - 497210
-    - 25808580
+    - 497299
+    - 25808789
     frame:
     - null
     - null
@@ -93,8 +93,8 @@ batch_size=2, fields=None, region="chr1":
     - exon
 batch_size=2, fields=None, region="chr2":
     end:
-    - 70086978
-    - 240025227
+    - 70087015
+    - 240025324
     frame:
     - null
     - null
@@ -118,8 +118,8 @@ batch_size=2, fields=None, region="chr2":
     - exon
 batch_size=3, fields=("seqid", "start", "end"), region="chr1":
     end:
-    - 497210
-    - 25808580
+    - 497299
+    - 25808789
     seqid:
     - chr1
     - chr1
@@ -128,9 +128,9 @@ batch_size=3, fields=("seqid", "start", "end"), region="chr1":
     - 25808580
 batch_size=3, fields=("seqid", "start", "end"), region="chr2":
     end:
-    - 70086978
-    - 240025227
-    - 240465077
+    - 70087015
+    - 240025324
+    - 240465210
     seqid:
     - chr2
     - chr2
@@ -141,8 +141,8 @@ batch_size=3, fields=("seqid", "start", "end"), region="chr2":
     - 240465077
 batch_size=3, fields=None, region="chr1":
     end:
-    - 497210
-    - 25808580
+    - 497299
+    - 25808789
     frame:
     - null
     - null
@@ -166,9 +166,9 @@ batch_size=3, fields=None, region="chr1":
     - exon
 batch_size=3, fields=None, region="chr2":
     end:
-    - 70086978
-    - 240025227
-    - 240465077
+    - 70087015
+    - 240025324
+    - 240465210
     frame:
     - null
     - null
@@ -199,8 +199,8 @@ batch_size=3, fields=None, region="chr2":
     - CDS
 batch_size=4, fields=("seqid", "start", "end"), region="chr1":
     end:
-    - 497210
-    - 25808580
+    - 497299
+    - 25808789
     seqid:
     - chr1
     - chr1
@@ -209,9 +209,9 @@ batch_size=4, fields=("seqid", "start", "end"), region="chr1":
     - 25808580
 batch_size=4, fields=("seqid", "start", "end"), region="chr2":
     end:
-    - 70086978
-    - 240025227
-    - 240465077
+    - 70087015
+    - 240025324
+    - 240465210
     seqid:
     - chr2
     - chr2
@@ -222,8 +222,8 @@ batch_size=4, fields=("seqid", "start", "end"), region="chr2":
     - 240465077
 batch_size=4, fields=None, region="chr1":
     end:
-    - 497210
-    - 25808580
+    - 497299
+    - 25808789
     frame:
     - null
     - null
@@ -247,9 +247,9 @@ batch_size=4, fields=None, region="chr1":
     - exon
 batch_size=4, fields=None, region="chr2":
     end:
-    - 70086978
-    - 240025227
-    - 240465077
+    - 70087015
+    - 240025324
+    - 240465210
     frame:
     - null
     - null

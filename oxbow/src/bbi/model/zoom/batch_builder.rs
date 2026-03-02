@@ -34,8 +34,8 @@ impl BatchBuilder {
 
         let mut field_builders = IndexMap::new();
         for field in &fields {
-            let builder = FieldBuilder::new(field.clone(), ref_names, capacity)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+            let builder =
+                FieldBuilder::new(field.clone(), ref_names, capacity).map_err(io::Error::other)?;
             field_builders.insert(field.clone(), builder);
         }
 

@@ -25,16 +25,17 @@ batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3":
     start:
     - 1100001
     - 1550001
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3+":
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    start:
+    - 1100001
+    - 1550001
 batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3+3":
-    BED3+1:
-    - A1
-    - A1
-    BED3+2:
-    - .
-    - .
-    BED3+3:
-    - .
-    - .
     chrom:
     - chr1
     - chr1
@@ -45,24 +46,6 @@ batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3+3":
     - 1100001
     - 1550001
 batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3+6":
-    BED3+1:
-    - A1
-    - A1
-    BED3+2:
-    - .
-    - .
-    BED3+3:
-    - .
-    - .
-    BED3+4:
-    - '1100000'
-    - '1550000'
-    BED3+5:
-    - '1200000'
-    - '1600000'
-    BED3+6:
-    - 226,56,56
-    - 226,56,56
     chrom:
     - chr1
     - chr1
@@ -73,6 +56,16 @@ batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3+6":
     - 1100001
     - 1550001
 batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed6":
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    start:
+    - 1100001
+    - 1550001
+batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed6+":
     chrom:
     - chr1
     - chr1
@@ -99,6 +92,19 @@ batch_size=2, fields=None, bed_schema="bed3":
     end:
     - 1200000
     - 1600000
+    start:
+    - 1100001
+    - 1550001
+batch_size=2, fields=None, bed_schema="bed3+":
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    rest:
+    - "A1\t.\t.\t1100000\t1200000\t226,56,56"
+    - "A1\t.\t.\t1550000\t1600000\t226,56,56"
     start:
     - 1100001
     - 1550001
@@ -159,6 +165,28 @@ batch_size=2, fields=None, bed_schema="bed6":
     name:
     - A1
     - A1
+    score:
+    - null
+    - null
+    start:
+    - 1100001
+    - 1550001
+    strand:
+    - null
+    - null
+batch_size=2, fields=None, bed_schema="bed6+":
+    chrom:
+    - chr1
+    - chr1
+    end:
+    - 1200000
+    - 1600000
+    name:
+    - A1
+    - A1
+    rest:
+    - "A1\t.\t.\t1100000\t1200000\t226,56,56"
+    - "A1\t.\t.\t1550000\t1600000\t226,56,56"
     score:
     - null
     - null
