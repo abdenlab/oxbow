@@ -20,7 +20,7 @@ classifiers = [
 ]
 dependencies = [
     "arro3-core>=0.4.6",
-    "polars>=1.26.0",
+    "polars>=1.36.0",
     "pandas>=2.2.3",
     "pyarrow>=19.0.1",
     "fsspec>=2025.5.1",

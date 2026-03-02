@@ -1,31 +1,36 @@
 ---
 jupytext:
   text_representation:
+    extension: .md
     format_name: myst
 kernelspec:
   display_name: Python 3
   name: python3
 ---
 
-# Marking SAM read pair duplicates with oxbow
+# Alignment deduplication
 
 ```{code-cell} ipython3
 import oxbow as ox
 import polars as pl
 ```
 
-## Loading the SAM File
-Let's grab a sample SAM file
+## Walkthrough
+
+To illustrate step by step, let's grab a small sample SAM file and materialize it in memory as a Polars DataFrame.
 
 ```{code-cell} ipython3
 # Let's use oxbow to read in the SAM file as a polars dataframe
-df = ox.from_sam("data/2133236").to_polars()
+df = ox.from_sam("data/Col0_C1.100k.sam").to_polars()
 df.head()
 ```
 
-## Compute 5' start position
+### Helper functions
 
 ```{code-cell} ipython3
+# If the bit 0x10 is set, the read is on the reverse strand
+STRAND_BIT = 0x10
+
 
 def parse_cigar(cigar_str: str) -> list[tuple[str, int]]:
     """Parse the CIGAR string into a list of tuples (operation, length)
@@ -49,12 +54,13 @@ def parse_cigar(cigar_str: str) -> list[tuple[str, int]]:
 
     return result
 
-# If the bit 0x10 is set, the read is on the reverse strand
-STRAND_BIT = 0x10
 
-def get_unclipped_5_prime_start_position(row) -> int:
+def get_unclipped_5p_start(row) -> int:
     """
-    Get the unclipped 5′ start position from the CIGAR string
+    Get the unclipped 5′ start position from the CIGAR string.
+
+    Accounts for both soft clips (S) and hard clips (H), matching the
+    reference implementation in htsjdk.
 
     Args:
         row: Row from the SAM file
@@ -73,66 +79,34 @@ def get_unclipped_5_prime_start_position(row) -> int:
     is_reverse = flag & STRAND_BIT
 
     if not is_reverse:
-        # Forward strand: 5′ end = POS - (number of leading soft-clipped bases)
-        leading_soft_clips = 0
+        # Forward strand: 5′ end = POS - (number of leading soft/hard-clipped bases)
+        leading_clips = 0
         for op, length in cigar_ops:
-            if op == "S":
-                leading_soft_clips += length
+            if op in ("S", "H"):
+                leading_clips += length
             else:
-                break  # Stop at first non-S operation
-        return pos - leading_soft_clips
+                break  # Stop at first non-clip operation
+        return pos - leading_clips
     else:
-        # Reverse strand: 5′ end is at POS + (aligned length) + (trailing soft-clipped bases) - 1
+        # Reverse strand: 5′ end is at POS + (aligned length) + (trailing soft/hard-clipped bases) - 1
         aligned_length = 0
-        trailing_soft_clips = 0
+        trailing_clips = 0
 
         # Calculate aligned length (M, =, X, D, N operations)
         for op, length in cigar_ops:
             if op in ["M", "=", "X", "D", "N"]:
                 aligned_length += length
 
-        # Find trailing soft clips (S operations at the end)
+        # Find trailing soft/hard clips (S or H operations at the end)
         for op, length in reversed(cigar_ops):
-            if op == "S":
-                trailing_soft_clips += length
+            if op in ("S", "H"):
+                trailing_clips += length
             else:
-                break  # Stop at first non-S operation from the end
+                break  # Stop at first non-clip operation from the end
 
-        return pos + aligned_length + trailing_soft_clips - 1
-    
-df = df.with_columns(
-    pl.struct(["pos", "cigar", "flag"])
-    .map_elements(get_unclipped_5_prime_start_position)
-    .alias("unclipped_5p_start_pos")
-)
+        return pos + aligned_length + trailing_clips - 1
 
-df.head()
-```
 
-## Group the reads into pairs
-We assume that the qname corresponds to read pairs. We'll also be sure to include the information needed to deduplicate read pairs:
-- Reference genome name
-- 5' start positions
-- Strand flags
-- Quality scores
-
-```{code-cell} ipython3
-pairs_df = df.group_by("qname").agg(
-    [
-        pl.col("rname").alias("rnames"),
-        pl.col("unclipped_5p_start_pos").alias("5p_positions"),
-        ((pl.col("flag") & STRAND_BIT) != 0).alias("strands"),
-        pl.col("qual").alias("quals"),
-    ]
-)
-pairs_df.head()
-```
-
-## Process pair reads
-
-Build a deduplication key and sum the quality scores for each pair (for resolution in the next step)
-
-```{code-cell} ipython3
 def get_quality_score_sum(qual_str):
     """Calculate the sum of quality scores from a string of quality scores"""
     return sum(ord(c) - 33 for c in qual_str if c != " ")
@@ -145,42 +119,148 @@ def build_dedup_key(rnames, positions, strands):
         print(f"WARNING: read is missing pair: {items}")
         return None
     return f"{items[0][0]}:{items[0][1]}:{items[0][2]}__{items[1][0]}:{items[1][1]}:{items[1][2]}"
+```
 
+### Compute derived fields
 
+```{code-cell} ipython3
+df = df.with_columns(
+    pl.struct(["pos", "cigar", "flag"])
+    .map_elements(get_unclipped_5p_start, return_dtype=pl.Int64)
+    .alias("5p_start"),
+
+    pl.when((pl.col("flag") & STRAND_BIT) == 0)
+    .then(pl.lit("+"))
+    .otherwise(pl.lit("-"))
+    .alias("strand"),
+
+    pl.col("qual").map_elements(get_quality_score_sum, return_dtype=pl.Int64)
+    .alias("total_quality")
+)
+
+df.head()
+```
+
+### Group the reads into pairs
+
+We assume that the qname corresponds to read pairs. We group by qname and carry the original alignment records through along with the fields needed for deduplication.
+
+```{code-cell} ipython3
+pairs_df = df.group_by("qname").agg(
+    [
+        pl.col("rname").alias("rnames"),
+        pl.col("5p_start").alias("5p_starts"),
+        pl.col("strand").alias("strands"),
+        pl.col("total_quality").alias("total_qualities"),
+        pl.struct("*").alias("alignments"),
+    ]
+)
+pairs_df.head()
+```
+
+### Build deduplication keys
+
+Build a deduplication key for each read pair and filter out unpaired reads.
+
+```{code-cell} ipython3
 pairs_df = pairs_df.with_columns(
-    pl.struct(["rnames", "5p_positions", "strands"])
+    pl.struct(["rnames", "5p_starts", "strands"])
     .map_elements(
-        lambda s: build_dedup_key(s["rnames"], s["5p_positions"], s["strands"]),
+        lambda s: build_dedup_key(s["rnames"], s["5p_starts"], s["strands"]),
         return_dtype=pl.String
     )
     .alias("dedup_key"),
-    pl.col("quals")
-    .map_elements(
-        lambda qlist: sum(get_quality_score_sum(q) for q in qlist), 
-        return_dtype=pl.Int64
-    )
-    .alias("total_quality"),
 ).filter(pl.col("dedup_key").is_not_null())
 
-pairs_df[('dedup_key', 'total_quality')].head()
+pairs_df[("dedup_key",)].head()
 ```
 
-## Count the duplicates
+### Resolve duplicates
 
-We choose the best read pair across duplicates by the best quality score total
+We choose the best read pair across duplicates by the highest total quality score. Sorting by dedup_key first minimizes the shuffle when the data is already coordinate-sorted.
 
 ```{code-cell} ipython3
-# Resolve duplicate pairs by sorting by total quality and taking the best pair
-best_pairs_df = pairs_df.sort("total_quality", descending=True).unique(
+best_pairs_df = pairs_df.sort(
+    ["dedup_key", "total_qualities"], descending=[False, True]
+).unique(
     subset=["dedup_key"]
 )
 
 # Get the total number of duplicates
 total_pair_dups = pairs_df.height - best_pairs_df.height
 
-print(
-    best_pairs_df.head(),
-    "\nTotal pair duplicates:",
-    total_pair_dups,
+print("Total pair duplicates:", total_pair_dups)
+
+best_pairs_df.head()
+```
+
+### Recover deduplicated alignments
+
+Explode and unnest the carried alignment records to recover the original fields.
+
+```{code-cell} ipython3
+deduped_df = best_pairs_df.select(
+    "qname", "alignments"
+).explode("alignments").select(
+    pl.col("alignments").struct.unnest()
 )
+
+deduped_df.head()
+```
+
+## Full streaming pipeline
+
+Here's the entire deduplication pipeline chained together on a Polars LazyFrame:
+
+```{code-cell} ipython3
+ds = ox.from_sam("data/Col0_C1.100k.sam")
+
+ldf = ds.to_polars(lazy=True).with_columns(
+    pl.struct(["pos", "cigar", "flag"])
+    .map_elements(get_unclipped_5p_start, return_dtype=pl.Int64)
+    .alias("5p_start"),
+
+    pl.when((pl.col("flag") & STRAND_BIT) == 0)
+    .then(pl.lit("+"))
+    .otherwise(pl.lit("-"))
+    .alias("strand"),
+
+    pl.col("qual").map_elements(get_quality_score_sum, return_dtype=pl.Int64)
+    .alias("total_quality")
+).group_by("qname").agg(
+    [
+        pl.col("rname").alias("rnames"),
+        pl.col("5p_start").alias("5p_starts"),
+        pl.col("strand").alias("strands"),
+        pl.col("total_quality").alias("total_qualities"),
+        pl.struct(ds.schema.names).alias("alignments"),
+    ]
+).with_columns(
+    pl.struct(["rnames", "5p_starts", "strands"])
+    .map_elements(
+        lambda s: build_dedup_key(s["rnames"], s["5p_starts"], s["strands"]),
+        return_dtype=pl.String
+    )
+    .alias("dedup_key"),
+).filter(
+    pl.col("dedup_key").is_not_null()
+).sort(
+    ["dedup_key", "total_qualities"], descending=[False, True]
+).unique(
+    subset=["dedup_key"]
+).select(
+    "qname", "alignments"
+).explode(
+    "alignments"
+).select(
+    pl.col("alignments").struct.unnest()
+)
+
+ldf.show_graph()
+```
+
+Let's execute the query plan in streaming mode, writing the results to a Parquet file:
+
+```{code-cell} ipython3
+ldf.sink_parquet("Col0_C1.100k.dedup.pq")
 ```

@@ -64,6 +64,7 @@ source_suffix = [".rst", ".md"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
     "_build",
+    "jupyter_execute",
     "**/data/README.md",
     "**.ipynb_checkpoints",
     "Thumbs.db",
@@ -102,3 +103,5 @@ myst_enable_extensions = [
     "colon_fence",
     "deflist",
 ]
+
+nb_execution_mode = "auto"
