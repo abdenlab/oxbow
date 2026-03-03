@@ -20,8 +20,10 @@ import polars as pl
 To illustrate step by step, let's grab a small sample SAM file and materialize it in memory as a Polars DataFrame.
 
 ```{code-cell} ipython3
+url = "https://oxbow-ngs.s3.us-east-2.amazonaws.com/Col0_C1.100k.sam"
+
 # Let's use oxbow to read in the SAM file as a polars dataframe
-df = ox.from_sam("data/Col0_C1.100k.sam").to_polars()
+df = ox.from_sam(url).to_polars()
 df.head()
 ```
 
@@ -213,7 +215,7 @@ deduped_df.head()
 Here's the entire deduplication pipeline chained together on a Polars LazyFrame:
 
 ```{code-cell} ipython3
-ds = ox.from_sam("data/Col0_C1.100k.sam")
+ds = ox.from_sam(url)
 
 ldf = ds.to_polars(lazy=True).with_columns(
     pl.struct(["pos", "cigar", "flag"])
@@ -262,5 +264,5 @@ ldf.show_graph()
 Let's execute the query plan in streaming mode, writing the results to a Parquet file:
 
 ```{code-cell} ipython3
-ldf.sink_parquet("Col0_C1.100k.dedup.pq")
+ldf.sink_parquet("data/Col0_C1.100k.dedup.pq")
 ```
