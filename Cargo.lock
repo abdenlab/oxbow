@@ -1632,7 +1632,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "oxbow"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "arrow",
  "arrow-array",
@@ -1719,7 +1719,7 @@ dependencies = [
 
 [[package]]
 name = "py-oxbow"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "arrow",
  "bigtools",
