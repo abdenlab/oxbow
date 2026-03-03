@@ -62,7 +62,15 @@ source_suffix = [".rst", ".md"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store", ".env"]
+exclude_patterns = [
+    "_build",
+    "jupyter_execute",
+    "**/data/README.md",
+    "**.ipynb_checkpoints",
+    "Thumbs.db",
+    ".DS_Store",
+    ".env",
+]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -95,3 +103,5 @@ myst_enable_extensions = [
     "colon_fence",
     "deflist",
 ]
+
+nb_execution_mode = "auto"
