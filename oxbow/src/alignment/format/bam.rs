@@ -75,7 +75,7 @@ impl Scanner {
     ) -> io::Result<Schema> {
         let header = self.header();
         let batch_builder = BatchBuilder::new(header, fields, tag_defs, 0)?;
-        Ok(batch_builder.get_arrow_schema())
+        Ok(batch_builder.schema().as_ref().clone())
     }
 }
 

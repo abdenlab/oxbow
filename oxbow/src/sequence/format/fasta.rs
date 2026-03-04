@@ -52,7 +52,7 @@ impl Scanner {
     /// Returns the Arrow schema.
     pub fn schema(&self, fields: Option<Vec<String>>) -> io::Result<Schema> {
         let batch_builder = BatchBuilder::new_fasta(fields, 0)?;
-        Ok(batch_builder.get_arrow_schema())
+        Ok(batch_builder.schema().as_ref().clone())
     }
 }
 

@@ -1,5 +1,4 @@
 use std::io::{BufRead, Seek};
-use std::sync::Arc;
 use std::vec::IntoIter;
 
 use arrow::error::ArrowError;
@@ -45,7 +44,7 @@ where
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 

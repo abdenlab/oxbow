@@ -1,5 +1,4 @@
 use std::io::{self, Read, Seek, SeekFrom};
-use std::sync::Arc;
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema;
@@ -80,7 +79,7 @@ impl Scanner {
     ) -> io::Result<Schema> {
         let header = self.header();
         let batch_builder = BatchBuilder::new(header, fields, tag_defs, 0)?;
-        Ok(batch_builder.get_arrow_schema())
+        Ok(batch_builder.schema().as_ref().clone())
     }
 }
 
@@ -226,7 +225,7 @@ where
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 
@@ -379,7 +378,7 @@ where
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 

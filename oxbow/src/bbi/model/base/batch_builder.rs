@@ -1,10 +1,11 @@
 use std::io;
 use std::iter::zip;
+use std::sync::Arc;
 
 use arrow::array::ArrayRef;
-use arrow::datatypes::{Field as ArrowField, Schema as ArrowSchema};
+use arrow::datatypes::{Field as ArrowField, Schema as ArrowSchema, SchemaRef};
 use arrow::error::ArrowError;
-use arrow::record_batch::RecordBatch;
+use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 
 use super::field::Push as _;
@@ -13,6 +14,8 @@ pub use super::{BedSchema, BigBedRecord, BigWigRecord};
 
 /// A builder for an Arrow record batch of BBI records defined by AutoSql.
 pub struct BatchBuilder {
+    arrow_schema: SchemaRef,
+    row_count: usize,
     schema: BedSchema,
     builders: IndexMap<FieldDef, FieldBuilder>,
 }
@@ -53,29 +56,40 @@ impl BatchBuilder {
             let builder = FieldBuilder::new(&def.ty, capacity)?;
             builders.insert(def.clone(), builder);
         }
-        Ok(Self { schema, builders })
+
+        let arrow_fields: Vec<ArrowField> =
+            field_defs.iter().map(|def| def.get_arrow_field()).collect();
+        let arrow_schema = Arc::new(ArrowSchema::new(arrow_fields));
+
+        Ok(Self {
+            arrow_schema,
+            row_count: 0,
+            schema,
+            builders,
+        })
     }
 
-    pub fn get_arrow_fields(&self) -> Vec<ArrowField> {
-        let arrow_fields: Vec<ArrowField> = self
-            .builders
-            .iter()
-            .map(|(def, _)| def.get_arrow_field())
-            .collect();
-        arrow_fields
-    }
-
-    pub fn get_arrow_schema(&self) -> ArrowSchema {
-        ArrowSchema::new(self.get_arrow_fields())
+    pub fn schema(&self) -> SchemaRef {
+        self.arrow_schema.clone()
     }
 
     pub fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
-        let name_to_array: Vec<(&str, ArrayRef)> = self
+        let columns: Vec<ArrayRef> = self
             .builders
             .iter_mut()
-            .map(|(def, builder)| (def.name.as_str(), builder.finish()))
+            .map(|(_, builder)| builder.finish())
             .collect();
-        RecordBatch::try_from_iter(name_to_array)
+        let batch = if columns.is_empty() {
+            RecordBatch::try_new_with_options(
+                self.arrow_schema.clone(),
+                columns,
+                &RecordBatchOptions::new().with_row_count(Some(self.row_count)),
+            )
+        } else {
+            RecordBatch::try_new(self.arrow_schema.clone(), columns)
+        };
+        self.row_count = 0;
+        batch
     }
 }
 
@@ -164,6 +178,7 @@ impl Push<&BigBedRecord<'_>> for BatchBuilder {
             }
         }
 
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -237,6 +252,7 @@ impl Push<&BigWigRecord<'_>> for BatchBuilder {
             }
         }
 
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -256,16 +272,16 @@ mod tests {
         let bed_schema = create_test_bedschema();
         let builder = BatchBuilder::new(bed_schema.clone(), None, 10).unwrap();
 
-        assert_eq!(builder.schema, bed_schema);
+        assert_eq!(builder.schema().fields().len(), bed_schema.fields().len());
         assert_eq!(builder.builders.len(), bed_schema.fields().len());
     }
 
     #[test]
-    fn test_get_arrow_schema() {
+    fn test_schema() {
         let bed_schema = create_test_bedschema();
         let builder = BatchBuilder::new(bed_schema.clone(), None, 10).unwrap();
 
-        let schema = builder.get_arrow_schema();
+        let schema = builder.schema();
         assert_eq!(bed_schema.fields().len(), schema.fields().len());
         assert_eq!(schema.field(0).name(), "chrom");
         assert_eq!(schema.field(1).name(), "start");

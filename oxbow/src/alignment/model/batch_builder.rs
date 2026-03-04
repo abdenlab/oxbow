@@ -2,9 +2,9 @@ use std::io;
 use std::sync::Arc;
 
 use arrow::array::{ArrayRef, StructArray};
-use arrow::datatypes::{DataType, Field as ArrowField, FieldRef, Schema};
+use arrow::datatypes::{DataType, Field as ArrowField, FieldRef, SchemaRef};
 use arrow::error::ArrowError;
-use arrow::record_batch::RecordBatch;
+use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 use noodles::sam::alignment::record::data::field::Tag;
 
@@ -14,8 +14,9 @@ use super::tag::{TagBuilder, TagDef};
 
 /// A builder for an Arrow record batch of alignments.
 pub struct BatchBuilder {
+    schema: SchemaRef,
+    row_count: usize,
     header: noodles::sam::Header,
-    fields: Vec<Field>,
     tag_defs: Vec<TagDef>,
     field_builders: IndexMap<Field, FieldBuilder>,
     tag_builders: IndexMap<TagDef, TagBuilder>,
@@ -67,9 +68,25 @@ impl BatchBuilder {
             tag_builders.insert(tag, builder);
         }
 
+        // Build schema once
+        let mut arrow_fields: Vec<ArrowField> =
+            fields.iter().map(|field| field.get_arrow_field()).collect();
+        if !tag_defs.is_empty() {
+            let nested_fields: Vec<ArrowField> =
+                tag_defs.iter().map(|def| def.get_arrow_field()).collect();
+            let tag_field = ArrowField::new(
+                "tags",
+                DataType::Struct(arrow::datatypes::Fields::from(nested_fields)),
+                true,
+            );
+            arrow_fields.push(tag_field);
+        }
+        let schema = Arc::new(arrow::datatypes::Schema::new(arrow_fields));
+
         Ok(Self {
+            schema,
+            row_count: 0,
             header,
-            fields,
             tag_defs,
             field_builders,
             tag_builders,
@@ -80,45 +97,16 @@ impl BatchBuilder {
         self.header.clone()
     }
 
-    pub fn get_arrow_fields(&self) -> Vec<ArrowField> {
-        // fixed fields
-        let mut fields: Vec<ArrowField> = self
-            .fields
-            .iter()
-            .map(|field| field.get_arrow_field())
-            .collect();
-
-        // tags (optional)
-        if !self.tag_defs.is_empty() {
-            let nested_fields: Vec<ArrowField> = self
-                .tag_defs
-                .iter()
-                .map(|def| def.get_arrow_field())
-                .collect();
-            let tag_field = ArrowField::new(
-                "tags",
-                DataType::Struct(arrow::datatypes::Fields::from(nested_fields)),
-                true,
-            );
-            fields.push(tag_field);
-        }
-
-        fields
-    }
-
-    pub fn get_arrow_schema(&self) -> Schema {
-        Schema::new(self.get_arrow_fields())
+    pub fn schema(&self) -> SchemaRef {
+        self.schema.clone()
     }
 
     pub fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
         // fixed fields
-        let mut name_to_array: Vec<(&str, ArrayRef)> = self
+        let mut columns: Vec<ArrayRef> = self
             .field_builders
             .iter_mut()
-            .map(|(field, builder)| {
-                let name = field.name();
-                (name, builder.finish())
-            })
+            .map(|(_, builder)| builder.finish())
             .collect();
 
         // tags (optional)
@@ -132,9 +120,20 @@ impl BatchBuilder {
                 })
                 .collect();
             let tags = StructArray::from(tag_arrays);
-            name_to_array.push(("tags", Arc::new(tags)));
+            columns.push(Arc::new(tags));
         }
-        RecordBatch::try_from_iter(name_to_array)
+
+        let batch = if columns.is_empty() {
+            RecordBatch::try_new_with_options(
+                self.schema.clone(),
+                columns,
+                &RecordBatchOptions::new().with_row_count(Some(self.row_count)),
+            )
+        } else {
+            RecordBatch::try_new(self.schema.clone(), columns)
+        };
+        self.row_count = 0;
+        batch
     }
 }
 
@@ -177,6 +176,7 @@ impl Push<&noodles::sam::Record> for BatchBuilder {
                 };
             }
         }
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -216,6 +216,7 @@ impl Push<&noodles::bam::Record> for BatchBuilder {
                 };
             }
         }
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -247,6 +248,7 @@ impl Push<&noodles::sam::alignment::RecordBuf> for BatchBuilder {
                 };
             }
         }
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -265,19 +267,18 @@ mod tests {
         let batch_builder =
             BatchBuilder::new(header.clone(), field_names, tag_defs, capacity).unwrap();
         assert_eq!(batch_builder.header(), header);
-        assert_eq!(batch_builder.fields.len(), 2);
         assert_eq!(batch_builder.tag_defs.len(), 1);
     }
 
     #[test]
-    fn test_get_arrow_schema() {
+    fn test_schema() {
         let header = noodles::sam::Header::default();
         let field_names = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
         let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
         let capacity = 10;
 
         let batch_builder = BatchBuilder::new(header, field_names, tag_defs, capacity).unwrap();
-        let schema = batch_builder.get_arrow_schema();
+        let schema = batch_builder.schema();
         assert_eq!(schema.fields().len(), 3);
         assert_eq!(schema.field(0).name(), "qname");
         assert_eq!(schema.field(1).name(), "flag");

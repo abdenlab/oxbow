@@ -149,7 +149,7 @@ impl Scanner {
             genotype_by,
             0,
         )?;
-        Ok(batch_builder.get_arrow_schema())
+        Ok(batch_builder.schema().as_ref().clone())
     }
 }
 

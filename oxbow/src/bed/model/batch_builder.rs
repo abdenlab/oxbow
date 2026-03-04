@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use arrow::array::ArrayRef;
 use arrow::array::GenericStringBuilder;
-use arrow::datatypes::{DataType, Field as ArrowField, Schema};
+use arrow::datatypes::{DataType, Field as ArrowField, SchemaRef};
 use arrow::error::ArrowError;
-use arrow::record_batch::RecordBatch;
+use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 
 use super::field::Push as _;
@@ -15,9 +15,9 @@ use super::schema::BedSchema;
 
 /// A builder for an Arrow record batch of BED features.
 pub struct BatchBuilder {
+    schema: SchemaRef,
+    row_count: usize,
     bed_schema: BedSchema,
-    standard_fields: Vec<Field>,
-    custom_field_names: Vec<String>,
     standard_field_builders: IndexMap<Field, FieldBuilder>,
     custom_field_builders: IndexMap<String, GenericStringBuilder<i32>>,
 }
@@ -72,10 +72,24 @@ impl BatchBuilder {
             }
         };
 
+        // Build schema once
+        let mut arrow_fields: Vec<ArrowField> = projected_standard_fields
+            .iter()
+            .map(|field| field.get_arrow_field())
+            .collect();
+        if !projected_custom_field_names.is_empty() {
+            let other_fields: Vec<ArrowField> = projected_custom_field_names
+                .iter()
+                .map(|name| ArrowField::new(name, DataType::Utf8, true))
+                .collect();
+            arrow_fields.extend(other_fields);
+        }
+        let schema = Arc::new(arrow::datatypes::Schema::new(arrow_fields));
+
         Ok(Self {
+            schema,
+            row_count: 0,
             bed_schema: bed_schema.clone(),
-            standard_fields: projected_standard_fields,
-            custom_field_names: projected_custom_field_names,
             standard_field_builders,
             custom_field_builders,
         })
@@ -85,40 +99,16 @@ impl BatchBuilder {
         &self.bed_schema
     }
 
-    pub fn get_arrow_fields(&self) -> Vec<ArrowField> {
-        // standard fields
-        let mut fields: Vec<ArrowField> = self
-            .standard_fields
-            .iter()
-            .map(|field| field.get_arrow_field())
-            .collect();
-
-        // custom fields (optional)
-        if !self.custom_field_builders.is_empty() {
-            let other_fields: Vec<ArrowField> = self
-                .custom_field_names
-                .iter()
-                .map(|name| ArrowField::new(name, DataType::Utf8, true))
-                .collect();
-            fields.extend(other_fields);
-        }
-
-        fields
-    }
-
-    pub fn get_arrow_schema(&self) -> Schema {
-        Schema::new(self.get_arrow_fields())
+    pub fn schema(&self) -> SchemaRef {
+        self.schema.clone()
     }
 
     pub fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
         // standard fields
-        let mut name_to_array: Vec<(&str, ArrayRef)> = self
+        let mut columns: Vec<ArrayRef> = self
             .standard_field_builders
             .iter_mut()
-            .map(|(field, builder)| {
-                let name = field.name();
-                (name, builder.finish())
-            })
+            .map(|(_, builder)| builder.finish())
             .collect();
 
         // custom fields (optional)
@@ -126,26 +116,33 @@ impl BatchBuilder {
             match self.bed_schema.custom_field_count() {
                 Some(0) => {}
                 Some(_) => {
-                    let other: Vec<(&str, ArrayRef)> = self
+                    let other: Vec<ArrayRef> = self
                         .custom_field_builders
                         .iter_mut()
-                        .map(|(name, builder)| {
-                            (name.as_str(), Arc::new(builder.finish()) as ArrayRef)
-                        })
+                        .map(|(_, builder)| Arc::new(builder.finish()) as ArrayRef)
                         .collect();
-                    name_to_array.extend(other);
+                    columns.extend(other);
                 }
                 None => {
-                    let name = "rest";
-                    if let Some(builder) = self.custom_field_builders.get_mut(name) {
+                    if let Some(builder) = self.custom_field_builders.get_mut("rest") {
                         let array = builder.finish();
-                        name_to_array.push((name, Arc::new(array) as ArrayRef));
+                        columns.push(Arc::new(array) as ArrayRef);
                     };
                 }
             }
         }
 
-        RecordBatch::try_from_iter(name_to_array)
+        let batch = if columns.is_empty() {
+            RecordBatch::try_new_with_options(
+                self.schema.clone(),
+                columns,
+                &RecordBatchOptions::new().with_row_count(Some(self.row_count)),
+            )
+        } else {
+            RecordBatch::try_new(self.schema.clone(), columns)
+        };
+        self.row_count = 0;
+        batch
     }
 }
 
@@ -189,6 +186,7 @@ impl Push<&noodles::bed::Record<3>> for BatchBuilder {
             }
         }
 
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -212,9 +210,7 @@ mod tests {
         let bed_schema = BedSchema::new(3, Some(2)).unwrap();
         let batch_builder = BatchBuilder::new(None, &bed_schema, 10).unwrap();
 
-        assert_eq!(batch_builder.standard_fields.len(), 3);
-        assert_eq!(batch_builder.custom_field_names.len(), 2);
-        assert_eq!(batch_builder.get_arrow_fields().len(), 5);
+        assert_eq!(batch_builder.schema().fields().len(), 5);
     }
 
     #[test]
