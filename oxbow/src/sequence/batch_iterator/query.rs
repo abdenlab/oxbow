@@ -6,8 +6,8 @@ use arrow::record_batch::RecordBatch;
 use arrow::record_batch::RecordBatchReader;
 use noodles::core::region::Region;
 
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::sequence::model::BatchBuilder;
-use crate::sequence::model::Push as _;
 
 /// A record batch iterator that slices sequences from an indexed FASTA file.
 pub struct BatchIterator<R> {

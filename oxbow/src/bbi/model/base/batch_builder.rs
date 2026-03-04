@@ -8,6 +8,8 @@ use arrow::error::ArrowError;
 use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 
+use crate::batch::{Push, RecordBatchBuilder};
+
 use super::field::Push as _;
 pub use super::field::{FieldBuilder, FieldDef, FieldType};
 pub use super::{BedSchema, BigBedRecord, BigWigRecord};
@@ -68,12 +70,14 @@ impl BatchBuilder {
             builders,
         })
     }
+}
 
-    pub fn schema(&self) -> SchemaRef {
+impl RecordBatchBuilder for BatchBuilder {
+    fn schema(&self) -> SchemaRef {
         self.arrow_schema.clone()
     }
 
-    pub fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
+    fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
         let columns: Vec<ArrayRef> = self
             .builders
             .iter_mut()
@@ -91,10 +95,6 @@ impl BatchBuilder {
         self.row_count = 0;
         batch
     }
-}
-
-pub trait Push<T> {
-    fn push(&mut self, record: T) -> io::Result<()>;
 }
 
 /// Append a BigBed record to the batch.

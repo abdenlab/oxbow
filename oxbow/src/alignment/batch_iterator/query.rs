@@ -6,7 +6,7 @@ use arrow::record_batch::RecordBatchReader;
 use noodles::core::region::Interval;
 
 use crate::alignment::model::BatchBuilder;
-use crate::alignment::model::Push as _;
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::util::query::BgzfChunkReader;
 
 /// An iterator yielding alignment record batches that intersect a genomic range.

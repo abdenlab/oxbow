@@ -6,7 +6,7 @@ use arrow::record_batch::RecordBatchReader;
 use bigtools::{BBIReadError, BigBedRead, BigWigRead};
 use noodles::core::Region;
 
-use crate::bbi::model::base::Push as _;
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::bbi::model::base::{BatchBuilder, BigBedRecord, BigWigRecord};
 
 /// An iterator yielding BigWig record batches that intersect a genomic range.

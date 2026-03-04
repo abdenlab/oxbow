@@ -4,6 +4,7 @@ use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema;
 use noodles::core::Region;
 
+use crate::batch::RecordBatchBuilder as _;
 use crate::sequence::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::sequence::model::batch_builder::BatchBuilder;
 use crate::sequence::model::field::FASTA_DEFAULT_FIELD_NAMES;

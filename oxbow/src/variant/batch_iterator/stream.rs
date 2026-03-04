@@ -4,8 +4,8 @@ use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use arrow::record_batch::RecordBatchReader;
 
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::variant::model::BatchBuilder;
-use crate::variant::model::Push;
 
 /// An iterator yielding variant call record batches from a readable stream.
 pub struct BatchIterator<R> {

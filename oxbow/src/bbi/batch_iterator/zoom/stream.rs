@@ -7,7 +7,7 @@ use bigtools::{
     BigBedRead, BigWigRead, ChromInfo, ZoomIntervalError, ZoomIntervalIter, ZoomRecord,
 };
 
-use crate::bbi::model::zoom::Push as _;
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::bbi::model::zoom::{BBIZoomRecord, BatchBuilder};
 
 enum Either<Left, Right> {

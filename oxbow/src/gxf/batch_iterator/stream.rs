@@ -4,8 +4,8 @@ use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use arrow::record_batch::RecordBatchReader;
 
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::gxf::model::BatchBuilder;
-use crate::gxf::model::Push as _;
 
 /// An iterator yielding GXF record batches from a readable stream.
 pub struct BatchIterator<R> {

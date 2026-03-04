@@ -4,6 +4,7 @@ use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema as ArrowSchema;
 
 pub use super::BBIReader;
+use crate::batch::RecordBatchBuilder as _;
 use crate::bbi::batch_iterator::zoom::{BBIZoomBatchIterator, BBIZoomQueryBatchIterator};
 use crate::bbi::model::zoom::field::DEFAULT_FIELD_NAMES;
 use crate::bbi::model::zoom::BatchBuilder;

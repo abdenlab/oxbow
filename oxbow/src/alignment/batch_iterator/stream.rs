@@ -5,7 +5,7 @@ use arrow::record_batch::RecordBatch;
 use arrow::record_batch::RecordBatchReader;
 
 use crate::alignment::model::BatchBuilder;
-use crate::alignment::model::Push as _;
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 
 /// An iterator yielding alignment record batches from a readable stream.
 pub struct BatchIterator<R> {

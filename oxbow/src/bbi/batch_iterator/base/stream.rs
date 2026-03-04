@@ -6,7 +6,7 @@ use arrow::record_batch::RecordBatchReader;
 use bigtools::ChromInfo;
 use bigtools::{BBIReadError, BigBedIntervalIter, BigBedRead, BigWigIntervalIter, BigWigRead};
 
-use crate::bbi::model::base::Push as _;
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::bbi::model::base::{BatchBuilder, BigBedRecord, BigWigRecord};
 
 enum Either<Left, Right> {

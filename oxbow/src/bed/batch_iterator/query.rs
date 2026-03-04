@@ -7,8 +7,8 @@ use arrow::record_batch::RecordBatchReader;
 use noodles::core::region::Interval;
 use noodles::csi::binning_index;
 
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::bed::model::BatchBuilder;
-use crate::bed::model::Push as _;
 use crate::util::query::BgzfChunkReader;
 
 /// An iterator yielding BED record batches that intersect a genomic range.

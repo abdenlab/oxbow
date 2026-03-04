@@ -5,9 +5,9 @@ use arrow::record_batch::RecordBatch;
 use arrow::record_batch::RecordBatchReader;
 use noodles::core::region::Interval;
 
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::util::query::BgzfChunkReader;
 use crate::variant::model::BatchBuilder;
-use crate::variant::model::Push as _;
 
 /// An iterator yielding variant call record batches that intersect a genomic range.
 pub struct BatchIterator<R> {

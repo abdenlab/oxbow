@@ -6,10 +6,10 @@ use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use noodles::core::region::Interval;
 
-use crate::alignment::model::batch_builder::Push;
 use crate::alignment::model::field::DEFAULT_FIELD_NAMES;
 use crate::alignment::model::tag::TagScanner;
 use crate::alignment::model::BatchBuilder;
+use crate::batch::{Push, RecordBatchBuilder as _};
 
 /// A CRAM scanner.
 ///

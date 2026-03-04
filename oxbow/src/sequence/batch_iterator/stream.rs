@@ -5,8 +5,8 @@ use noodles::fasta::record::Definition;
 use noodles::fasta::record::Sequence;
 use std::io::BufRead;
 
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::sequence::model::BatchBuilder;
-use crate::sequence::model::Push as _;
 
 /// An iterator yielding sequence record batches from a readable stream.
 pub struct BatchIterator<R> {

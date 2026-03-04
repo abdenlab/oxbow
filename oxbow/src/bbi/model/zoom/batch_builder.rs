@@ -7,6 +7,8 @@ use arrow::error::ArrowError;
 use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 
+use crate::batch::{Push, RecordBatchBuilder};
+
 use super::field::{Field, FieldBuilder, DEFAULT_FIELD_NAMES};
 use super::BBIZoomRecord;
 
@@ -52,12 +54,14 @@ impl BatchBuilder {
             field_builders,
         })
     }
+}
 
-    pub fn schema(&self) -> SchemaRef {
+impl RecordBatchBuilder for BatchBuilder {
+    fn schema(&self) -> SchemaRef {
         self.schema.clone()
     }
 
-    pub fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
+    fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
         let columns: Vec<ArrayRef> = self
             .fields
             .iter()
@@ -78,10 +82,6 @@ impl BatchBuilder {
         self.row_count = 0;
         batch
     }
-}
-
-pub trait Push<T> {
-    fn push(&mut self, record: T) -> io::Result<()>;
 }
 
 /// Append a BBIZoomRecord to the batch.

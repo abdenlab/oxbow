@@ -7,6 +7,7 @@ use noodles::csi::binning_index;
 use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 use noodles::csi::BinningIndex;
 
+use crate::batch::RecordBatchBuilder as _;
 use crate::gxf::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::gxf::model::attribute::AttributeScanner;
 use crate::gxf::model::attribute::Push as _;

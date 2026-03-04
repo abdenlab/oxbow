@@ -6,6 +6,7 @@ use noodles::bgzf::VirtualPosition;
 use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 use noodles::csi::BinningIndex;
 
+use crate::batch::RecordBatchBuilder as _;
 use crate::bed::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::bed::model::BatchBuilder;
 use crate::bed::model::BedSchema;

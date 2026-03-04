@@ -4,8 +4,8 @@ use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use arrow::record_batch::RecordBatchReader;
 
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::bed::model::BatchBuilder;
-use crate::bed::model::Push as _;
 
 /// An iterator yielding BED record batches from a readable stream.
 pub struct BatchIterator<R> {

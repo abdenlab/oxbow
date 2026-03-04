@@ -57,6 +57,7 @@
 //! Licensed under MIT or Apache-2.0.
 //!
 pub mod alignment;
+pub mod batch;
 pub mod bbi;
 pub mod bed;
 pub mod gxf;

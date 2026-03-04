@@ -6,7 +6,7 @@ use arrow::record_batch::RecordBatchReader;
 use bigtools::{BigBedRead, BigWigRead, ZoomIntervalError, ZoomRecord};
 use noodles::core::region::Region;
 
-use crate::bbi::model::zoom::Push as _;
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::bbi::model::zoom::{BBIZoomRecord, BatchBuilder};
 
 /// An iterator yielding BBI zoom record batches that intersect a genomic range.

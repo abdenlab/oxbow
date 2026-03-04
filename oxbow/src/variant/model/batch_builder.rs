@@ -12,6 +12,8 @@ use noodles::vcf::variant::record::samples::series::value::Value as SampleFieldV
 use noodles::vcf::variant::record::samples::Sample;
 use noodles::vcf::variant::record::samples::Series;
 
+use crate::batch::{Push, RecordBatchBuilder};
+
 use super::field::Push as _;
 use super::field::{Field, FieldBuilder, DEFAULT_FIELD_NAMES};
 use super::genotype::{GenotypeDef, SampleStructBuilder, SeriesStructBuilder};
@@ -204,12 +206,14 @@ impl BatchBuilder {
     pub fn header(&self) -> noodles::vcf::Header {
         self.header.clone()
     }
+}
 
-    pub fn schema(&self) -> SchemaRef {
+impl RecordBatchBuilder for BatchBuilder {
+    fn schema(&self) -> SchemaRef {
         self.schema.clone()
     }
 
-    pub fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
+    fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
         let mut columns: Vec<ArrayRef> = self
             .field_builders
             .iter_mut()
@@ -267,10 +271,6 @@ impl BatchBuilder {
         self.row_count = 0;
         batch
     }
-}
-
-pub trait Push<T> {
-    fn push(&mut self, record: T) -> io::Result<()>;
 }
 
 /// Iterate through an INFO field once and collect all successfully parsed values.
