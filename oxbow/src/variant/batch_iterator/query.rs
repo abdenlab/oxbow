@@ -1,14 +1,13 @@
 use std::io;
-use std::sync::Arc;
 
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use arrow::record_batch::RecordBatchReader;
 use noodles::core::region::Interval;
 
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::util::query::BgzfChunkReader;
 use crate::variant::model::BatchBuilder;
-use crate::variant::model::Push as _;
 
 /// An iterator yielding variant call record batches that intersect a genomic range.
 pub struct BatchIterator<R> {
@@ -50,7 +49,7 @@ where
     BatchIterator<R>: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 

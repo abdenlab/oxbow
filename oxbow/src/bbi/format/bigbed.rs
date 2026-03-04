@@ -4,6 +4,7 @@ use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema as ArrowSchema;
 use bigtools::BigBedRead;
 
+use crate::batch::RecordBatchBuilder as _;
 use crate::bbi::batch_iterator::base::{BigBedBatchIterator, BigBedQueryBatchIterator};
 use crate::bbi::model::base::schema::BedSchema;
 use crate::bbi::model::base::BatchBuilder;
@@ -40,7 +41,7 @@ impl Scanner {
     /// Returns the Arrow schema.
     pub fn schema(&self, fields: Option<Vec<String>>) -> io::Result<ArrowSchema> {
         let batch_builder = BatchBuilder::new(self.bed_schema.clone(), fields, 0)?;
-        Ok(batch_builder.get_arrow_schema())
+        Ok(batch_builder.schema().as_ref().clone())
     }
 }
 

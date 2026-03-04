@@ -3,6 +3,7 @@ use std::io::{self, BufRead, Read, Seek};
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema;
 
+use crate::batch::RecordBatchBuilder as _;
 use crate::sequence::batch_iterator::BatchIterator;
 use crate::sequence::model::batch_builder::BatchBuilder;
 use crate::sequence::model::field::FASTQ_DEFAULT_FIELD_NAMES;
@@ -50,7 +51,7 @@ impl Scanner {
     /// Returns the Arrow schema.
     pub fn schema(&self, fields: Option<Vec<String>>) -> io::Result<Schema> {
         let batch_builder = BatchBuilder::new_fastq(fields, 0)?;
-        Ok(batch_builder.get_arrow_schema())
+        Ok(batch_builder.schema().as_ref().clone())
     }
 }
 

@@ -1,5 +1,4 @@
 use std::io::{Read, Seek};
-use std::sync::Arc;
 
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
@@ -7,7 +6,7 @@ use arrow::record_batch::RecordBatchReader;
 use bigtools::ChromInfo;
 use bigtools::{BBIReadError, BigBedIntervalIter, BigBedRead, BigWigIntervalIter, BigWigRead};
 
-use crate::bbi::model::base::Push as _;
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::bbi::model::base::{BatchBuilder, BigBedRecord, BigWigRecord};
 
 enum Either<Left, Right> {
@@ -108,7 +107,7 @@ where
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 
@@ -240,7 +239,7 @@ where
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 

@@ -1,17 +1,21 @@
 use std::io;
+use std::sync::Arc;
 
 use arrow::array::ArrayRef;
-use arrow::datatypes::{Field as ArrowField, Schema};
+use arrow::datatypes::{Field as ArrowField, SchemaRef};
 use arrow::error::ArrowError;
-use arrow::record_batch::RecordBatch;
+use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
+
+use crate::batch::{Push, RecordBatchBuilder};
 
 use super::field::Push as _;
 use super::field::{Field, FieldBuilder, FASTA_DEFAULT_FIELD_NAMES, FASTQ_DEFAULT_FIELD_NAMES};
 
 /// A builder for Arrow record batches of sequence records.
 pub struct BatchBuilder {
-    fields: Vec<Field>,
+    schema: SchemaRef,
+    row_count: usize,
     field_builders: IndexMap<Field, FieldBuilder>,
 }
 
@@ -30,22 +34,7 @@ impl BatchBuilder {
             .iter()
             .map(|s| s.to_string())
             .collect();
-        let fields: Vec<Field> = field_names
-            .unwrap_or(default_field_names)
-            .into_iter()
-            .map(|name| name.parse())
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let mut field_builders = IndexMap::new();
-        for field in &fields {
-            let builder = FieldBuilder::new(field.clone(), capacity);
-            field_builders.insert(field.clone(), builder);
-        }
-
-        Ok(Self {
-            fields,
-            field_builders,
-        })
+        Self::new(field_names.unwrap_or(default_field_names), capacity)
     }
 
     /// Creates a new `BatchBuilder` for FASTA records.
@@ -62,8 +51,11 @@ impl BatchBuilder {
             .iter()
             .map(|s| s.to_string())
             .collect();
+        Self::new(field_names.unwrap_or(default_field_names), capacity)
+    }
+
+    fn new(field_names: Vec<String>, capacity: usize) -> io::Result<Self> {
         let fields: Vec<Field> = field_names
-            .unwrap_or(default_field_names)
             .into_iter()
             .map(|name| name.parse())
             .collect::<Result<Vec<_>, _>>()?;
@@ -74,38 +66,41 @@ impl BatchBuilder {
             field_builders.insert(field.clone(), builder);
         }
 
+        let arrow_fields: Vec<ArrowField> = fields.iter().map(|f| f.get_arrow_field()).collect();
+        let schema = Arc::new(arrow::datatypes::Schema::new(arrow_fields));
+
         Ok(Self {
-            fields,
+            schema,
+            row_count: 0,
             field_builders,
         })
     }
-
-    pub fn get_arrow_fields(&self) -> Vec<ArrowField> {
-        self.fields
-            .iter()
-            .map(|field| field.get_arrow_field())
-            .collect()
-    }
-
-    pub fn get_arrow_schema(&self) -> Schema {
-        Schema::new(self.get_arrow_fields())
-    }
-
-    pub fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
-        let name_to_array: Vec<(&str, ArrayRef)> = self
-            .field_builders
-            .iter_mut()
-            .map(|(field, builder)| {
-                let name = field.name();
-                (name, builder.finish())
-            })
-            .collect();
-        RecordBatch::try_from_iter(name_to_array)
-    }
 }
 
-pub trait Push<T> {
-    fn push(&mut self, record: T) -> io::Result<()>;
+impl RecordBatchBuilder for BatchBuilder {
+    fn schema(&self) -> SchemaRef {
+        self.schema.clone()
+    }
+
+    fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
+        let columns: Vec<ArrayRef> = self
+            .field_builders
+            .iter_mut()
+            .map(|(_, builder)| builder.finish())
+            .collect();
+
+        let batch = if columns.is_empty() {
+            RecordBatch::try_new_with_options(
+                self.schema.clone(),
+                columns,
+                &RecordBatchOptions::new().with_row_count(Some(self.row_count)),
+            )
+        } else {
+            RecordBatch::try_new(self.schema.clone(), columns)
+        };
+        self.row_count = 0;
+        batch
+    }
 }
 
 /// Append a FASTA record to the batch.
@@ -114,6 +109,7 @@ impl Push<&noodles::fasta::Record> for BatchBuilder {
         for (_, builder) in self.field_builders.iter_mut() {
             builder.push(record)?;
         }
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -124,6 +120,7 @@ impl Push<&noodles::fastq::Record> for BatchBuilder {
         for (_, builder) in self.field_builders.iter_mut() {
             builder.push(record)?;
         }
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -137,10 +134,10 @@ mod tests {
         let capacity = 10;
         let batch_builder = BatchBuilder::new_fastq(None, capacity).unwrap();
 
-        assert_eq!(batch_builder.fields.len(), FASTQ_DEFAULT_FIELD_NAMES.len());
-        for (field, default_name) in batch_builder.fields.iter().zip(FASTQ_DEFAULT_FIELD_NAMES) {
-            assert_eq!(field.name(), default_name);
-        }
+        assert_eq!(
+            batch_builder.schema().fields().len(),
+            FASTQ_DEFAULT_FIELD_NAMES.len()
+        );
     }
 
     #[test]
@@ -148,18 +145,18 @@ mod tests {
         let capacity = 10;
         let batch_builder = BatchBuilder::new_fasta(None, capacity).unwrap();
 
-        assert_eq!(batch_builder.fields.len(), FASTA_DEFAULT_FIELD_NAMES.len());
-        for (field, default_name) in batch_builder.fields.iter().zip(FASTA_DEFAULT_FIELD_NAMES) {
-            assert_eq!(field.name(), default_name);
-        }
+        assert_eq!(
+            batch_builder.schema().fields().len(),
+            FASTA_DEFAULT_FIELD_NAMES.len()
+        );
     }
 
     #[test]
-    fn test_get_arrow_schema() {
+    fn test_schema() {
         let capacity = 10;
         let batch_builder = BatchBuilder::new_fastq(None, capacity).unwrap();
 
-        let schema = batch_builder.get_arrow_schema();
+        let schema = batch_builder.schema();
         assert_eq!(schema.fields().len(), FASTQ_DEFAULT_FIELD_NAMES.len());
         for (field, default_name) in schema.fields().iter().zip(FASTQ_DEFAULT_FIELD_NAMES) {
             assert_eq!(field.name(), default_name);

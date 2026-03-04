@@ -7,6 +7,7 @@ use noodles::csi::binning_index;
 use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 use noodles::csi::BinningIndex;
 
+use crate::batch::RecordBatchBuilder as _;
 use crate::gxf::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::gxf::model::attribute::AttributeScanner;
 use crate::gxf::model::attribute::Push as _;
@@ -73,7 +74,7 @@ impl Scanner {
         attr_defs: Option<Vec<(String, String)>>,
     ) -> io::Result<Schema> {
         let batch_builder = BatchBuilder::new(fields, attr_defs, 0)?;
-        Ok(batch_builder.get_arrow_schema())
+        Ok(batch_builder.schema().as_ref().clone())
     }
 }
 

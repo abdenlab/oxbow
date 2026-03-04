@@ -1,5 +1,4 @@
 use std::io::{Read, Seek};
-use std::sync::Arc;
 
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
@@ -7,7 +6,7 @@ use arrow::record_batch::RecordBatchReader;
 use bigtools::{BigBedRead, BigWigRead, ZoomIntervalError, ZoomRecord};
 use noodles::core::region::Region;
 
-use crate::bbi::model::zoom::Push as _;
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::bbi::model::zoom::{BBIZoomRecord, BatchBuilder};
 
 /// An iterator yielding BBI zoom record batches that intersect a genomic range.
@@ -147,6 +146,6 @@ impl Iterator for BatchIterator {
 
 impl RecordBatchReader for BatchIterator {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }

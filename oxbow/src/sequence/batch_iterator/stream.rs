@@ -1,14 +1,12 @@
-use std::io::BufRead;
-use std::sync::Arc;
-
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use arrow::record_batch::RecordBatchReader;
 use noodles::fasta::record::Definition;
 use noodles::fasta::record::Sequence;
+use std::io::BufRead;
 
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::sequence::model::BatchBuilder;
-use crate::sequence::model::Push as _;
 
 /// An iterator yielding sequence record batches from a readable stream.
 pub struct BatchIterator<R> {
@@ -36,7 +34,7 @@ where
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 

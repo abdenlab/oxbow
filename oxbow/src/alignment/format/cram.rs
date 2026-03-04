@@ -1,5 +1,4 @@
 use std::io::{self, Read, Seek, SeekFrom};
-use std::sync::Arc;
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema;
@@ -7,10 +6,10 @@ use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use noodles::core::region::Interval;
 
-use crate::alignment::model::batch_builder::Push;
 use crate::alignment::model::field::DEFAULT_FIELD_NAMES;
 use crate::alignment::model::tag::TagScanner;
 use crate::alignment::model::BatchBuilder;
+use crate::batch::{Push, RecordBatchBuilder as _};
 
 /// A CRAM scanner.
 ///
@@ -80,7 +79,7 @@ impl Scanner {
     ) -> io::Result<Schema> {
         let header = self.header();
         let batch_builder = BatchBuilder::new(header, fields, tag_defs, 0)?;
-        Ok(batch_builder.get_arrow_schema())
+        Ok(batch_builder.schema().as_ref().clone())
     }
 }
 
@@ -226,7 +225,7 @@ where
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 
@@ -379,7 +378,7 @@ where
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 

@@ -1,5 +1,4 @@
 use std::io::{Read, Seek};
-use std::sync::Arc;
 
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
@@ -8,7 +7,7 @@ use bigtools::{
     BigBedRead, BigWigRead, ChromInfo, ZoomIntervalError, ZoomIntervalIter, ZoomRecord,
 };
 
-use crate::bbi::model::zoom::Push as _;
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::bbi::model::zoom::{BBIZoomRecord, BatchBuilder};
 
 enum Either<Left, Right> {
@@ -147,7 +146,7 @@ where
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 

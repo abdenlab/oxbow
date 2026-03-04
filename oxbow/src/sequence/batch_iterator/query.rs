@@ -1,5 +1,4 @@
 use std::io::{BufRead, Seek};
-use std::sync::Arc;
 use std::vec::IntoIter;
 
 use arrow::error::ArrowError;
@@ -7,8 +6,8 @@ use arrow::record_batch::RecordBatch;
 use arrow::record_batch::RecordBatchReader;
 use noodles::core::region::Region;
 
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::sequence::model::BatchBuilder;
-use crate::sequence::model::Push as _;
 
 /// A record batch iterator that slices sequences from an indexed FASTA file.
 pub struct BatchIterator<R> {
@@ -45,7 +44,7 @@ where
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 

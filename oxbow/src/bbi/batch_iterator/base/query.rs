@@ -1,5 +1,4 @@
 use std::io::{Read, Seek};
-use std::sync::Arc;
 
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
@@ -7,7 +6,7 @@ use arrow::record_batch::RecordBatchReader;
 use bigtools::{BBIReadError, BigBedRead, BigWigRead};
 use noodles::core::Region;
 
-use crate::bbi::model::base::Push as _;
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::bbi::model::base::{BatchBuilder, BigBedRecord, BigWigRecord};
 
 /// An iterator yielding BigWig record batches that intersect a genomic range.
@@ -92,7 +91,7 @@ impl Iterator for BigWigBatchIterator {
 
 impl RecordBatchReader for BigWigBatchIterator {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 
@@ -178,6 +177,6 @@ impl Iterator for BigBedBatchIterator {
 
 impl RecordBatchReader for BigBedBatchIterator {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }

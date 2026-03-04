@@ -3,14 +3,16 @@ use std::io;
 use std::sync::Arc;
 
 use arrow::array::{ArrayRef, StructArray};
-use arrow::datatypes::{DataType, Field as ArrowField, FieldRef, Schema};
+use arrow::datatypes::{DataType, Field as ArrowField, FieldRef, SchemaRef};
 use arrow::error::ArrowError;
-use arrow::record_batch::RecordBatch;
+use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 use noodles::vcf::variant::record::info::field::Value as InfoFieldValue;
 use noodles::vcf::variant::record::samples::series::value::Value as SampleFieldValue;
 use noodles::vcf::variant::record::samples::Sample;
 use noodles::vcf::variant::record::samples::Series;
+
+use crate::batch::{Push, RecordBatchBuilder};
 
 use super::field::Push as _;
 use super::field::{Field, FieldBuilder, DEFAULT_FIELD_NAMES};
@@ -30,8 +32,9 @@ pub enum GenotypeDataBuilder {
 
 /// A builder for an Arrow record batch of variant calls.
 pub struct BatchBuilder {
+    schema: SchemaRef,
+    row_count: usize,
     header: noodles::vcf::Header,
-    fields: Vec<Field>,
     info_defs: Vec<InfoDef>,
     genotype_defs: Vec<GenotypeDef>,
     sample_names: Vec<String>,
@@ -142,9 +145,54 @@ impl BatchBuilder {
             }
         };
 
+        // Build schema once
+        let mut arrow_fields: Vec<ArrowField> =
+            fields.iter().map(|f| f.get_arrow_field()).collect();
+        if !info_defs.is_empty() {
+            let nested: Vec<ArrowField> =
+                info_defs.iter().map(|def| def.get_arrow_field()).collect();
+            arrow_fields.push(ArrowField::new(
+                "info",
+                DataType::Struct(arrow::datatypes::Fields::from(nested)),
+                true,
+            ));
+        }
+        if !sample_names.is_empty() && !genotype_defs.is_empty() {
+            match genotype_by {
+                GenotypeBy::Sample => {
+                    for (name, builder) in &genotype_builders {
+                        let nested = match builder {
+                            GenotypeDataBuilder::BySample(b) => b.get_arrow_fields(),
+                            _ => panic!("Invalid builder type for sample: {:?}", name),
+                        };
+                        arrow_fields.push(ArrowField::new(
+                            name,
+                            DataType::Struct(arrow::datatypes::Fields::from(nested)),
+                            true,
+                        ));
+                    }
+                }
+                GenotypeBy::Field => {
+                    for (name, builder) in &genotype_builders {
+                        let nested = match builder {
+                            GenotypeDataBuilder::ByField(b) => b.get_arrow_fields(),
+                            _ => panic!("Invalid builder type for field: {:?}", name),
+                        };
+                        arrow_fields.push(ArrowField::new(
+                            name,
+                            DataType::Struct(arrow::datatypes::Fields::from(nested)),
+                            true,
+                        ));
+                    }
+                }
+            }
+        }
+        let schema = Arc::new(arrow::datatypes::Schema::new(arrow_fields));
+
         Ok(Self {
+            schema,
+            row_count: 0,
             header,
-            fields,
             info_defs,
             genotype_defs,
             sample_names,
@@ -158,79 +206,18 @@ impl BatchBuilder {
     pub fn header(&self) -> noodles::vcf::Header {
         self.header.clone()
     }
+}
 
-    pub fn get_arrow_fields(&self) -> Vec<ArrowField> {
-        // fixed fields
-        let mut fields: Vec<ArrowField> = self
-            .fields
-            .iter()
-            .map(|field| field.get_arrow_field())
-            .collect();
-
-        // info (optional)
-        if !self.info_defs.is_empty() {
-            let nested_fields: Vec<ArrowField> = self
-                .info_defs
-                .iter()
-                .map(|def| def.get_arrow_field())
-                .collect();
-            let info_field = ArrowField::new(
-                "info",
-                DataType::Struct(arrow::datatypes::Fields::from(nested_fields)),
-                true,
-            );
-            fields.push(info_field);
-        }
-
-        // genotype data (optional)
-        if !self.sample_names.is_empty() && !self.genotype_defs.is_empty() {
-            match self.genotype_by {
-                GenotypeBy::Sample => {
-                    for (sample_name, builder) in &self.genotype_builders {
-                        let nested_fields = match builder {
-                            GenotypeDataBuilder::BySample(builder) => builder.get_arrow_fields(),
-                            _ => panic!("Invalid builder type for sample: {:?}", sample_name),
-                        };
-                        let sample_field = ArrowField::new(
-                            sample_name,
-                            DataType::Struct(arrow::datatypes::Fields::from(nested_fields)),
-                            true,
-                        );
-                        fields.push(sample_field);
-                    }
-                }
-                GenotypeBy::Field => {
-                    for (field_name, builder) in &self.genotype_builders {
-                        let nested_fields = match builder {
-                            GenotypeDataBuilder::ByField(builder) => builder.get_arrow_fields(),
-                            _ => panic!("Invalid builder type for field: {:?}", field_name),
-                        };
-                        let field_field = ArrowField::new(
-                            field_name,
-                            DataType::Struct(arrow::datatypes::Fields::from(nested_fields)),
-                            true,
-                        );
-                        fields.push(field_field);
-                    }
-                }
-            }
-        }
-
-        fields
+impl RecordBatchBuilder for BatchBuilder {
+    fn schema(&self) -> SchemaRef {
+        self.schema.clone()
     }
 
-    pub fn get_arrow_schema(&self) -> Schema {
-        Schema::new(self.get_arrow_fields())
-    }
-
-    pub fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
-        let mut name_to_array: Vec<(&str, ArrayRef)> = self
+    fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
+        let mut columns: Vec<ArrayRef> = self
             .field_builders
             .iter_mut()
-            .map(|(field, builder)| {
-                let name = field.name();
-                (name, builder.finish())
-            })
+            .map(|(_, builder)| builder.finish())
             .collect();
 
         // info (optional)
@@ -245,41 +232,45 @@ impl BatchBuilder {
                 })
                 .collect();
             let info = StructArray::from(info_arrays);
-            name_to_array.push(("info", Arc::new(info)));
+            columns.push(Arc::new(info));
         }
 
         // genotype data (optional)
         if !self.sample_names.is_empty() && !self.genotype_defs.is_empty() {
             match self.genotype_by {
                 GenotypeBy::Sample => {
-                    for (sample_name, builder) in &mut self.genotype_builders {
+                    for (_, builder) in &mut self.genotype_builders {
                         let builder = match builder {
                             GenotypeDataBuilder::BySample(b) => b,
-                            _ => panic!("Invalid builder type for sample: {:?}", sample_name),
+                            _ => unreachable!(),
                         };
-                        let sample = builder.finish();
-                        name_to_array.push((sample_name, Arc::new(sample)));
+                        columns.push(Arc::new(builder.finish()));
                     }
                 }
                 GenotypeBy::Field => {
-                    for (field_name, builder) in &mut self.genotype_builders {
+                    for (_, builder) in &mut self.genotype_builders {
                         let builder = match builder {
                             GenotypeDataBuilder::ByField(b) => b,
-                            _ => panic!("Invalid builder type for field: {:?}", field_name),
+                            _ => unreachable!(),
                         };
-                        let series = builder.finish();
-                        name_to_array.push((field_name, Arc::new(series)));
+                        columns.push(Arc::new(builder.finish()));
                     }
                 }
             }
         }
 
-        RecordBatch::try_from_iter(name_to_array)
+        let batch = if columns.is_empty() {
+            RecordBatch::try_new_with_options(
+                self.schema.clone(),
+                columns,
+                &RecordBatchOptions::new().with_row_count(Some(self.row_count)),
+            )
+        } else {
+            RecordBatch::try_new(self.schema.clone(), columns)
+        };
+        self.row_count = 0;
+        batch
     }
-}
-
-pub trait Push<T> {
-    fn push(&mut self, record: T) -> io::Result<()>;
 }
 
 /// Iterate through an INFO field once and collect all successfully parsed values.
@@ -313,11 +304,11 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
                         builder.append_value(value)?;
                     }
                     Some(None) => {
-                        // info field value is empty/missing (".")
+                        // info field value is empty (missing, ".")
                         builder.append_null();
                     }
                     None => {
-                        // info field not present in this record or parsing failed
+                        // info field is present in this record or parsing failed
                         builder.append_null();
                     }
                 }
@@ -426,6 +417,7 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
                 }
             }
         }
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -572,6 +564,7 @@ impl Push<&noodles::bcf::Record> for BatchBuilder {
                 }
             }
         }
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -638,22 +631,18 @@ mod tests {
         .unwrap();
 
         assert_eq!(batch_builder.header(), header);
-        assert_eq!(batch_builder.fields.len(), DEFAULT_FIELD_NAMES.len());
         assert_eq!(batch_builder.sample_names.len(), 2);
         assert_eq!(batch_builder.genotype_by, GenotypeBy::Sample);
     }
 
     #[test]
-    fn test_get_arrow_schema() {
+    fn test_schema() {
         let header = create_test_header();
         let batch_builder =
             BatchBuilder::new(header, None, None, None, None, GenotypeBy::Sample, 10).unwrap();
 
-        let schema = batch_builder.get_arrow_schema();
-        assert_eq!(
-            schema.fields().len(),
-            batch_builder.get_arrow_fields().len()
-        );
+        let schema = batch_builder.schema();
+        assert!(schema.fields().len() > 0);
     }
 
     #[test]
@@ -694,7 +683,7 @@ mod tests {
         assert_eq!(record_batch.num_rows(), 1);
         assert_eq!(
             record_batch.num_columns(),
-            batch_builder.get_arrow_fields().len()
+            batch_builder.schema().fields().len()
         );
     }
 

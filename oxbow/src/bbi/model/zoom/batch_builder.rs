@@ -1,16 +1,21 @@
 use std::io;
+use std::sync::Arc;
 
 use arrow::array::ArrayRef;
-use arrow::datatypes::{Field as ArrowField, Schema};
+use arrow::datatypes::{Field as ArrowField, Schema, SchemaRef};
 use arrow::error::ArrowError;
-use arrow::record_batch::RecordBatch;
+use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
+
+use crate::batch::{Push, RecordBatchBuilder};
 
 use super::field::{Field, FieldBuilder, DEFAULT_FIELD_NAMES};
 use super::BBIZoomRecord;
 
 /// A builder for an Arrow record batch of BBI zoom level summary statistics.
 pub struct BatchBuilder {
+    schema: SchemaRef,
+    row_count: usize,
     fields: Vec<Field>,
     field_builders: IndexMap<Field, FieldBuilder>,
 }
@@ -39,39 +44,44 @@ impl BatchBuilder {
             field_builders.insert(field.clone(), builder);
         }
 
+        let arrow_fields: Vec<ArrowField> = fields.iter().map(|f| f.get_arrow_field()).collect();
+        let schema = Arc::new(Schema::new(arrow_fields));
+
         Ok(Self {
+            schema,
+            row_count: 0,
             fields,
             field_builders,
         })
     }
+}
 
-    pub fn get_arrow_fields(&self) -> Vec<ArrowField> {
-        self.fields
-            .iter()
-            .map(|field| field.get_arrow_field())
-            .collect()
+impl RecordBatchBuilder for BatchBuilder {
+    fn schema(&self) -> SchemaRef {
+        self.schema.clone()
     }
 
-    pub fn get_arrow_schema(&self) -> Schema {
-        Schema::new(self.get_arrow_fields())
-    }
-
-    pub fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
-        let name_to_array: Vec<(&str, ArrayRef)> = self
+    fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
+        let columns: Vec<ArrayRef> = self
             .fields
             .iter()
             .map(|field| {
                 let builder = self.field_builders.get_mut(field).unwrap();
-                let name = field.name();
-                (name, builder.finish())
+                builder.finish()
             })
             .collect();
-        RecordBatch::try_from_iter(name_to_array)
+        let batch = if columns.is_empty() {
+            RecordBatch::try_new_with_options(
+                self.schema.clone(),
+                columns,
+                &RecordBatchOptions::new().with_row_count(Some(self.row_count)),
+            )
+        } else {
+            RecordBatch::try_new(self.schema.clone(), columns)
+        };
+        self.row_count = 0;
+        batch
     }
-}
-
-pub trait Push<T> {
-    fn push(&mut self, record: T) -> io::Result<()>;
 }
 
 /// Append a BBIZoomRecord to the batch.
@@ -89,6 +99,7 @@ impl Push<&BBIZoomRecord<'_>> for BatchBuilder {
                 FieldBuilder::SumSquares(builder) => builder.append_value(record.sum_squares),
             }
         }
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -113,12 +124,12 @@ mod tests {
         assert!(builder.is_ok());
 
         let builder = builder.unwrap();
-        assert_eq!(builder.fields.len(), 3);
+        assert_eq!(builder.schema().fields().len(), 3);
         assert_eq!(builder.field_builders.len(), 3);
     }
 
     #[test]
-    fn test_get_arrow_schema() {
+    fn test_schema() {
         let ref_names = vec!["chr1".to_string(), "chr2".to_string()];
         let field_names = Some(vec![
             "chrom".to_string(),
@@ -128,7 +139,7 @@ mod tests {
         let capacity = 10;
 
         let builder = BatchBuilder::new(&ref_names, field_names, capacity).unwrap();
-        let schema = builder.get_arrow_schema();
+        let schema = builder.schema();
 
         assert_eq!(schema.fields().len(), 3);
         assert_eq!(schema.field(0).name(), "chrom");

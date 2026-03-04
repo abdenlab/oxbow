@@ -3,18 +3,20 @@ use std::sync::Arc;
 
 use arrow::array::{ArrayRef, StructArray};
 use arrow::datatypes::FieldRef;
-use arrow::datatypes::{DataType, Field as ArrowField, Schema};
+use arrow::datatypes::{DataType, Field as ArrowField, SchemaRef};
 use arrow::error::ArrowError;
-use arrow::record_batch::RecordBatch;
+use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 
+use crate::batch::{Push, RecordBatchBuilder};
 use crate::gxf::model::attribute::{AttributeBuilder, AttributeDef, AttributeValue};
 use crate::gxf::model::field::Push as _;
 use crate::gxf::model::field::{Field, FieldBuilder, DEFAULT_FIELD_NAMES};
 
 /// A builder for an Arrow record batch of GXF (GTF/GFF) features.
 pub struct BatchBuilder {
-    fields: Vec<Field>,
+    schema: SchemaRef,
+    row_count: usize,
     attr_defs: Vec<AttributeDef>,
     field_builders: IndexMap<Field, FieldBuilder>,
     attr_builders: IndexMap<AttributeDef, AttributeBuilder>,
@@ -53,53 +55,42 @@ impl BatchBuilder {
             attr_builders.insert(def.clone(), builder);
         }
 
+        // Build schema once
+        let mut arrow_fields: Vec<ArrowField> =
+            fields.iter().map(|f| f.get_arrow_field()).collect();
+        if !attr_defs.is_empty() {
+            let nested_fields: Vec<ArrowField> =
+                attr_defs.iter().map(|def| def.get_arrow_field()).collect();
+            let attr_field = ArrowField::new(
+                "attributes",
+                DataType::Struct(arrow::datatypes::Fields::from(nested_fields)),
+                true,
+            );
+            arrow_fields.push(attr_field);
+        }
+        let schema = Arc::new(arrow::datatypes::Schema::new(arrow_fields));
+
         Ok(Self {
-            fields,
+            schema,
+            row_count: 0,
             attr_defs,
             field_builders,
             attr_builders,
         })
     }
+}
 
-    pub fn get_arrow_fields(&self) -> Vec<ArrowField> {
-        // fixed fields
-        let mut fields: Vec<ArrowField> = self
-            .fields
-            .iter()
-            .map(|field| field.get_arrow_field())
-            .collect();
-
-        // attributes (optional)
-        if !self.attr_defs.is_empty() {
-            let nested_fields: Vec<ArrowField> = self
-                .attr_defs
-                .iter()
-                .map(|def| def.get_arrow_field())
-                .collect();
-            let tag_field = ArrowField::new(
-                "attributes",
-                DataType::Struct(arrow::datatypes::Fields::from(nested_fields)),
-                true,
-            );
-            fields.push(tag_field);
-        }
-
-        fields
+impl RecordBatchBuilder for BatchBuilder {
+    fn schema(&self) -> SchemaRef {
+        self.schema.clone()
     }
 
-    pub fn get_arrow_schema(&self) -> Schema {
-        Schema::new(self.get_arrow_fields())
-    }
-
-    pub fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
+    fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
         // fixed fields
-        let mut name_to_array: Vec<(&str, ArrayRef)> = self
+        let mut columns: Vec<ArrayRef> = self
             .field_builders
             .iter_mut()
-            .map(|(field, builder)| {
-                let name = field.name();
-                (name, builder.finish())
-            })
+            .map(|(_, builder)| builder.finish())
             .collect();
 
         // attributes (optional)
@@ -113,15 +104,21 @@ impl BatchBuilder {
                 })
                 .collect();
             let attrs = StructArray::from(attr_arrays);
-            name_to_array.push(("attributes", Arc::new(attrs)));
+            columns.push(Arc::new(attrs));
         }
 
-        RecordBatch::try_from_iter(name_to_array)
+        let batch = if columns.is_empty() {
+            RecordBatch::try_new_with_options(
+                self.schema.clone(),
+                columns,
+                &RecordBatchOptions::new().with_row_count(Some(self.row_count)),
+            )
+        } else {
+            RecordBatch::try_new(self.schema.clone(), columns)
+        };
+        self.row_count = 0;
+        batch
     }
-}
-
-pub trait Push<T> {
-    fn push(&mut self, record: T) -> io::Result<()>;
 }
 
 /// Append a GFF record to the batch.
@@ -136,28 +133,23 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for BatchBuilder {
             let attrs = record.attributes();
             for (def, builder) in self.attr_builders.iter_mut() {
                 match attrs.get(def.name.as_bytes()) {
-                    // attribute is present in this record
-                    Some(result) => {
-                        match result {
-                            // attribute parsed successfully
-                            Ok(value) => {
-                                let value = AttributeValue::from(&value);
-                                builder.append_value(&value)?;
-                            }
-                            // attribute could not be parsed
-                            Err(_) => {
-                                eprintln!("Error parsing attribute: {:?}", def.name);
-                                builder.append_null();
-                            }
+                    Some(result) => match result {
+                        Ok(value) => {
+                            let value = AttributeValue::from(&value);
+                            builder.append_value(&value)?;
                         }
-                    }
-                    // attribute is not present in this record
+                        Err(_) => {
+                            eprintln!("Error parsing attribute: {:?}", def.name);
+                            builder.append_null();
+                        }
+                    },
                     None => {
                         builder.append_null();
                     }
                 };
             }
         }
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -177,28 +169,23 @@ impl<'a> Push<&'a noodles::gtf::Record<'a>> for BatchBuilder {
             let attrs = record.attributes()?;
             for (def, builder) in self.attr_builders.iter_mut() {
                 match <GtfAttributes as FeatureAttributes>::get(&attrs, def.name.as_bytes()) {
-                    // attribute is present in this record
-                    Some(result) => {
-                        match result {
-                            // attribute parsed successfully
-                            Ok(value) => {
-                                let value = AttributeValue::from(value);
-                                builder.append_value(&value)?;
-                            }
-                            // attribute could not be parsed
-                            Err(_) => {
-                                eprintln!("Error parsing attribute: {:?}", def.name);
-                                builder.append_null();
-                            }
+                    Some(result) => match result {
+                        Ok(value) => {
+                            let value = AttributeValue::from(value);
+                            builder.append_value(&value)?;
                         }
-                    }
-                    // attribute is not present in this record
+                        Err(_) => {
+                            eprintln!("Error parsing attribute: {:?}", def.name);
+                            builder.append_null();
+                        }
+                    },
                     None => {
                         builder.append_null();
                     }
                 };
             }
         }
+        self.row_count += 1;
         Ok(())
     }
 }
@@ -235,18 +222,17 @@ mod tests {
 
         let batch_builder = BatchBuilder::new(field_names, attr_defs, capacity).unwrap();
 
-        assert_eq!(batch_builder.fields.len(), 2);
         assert_eq!(batch_builder.attr_defs.len(), 1);
     }
 
     #[test]
-    fn test_get_arrow_schema() {
+    fn test_schema() {
         let field_names = Some(vec!["seqid".to_string(), "source".to_string()]);
         let attr_defs = Some(vec![("gene_id".to_string(), "String".to_string())]);
         let capacity = 10;
 
         let batch_builder = BatchBuilder::new(field_names, attr_defs, capacity).unwrap();
-        let schema = batch_builder.get_arrow_schema();
+        let schema = batch_builder.schema();
 
         assert_eq!(schema.fields().len(), 3); // 2 fields + 1 attributes struct
         assert_eq!(schema.field(0).name(), "seqid");

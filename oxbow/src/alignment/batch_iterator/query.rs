@@ -1,5 +1,4 @@
 use std::io;
-use std::sync::Arc;
 
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
@@ -7,7 +6,7 @@ use arrow::record_batch::RecordBatchReader;
 use noodles::core::region::Interval;
 
 use crate::alignment::model::BatchBuilder;
-use crate::alignment::model::Push as _;
+use crate::batch::{Push as _, RecordBatchBuilder as _};
 use crate::util::query::BgzfChunkReader;
 
 /// An iterator yielding alignment record batches that intersect a genomic range.
@@ -50,7 +49,7 @@ where
     Self: Iterator<Item = Result<RecordBatch, ArrowError>>,
 {
     fn schema(&self) -> arrow::datatypes::SchemaRef {
-        Arc::new(self.builder.get_arrow_schema())
+        self.builder.schema()
     }
 }
 
