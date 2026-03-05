@@ -1,5 +1,6 @@
 import cloudpickle
 import fsspec
+import pyarrow as pa
 import pytest
 from pytest_manifest import Manifest
 
@@ -55,7 +56,7 @@ class TestBedFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.BedFile("data/sample.bed", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
+            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
         except OSError as e:
             actual = str(e)
 
@@ -63,14 +64,14 @@ class TestBedFile:
 
     def test_input_encodings(self):
         file = ox.BedFile("data/sample.bed", "bed9", compressed=False, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.BedFile("data/sample.bed", "bed9", compressed=True, batch_size=3)
             next((file.batches()))
 
         file = ox.BedFile("data/sample.bed.gz", "bed9", compressed=True, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.BedFile(

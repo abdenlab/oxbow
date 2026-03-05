@@ -3,7 +3,7 @@ from __future__ import annotations
 import pathlib
 import warnings
 from abc import abstractmethod
-from typing import IO, Any, Callable, Generator, Iterable, Literal
+from typing import IO, Any, Callable, Generator, Literal
 
 try:
     from typing import Self
@@ -31,23 +31,17 @@ class DataSource:
     _scanner_type : type
         The scanner type used for reading the data source.
     _scanner_kwargs : dict
-        Additional keyword arguments for building the scanner.
-    _schema_kwargs : dict
-        Additional keyword arguments for assembling the schema.
+        Keyword arguments for building the scanner (includes schema params).
     _src : Callable[[], IO[bytes]]
         A callable that returns the data source.
     _index_src : Callable[[], IO[bytes]]
         A callable that returns the index source.
     _batch_size : int
         The size of the batches to be read from the data source.
-    _batchreader_builders : Iterable[Callable]
-        Callables that create a RecordBatch iterator for each fragment of the
-        data source.
     """
 
     _scanner_type: type
     _scanner_kwargs: dict[str, Any] = {}
-    _schema_kwargs: dict[str, Any] = {}
 
     def __init__(
         self,
@@ -74,24 +68,62 @@ class DataSource:
     @property
     def schema(self) -> pa.Schema:
         """The arrow schema of the projection."""
-        return pa.schema(self.scanner().schema(**self._schema_kwargs))
+        return pa.schema(self.scanner().schema())
 
     @property
     def columns(self) -> list[str]:
         """The top-level column names of the projection."""
         return self.schema.names
 
-    @property
-    @abstractmethod
-    def _batchreader_builders(
-        self,
-    ) -> Iterable[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
-        """
-        Callables that generate RecordBatch iterators from the data source.
+    def _make_reader(self, columns, batch_size, region=None):
+        """Return a RecordBatchReader for a full scan or regional query.
 
-        Each callable corresponds to a specific fragment of the data source,
-        takes column projection and batch size arguments, and returns a
-        stream of record batches that cover the fragment.
+        The default implementation delegates to ``scanner.scan()`` for full
+        scans and to :meth:`_scan_query` for regional queries.  Subclasses
+        may override this entirely when the scanner API differs from the
+        common ``columns`` / ``batch_size`` convention.
+
+        Parameters
+        ----------
+        columns : list[str] | None
+            Column projection, or None for all columns.
+        batch_size : int
+            Number of records per batch.
+        region : str, optional [default: None]
+            A genomic region string, e.g. ``"chr1:1000-2000"``.
+
+        Returns
+        -------
+        RecordBatchReader
+            A RecordBatchReader for the specified scan.
+        """
+        scanner = self.scanner()
+        if region is not None:
+            return self._scan_query(scanner, region, columns, batch_size)
+        return scanner.scan(columns=columns, batch_size=batch_size)
+
+    @abstractmethod
+    def _scan_query(self, scanner, region, columns, batch_size):
+        """Return a RecordBatchReader for a range query.
+
+        Subclasses implement this to handle format-specific index and query
+        semantics (e.g. passing an index object, handling unmapped reads).
+
+        Parameters
+        ----------
+        scanner
+            The low-level scanner instance (already constructed).
+        region : str
+            A genomic region string, e.g. ``"chr1:1000-2000"``.
+        columns : list[str] | None
+            Column projection, or None for all columns.
+        batch_size : int
+            Number of records per batch.
+
+        Returns
+        -------
+        RecordBatchReader
+            A RecordBatchReader for the specified range query.
         """
         ...
 
@@ -121,17 +153,17 @@ class DataSource:
         """
         return self._scanner_type(self._source, **self._scanner_kwargs)
 
-    def batches(self) -> Generator[pa.RecordBatch]:
+    def batches(self) -> Generator:
         """
         Generate record batches from the data source.
 
         Yields
         ------
-        pa.RecordBatch
+        RecordBatch
             A record batch from the data source.
         """
-        for builder in self._batchreader_builders:
-            reader = builder(self.columns, self._batch_size)
+        for region in self._regions or [None]:
+            reader = self._make_reader(self.columns, self._batch_size, region)
             while True:
                 try:
                     yield reader.read_next_batch()
@@ -151,24 +183,24 @@ class DataSource:
             A list of fragments representing parts of the data source.
         """
         schema = self.schema
+        regions = self._regions or [None]
         return [
             BatchReaderFragment(
-                builder,
+                lambda columns, batch_size, r=region: self._make_reader(
+                    columns, batch_size, r
+                ),
                 schema,
                 batch_size=self._batch_size,
                 tokenize=(
                     # deterministic only if source and index are str
                     self._source,
                     self._index,
-                    self._regions[i]
-                    if hasattr(self, "_regions") and self._regions
-                    else None,
+                    region,
                     self._scanner_kwargs,
-                    self._schema_kwargs,
                     self._batch_size,
                 ),
             )
-            for i, builder in enumerate(self._batchreader_builders)
+            for region in regions
         ]
 
     def dataset(self) -> BatchReaderDataset:
@@ -217,7 +249,7 @@ class DataSource:
         if lazy:
             from polars.io.plugins import register_io_source
 
-            builders = list(self._batchreader_builders)
+            regions = self._regions or [None]
             arrow_schema = self.schema
             default_batch_size = self._batch_size
             polars_schema = pl.from_arrow(arrow_schema.empty_table()).schema
@@ -225,8 +257,8 @@ class DataSource:
             def io_source(with_columns, predicate, n_rows, batch_size):
                 rows_read = 0
                 bs = batch_size or default_batch_size
-                for builder in builders:
-                    reader = builder(with_columns, bs)
+                for region in regions:
+                    reader = self._make_reader(with_columns, bs, region)
                     while True:
                         try:
                             batch = reader.read_next_batch()
@@ -248,7 +280,7 @@ class DataSource:
 
             return register_io_source(io_source=io_source, schema=polars_schema)
         else:
-            batches = list(self.batches())
+            batches = [pa.record_batch(b) for b in self.batches()]
             if not batches:
                 return pl.from_arrow(self.schema.empty_table())
             return pl.from_arrow(batches)

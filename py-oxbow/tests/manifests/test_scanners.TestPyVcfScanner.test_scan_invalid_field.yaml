@@ -1,1 +1,2 @@
-'Invalid field name: name'
+'Unknown columns: ["name", "sequence", "foo"]. Available columns: ["chrom", "pos",
+    "id", "ref", "alt", "qual", "filter", "info", "NA12878i", "NA12891", "NA12892"]'

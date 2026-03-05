@@ -179,23 +179,24 @@ class BatchReaderFragment:
         pyarrow.dataset.Scanner
             A scanner object for the fragment.
         """
-        # Apply column projection if specified
         schema = schema or self._schema
         batch_size = batch_size or self._batch_size
-        batches = self._make_batchreader(columns, batch_size)
+        reader = self._make_batchreader(columns, batch_size)
 
-        # The scanner constructor treats a RecordBatchReader differently than
-        # an opaque iterator, so we wrap it in an iterator for consistency
-        def _iterator(batches):
-            for batch in batches:
+        # Wrap to pyarrow if the reader supports the Arrow PyCapsule protocol
+        if not isinstance(reader, pa.RecordBatchReader) and hasattr(
+            reader, "__arrow_c_stream__"
+        ):
+            reader = pa.RecordBatchReader.from_stream(reader)
+
+        # Scanner.from_batches treats RecordBatchReader differently than an
+        # opaque iterator, so we unwrap it for consistency
+        def _iterate(reader):
+            for batch in reader:
                 yield batch
 
-        if isinstance(batches, pa.RecordBatchReader):
-            batches = _iterator(batches)
-
-        # Make a Scanner from the batches, applying filter if specified
         return Scanner.from_batches(
-            source=batches,
+            source=_iterate(reader),
             schema=schema,
             columns=columns,
             filter=filter,
@@ -559,13 +560,19 @@ class BatchReaderDataset(Dataset):
 
         # Chain all the fragments' record batch iterators together; don't
         # apply any filter yet. No batches should get materialized.
+        # Wrap each fragment's arro3 reader to pyarrow before chaining.
         batch_size = batch_size or self._batch_size
+
+        def _pyarrow_batches(fragment):
+            reader = fragment.iter_batches(columns=columns, batch_size=batch_size)
+            if not isinstance(reader, pa.RecordBatchReader) and hasattr(
+                reader, "__arrow_c_stream__"
+            ):
+                reader = pa.RecordBatchReader.from_stream(reader)
+            yield from reader
+
         batch_iter = chain.from_iterable(
-            fragment.iter_batches(
-                columns=columns,
-                batch_size=batch_size,
-            )
-            for fragment in self._fragments
+            _pyarrow_batches(fragment) for fragment in self._fragments
         )
 
         # Apply the row filter via the scanner.

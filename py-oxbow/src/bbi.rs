@@ -30,27 +30,31 @@ pub enum PyBBIFileType {
 /// ----------
 /// src : str or file-like
 ///     The path to the BigWig file or a file-like object.
+/// fields : list[str], optional
+///     Names of the fields to include in the schema.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigWigScanner {
     _src: Py<PyAny>,
     reader: Reader,
     scanner: BigWigScanner,
+    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
 impl PyBigWigScanner {
     #[new]
-    #[pyo3(signature = (src))]
-    fn new(py: Python, src: Py<PyAny>) -> PyResult<Self> {
+    #[pyo3(signature = (src, fields=None))]
+    fn new(py: Python, src: Py<PyAny>, fields: Option<Vec<String>>) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
-        let scanner = BigWigScanner::new(info);
+        let scanner = BigWigScanner::new(info, fields.clone())?;
         Ok(Self {
             _src: src,
             reader,
             scanner,
+            fields,
         })
     }
 
@@ -61,6 +65,9 @@ impl PyBigWigScanner {
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self._src.clone_ref(py),);
         let kwargs = PyDict::new(py);
+        if let Some(ref fields) = self.fields {
+            kwargs.set_item("fields", fields)?;
+        }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -90,45 +97,41 @@ impl PyBigWigScanner {
     /// ---------
     /// zoom_level : int
     ///     The resolution (in bp) of the zoom level to scan.
+    /// fields : list[str], optional
+    ///     Names of the fields to include in the zoom schema.
     ///
     /// Returns
     /// -------
     /// PyBBIZoomScanner
     ///     A scanner for the specified zoom level.
-    fn get_zoom(&mut self, zoom_level: u32) -> PyResult<PyBBIZoomScanner> {
+    #[pyo3(signature = (zoom_level, fields=None))]
+    fn get_zoom(&mut self, zoom_level: u32, fields: Option<Vec<String>>) -> PyResult<PyBBIZoomScanner> {
         Python::attach(|py| {
-            let py_zoom = PyBBIZoomScanner::new(
+            PyBBIZoomScanner::new(
                 py,
                 self._src.clone_ref(py),
                 PyBBIFileType::BigWig,
                 zoom_level,
-            );
-            Ok(py_zoom)
+                fields,
+            )
         })
     }
 
     /// Return the Arrow schema.
     ///
-    /// Parameters
-    /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fields to project.
-    ///
     /// Returns
     /// -------
     /// arro3 Schema (pycapsule)
-    #[pyo3(signature = (fields=None))]
-    fn schema(&self, fields: Option<Vec<String>>) -> PyResult<PySchema> {
-        let schema = self.scanner.schema(fields)?;
-        Ok(PySchema::new(Arc::new(schema)))
+    fn schema(&self) -> PySchema {
+        PySchema::new(Arc::new(self.scanner.schema().clone()))
     }
 
     /// Scan batches of records from the file.
     ///
     /// Parameters
     /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -139,10 +142,10 @@ impl PyBigWigScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (columns=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -151,7 +154,7 @@ impl PyBigWigScanner {
         let fmt_reader = bigtools::BigWigRead::with_info(info, reader);
         let batch_reader = self
             .scanner
-            .scan(fmt_reader, fields, batch_size, limit)
+            .scan(fmt_reader, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -162,8 +165,8 @@ impl PyBigWigScanner {
     /// ----------
     /// region : str
     ///     Genomic region in the format "chr:start-end".
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -174,11 +177,11 @@ impl PyBigWigScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (region, fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (region, columns=None, batch_size=1024, limit=None))]
     fn scan_query(
         &mut self,
         region: String,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -191,7 +194,7 @@ impl PyBigWigScanner {
         let fmt_reader = bigtools::BigWigRead::with_info(info, reader);
         let batch_reader = self
             .scanner
-            .scan_query(fmt_reader, region, fields, batch_size, limit)
+            .scan_query(fmt_reader, region, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -210,19 +213,27 @@ impl PyBigWigScanner {
 ///     fields are returned as a single lumped string field named "rest".
 ///     If "autosql", the file's AutoSql definition is used to parse the
 ///     records, if it exists.
+/// fields : list[str], optional
+///     Names of the fields to include in the schema.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigBedScanner {
     _src: Py<PyAny>,
     _schema: Option<String>,
     reader: Reader,
     scanner: BigBedScanner,
+    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
 impl PyBigBedScanner {
     #[new]
-    #[pyo3(signature = (src, schema="bed3+"))]
-    fn new(py: Python, src: Py<PyAny>, schema: Option<&str>) -> PyResult<Self> {
+    #[pyo3(signature = (src, schema="bed3+", fields=None))]
+    fn new(
+        py: Python,
+        src: Py<PyAny>,
+        schema: Option<&str>,
+        fields: Option<Vec<String>>,
+    ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let mut fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
         let bed_schema = match schema {
@@ -235,27 +246,27 @@ impl PyBigBedScanner {
                     ));
                 }
                 let declaration = declarations.pop().unwrap();
-                let fields: Vec<_> = declaration
+                let field_defs: Vec<_> = declaration
                     .fields
                     .iter()
                     .skip(3)
                     .map(FieldDef::try_from)
                     .collect::<Result<_, _>>()?;
-                BedSchema::new(3, Some(fields))
+                BedSchema::new(3, Some(field_defs))
             }
             Some(schema) => schema.parse(),
             None => BedSchema::new_from_nm(3, None),
         }?;
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
-        let scanner = BigBedScanner::new(bed_schema, info);
+        let scanner = BigBedScanner::new(bed_schema, info, fields.clone())?;
         let _schema: Option<String> = schema.map(|schema| schema.to_string());
-        // let schema = schema.map(|s| s.to_owned());
         Ok(Self {
             _src: src,
             _schema,
             reader,
             scanner,
+            fields,
         })
     }
 
@@ -269,6 +280,9 @@ impl PyBigBedScanner {
             self._schema.clone().into_py_any(py)?,
         );
         let kwargs = PyDict::new(py);
+        if let Some(ref fields) = self.fields {
+            kwargs.set_item("fields", fields)?;
+        }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -311,45 +325,41 @@ impl PyBigBedScanner {
     /// ---------
     /// zoom_level : int
     ///     The resolution (in bp) of the zoom level to scan.
+    /// fields : list[str], optional
+    ///     Names of the fields to include in the zoom schema.
     ///
     /// Returns
     /// -------
     /// PyBBIZoomScanner
     ///     A scanner for the specified zoom level.
-    fn get_zoom(&mut self, zoom_level: u32) -> PyResult<PyBBIZoomScanner> {
+    #[pyo3(signature = (zoom_level, fields=None))]
+    fn get_zoom(&mut self, zoom_level: u32, fields: Option<Vec<String>>) -> PyResult<PyBBIZoomScanner> {
         Python::attach(|py| {
-            let py_zoom = PyBBIZoomScanner::new(
+            PyBBIZoomScanner::new(
                 py,
                 self._src.clone_ref(py),
                 PyBBIFileType::BigBed,
                 zoom_level,
-            );
-            Ok(py_zoom)
+                fields,
+            )
         })
     }
 
     /// Return the Arrow schema.
     ///
-    /// Parameters
-    /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fields to project.
-    ///
     /// Returns
     /// -------
     /// arro3 Schema (pycapsule)
-    #[pyo3(signature = (fields=None))]
-    fn schema(&self, fields: Option<Vec<String>>) -> PyResult<PySchema> {
-        let schema = self.scanner.schema(fields)?;
-        Ok(PySchema::new(Arc::new(schema)))
+    fn schema(&self) -> PySchema {
+        PySchema::new(Arc::new(self.scanner.schema().clone()))
     }
 
     /// Scan batches of records from the file's base-level records.
     ///
     /// Parameters
     /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -360,10 +370,10 @@ impl PyBigBedScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (columns=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -372,7 +382,7 @@ impl PyBigBedScanner {
         let fmt_reader = bigtools::BigBedRead::with_info(info, reader);
         let batch_reader = self
             .scanner
-            .scan(fmt_reader, fields, batch_size, limit)
+            .scan(fmt_reader, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -383,8 +393,8 @@ impl PyBigBedScanner {
     /// ----------
     /// region : str
     ///     Genomic region in the format "chr:start-end".
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -395,11 +405,11 @@ impl PyBigBedScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (region, fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (region, columns=None, batch_size=1024, limit=None))]
     fn scan_query(
         &mut self,
         region: String,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -412,7 +422,7 @@ impl PyBigBedScanner {
         let fmt_reader = bigtools::BigBedRead::with_info(info, reader);
         let batch_reader = self
             .scanner
-            .scan_query(fmt_reader, region, fields, batch_size, limit)
+            .scan_query(fmt_reader, region, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -421,6 +431,17 @@ impl PyBigBedScanner {
 /// A BBI file zoom level scanner.
 ///
 /// Can only be initialized from a BigBed or BigWig scanner.
+///
+/// Parameters
+/// ----------
+/// src : str or file-like
+///     The path to the BBI file or a file-like object.
+/// bbi_type : PyBBIFileType
+///     The type of BBI file (BigWig or BigBed).
+/// zoom_level : int
+///     The zoom level resolution in bp.
+/// fields : list[str], optional
+///     Names of the fields to include in the schema.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBBIZoomScanner {
     src: Py<PyAny>,
@@ -428,12 +449,20 @@ pub struct PyBBIZoomScanner {
     bbi_type: PyBBIFileType,
     zoom_level: u32,
     scanner: BBIZoomScanner,
+    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
 impl PyBBIZoomScanner {
     #[new]
-    pub fn new(py: Python, src: Py<PyAny>, bbi_type: PyBBIFileType, zoom_level: u32) -> Self {
+    #[pyo3(signature = (src, bbi_type, zoom_level, fields=None))]
+    pub fn new(
+        py: Python,
+        src: Py<PyAny>,
+        bbi_type: PyBBIFileType,
+        zoom_level: u32,
+        fields: Option<Vec<String>>,
+    ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)
             .expect("Failed to convert Py<PyAny> to BufReader");
         match bbi_type {
@@ -451,20 +480,21 @@ impl PyBBIZoomScanner {
                     .map(|header| header.reduction_level)
                     .collect();
                 if !zoom_levels.contains(&zoom_level) {
-                    panic!(
+                    return Err(PyErr::new::<PyValueError, _>(format!(
                         "Zoom resolution {} not found in BBI file. Available reduction levels: {:?}.",
                         zoom_level, zoom_levels
-                    );
+                    )));
                 }
                 let reader = fmt_reader.into_inner();
-                let scanner = BBIZoomScanner::new(ref_names, zoom_level);
-                Self {
+                let scanner = BBIZoomScanner::new(ref_names, zoom_level, fields.clone())?;
+                Ok(Self {
                     src,
                     reader,
                     bbi_type,
                     zoom_level,
                     scanner,
-                }
+                    fields,
+                })
             }
             PyBBIFileType::BigWig => {
                 let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
@@ -480,20 +510,21 @@ impl PyBBIZoomScanner {
                     .map(|header| header.reduction_level)
                     .collect();
                 if !zoom_levels.contains(&zoom_level) {
-                    panic!(
+                    return Err(PyErr::new::<PyValueError, _>(format!(
                         "Zoom resolution {} not found in BBI file. Available reduction levels: {:?}.",
                         zoom_level, zoom_levels
-                    );
+                    )));
                 }
                 let reader = fmt_reader.into_inner();
-                let scanner = BBIZoomScanner::new(ref_names, zoom_level);
-                Self {
+                let scanner = BBIZoomScanner::new(ref_names, zoom_level, fields.clone())?;
+                Ok(Self {
                     src,
                     reader,
                     bbi_type,
                     zoom_level,
                     scanner,
-                }
+                    fields,
+                })
             }
         }
     }
@@ -509,6 +540,9 @@ impl PyBBIZoomScanner {
             self.zoom_level.into_py_any(py)?,
         );
         let kwargs = PyDict::new(py);
+        if let Some(ref fields) = self.fields {
+            kwargs.set_item("fields", fields)?;
+        }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -519,26 +553,19 @@ impl PyBBIZoomScanner {
 
     /// Return the Arrow schema.
     ///
-    /// Parameters
-    /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fields to project.
-    ///
     /// Returns
     /// -------
     /// arro3 Schema (pycapsule)
-    #[pyo3(signature = (fields=None))]
-    fn schema(&self, fields: Option<Vec<String>>) -> PyResult<PySchema> {
-        let schema = self.scanner.schema(fields)?;
-        Ok(PySchema::new(Arc::new(schema)))
+    fn schema(&self) -> PySchema {
+        PySchema::new(Arc::new(self.scanner.schema().clone()))
     }
 
     /// Scan batches of records from the zoom level.
     ///
     /// Parameters
     /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -549,10 +576,10 @@ impl PyBBIZoomScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (columns=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -564,7 +591,7 @@ impl PyBBIZoomScanner {
                 let reader = BBIReader::BigBed(fmt_reader);
                 let batch_reader = self
                     .scanner
-                    .scan(reader, fields, batch_size, limit)
+                    .scan(reader, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -573,7 +600,7 @@ impl PyBBIZoomScanner {
                 let reader = BBIReader::BigWig(fmt_reader);
                 let batch_reader = self
                     .scanner
-                    .scan(reader, fields, batch_size, limit)
+                    .scan(reader, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -586,8 +613,8 @@ impl PyBBIZoomScanner {
     /// ----------
     /// region : str
     ///     Genomic region in the format "chr:start-end".
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -598,11 +625,11 @@ impl PyBBIZoomScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (region, fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (region, columns=None, batch_size=1024, limit=None))]
     fn scan_query(
         &mut self,
         region: String,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -618,7 +645,7 @@ impl PyBBIZoomScanner {
                 let reader = BBIReader::BigBed(fmt_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_query(reader, region, fields, batch_size, limit)
+                    .scan_query(reader, region, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -627,7 +654,7 @@ impl PyBBIZoomScanner {
                 let reader = BBIReader::BigWig(fmt_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_query(reader, region, fields, batch_size, limit)
+                    .scan_query(reader, region, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -666,18 +693,18 @@ pub fn read_bigwig(
         let fmt_reader = bigtools::BigWigRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigWigScanner::new(info);
+        let scanner = BigWigScanner::new(info, fields)?;
         let batches = scanner
-            .scan_query(fmt_reader, region, fields, None, None)
+            .scan_query(fmt_reader, region, None, None, None)
             .map_err(PyErr::new::<PyValueError, _>)?;
         batches_to_ipc(batches)
     } else {
         let fmt_reader = bigtools::BigWigRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigWigScanner::new(info);
+        let scanner = BigWigScanner::new(info, fields)?;
         let batches = scanner
-            .scan(fmt_reader, fields, None, None)
+            .scan(fmt_reader, None, None, None)
             .map_err(PyErr::new::<PyValueError, _>)?;
         batches_to_ipc(batches)
     };
@@ -709,7 +736,7 @@ pub fn read_bigbed(
     region: Option<String>,
     fields: Option<Vec<String>>,
 ) -> PyResult<Vec<u8>> {
-    let bed_schema = bed_schema.parse()?;
+    let bed_schema: BedSchema = bed_schema.parse()?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
 
     let ipc = if let Some(region) = region {
@@ -720,18 +747,18 @@ pub fn read_bigbed(
         let fmt_reader = bigtools::BigBedRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigBedScanner::new(bed_schema, info);
+        let scanner = BigBedScanner::new(bed_schema, info, fields)?;
         let batches = scanner
-            .scan_query(fmt_reader, region, fields, None, None)
+            .scan_query(fmt_reader, region, None, None, None)
             .map_err(PyErr::new::<PyValueError, _>)?;
         batches_to_ipc(batches)
     } else {
         let fmt_reader = bigtools::BigBedRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigBedScanner::new(bed_schema, info);
+        let scanner = BigBedScanner::new(bed_schema, info, fields)?;
         let batches = scanner
-            .scan(fmt_reader, fields, None, None)
+            .scan(fmt_reader, None, None, None)
             .map_err(PyErr::new::<PyValueError, _>)?;
         batches_to_ipc(batches)
     };

@@ -1,7 +1,7 @@
 use std::io::{self, BufRead, Read, Seek};
 
 use arrow::array::RecordBatchReader;
-use arrow::datatypes::Schema;
+use arrow::datatypes::{Schema, SchemaRef};
 use noodles::bgzf::VirtualPosition;
 use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 use noodles::csi::BinningIndex;
@@ -14,6 +14,10 @@ use crate::variant::model::{BatchBuilder, GenotypeBy};
 
 /// A BCF scanner.
 ///
+/// Schema parameters (fields, info fields, genotype fields, samples, genotype_by)
+/// are declared at construction time. Scan methods accept only column projection,
+/// batch size, and limit.
+///
 /// # Examples
 ///
 /// ```no_run
@@ -25,22 +29,57 @@ use crate::variant::model::{BatchBuilder, GenotypeBy};
 /// let mut fmt_reader = noodles::bcf::io::Reader::new(inner);
 /// let header = fmt_reader.read_header().unwrap();
 ///
-/// let scanner = Scanner::new(header);
-/// let batches = scanner.scan(fmt_reader, None, None, None, None, None, None, Some(1000));
+/// let scanner = Scanner::new(header, None, None, None, None, None).unwrap();
+/// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
     header: noodles::vcf::Header,
+    fields: Option<Vec<String>>,
+    info_fields: Option<Vec<String>>,
+    genotype_fields: Option<Vec<String>>,
+    samples: Option<Vec<String>>,
+    genotype_by: GenotypeBy,
+    schema: SchemaRef,
 }
 
 impl Scanner {
-    /// Creates a BCF scanner from a VCF header.
-    pub fn new(header: noodles::vcf::Header) -> Self {
-        Self { header }
+    /// Creates a BCF scanner from a VCF header and schema parameters.
+    ///
+    /// The schema is validated and cached at construction time.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        header: noodles::vcf::Header,
+        fields: Option<Vec<String>>,
+        info_fields: Option<Vec<String>>,
+        genotype_fields: Option<Vec<String>>,
+        samples: Option<Vec<String>>,
+        genotype_by: Option<GenotypeBy>,
+    ) -> io::Result<Self> {
+        let genotype_by = genotype_by.unwrap_or(GenotypeBy::Sample);
+        let batch_builder = BatchBuilder::new(
+            header.clone(),
+            fields.clone(),
+            info_fields.clone(),
+            genotype_fields.clone(),
+            samples.clone(),
+            genotype_by.clone(),
+            0,
+        )?;
+        let schema = batch_builder.schema();
+        Ok(Self {
+            header,
+            fields,
+            info_fields,
+            genotype_fields,
+            samples,
+            genotype_by,
+            schema,
+        })
     }
 
-    /// Returns the VCF header.
-    pub fn header(&self) -> noodles::vcf::Header {
-        self.header.clone()
+    /// Returns a reference to the VCF header.
+    pub fn header(&self) -> &noodles::vcf::Header {
+        &self.header
     }
 
     /// Returns the reference sequence names.
@@ -131,97 +170,143 @@ impl Scanner {
     }
 
     /// Returns the Arrow schema.
-    pub fn schema(
+    pub fn schema(&self) -> &Schema {
+        &self.schema
+    }
+
+    /// Builds a BatchBuilder applying column projection.
+    ///
+    /// Returns an error if any requested column is not in the declared schema.
+    fn build_batch_builder(
         &self,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<GenotypeBy>,
-    ) -> io::Result<Schema> {
-        let header = self.header();
-        let genotype_by = genotype_by.unwrap_or(GenotypeBy::Sample);
-        let batch_builder = BatchBuilder::new(
-            header,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
-            genotype_by,
-            0,
-        )?;
-        Ok(batch_builder.schema().as_ref().clone())
+        columns: Option<Vec<String>>,
+        capacity: usize,
+    ) -> io::Result<BatchBuilder> {
+        match columns {
+            None => BatchBuilder::new(
+                self.header.clone(),
+                self.fields.clone(),
+                self.info_fields.clone(),
+                self.genotype_fields.clone(),
+                self.samples.clone(),
+                self.genotype_by.clone(),
+                capacity,
+            ),
+            Some(cols) => {
+                let schema_names: Vec<&str> = self
+                    .schema
+                    .fields()
+                    .iter()
+                    .map(|f| f.name().as_str())
+                    .collect();
+
+                let unknown: Vec<&str> = cols
+                    .iter()
+                    .filter(|c| !schema_names.iter().any(|s| s.eq_ignore_ascii_case(c)))
+                    .map(|c| c.as_str())
+                    .collect();
+                if !unknown.is_empty() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!(
+                            "Unknown columns: {:?}. Available columns: {:?}",
+                            unknown, schema_names
+                        ),
+                    ));
+                }
+
+                // Fixed fields: intersect with declared
+                let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
+                    DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
+                });
+                let projected_fields: Vec<String> = declared_field_names
+                    .into_iter()
+                    .filter(|name| cols.iter().any(|c| c.eq_ignore_ascii_case(name)))
+                    .collect();
+
+                // Include info only if "info" is in the requested columns
+                let info_fields = if cols.iter().any(|c| c == "info") {
+                    self.info_fields.clone()
+                } else {
+                    Some(vec![])
+                };
+
+                // Genotype/sample columns: filter based on genotype_by mode
+                let (genotype_fields, samples) = match self.genotype_by {
+                    GenotypeBy::Sample => {
+                        let declared_samples: Vec<String> =
+                            self.samples.clone().unwrap_or_else(|| self.sample_names());
+                        let projected_samples: Vec<String> = declared_samples
+                            .into_iter()
+                            .filter(|name| cols.iter().any(|c| c == name))
+                            .collect();
+                        if projected_samples.is_empty() {
+                            (Some(vec![]), Some(vec![]))
+                        } else {
+                            (self.genotype_fields.clone(), Some(projected_samples))
+                        }
+                    }
+                    GenotypeBy::Field => {
+                        let declared_gt_fields: Vec<String> = self
+                            .genotype_fields
+                            .clone()
+                            .unwrap_or_else(|| self.genotype_field_names());
+                        let projected_gt: Vec<String> = declared_gt_fields
+                            .into_iter()
+                            .filter(|name| cols.iter().any(|c| c == name))
+                            .collect();
+                        if projected_gt.is_empty() {
+                            (Some(vec![]), Some(vec![]))
+                        } else {
+                            (Some(projected_gt), self.samples.clone())
+                        }
+                    }
+                };
+
+                BatchBuilder::new(
+                    self.header.clone(),
+                    Some(projected_fields),
+                    info_fields,
+                    genotype_fields,
+                    samples,
+                    self.genotype_by.clone(),
+                    capacity,
+                )
+            }
+        }
     }
 }
 
 impl Scanner {
     /// Returns an iterator yielding record batches.
-    ///
-    /// The scan will begin at the current position of the reader and will
-    /// move the cursor to the end of the last record scanned.
-    #[allow(clippy::too_many_arguments)]
     pub fn scan<R: Read>(
         &self,
         fmt_reader: noodles::bcf::io::Reader<R>,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<GenotypeBy>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
-        let genotype_by = genotype_by.unwrap_or(GenotypeBy::Sample);
-        let header = self.header();
-        let batch_builder = BatchBuilder::new(
-            header,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
-            genotype_by,
-            batch_size,
-        )?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
         Ok(batch_iter)
     }
 
     /// Returns an iterator yielding record batches satisfying a genomic range query.
-    ///
-    /// This operation requires a BGZF source and an Index.
-    ///
-    /// The scan will consume contiguous "chunks" of BGZF blocks and filter for
-    /// records that overlap the given region. The cursor will move to the end
-    /// of the last record scanned.
-    #[allow(clippy::too_many_arguments)]
     pub fn scan_query<R: Read + Seek>(
         &self,
         fmt_reader: noodles::bcf::io::Reader<noodles::bgzf::io::Reader<R>>,
         region: noodles::core::Region,
         index: impl BinningIndex,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<GenotypeBy>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
-        let genotype_by = genotype_by.unwrap_or(GenotypeBy::Sample);
         let batch_size = batch_size.unwrap_or(1024);
         let reference_sequence_name = region.name().to_string();
         let interval = region.interval();
 
-        let batch_builder = BatchBuilder::new(
-            self.header(),
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
-            genotype_by,
-            batch_size,
-        )?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
         let reference_sequence_id =
             resolve_chrom_id(&self.header, &index, &reference_sequence_name)?;
@@ -231,7 +316,7 @@ impl Scanner {
         let fmt_reader = noodles::bcf::io::Reader::from(query_reader);
         let batch_iter = QueryBatchIterator::new(
             fmt_reader,
-            self.header(),
+            self.header.clone(),
             reference_sequence_name,
             interval,
             batch_builder,
@@ -242,37 +327,16 @@ impl Scanner {
     }
 
     /// Returns an iterator yielding record batches from specified byte ranges.
-    ///
-    /// This operation requires a seekable (typically uncompressed) source.
-    ///
-    /// The scan will traverse the specified byte ranges without filtering by genomic coordinates.
-    /// This is useful when you have pre-computed file offsets from a custom index. The byte ranges
-    /// must align with record boundaries.
-    #[allow(clippy::too_many_arguments)]
     pub fn scan_byte_ranges<R: BufRead + Seek>(
         &self,
         fmt_reader: noodles::bcf::io::Reader<R>,
         byte_ranges: Vec<(u64, u64)>,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<GenotypeBy>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
-        let genotype_by = genotype_by.unwrap_or(GenotypeBy::Sample);
         let batch_size = batch_size.unwrap_or(1024);
-        let header = self.header();
-        let batch_builder = BatchBuilder::new(
-            header,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
-            genotype_by,
-            batch_size,
-        )?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
         let inner_reader = fmt_reader.into_inner();
         let range_reader = ByteRangeReader::new(inner_reader, byte_ranges);
@@ -282,36 +346,16 @@ impl Scanner {
     }
 
     /// Returns an iterator yielding record batches from specified virtual position ranges.
-    ///
-    /// This operation requires a BGZF-compressed source.
-    ///
-    /// The scan will traverse the specified virtual position ranges without filtering by genomic
-    /// coordinates. This is useful when you have pre-computed virtual offsets from a custom index.
-    #[allow(clippy::too_many_arguments)]
     pub fn scan_virtual_ranges<R: Read + Seek>(
         &self,
         fmt_reader: noodles::bcf::io::Reader<noodles::bgzf::io::Reader<R>>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<GenotypeBy>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
-        let genotype_by = genotype_by.unwrap_or(GenotypeBy::Sample);
         let batch_size = batch_size.unwrap_or(1024);
-        let header = self.header();
-        let batch_builder = BatchBuilder::new(
-            header,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
-            genotype_by,
-            batch_size,
-        )?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
         // Convert virtual position tuples to Chunks
         let chunks: Vec<Chunk> = vpos_ranges

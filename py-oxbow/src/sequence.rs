@@ -25,27 +25,36 @@ use oxbow::util::batches_to_ipc;
 ///     The path to the FASTQ file or a file-like object.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is GZIP-compressed.
+/// fields : list[str], optional
+///     Names of the fixed fields to project.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyFastqScanner {
     src: Py<PyAny>,
     reader: Reader,
     scanner: FastqScanner,
     compressed: bool,
+    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
 impl PyFastqScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false))]
-    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
+    #[pyo3(signature = (src, compressed=false, fields=None))]
+    fn new(
+        py: Python,
+        src: Py<PyAny>,
+        compressed: bool,
+        fields: Option<Vec<String>>,
+    ) -> PyResult<Self> {
         let _src = src.clone_ref(py);
         let reader = pyobject_to_bufreader(py, src, false)?;
-        let scanner = FastqScanner::new();
+        let scanner = FastqScanner::new(fields.clone())?;
         Ok(Self {
             src: _src,
             reader,
             scanner,
             compressed,
+            fields,
         })
     }
 
@@ -56,6 +65,9 @@ impl PyFastqScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
+        if let Some(ref fields) = self.fields {
+            kwargs.set_item("fields", fields)?;
+        }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -66,26 +78,19 @@ impl PyFastqScanner {
 
     /// Return the Arrow schema.
     ///
-    /// Parameters
-    /// ----------
-    /// fields : list[str], optional
-    ///    Names of the fixed fields to project.
-    ///
     /// Returns
     /// -------
     /// arro3 Schema (pycapsule)
-    #[pyo3(signature = (fields=None))]
-    fn schema(&self, fields: Option<Vec<String>>) -> PyResult<PySchema> {
-        let schema = self.scanner.schema(fields)?;
-        Ok(PySchema::new(Arc::new(schema)))
+    fn schema(&self) -> PySchema {
+        PySchema::new(Arc::new(self.scanner.schema().clone()))
     }
 
     /// Scan the source as record batches.
     ///
     /// Parameters
     /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -96,28 +101,27 @@ impl PyFastqScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (columns=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
         let reader = self.reader.clone();
         if self.compressed {
-            // Decode a fastq.gz using a conventional gzip stream decoder.
             let gz_reader = std::io::BufReader::new(MultiGzDecoder::new(reader));
             let fmt_reader = noodles::fastq::io::Reader::new(gz_reader);
             let batch_reader = self
                 .scanner
-                .scan(fmt_reader, fields, batch_size, limit)
+                .scan(fmt_reader, columns, batch_size, limit)
                 .map_err(PyErr::new::<PyValueError, _>)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         } else {
             let fmt_reader = noodles::fastq::io::Reader::new(reader);
             let batch_reader = self
                 .scanner
-                .scan(fmt_reader, fields, batch_size, limit)
+                .scan(fmt_reader, columns, batch_size, limit)
                 .map_err(PyErr::new::<PyValueError, _>)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         }
@@ -125,29 +129,25 @@ impl PyFastqScanner {
 
     /// Scan batches of records from specified byte ranges in the file.
     ///
-    /// The byte positions must align with record boundaries.
-    ///
     /// Parameters
     /// ----------
     /// byte_ranges : list[tuple[int, int]]
     ///     List of (start, end) byte position tuples to read from.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
-    ///     The maximum number of records to scan. If None, all records
-    ///     in the specified ranges are scanned.
+    ///     The maximum number of records to scan.
     ///
     /// Returns
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
-    ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (byte_ranges, fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (byte_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_byte_ranges(
         &mut self,
         byte_ranges: Vec<(u64, u64)>,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -155,42 +155,32 @@ impl PyFastqScanner {
         let fmt_reader = noodles::fastq::io::Reader::new(reader);
         let batch_reader = self
             .scanner
-            .scan_byte_ranges(fmt_reader, byte_ranges, fields, batch_size, limit)
+            .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
     /// Scan batches of records from virtual position ranges in a BGZF file.
     ///
-    /// The virtual positions must align with record boundaries. That means
-    /// that the compressed offset must point to the beginning of a BGZF block
-    /// and the uncompressed offset must point to the beginning or end of a
-    /// record decoded within the block.
-    ///
     /// Parameters
     /// ----------
     /// vpos_ranges : list[tuple[vpos, vpos]]
-    ///     List of virtual position ranges as pairs. Each virtual position can
-    ///     be given as either a packed virtual position (int), or an unpacked
-    ///     tuple of ints ``(c, u)`` specifying the compressed and uncompressed
-    ///     offsets, respectively.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    ///     List of virtual position ranges as pairs.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
-    ///     The maximum number of records to scan. If None, all records
-    ///     in the specified ranges are scanned.
+    ///     The maximum number of records to scan.
     ///
     /// Returns
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
-    ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (vpos_ranges, fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (vpos_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_virtual_ranges(
         &mut self,
         vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -208,7 +198,7 @@ impl PyFastqScanner {
         let fmt_reader = noodles::fastq::io::Reader::new(bgzf_reader);
         let batch_reader = self
             .scanner
-            .scan_virtual_ranges(fmt_reader, vpos_ranges, fields, batch_size, limit)
+            .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -222,26 +212,35 @@ impl PyFastqScanner {
 ///     The path to the FASTA file or a file-like object.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed.
+/// fields : list[str], optional
+///     Names of the fixed fields to project.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyFastaScanner {
     src: Py<PyAny>,
     reader: Reader,
     scanner: FastaScanner,
     compressed: bool,
+    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
 impl PyFastaScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false))]
-    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
+    #[pyo3(signature = (src, compressed=false, fields=None))]
+    fn new(
+        py: Python,
+        src: Py<PyAny>,
+        compressed: bool,
+        fields: Option<Vec<String>>,
+    ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
-        let scanner = FastaScanner::new();
+        let scanner = FastaScanner::new(fields.clone())?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
+            fields,
         })
     }
 
@@ -252,6 +251,9 @@ impl PyFastaScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
+        if let Some(ref fields) = self.fields {
+            kwargs.set_item("fields", fields)?;
+        }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -262,26 +264,19 @@ impl PyFastaScanner {
 
     /// Return the Arrow schema.
     ///
-    /// Parameters
-    /// ----------
-    /// fields : list[str], optional
-    ///    Names of the fixed fields to project.
-    ///
     /// Returns
     /// -------
     /// arro3 Schema (pycapsule)
-    #[pyo3(signature = (fields=None))]
-    fn schema(&self, fields: Option<Vec<String>>) -> PyResult<PySchema> {
-        let schema = self.scanner.schema(fields)?;
-        Ok(PySchema::new(Arc::new(schema)))
+    fn schema(&self) -> PySchema {
+        PySchema::new(Arc::new(self.scanner.schema().clone()))
     }
 
     /// Scan the source as record batches.
     ///
     /// Parameters
     /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -291,16 +286,15 @@ impl PyFastaScanner {
     /// Returns
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
-    ///     An iterator yielding Arrow record batches.
     ///
     /// Notes
     /// -----
     /// Since reference sequences are often large, the default batch size is
     /// set to 1.
-    #[pyo3(signature = (fields=None, batch_size=1, limit=None))]
+    #[pyo3(signature = (columns=None, batch_size=1, limit=None))]
     fn scan(
         &mut self,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -310,14 +304,14 @@ impl PyFastaScanner {
             let fmt_reader = noodles::fasta::io::Reader::new(gz_reader);
             let batch_reader = self
                 .scanner
-                .scan(fmt_reader, fields, batch_size, limit)
+                .scan(fmt_reader, columns, batch_size, limit)
                 .map_err(PyErr::new::<PyValueError, _>)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         } else {
             let fmt_reader = noodles::fasta::io::Reader::new(reader);
             let batch_reader = self
                 .scanner
-                .scan(fmt_reader, fields, batch_size, limit)
+                .scan(fmt_reader, columns, batch_size, limit)
                 .map_err(PyErr::new::<PyValueError, _>)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         }
@@ -325,49 +319,35 @@ impl PyFastaScanner {
 
     /// Scan sequence slices as record batches from a list of genomic ranges.
     ///
-    /// This operation requires an index file.
-    ///
     /// Parameters
     /// ----------
     /// regions : list[str]
     ///     Genomic ranges in the format "chr:start-end".
     /// index : path or file-like, optional
-    ///     The FAI index file to use for slicing the reference sequences.
-    ///     If None and the source was provided as a path, we will attempt to
-    ///     load the index from the same path with an additional extension.
+    ///     The FAI index file.
     /// gzi : path or file-like, optional
-    ///     A GZI index file to use if the source is BGZF-encoded.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    ///     A GZI index file for BGZF-encoded sources.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     ///
     /// Returns
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
-    ///     An iterator yielding Arrow record batches.
-    ///
-    /// Notes
-    /// -----
-    /// An FAI index is required to slice the reference sequences.
-    /// If the source is BGZF-compressed, an additional GZI index is also
-    /// required. The GZI index is used to translate uncompressed positions
-    /// (from the FAI index) into compressed positions in the BGZF file.
-    #[pyo3(signature = (regions, index=None, gzi=None, fields=None, batch_size=1024))]
+    #[pyo3(signature = (regions, index=None, gzi=None, columns=None, batch_size=1024))]
     fn scan_query(
         &mut self,
         py: Python,
         regions: Vec<String>,
         index: Option<Py<PyAny>>,
         gzi: Option<Py<PyAny>>,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        // Load FAI index.
         let index = resolve_faidx(py, &self.src, index)?;
         let reader = self.reader.clone();
 
-        // Parse the genomic ranges.
         let regions: Vec<Region> = regions
             .into_iter()
             .map(|s| {
@@ -377,7 +357,6 @@ impl PyFastaScanner {
             .collect::<Result<Vec<_>, _>>()?;
 
         if self.compressed {
-            // A BGZF IndexedReader seeks within a compressed file using uncompressed positions.
             let gzi_source = match gzi {
                 Some(gzi) => pyobject_to_bufreader(py, gzi.clone_ref(py), false)?,
                 None => {
@@ -391,14 +370,14 @@ impl PyFastaScanner {
             let fmt_reader = noodles::fasta::io::Reader::new(bgzf_reader);
             let batch_reader = self
                 .scanner
-                .scan_query(fmt_reader, regions, index, fields, batch_size)
+                .scan_query(fmt_reader, regions, index, columns, batch_size)
                 .map_err(PyErr::new::<PyValueError, _>)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         } else {
             let fmt_reader = noodles::fasta::io::Reader::new(reader);
             let batch_reader = self
                 .scanner
-                .scan_query(fmt_reader, regions, index, fields, batch_size)
+                .scan_query(fmt_reader, regions, index, columns, batch_size)
                 .map_err(PyErr::new::<PyValueError, _>)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         }
@@ -429,16 +408,16 @@ pub fn read_fastq(
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src, false)?;
-    let scanner = FastqScanner::new();
+    let scanner = FastqScanner::new(fields)?;
 
     let ipc = if compressed {
         let gz_reader = std::io::BufReader::new(MultiGzDecoder::new(reader));
         let fmt_reader = noodles::fastq::io::Reader::new(gz_reader);
-        let batches = scanner.scan(fmt_reader, fields, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None)?;
         batches_to_ipc(batches)
     } else {
         let fmt_reader = noodles::fastq::io::Reader::new(reader);
-        let batches = scanner.scan(fmt_reader, fields, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None)?;
         batches_to_ipc(batches)
     };
 
@@ -454,11 +433,9 @@ pub fn read_fastq(
 /// regions : list[str], optional
 ///     Genomic ranges in the format "chr:start-end".
 /// index : path or file-like, optional
-///     The FAI index file to use for slicing the reference sequences.
-///     If None and the source was provided as a path, we will attempt to
-///     load the index from the same path with an additional extension.
+///     The FAI index file.
 /// gzi : path or file-like, optional
-///     A GZI index file to use if the source is BGZF-encoded.
+///     A GZI index file for BGZF-encoded sources.
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 /// compressed : bool, optional [default: False]
@@ -480,7 +457,7 @@ pub fn read_fasta(
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let scanner = FastaScanner::new();
+    let scanner = FastaScanner::new(fields)?;
 
     let ipc = if let Some(regions) = regions {
         let index = resolve_faidx(py, &src, index)?;
@@ -504,19 +481,19 @@ pub fn read_fasta(
             let bgzf_reader = IndexedBgzfReader::new(reader, gzindex);
             let fmt_reader = noodles::fasta::io::Reader::new(bgzf_reader);
             let batches = scanner
-                .scan_query(fmt_reader, regions, index, fields, None)
+                .scan_query(fmt_reader, regions, index, None, None)
                 .map_err(PyErr::new::<PyValueError, _>)?;
             batches_to_ipc(batches)
         } else {
             let fmt_reader = noodles::fasta::io::Reader::new(reader);
             let batches = scanner
-                .scan_query(fmt_reader, regions, index, fields, None)
+                .scan_query(fmt_reader, regions, index, None, None)
                 .map_err(PyErr::new::<PyValueError, _>)?;
             batches_to_ipc(batches)
         }
     } else {
         let fmt_reader = noodles::fasta::io::Reader::new(reader);
-        let batches = scanner.scan(fmt_reader, fields, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None)?;
         batches_to_ipc(batches)
     };
 

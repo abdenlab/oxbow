@@ -402,6 +402,31 @@ batch_size=4:
     - none
     - none
     - none
+columns=("chrom", "start", "end", "chromStarts"), batch_size=2:
+    chrom:
+    - chr1
+    - chr1
+    chromStarts:
+    -   - 0
+        - 744
+        - 1352
+    -   - 0
+        - 601
+        - 1392
+        - 2203
+        - 2454
+        - 2829
+        - 3202
+        - 3511
+        - 3864
+        - 10334
+        - 15130
+    end:
+    - 14409
+    - 29570
+    start:
+    - 11868
+    - 14403
 fields=("chrom", "start", "end", "chromStarts"), batch_size=2:
     chrom:
     - chr1

@@ -1,3 +1,51 @@
+batch_size=1, columns=None, region="chr1":
+    end:
+    - 497299
+    frame:
+    - null
+    score:
+    - null
+    seqid:
+    - chr1
+    source:
+    - HAVANA
+    start:
+    - 497210
+    strand:
+    - '-'
+    type:
+    - exon
+batch_size=1, columns=None, region="chr2":
+    end:
+    - 70087015
+    frame:
+    - null
+    score:
+    - null
+    seqid:
+    - chr2
+    source:
+    - HAVANA
+    start:
+    - 70086978
+    strand:
+    - '-'
+    type:
+    - exon
+batch_size=1, columns=["seqid", "start", "end"], region="chr1":
+    end:
+    - 497299
+    seqid:
+    - chr1
+    start:
+    - 497210
+batch_size=1, columns=["seqid", "start", "end"], region="chr2":
+    end:
+    - 70087015
+    seqid:
+    - chr2
+    start:
+    - 70086978
 batch_size=1, fields=("seqid", "start", "end"), region="chr1":
     end:
     - 497299
@@ -46,6 +94,76 @@ batch_size=1, fields=None, region="chr2":
     - '-'
     type:
     - exon
+batch_size=2, columns=None, region="chr1":
+    end:
+    - 497299
+    - 25808789
+    frame:
+    - null
+    - null
+    score:
+    - null
+    - null
+    seqid:
+    - chr1
+    - chr1
+    source:
+    - HAVANA
+    - HAVANA
+    start:
+    - 497210
+    - 25808580
+    strand:
+    - '-'
+    - +
+    type:
+    - exon
+    - exon
+batch_size=2, columns=None, region="chr2":
+    end:
+    - 70087015
+    - 240025324
+    frame:
+    - null
+    - null
+    score:
+    - null
+    - null
+    seqid:
+    - chr2
+    - chr2
+    source:
+    - HAVANA
+    - HAVANA
+    start:
+    - 70086978
+    - 240025227
+    strand:
+    - '-'
+    - '-'
+    type:
+    - exon
+    - exon
+batch_size=2, columns=["seqid", "start", "end"], region="chr1":
+    end:
+    - 497299
+    - 25808789
+    seqid:
+    - chr1
+    - chr1
+    start:
+    - 497210
+    - 25808580
+batch_size=2, columns=["seqid", "start", "end"], region="chr2":
+    end:
+    - 70087015
+    - 240025324
+    seqid:
+    - chr2
+    - chr2
+    start:
+    - 70086978
+    - 240025227
 batch_size=2, fields=("seqid", "start", "end"), region="chr1":
     end:
     - 497299
@@ -116,6 +234,87 @@ batch_size=2, fields=None, region="chr2":
     type:
     - exon
     - exon
+batch_size=3, columns=None, region="chr1":
+    end:
+    - 497299
+    - 25808789
+    frame:
+    - null
+    - null
+    score:
+    - null
+    - null
+    seqid:
+    - chr1
+    - chr1
+    source:
+    - HAVANA
+    - HAVANA
+    start:
+    - 497210
+    - 25808580
+    strand:
+    - '-'
+    - +
+    type:
+    - exon
+    - exon
+batch_size=3, columns=None, region="chr2":
+    end:
+    - 70087015
+    - 240025324
+    - 240465210
+    frame:
+    - null
+    - null
+    - 0
+    score:
+    - null
+    - null
+    - null
+    seqid:
+    - chr2
+    - chr2
+    - chr2
+    source:
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    start:
+    - 70086978
+    - 240025227
+    - 240465077
+    strand:
+    - '-'
+    - '-'
+    - +
+    type:
+    - exon
+    - exon
+    - CDS
+batch_size=3, columns=["seqid", "start", "end"], region="chr1":
+    end:
+    - 497299
+    - 25808789
+    seqid:
+    - chr1
+    - chr1
+    start:
+    - 497210
+    - 25808580
+batch_size=3, columns=["seqid", "start", "end"], region="chr2":
+    end:
+    - 70087015
+    - 240025324
+    - 240465210
+    seqid:
+    - chr2
+    - chr2
+    - chr2
+    start:
+    - 70086978
+    - 240025227
+    - 240465077
 batch_size=3, fields=("seqid", "start", "end"), region="chr1":
     end:
     - 497299
@@ -197,6 +396,87 @@ batch_size=3, fields=None, region="chr2":
     - exon
     - exon
     - CDS
+batch_size=4, columns=None, region="chr1":
+    end:
+    - 497299
+    - 25808789
+    frame:
+    - null
+    - null
+    score:
+    - null
+    - null
+    seqid:
+    - chr1
+    - chr1
+    source:
+    - HAVANA
+    - HAVANA
+    start:
+    - 497210
+    - 25808580
+    strand:
+    - '-'
+    - +
+    type:
+    - exon
+    - exon
+batch_size=4, columns=None, region="chr2":
+    end:
+    - 70087015
+    - 240025324
+    - 240465210
+    frame:
+    - null
+    - null
+    - 0
+    score:
+    - null
+    - null
+    - null
+    seqid:
+    - chr2
+    - chr2
+    - chr2
+    source:
+    - HAVANA
+    - HAVANA
+    - HAVANA
+    start:
+    - 70086978
+    - 240025227
+    - 240465077
+    strand:
+    - '-'
+    - '-'
+    - +
+    type:
+    - exon
+    - exon
+    - CDS
+batch_size=4, columns=["seqid", "start", "end"], region="chr1":
+    end:
+    - 497299
+    - 25808789
+    seqid:
+    - chr1
+    - chr1
+    start:
+    - 497210
+    - 25808580
+batch_size=4, columns=["seqid", "start", "end"], region="chr2":
+    end:
+    - 70087015
+    - 240025324
+    - 240465210
+    seqid:
+    - chr2
+    - chr2
+    - chr2
+    start:
+    - 70086978
+    - 240025227
+    - 240465077
 batch_size=4, fields=("seqid", "start", "end"), region="chr1":
     end:
     - 497299

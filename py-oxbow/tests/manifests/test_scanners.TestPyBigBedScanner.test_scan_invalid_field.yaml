@@ -1,2 +1,2 @@
-Field 'nonexistent-field' not found in schema
-...
+'Unknown columns: ["nonexistent-field"]. Available columns: ["chrom", "start", "end",
+    "rest"]'

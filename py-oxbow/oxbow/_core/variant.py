@@ -5,70 +5,18 @@ DataSource classes for htslib variant call formats.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Callable, Generator, Literal
+from typing import IO, Callable, Literal
 
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-import pyarrow as pa
-
 from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
 from oxbow.oxbow import PyBcfScanner, PyVcfScanner
 
 
 class VariantFile(DataSource):
-    def _batchreader_builder(
-        self,
-        region: str | None = None,
-    ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
-        def builder(columns, batch_size):
-            scanner = self.scanner()
-            field_names = scanner.field_names()
-            scan_kwargs = self._schema_kwargs.copy()
-
-            if columns is not None:
-                n = len(columns)
-                scan_kwargs["fields"] = [col for col in columns if col in field_names]
-                n -= len(scan_kwargs["fields"])
-
-                if "info" not in columns:
-                    scan_kwargs["info_fields"] = []
-                elif scan_kwargs.get("info_fields") == []:
-                    raise ValueError(
-                        "Cannot select `info` column if no info fields are provided."
-                    )
-                else:
-                    n -= 1
-                if n == 0:
-                    scan_kwargs["samples"] = []
-
-            if region is not None:
-                scan_fn = scanner.scan_query
-                scan_kwargs["region"] = region
-                scan_kwargs["index"] = self._index
-            else:
-                scan_fn = scanner.scan
-
-            stream = scan_fn(**scan_kwargs, batch_size=batch_size)
-            return pa.RecordBatchReader.from_stream(
-                data=stream,
-                schema=pa.schema(stream.schema),
-            )
-
-        return builder
-
-    @property
-    def _batchreader_builders(
-        self,
-    ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
-        if self._regions:
-            for region in self._regions:
-                yield self._batchreader_builder(region)
-        else:
-            yield self._batchreader_builder()
-
     def __init__(
         self,
         source: str | Callable[[], IO[bytes] | str],
@@ -89,13 +37,18 @@ class VariantFile(DataSource):
             regions = [regions]
         self._regions = regions
 
-        self._scanner_kwargs = dict(compressed=compressed)
-        self._schema_kwargs = dict(
+        self._scanner_kwargs = dict(
+            compressed=compressed,
             fields=fields,
             info_fields=info_fields,
             samples=samples,
             genotype_fields=genotype_fields,
             genotype_by=genotype_by,
+        )
+
+    def _scan_query(self, scanner, region, columns, batch_size):
+        return scanner.scan_query(
+            region=region, index=self._index, columns=columns, batch_size=batch_size
         )
 
     def regions(self, regions: str | list[str]) -> Self:
@@ -105,7 +58,6 @@ class VariantFile(DataSource):
             index=self._index_src,
             batch_size=self._batch_size,
             **self._scanner_kwargs,
-            **self._schema_kwargs,
         )
 
     @property

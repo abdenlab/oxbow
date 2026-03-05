@@ -44,6 +44,11 @@ batch_size=4:
     - CGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
     - GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
     - TAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC
+columns=["name", "sequence"]:
+    name:
+    - seq1
+    sequence:
+    - ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGC
 fields=("name", "sequence"):
     name:
     - seq1

@@ -67,17 +67,15 @@ def test_scanner():
 def test_schema_and_columns():
     source = "test.src"
     expected_schema = pa.schema([("name", pa.string())])
-    expected_schema_kwargs = {"foo": "bar", "baz": 2}
-
-    ds = ox.DataSource(source)
-    ds._schema_kwargs = expected_schema_kwargs
 
     mocked_scanner_instance = MagicMock()
     mocked_scanner_instance.schema.return_value = expected_schema
+
+    ds = ox.DataSource(source)
     ds.scanner = lambda: mocked_scanner_instance
 
     assert ds.schema == expected_schema
-    mocked_scanner_instance.schema.assert_called_once_with(**ds._schema_kwargs)
+    mocked_scanner_instance.schema.assert_called_once_with()
 
     assert ds.columns == ["name"]
 
@@ -98,16 +96,13 @@ def test_batches():
             else:
                 raise StopIteration
 
-    mock_builder_one = MagicMock()
-    mock_builder_one.return_value = MockRecordBatchReader(n_batches=1)
-
-    mock_builder_two = MagicMock()
-    mock_builder_two.return_value = MockRecordBatchReader(n_batches=3)
+    readers = [MockRecordBatchReader(1), MockRecordBatchReader(3)]
 
     class MockDataSource(ox.DataSource):
-        @property
-        def _batchreader_builders(self):
-            return [mock_builder_one, mock_builder_two]
+        _regions = ["r1", "r2"]
+
+        def _make_reader(self, columns, batch_size, region=None):
+            return readers[self._regions.index(region)]
 
         @property
         def columns(self):
@@ -119,21 +114,13 @@ def test_batches():
     ds = MockDataSource("test.src", batch_size=batch_size)
 
     assert len(list(ds.batches())) == 4
-    mock_builder_one.assert_called_with(columns, batch_size)
-    mock_builder_two.assert_called_with(columns, batch_size)
 
 
 def test_fragments_and_dataset():
     batch_size = 9
 
-    mock_builder_one = MagicMock()
-    mock_builder_two = MagicMock()
-    mock_builder_three = MagicMock()
-
     class MockDataSource(ox.DataSource):
-        @property
-        def _batchreader_builders(self):
-            return [mock_builder_one, mock_builder_two, mock_builder_three]
+        _regions = ["r1", "r2", "r3"]
 
         @property
         def schema(self):
@@ -175,13 +162,11 @@ def test_to_polars_lazy():
     arrow_schema = pa.schema([("name", pa.string())])
     batch = pa.RecordBatch.from_pydict({"name": ["alice", "bob"]})
 
-    def mock_builder(columns, batch_size):
-        return pa.RecordBatchReader.from_batches(arrow_schema, [batch])
-
     class MockDataSource(ox.DataSource):
-        @property
-        def _batchreader_builders(self):
-            return [mock_builder]
+        _regions = None
+
+        def _make_reader(self, columns, batch_size, region=None):
+            return pa.RecordBatchReader.from_batches(arrow_schema, [batch])
 
         @property
         def schema(self):

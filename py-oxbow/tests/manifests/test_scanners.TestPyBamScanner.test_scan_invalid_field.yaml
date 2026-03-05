@@ -1,1 +1,2 @@
-'Invalid field name: foo'
+'Unknown columns: ["foo"]. Available columns: ["qname", "flag", "rname", "pos", "mapq",
+    "cigar", "rnext", "pnext", "tlen", "seq", "qual", "end"]'

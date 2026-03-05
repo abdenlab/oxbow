@@ -170,6 +170,40 @@ batch_size=4:
     - 0
     - 0
     - 0
+columns=["qname", "rname", "mapq"]:
+    mapq:
+    - 0
+    - 16
+    - 0
+    - 37
+    - 60
+    - 37
+    - 60
+    - 0
+    - 0
+    - 0
+    qname:
+    - HWI-BRUNOP16X_0001:3:48:4861:11838#0
+    - HWI-BRUNOP16X_0001:3:28:6650:168848#0
+    - HWI-BRUNOP16X_0001:3:8:20066:88158#0
+    - HWI-BRUNOP16X_0001:3:27:10302:58768#0
+    - HWI-BRUNOP16X_0001:3:65:3144:143676#0
+    - HWI-BRUNOP16X_0001:3:68:13088:156644#0
+    - HWI-BRUNOP16X_0001:3:48:3417:101389#0
+    - HWI-BRUNOP16X_0001:3:46:17583:95767#0
+    - HWI-BRUNOP16X_0001:3:4:7989:14941#0
+    - HWI-BRUNOP16X_0001:3:44:11450:50194#0
+    rname:
+    - chr1
+    - chr1
+    - chr1
+    - chr1
+    - chr3
+    - chr3
+    - chr3
+    - chrX
+    - chrY
+    - chrY
 fields=("qname", "rname", "mapq"):
     mapq:
     - 0

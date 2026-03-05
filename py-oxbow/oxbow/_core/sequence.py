@@ -5,14 +5,12 @@ DataSource classes for sequence file formats, including FASTA and FASTQ.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Callable, Generator, Literal
+from typing import IO, Callable, Literal
 
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
-
-import pyarrow as pa
 
 from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
 from oxbow.oxbow import PyFastaScanner, PyFastqScanner
@@ -22,42 +20,6 @@ class SequenceFile(DataSource):
     @property
     def _gzi(self):
         return self._gzi_src() if self._gzi_src else None
-
-    def _batchreader_builder(
-        self,
-    ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
-        def builder(columns, batch_size):
-            scanner = self.scanner()
-            scan_kwargs = self._schema_kwargs.copy()
-            field_names = scanner.field_names()
-
-            if columns is not None:
-                scan_kwargs["fields"] = [col for col in columns if col in field_names]
-
-            if self._regions is not None:
-                scan_kwargs["regions"] = self._regions
-                scan_kwargs["index"] = self._index
-                scan_kwargs["gzi"] = self._gzi
-                scan_fn = scanner.scan_query
-            else:
-                scan_fn = scanner.scan
-
-            stream = scan_fn(**scan_kwargs, batch_size=batch_size)
-            return pa.RecordBatchReader.from_stream(
-                data=stream,
-                schema=pa.schema(stream.schema),
-            )
-
-        return builder
-
-    @property
-    def _batchreader_builders(
-        self,
-    ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
-        # Right now, we always produce one fragment, even if multiple regions
-        # are requested from a FASTA, as each region corresponds to a single
-        # record.
-        yield self._batchreader_builder()
 
     def __init__(
         self,
@@ -83,10 +45,28 @@ class SequenceFile(DataSource):
 
         if isinstance(regions, str):
             regions = [regions]
-        self._regions = regions
+        self._query_regions = regions
+        # FASTA sends all regions in one scan_query call, so _regions stays
+        # None to produce a single fragment/batch iteration in the base class.
+        self._regions = None
 
-        self._scanner_kwargs = dict(compressed=compressed)
-        self._schema_kwargs = dict(fields=fields)
+        self._scanner_kwargs = dict(compressed=compressed, fields=fields)
+
+    def _make_reader(self, columns, batch_size, region=None):
+        """Override to handle FASTA's multi-region scan_query."""
+        scanner = self.scanner()
+        if self._query_regions is not None:
+            return scanner.scan_query(
+                regions=self._query_regions,
+                index=self._index,
+                gzi=self._gzi,
+                columns=columns,
+                batch_size=batch_size,
+            )
+        return scanner.scan(columns=columns, batch_size=batch_size)
+
+    def _scan_query(self, scanner, region, columns, batch_size):
+        raise NotImplementedError
 
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
@@ -96,7 +76,6 @@ class SequenceFile(DataSource):
             gzi=self._gzi_src,
             batch_size=self._batch_size,
             **self._scanner_kwargs,
-            **self._schema_kwargs,
         )
 
 

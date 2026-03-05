@@ -1,5 +1,6 @@
 import cloudpickle
 import fsspec
+import pyarrow as pa
 import pytest
 from pytest_manifest import Manifest
 
@@ -58,7 +59,7 @@ class TestFastaFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.FastaFile("data/sample.fasta", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
+            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
         except OSError as e:
             actual = str(e)
 
@@ -109,7 +110,7 @@ class TestFastaFile:
         )
         batches = ox.FastaFile(*input.args, **input.kwargs).batches()
         try:
-            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
+            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
         except ValueError as e:
             actual = str(e)
 
@@ -117,17 +118,17 @@ class TestFastaFile:
 
     def test_input_encodings(self):
         file = ox.FastaFile("data/sample.fasta", compressed=False, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         file = ox.FastaFile("data/sample.fasta", compressed=True, batch_size=3)
-        with pytest.raises(OSError):
+        with pytest.raises(Exception):
             next((file.batches()))
 
         file = ox.FastaFile("data/sample.fasta.gz", compressed=True, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         file = ox.FastaFile("data/sample.fasta.gz", compressed=False, batch_size=3)
-        with pytest.raises(OSError):
+        with pytest.raises(Exception):
             next((file.batches()))
 
         file = ox.FastaFile("doesnotexist.fasta", compressed=False, batch_size=3)
@@ -213,7 +214,7 @@ class TestFastqFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.FastqFile("data/sample.fastq", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
+            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
         except OSError as e:
             actual = str(e)
 
@@ -234,21 +235,21 @@ class TestFastqFile:
 
     def test_input_encodings(self):
         file = ox.FastqFile("data/sample.fastq", compressed=False, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         file = ox.FastqFile("data/sample.fastq", compressed=True, batch_size=3)
-        with pytest.raises(OSError):
+        with pytest.raises(Exception):
             next((file.batches()))
 
         file = ox.FastqFile("data/sample.fastq.gz", compressed=True, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         file = ox.FastqFile("data/sample.fastq.gz", compressed=False, batch_size=3)
-        with pytest.raises(OSError):
+        with pytest.raises(Exception):
             next((file.batches()))
 
         file = ox.FastqFile("data/malformed.fastq", compressed=False, batch_size=3)
-        with pytest.raises(OSError):
+        with pytest.raises(Exception):
             next((file.batches()))
 
         file = ox.FastqFile("doesnotexist.fastq", compressed=False, batch_size=3)

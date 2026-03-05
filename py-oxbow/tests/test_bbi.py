@@ -1,5 +1,6 @@
 import cloudpickle
 import fsspec
+import pyarrow as pa
 import pytest
 from pytest_manifest import Manifest
 
@@ -53,15 +54,15 @@ class TestBigBedFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.BigBedFile("data/sample.bb", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
-        except OSError as e:
+            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+        except (OSError, ValueError) as e:
             actual = str(e)
 
         assert manifest[f"fields={fields}"] == actual
 
     def test_input_encodings(self):
         file = ox.BigBedFile("data/sample.bb", batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.BigBedFile("data/sample.bw", batch_size=3)
@@ -129,15 +130,15 @@ class TestBigWigFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.BigWigFile("data/sample.bw", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
-        except OSError as e:
+            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+        except (OSError, ValueError) as e:
             actual = str(e)
 
         assert manifest[f"fields={fields}"] == actual
 
     def test_input_encodings(self):
         file = ox.BigWigFile("data/sample.bw", batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.BigWigFile("data/sample.bb", batch_size=3)

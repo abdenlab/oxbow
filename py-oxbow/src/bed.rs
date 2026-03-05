@@ -26,6 +26,8 @@ use oxbow::util::index::IndexType;
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed. If None, it is assumed to be
 ///     uncompressed.
+/// fields : list[str], optional
+///     Names of the BED fields to include in the schema.
 ///
 /// Notes
 /// -----
@@ -46,22 +48,30 @@ pub struct PyBedScanner {
     scanner: BedScanner,
     bed_schema: String,
     compressed: bool,
+    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
 impl PyBedScanner {
     #[new]
-    #[pyo3(signature = (src, bed_schema, compressed=false))]
-    fn new(py: Python, src: Py<PyAny>, bed_schema: String, compressed: bool) -> PyResult<Self> {
+    #[pyo3(signature = (src, bed_schema, compressed=false, fields=None))]
+    fn new(
+        py: Python,
+        src: Py<PyAny>,
+        bed_schema: String,
+        compressed: bool,
+        fields: Option<Vec<String>>,
+    ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let _bed_schema: BedSchema = bed_schema.parse().unwrap();
-        let scanner = BedScanner::new(_bed_schema);
+        let scanner = BedScanner::new(_bed_schema, fields.clone())?;
         Ok(Self {
             src,
             reader,
             scanner,
             bed_schema,
             compressed,
+            fields,
         })
     }
 
@@ -73,16 +83,14 @@ impl PyBedScanner {
         let args = (
             self.src.clone_ref(py),
             self.bed_schema.clone().into_py_any(py)?,
-            self.compressed.into_py_any(py)?,
         );
         let kwargs = PyDict::new(py);
+        kwargs.set_item("compressed", self.compressed)?;
+        if let Some(ref fields) = self.fields {
+            kwargs.set_item("fields", fields)?;
+        }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
-
-    // fn chrom_names(&self) -> Vec<String> {
-    //     let scanner = BedScanner::new(None);
-    //     scanner.chrom_names().unwrap()
-    // }
 
     /// Return the names of the BED fields.
     fn field_names(&self) -> Vec<String> {
@@ -91,26 +99,19 @@ impl PyBedScanner {
 
     /// Return the Arrow schema.
     ///
-    /// Parameters
-    /// ----------
-    /// fields : list[str], optional
-    ///    Names of the BED fields to project.
-    ///
     /// Returns
     /// -------
     /// arro3 Schema (pycapsule)
-    #[pyo3(signature = (fields=None))]
-    fn schema(&self, fields: Option<Vec<String>>) -> PyResult<PySchema> {
-        let schema = self.scanner.schema(fields)?;
-        Ok(PySchema::new(Arc::new(schema)))
+    fn schema(&self) -> PySchema {
+        PySchema::new(Arc::new(self.scanner.schema().clone()))
     }
 
     /// Scan batches of records from the file.
     ///
     /// Parameters
     /// ----------
-    /// fields : list[str], optional
-    ///     Names of the BED fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -121,10 +122,10 @@ impl PyBedScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (columns=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -132,7 +133,7 @@ impl PyBedScanner {
         let fmt_reader = noodles::bed::io::Reader::new(reader);
         let batch_reader = self
             .scanner
-            .scan(fmt_reader, fields, batch_size, limit)
+            .scan(fmt_reader, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -145,8 +146,8 @@ impl PyBedScanner {
     /// ----------
     /// byte_ranges : list[tuple[int, int]]
     ///     List of (start, end) byte position tuples to read from.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -157,11 +158,11 @@ impl PyBedScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (byte_ranges, fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (byte_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_byte_ranges(
         &mut self,
         byte_ranges: Vec<(u64, u64)>,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -169,7 +170,7 @@ impl PyBedScanner {
         let fmt_reader = noodles::bed::io::Reader::new(reader);
         let batch_reader = self
             .scanner
-            .scan_byte_ranges(fmt_reader, byte_ranges, fields, batch_size, limit)
+            .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -188,8 +189,8 @@ impl PyBedScanner {
     ///     be given as either a packed virtual position (int), or an unpacked
     ///     tuple of ints ``(c, u)`` specifying the compressed and uncompressed
     ///     offsets, respectively.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -200,11 +201,11 @@ impl PyBedScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (vpos_ranges, fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (vpos_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_virtual_ranges(
         &mut self,
         vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -217,7 +218,7 @@ impl PyBedScanner {
                 let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_virtual_ranges(fmt_reader, vpos_ranges, fields, batch_size, limit)
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -225,7 +226,7 @@ impl PyBedScanner {
                 let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_virtual_ranges(fmt_reader, vpos_ranges, fields, batch_size, limit)
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -247,8 +248,8 @@ impl PyBedScanner {
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
     ///     from the same path with an additional extension.
-    /// fields : list[str], optional
-    ///     Names of the BED fields to project.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -259,13 +260,13 @@ impl PyBedScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (region, index=None, fields=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (region, index=None, columns=None, batch_size=1024, limit=None))]
     fn scan_query(
         &mut self,
         py: Python,
         region: &str,
         index: Option<Py<PyAny>>,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -281,14 +282,14 @@ impl PyBedScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(fmt_reader, region, index, fields, batch_size, limit)
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(fmt_reader, region, index, fields, batch_size, limit)
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -302,14 +303,14 @@ impl PyBedScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(fmt_reader, region, index, fields, batch_size, limit)
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(fmt_reader, region, index, fields, batch_size, limit)
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -366,7 +367,7 @@ pub fn read_bed(
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let bed_schema: BedSchema = bed_schema.parse().unwrap();
-    let scanner = BedScanner::new(bed_schema);
+    let scanner = BedScanner::new(bed_schema, fields)?;
 
     let ipc = if let Some(region) = region {
         let region = region
@@ -381,7 +382,7 @@ pub fn read_bed(
                     fmt_reader,
                     region,
                     index.into_boxed(),
-                    fields,
+                    None,
                     None,
                     None,
                 )?;
@@ -394,7 +395,7 @@ pub fn read_bed(
                     fmt_reader,
                     region,
                     index.into_boxed(),
-                    fields,
+                    None,
                     None,
                     None,
                 )?;
@@ -408,7 +409,7 @@ pub fn read_bed(
         }
     } else {
         let fmt_reader = noodles::bed::io::Reader::new(reader);
-        let batches = scanner.scan(fmt_reader, fields, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None)?;
         batches_to_ipc(batches)
     };
 
