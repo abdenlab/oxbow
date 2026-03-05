@@ -6,7 +6,7 @@ use bigtools::BigBedRead;
 
 use crate::batch::RecordBatchBuilder as _;
 use crate::bbi::batch_iterator::base::{BigBedBatchIterator, BigBedQueryBatchIterator};
-use crate::bbi::model::base::schema::BedSchema;
+use crate::bbi::model::base::BedSchema;
 use crate::bbi::model::base::BatchBuilder;
 
 /// A BigBed scanner.

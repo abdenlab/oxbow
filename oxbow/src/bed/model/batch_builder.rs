@@ -207,7 +207,7 @@ mod tests {
 
     #[test]
     fn test_batch_builder_new() {
-        let bed_schema = BedSchema::new(3, Some(2)).unwrap();
+        let bed_schema = BedSchema::new_from_nm(3, Some(2)).unwrap();
         let batch_builder = BatchBuilder::new(None, &bed_schema, 10).unwrap();
 
         assert_eq!(batch_builder.schema().fields().len(), 5);
@@ -215,7 +215,7 @@ mod tests {
 
     #[test]
     fn test_push_bed_record() {
-        let bed_schema = BedSchema::new(3, Some(2)).unwrap();
+        let bed_schema = BedSchema::new_from_nm(3, Some(2)).unwrap();
         let mut batch_builder = BatchBuilder::new(None, &bed_schema, 10).unwrap();
 
         let record = create_bed_record();
@@ -227,7 +227,7 @@ mod tests {
     fn test_finish_bedn() {
         let record = create_bed_record();
 
-        let bed_schema = BedSchema::new(3, Some(0)).unwrap();
+        let bed_schema = BedSchema::new_from_nm(3, Some(0)).unwrap();
         let mut batch_builder = BatchBuilder::new(None, &bed_schema, 10).unwrap();
         batch_builder.push(&record).unwrap();
         let record_batch = batch_builder.finish();
@@ -261,7 +261,7 @@ mod tests {
 
     #[test]
     fn test_finish_bedn_plus_m() {
-        let bed_schema = BedSchema::new(3, Some(2)).unwrap();
+        let bed_schema = BedSchema::new_from_nm(3, Some(2)).unwrap();
         let mut batch_builder = BatchBuilder::new(None, &bed_schema, 10).unwrap();
 
         let record = create_bed_record();
@@ -321,7 +321,7 @@ mod tests {
     fn test_finish_bedn_plus() {
         let record = create_bed_record();
 
-        let bed_schema = BedSchema::new(3, None).unwrap();
+        let bed_schema = BedSchema::new_from_nm(3, None).unwrap();
         let mut batch_builder = BatchBuilder::new(None, &bed_schema, 10).unwrap();
         batch_builder.push(&record).unwrap();
         let record_batch = batch_builder.finish();
