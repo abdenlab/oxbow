@@ -220,9 +220,9 @@ impl Scanner {
     /// The scan will traverse one or more virtual position ranges and filter
     /// for records that overlap the given region. The cursor will stop at the
     /// end of the last record scanned.
-    pub fn scan_query<R: Read + Seek>(
+    pub fn scan_query<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
-        fmt_reader: noodles::bam::io::Reader<noodles::bgzf::io::Reader<R>>,
+        fmt_reader: noodles::bam::io::Reader<R>,
         region: noodles::core::Region,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
@@ -257,9 +257,9 @@ impl Scanner {
     ///
     /// The scan will start at the offset where unmapped reads begin and
     /// continue until the source stream is exhausted.
-    pub fn scan_unmapped<R: Read + Seek>(
+    pub fn scan_unmapped<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
-        mut fmt_reader: noodles::bam::io::Reader<noodles::bgzf::io::Reader<R>>,
+        mut fmt_reader: noodles::bam::io::Reader<R>,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
@@ -306,9 +306,9 @@ impl Scanner {
     ///
     /// The scan will traverse the specified virtual position ranges without filtering by genomic
     /// coordinates. This is useful when you have pre-computed virtual offsets from a custom index.
-    pub fn scan_virtual_ranges<R: Read + Seek>(
+    pub fn scan_virtual_ranges<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
-        fmt_reader: noodles::bam::io::Reader<noodles::bgzf::io::Reader<R>>,
+        fmt_reader: noodles::bam::io::Reader<R>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
@@ -328,5 +328,53 @@ impl Scanner {
         let fmt_reader = noodles::bam::io::Reader::from(range_reader);
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
         Ok(batch_iter)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::num::NonZero;
+
+    fn mt_reader() -> (
+        noodles::sam::Header,
+        noodles::bam::io::Reader<noodles::bgzf::io::MultithreadedReader<std::fs::File>>,
+    ) {
+        let file = std::fs::File::open("../fixtures/sample.bam").unwrap();
+        let mt_reader = noodles::bgzf::io::MultithreadedReader::with_worker_count(
+            NonZero::new(2usize).unwrap(),
+            file,
+        );
+        let mut fmt_reader = noodles::bam::io::Reader::from(mt_reader);
+        let header = fmt_reader.read_header().unwrap();
+        (header, fmt_reader)
+    }
+
+    #[test]
+    fn test_scan_with_multithreaded_reader() {
+        let (header, fmt_reader) = mt_reader();
+        let scanner = Scanner::new(header, None, None).unwrap();
+        let mut batches = scanner.scan(fmt_reader, None, None, Some(10)).unwrap();
+
+        let batch = batches.next().unwrap().unwrap();
+        assert_eq!(batch.num_rows(), 10);
+        assert!(batch.num_columns() > 0);
+    }
+
+    #[test]
+    fn test_scan_query_with_multithreaded_reader() {
+        let (header, fmt_reader) = mt_reader();
+        let scanner = Scanner::new(header, None, None).unwrap();
+
+        let index = noodles::bam::bai::fs::read("../fixtures/sample.bam.bai").unwrap();
+
+        let region = "chr1:1-100000".parse().unwrap();
+        let mut batches = scanner
+            .scan_query(fmt_reader, region, index, None, None, Some(10))
+            .unwrap();
+
+        let batch = batches.next().unwrap().unwrap();
+        assert!(batch.num_rows() > 0);
+        assert!(batch.num_columns() > 0);
     }
 }
