@@ -6,8 +6,8 @@ use bigtools::BigWigRead;
 
 use crate::batch::RecordBatchBuilder as _;
 use crate::bbi::batch_iterator::base::{BigWigBatchIterator, BigWigQueryBatchIterator};
-use crate::bbi::model::base::BedSchema;
 use crate::bbi::model::base::BatchBuilder;
+use crate::bbi::model::base::BedSchema;
 
 /// A BigWig scanner.
 ///

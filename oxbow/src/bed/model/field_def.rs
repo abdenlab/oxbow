@@ -24,10 +24,7 @@ pub fn bed_standard_fields() -> [FieldDef; 12] {
         FieldDef::new("strand".to_string(), FieldType::Char),
         FieldDef::new("thickStart".to_string(), FieldType::Uint),
         FieldDef::new("thickEnd".to_string(), FieldType::Uint),
-        FieldDef::new(
-            "itemRgb".to_string(),
-            FieldType::UbyteFixedSizeList(3),
-        ),
+        FieldDef::new("itemRgb".to_string(), FieldType::UbyteFixedSizeList(3)),
         FieldDef::new("blockCount".to_string(), FieldType::Uint),
         FieldDef::new("blockSizes".to_string(), FieldType::UintList),
         FieldDef::new("blockStarts".to_string(), FieldType::UintList),
