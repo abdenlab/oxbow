@@ -19,7 +19,7 @@ use crate::batch::{Push, RecordBatchBuilder as _};
 /// # Examples
 ///
 /// ```no_run
-/// use oxbow::alignment::format::cram::Scanner;
+/// use oxbow::alignment::scanner::cram::Scanner;
 /// use std::fs::File;
 /// use noodles::fasta::io::indexed_reader::Builder as FastaIndexedReaderBuilder;
 /// use noodles::fasta::repository::adapters::IndexedReader as FastaIndexedReaderAdapter;
@@ -248,7 +248,7 @@ impl Scanner {
 
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
-        let reference_sequence_id = resolve_chrom_id(&self.header, region.name())?;
+        let reference_sequence_id = super::resolve_chrom_id(&self.header, region.name())?;
         let batch_iter = QueryBatchIterator::new(
             fmt_reader,
             self.header.clone(),
@@ -581,25 +581,6 @@ where
             }
         }
     }
-}
-
-fn resolve_chrom_id(
-    header: &noodles::sam::Header,
-    reference_sequence_name: &[u8],
-) -> io::Result<usize> {
-    let Some(id) = header
-        .reference_sequences()
-        .get_index_of(reference_sequence_name)
-    else {
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            format!(
-                "Reference sequence {:?} not found in index header.",
-                reference_sequence_name
-            ),
-        ));
-    };
-    Ok(id)
 }
 
 /// Reads records from the next container in the CRAM reader.

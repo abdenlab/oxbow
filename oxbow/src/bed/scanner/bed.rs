@@ -7,9 +7,9 @@ use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 use noodles::csi::BinningIndex;
 
 use crate::batch::RecordBatchBuilder as _;
-use crate::bed::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::bed::model::BatchBuilder;
 use crate::bed::model::BedSchema;
+use crate::bed::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 
 /// A BED scanner.
@@ -20,7 +20,7 @@ use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 /// # Examples
 ///
 /// ```no_run
-/// use oxbow::bed::format::bed::Scanner;
+/// use oxbow::bed::scanner::bed::Scanner;
 /// use std::fs::File;
 /// use std::io::BufReader;
 ///

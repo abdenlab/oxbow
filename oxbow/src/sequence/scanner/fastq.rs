@@ -4,9 +4,9 @@ use arrow::array::RecordBatchReader;
 use arrow::datatypes::{Schema, SchemaRef};
 
 use crate::batch::RecordBatchBuilder as _;
-use crate::sequence::batch_iterator::BatchIterator;
 use crate::sequence::model::batch_builder::BatchBuilder;
 use crate::sequence::model::field::FASTQ_DEFAULT_FIELD_NAMES;
+use crate::sequence::scanner::batch_iterator::BatchIterator;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 use noodles::bgzf::VirtualPosition;
 use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
@@ -19,7 +19,7 @@ use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 /// # Examples
 ///
 /// ```no_run
-/// use oxbow::sequence::format::fastq::Scanner;
+/// use oxbow::sequence::scanner::fastq::Scanner;
 /// use std::fs::File;
 /// use std::io::BufReader;
 ///

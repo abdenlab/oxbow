@@ -5,9 +5,9 @@ use arrow::datatypes::{Schema as ArrowSchema, SchemaRef};
 use bigtools::BigBedRead;
 
 use crate::batch::RecordBatchBuilder as _;
-use crate::bbi::batch_iterator::base::{BigBedBatchIterator, BigBedQueryBatchIterator};
 use crate::bbi::model::base::BatchBuilder;
 use crate::bbi::model::base::BedSchema;
+use crate::bbi::scanner::batch_iterator::base::{BigBedBatchIterator, BigBedQueryBatchIterator};
 
 /// A BigBed scanner.
 ///
@@ -17,7 +17,7 @@ use crate::bbi::model::base::BedSchema;
 /// # Examples
 ///
 /// ```no_run
-/// use oxbow::bbi::format::bigbed::Scanner;
+/// use oxbow::bbi::scanner::bigbed::Scanner;
 ///
 /// let mut fmt_reader = bigtools::BigBedRead::open_file("sample.bigBed").unwrap();
 /// let info = fmt_reader.info();

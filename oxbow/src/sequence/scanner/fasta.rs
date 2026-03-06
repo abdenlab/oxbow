@@ -5,9 +5,9 @@ use arrow::datatypes::{Schema, SchemaRef};
 use noodles::core::Region;
 
 use crate::batch::RecordBatchBuilder as _;
-use crate::sequence::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::sequence::model::batch_builder::BatchBuilder;
 use crate::sequence::model::field::FASTA_DEFAULT_FIELD_NAMES;
+use crate::sequence::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 
 /// A FASTA scanner.
 ///
@@ -17,7 +17,7 @@ use crate::sequence::model::field::FASTA_DEFAULT_FIELD_NAMES;
 /// # Examples
 ///
 /// ```no_run
-/// use oxbow::sequence::format::fasta::Scanner;
+/// use oxbow::sequence::scanner::fasta::Scanner;
 /// use std::fs::File;
 /// use std::io::BufReader;
 /// use noodles::core::Region;

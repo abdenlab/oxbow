@@ -1,6 +1,5 @@
-pub mod batch_iterator;
-pub mod format;
 pub mod model;
+pub mod scanner;
 
-pub use format::gff::Scanner as GffScanner;
-pub use format::gtf::Scanner as GtfScanner;
+pub use scanner::gff::Scanner as GffScanner;
+pub use scanner::gtf::Scanner as GtfScanner;

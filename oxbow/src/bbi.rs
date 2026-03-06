@@ -1,9 +1,8 @@
-pub mod batch_iterator;
-pub mod format;
 pub mod model;
+pub mod scanner;
 
-pub use format::bbizoom::Scanner as BBIZoomScanner;
-pub use format::bigbed::Scanner as BigBedScanner;
-pub use format::bigwig::Scanner as BigWigScanner;
-pub use format::BBIReader;
 pub use model::base::BedSchema;
+pub use scanner::bbizoom::Scanner as BBIZoomScanner;
+pub use scanner::bigbed::Scanner as BigBedScanner;
+pub use scanner::bigwig::Scanner as BigWigScanner;
+pub use scanner::BBIReader;

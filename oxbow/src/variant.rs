@@ -1,7 +1,6 @@
-pub mod batch_iterator;
-pub mod format;
 pub mod model;
+pub mod scanner;
 
-pub use format::bcf::Scanner as BcfScanner;
-pub use format::vcf::Scanner as VcfScanner;
 pub use model::GenotypeBy;
+pub use scanner::bcf::Scanner as BcfScanner;
+pub use scanner::vcf::Scanner as VcfScanner;

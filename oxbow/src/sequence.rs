@@ -1,6 +1,5 @@
-pub mod batch_iterator;
-pub mod format;
 pub mod model;
+pub mod scanner;
 
-pub use format::fasta::Scanner as FastaScanner;
-pub use format::fastq::Scanner as FastqScanner;
+pub use scanner::fasta::Scanner as FastaScanner;
+pub use scanner::fastq::Scanner as FastqScanner;

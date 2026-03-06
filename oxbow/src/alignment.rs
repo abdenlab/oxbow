@@ -1,7 +1,6 @@
-pub mod batch_iterator;
-pub mod format;
 pub mod model;
+pub mod scanner;
 
-pub use format::bam::Scanner as BamScanner;
-pub use format::cram::Scanner as CramScanner;
-pub use format::sam::Scanner as SamScanner;
+pub use scanner::bam::Scanner as BamScanner;
+pub use scanner::cram::Scanner as CramScanner;
+pub use scanner::sam::Scanner as SamScanner;
