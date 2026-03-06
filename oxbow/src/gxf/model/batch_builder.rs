@@ -1,4 +1,3 @@
-use std::io;
 use std::sync::Arc;
 
 use arrow::array::{ArrayRef, StructArray};
@@ -28,7 +27,7 @@ impl BatchBuilder {
         field_names: Option<Vec<String>>,
         attr_defs: Option<Vec<(String, String)>>,
         capacity: usize,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         let default_field_names: Vec<String> = DEFAULT_FIELD_NAMES
             .into_iter()
             .map(|name| name.to_string())
@@ -123,7 +122,7 @@ impl RecordBatchBuilder for BatchBuilder {
 
 /// Append a GFF record to the batch.
 impl<'a> Push<&'a noodles::gff::Record<'a>> for BatchBuilder {
-    fn push(&mut self, record: &noodles::gff::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::gff::Record) -> crate::Result<()> {
         for (_, builder) in self.field_builders.iter_mut() {
             builder.push(record)?;
         }
@@ -156,7 +155,7 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for BatchBuilder {
 
 /// Append a GTF record to the batch.
 impl<'a> Push<&'a noodles::gtf::Record<'a>> for BatchBuilder {
-    fn push(&mut self, record: &noodles::gtf::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::gtf::Record) -> crate::Result<()> {
         use noodles::gff::feature::record::Attributes as FeatureAttributes;
         use noodles::gtf::record::Attributes as GtfAttributes;
 

@@ -10,6 +10,7 @@ use noodles::bgzf::VirtualPosition;
 use noodles::fasta::fai::Index as FaIndex;
 use noodles::fasta::repository::adapters::IndexedReader as FastaIndexedReaderAdapter;
 
+use crate::error::to_py;
 use crate::filelike::PyFileLikeObject;
 use oxbow::util::index::IndexType;
 use oxbow::util::index::{index_from_reader, index_from_source_path};
@@ -160,29 +161,29 @@ pub fn resolve_index(
     py: Python,
     source: &Py<PyAny>,
     index: Option<Py<PyAny>>,
-) -> std::io::Result<IndexType> {
+) -> PyResult<IndexType> {
     match index {
         // Index file not provided
         None => match source.cast_bound::<PyString>(py) {
             // If source is a path, try to find companion index file path
             Ok(py_string) => {
                 let source_path = py_string.to_string();
-                index_from_source_path(&source_path)
+                index_from_source_path(&source_path).map_err(to_py)
             }
-            _ => Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "No index file found.",
-            )),
+            _ => Err(
+                std::io::Error::new(std::io::ErrorKind::InvalidInput, "No index file found.")
+                    .into(),
+            ),
         },
         // Index file explicitly provided
         Some(index) => {
             if let Ok(py_string) = index.cast_bound::<PyString>(py) {
                 let path = py_string.to_string();
                 let index_file = std::fs::File::open(&path)?;
-                index_from_reader(index_file)
+                index_from_reader(index_file).map_err(to_py)
             } else {
                 let index_pyfile = PyFileLikeObject::new(index, true, false, true)?;
-                index_from_reader(index_pyfile)
+                index_from_reader(index_pyfile).map_err(to_py)
             }
         }
     }

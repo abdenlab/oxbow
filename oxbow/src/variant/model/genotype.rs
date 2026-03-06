@@ -1,6 +1,7 @@
 use indexmap::IndexMap;
-use std::io;
 use std::sync::Arc;
+
+use crate::OxbowError;
 
 use arrow::array::{
     ArrayRef, BooleanBuilder, FixedSizeListBuilder, Float32Builder, GenericStringBuilder,
@@ -30,7 +31,7 @@ impl GenotypeDef {
         Self { name, ty }
     }
 
-    pub fn try_from_strings(def: (String, String, String)) -> Result<Self, io::Error> {
+    pub fn try_from_strings(def: (String, String, String)) -> Result<Self, OxbowError> {
         let (name, number, ty) = def;
         let number = match number.as_str() {
             "A" => Number::AlternateBases,
@@ -46,21 +47,15 @@ impl GenotypeDef {
                 if let Ok(n) = number.parse::<usize>() {
                     Number::Count(n)
                 } else {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Invalid number parameter for FORMAT field '{}': {}",
-                            name, number
-                        ),
-                    ));
+                    return Err(OxbowError::invalid_input(format!(
+                        "Invalid number parameter for FORMAT field '{}': {}",
+                        name, number
+                    )));
                 }
             }
         };
         let ty: Type = ty.parse().map_err(|_| {
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Invalid type for FORMAT field '{}': {}", name, ty),
-            )
+            OxbowError::invalid_input(format!("Invalid type for FORMAT field '{}': {}", name, ty))
         })?;
         Ok(Self::new(name, &number, &ty))
     }
@@ -308,7 +303,7 @@ impl GenotypeBuilder {
         };
     }
 
-    pub fn append_value(&mut self, value: &Value) -> io::Result<()> {
+    pub fn append_value(&mut self, value: &Value) -> crate::Result<()> {
         match value {
             Value::Genotype(gt) => {
                 let (alleles, phasings): (Vec<Option<i32>>, Vec<bool>) = gt
@@ -346,8 +341,7 @@ impl GenotypeBuilder {
                         builder.append(true);
                     }
                     _ => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidInput,
+                        return Err(crate::OxbowError::invalid_data(
                             "Error parsing FORMAT field: type mismatch",
                         ));
                     }
@@ -358,8 +352,7 @@ impl GenotypeBuilder {
                     builder.append_value(c.to_string());
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing FORMAT field: type mismatch",
                     ));
                 }
@@ -369,8 +362,7 @@ impl GenotypeBuilder {
                     builder.append_value(s);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing FORMAT field: type mismatch",
                     ));
                 }
@@ -380,8 +372,7 @@ impl GenotypeBuilder {
                     builder.append_value(*n);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing FORMAT field: type mismatch",
                     ));
                 }
@@ -391,8 +382,7 @@ impl GenotypeBuilder {
                     builder.append_value(*f);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing FORMAT field: type mismatch",
                     ));
                 }
@@ -404,7 +394,7 @@ impl GenotypeBuilder {
         Ok(())
     }
 
-    fn append_values(&mut self, array: &Values) -> io::Result<()> {
+    fn append_values(&mut self, array: &Values) -> crate::Result<()> {
         match array {
             Values::Character(values) => match self {
                 GenotypeBuilder::CharacterList(builder) => {
@@ -434,8 +424,7 @@ impl GenotypeBuilder {
                     builder.append(non_null);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing FORMAT field: type mismatch",
                     ));
                 }
@@ -468,8 +457,7 @@ impl GenotypeBuilder {
                     builder.append(non_null);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing FORMAT field: type mismatch",
                     ));
                 }
@@ -502,8 +490,7 @@ impl GenotypeBuilder {
                     builder.append(non_null);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing FORMAT field: type mismatch",
                     ));
                 }
@@ -536,8 +523,7 @@ impl GenotypeBuilder {
                     builder.append(non_null);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing FORMAT field: type mismatch",
                     ));
                 }
@@ -599,7 +585,7 @@ impl SampleStructBuilder {
             .collect()
     }
 
-    pub fn push(&mut self, sample_data: IndexMap<String, Option<Value>>) -> io::Result<()> {
+    pub fn push(&mut self, sample_data: IndexMap<String, Option<Value>>) -> crate::Result<()> {
         for (def, builder) in self.builders.iter_mut() {
             let value = match sample_data.get(def.name.as_str()) {
                 Some(Some(value)) => value,
@@ -610,10 +596,10 @@ impl SampleStructBuilder {
                 }
             };
             builder.append_value(value).map_err(|e| {
-                io::Error::new(
-                    e.kind(),
-                    format!("Error processing field '{}': {}", def.name, e),
-                )
+                crate::OxbowError::invalid_data(format!(
+                    "Error processing field '{}': {}",
+                    def.name, e
+                ))
             })?;
         }
         Ok(())
@@ -669,7 +655,7 @@ impl SeriesStructBuilder {
             .collect()
     }
 
-    pub fn push(&mut self, series_data: IndexMap<String, Option<Value>>) -> io::Result<()> {
+    pub fn push(&mut self, series_data: IndexMap<String, Option<Value>>) -> crate::Result<()> {
         for (sample_name, builder) in self.builders.iter_mut() {
             let value = match series_data.get(sample_name) {
                 Some(Some(value)) => value,
@@ -680,10 +666,10 @@ impl SeriesStructBuilder {
                 }
             };
             builder.append_value(value).map_err(|e| {
-                io::Error::new(
-                    e.kind(),
-                    format!("Error processing field for sample '{}': {}", sample_name, e),
-                )
+                crate::OxbowError::invalid_data(format!(
+                    "Error processing field for sample '{}': {}",
+                    sample_name, e
+                ))
             })?;
         }
         Ok(())

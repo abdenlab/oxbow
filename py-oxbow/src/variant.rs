@@ -9,7 +9,7 @@ use pyo3_arrow::PySchema;
 
 use noodles::core::Region;
 
-use crate::error::err_on_unwind;
+use crate::error::{err_on_unwind, to_py};
 use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
@@ -75,7 +75,8 @@ impl PyVcfScanner {
             genotype_fields.clone(),
             samples.clone(),
             gt_by,
-        )?;
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -191,7 +192,7 @@ impl PyVcfScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -228,7 +229,7 @@ impl PyVcfScanner {
         let batch_reader = self
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -276,7 +277,7 @@ impl PyVcfScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
@@ -284,7 +285,7 @@ impl PyVcfScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
@@ -339,14 +340,14 @@ impl PyVcfScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -360,14 +361,14 @@ impl PyVcfScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -441,7 +442,8 @@ impl PyBcfScanner {
             genotype_fields.clone(),
             samples.clone(),
             gt_by,
-        )?;
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -557,7 +559,7 @@ impl PyBcfScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -594,7 +596,7 @@ impl PyBcfScanner {
         let batch_reader = self
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -642,7 +644,7 @@ impl PyBcfScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
@@ -650,7 +652,7 @@ impl PyBcfScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
@@ -706,14 +708,14 @@ impl PyBcfScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -727,14 +729,14 @@ impl PyBcfScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -814,7 +816,8 @@ pub fn read_vcf(
         genotype_fields,
         samples,
         genotype_by,
-    )?;
+    )
+    .map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
         let region = region
@@ -825,15 +828,17 @@ pub fn read_vcf(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -844,7 +849,7 @@ pub fn read_vcf(
         }
     } else {
         let fmt_reader = noodles::vcf::io::Reader::new(reader);
-        let batches = scanner.scan(fmt_reader, None, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
 
@@ -907,7 +912,8 @@ pub fn read_bcf(
         genotype_fields,
         samples,
         genotype_by,
-    )?;
+    )
+    .map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
         let region = region
@@ -918,15 +924,17 @@ pub fn read_bcf(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -937,7 +945,7 @@ pub fn read_bcf(
         }
     } else {
         let fmt_reader = noodles::bcf::io::Reader::from(reader);
-        let batches = scanner.scan(fmt_reader, None, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
 

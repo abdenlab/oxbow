@@ -1,4 +1,4 @@
-use std::io::{self, BufRead, Seek};
+use std::io::{BufRead, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::{Schema, SchemaRef};
@@ -12,6 +12,7 @@ use crate::alignment::model::BatchBuilder;
 use crate::alignment::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::batch::RecordBatchBuilder as _;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
+use crate::OxbowError;
 
 /// A SAM scanner.
 ///
@@ -49,7 +50,7 @@ impl Scanner {
         header: noodles::sam::Header,
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         let batch_builder = BatchBuilder::new(header.clone(), fields.clone(), tag_defs.clone(), 0)?;
         let schema = batch_builder.schema();
         Ok(Self {
@@ -100,7 +101,7 @@ impl Scanner {
         &self,
         columns: Option<Vec<String>>,
         capacity: usize,
-    ) -> io::Result<BatchBuilder> {
+    ) -> crate::Result<BatchBuilder> {
         match columns {
             None => BatchBuilder::new(
                 self.header.clone(),
@@ -122,13 +123,10 @@ impl Scanner {
                     .map(|c| c.as_str())
                     .collect();
                 if !unknown.is_empty() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Unknown columns: {:?}. Available columns: {:?}",
-                            unknown, schema_names
-                        ),
-                    ));
+                    return Err(OxbowError::invalid_input(format!(
+                        "Unknown columns: {:?}. Available columns: {:?}",
+                        unknown, schema_names
+                    )));
                 }
 
                 let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
@@ -164,7 +162,7 @@ impl Scanner {
     pub fn tag_defs<R: BufRead>(
         fmt_reader: &mut noodles::sam::io::Reader<R>,
         scan_rows: Option<usize>,
-    ) -> io::Result<Vec<(String, String)>> {
+    ) -> crate::Result<Vec<(String, String)>> {
         let records = fmt_reader.records();
         let mut tag_scanner = TagScanner::new();
         match scan_rows {
@@ -200,7 +198,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
@@ -222,7 +220,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let interval = region.interval();
 
@@ -258,7 +256,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
@@ -283,7 +281,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
@@ -307,7 +305,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 

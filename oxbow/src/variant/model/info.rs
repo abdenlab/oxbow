@@ -1,5 +1,6 @@
-use std::io;
 use std::sync::Arc;
+
+use crate::OxbowError;
 
 use arrow::array::{
     ArrayRef, BooleanBuilder, FixedSizeListBuilder, Float32Builder, GenericStringBuilder,
@@ -31,7 +32,7 @@ impl InfoDef {
 }
 
 impl TryFrom<(String, String, String)> for InfoDef {
-    type Error = io::Error;
+    type Error = OxbowError;
 
     fn try_from(def: (String, String, String)) -> Result<Self, Self::Error> {
         let (name, number, ty) = def;
@@ -44,21 +45,15 @@ impl TryFrom<(String, String, String)> for InfoDef {
                 if let Ok(n) = number.parse::<usize>() {
                     Number::Count(n)
                 } else {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Invalid number parameter for INFO field '{}': {}",
-                            name, number
-                        ),
-                    ));
+                    return Err(OxbowError::invalid_input(format!(
+                        "Invalid number parameter for INFO field '{}': {}",
+                        name, number
+                    )));
                 }
             }
         };
         let ty: Type = ty.parse().map_err(|_| {
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Invalid type for INFO field '{}': {}", name, ty),
-            )
+            OxbowError::invalid_input(format!("Invalid type for INFO field '{}': {}", name, ty))
         })?;
         Ok(Self::new(name, &number, &ty))
     }
@@ -274,7 +269,7 @@ impl InfoBuilder {
         }
     }
 
-    pub fn append_value(&mut self, value: &Value) -> io::Result<()> {
+    pub fn append_value(&mut self, value: &Value) -> crate::Result<()> {
         match value {
             Value::Character(c) => match self {
                 Self::Character(builder) => {
@@ -289,8 +284,7 @@ impl InfoBuilder {
                     builder.append(true);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing INFO field: type mismatch",
                     ));
                 }
@@ -308,8 +302,7 @@ impl InfoBuilder {
                     builder.append(true);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing INFO field: type mismatch",
                     ));
                 }
@@ -327,8 +320,7 @@ impl InfoBuilder {
                     builder.append(true);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing INFO field: type mismatch",
                     ));
                 }
@@ -346,8 +338,7 @@ impl InfoBuilder {
                     builder.append(true);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing INFO field: type mismatch",
                     ));
                 }
@@ -357,8 +348,7 @@ impl InfoBuilder {
                     builder.append_value(true);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing INFO field: type mismatch",
                     ));
                 }
@@ -370,7 +360,7 @@ impl InfoBuilder {
         Ok(())
     }
 
-    fn append_values(&mut self, array: &Values) -> io::Result<()> {
+    fn append_values(&mut self, array: &Values) -> crate::Result<()> {
         match array {
             Values::Character(values) => match self {
                 Self::CharacterList(builder) => {
@@ -400,8 +390,7 @@ impl InfoBuilder {
                     builder.append(non_null);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing INFO field: type mismatch",
                     ));
                 }
@@ -434,8 +423,7 @@ impl InfoBuilder {
                     builder.append(non_null);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing INFO field: type mismatch",
                     ));
                 }
@@ -468,8 +456,7 @@ impl InfoBuilder {
                     builder.append(non_null);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing INFO field: type mismatch",
                     ));
                 }
@@ -502,8 +489,7 @@ impl InfoBuilder {
                     builder.append(non_null);
                 }
                 _ => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
+                    return Err(crate::OxbowError::invalid_data(
                         "Error parsing INFO field: type mismatch",
                     ));
                 }

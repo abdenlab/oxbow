@@ -11,7 +11,7 @@ use pyo3_arrow::PySchema;
 use bigtools::bed::autosql::parse::parse_autosql;
 use noodles::core::Region;
 
-use crate::error::err_on_unwind;
+use crate::error::{err_on_unwind, to_py};
 use crate::util::{pyobject_to_bufreader, Reader};
 use oxbow::bbi::model::base::field::FieldDef;
 use oxbow::bbi::{BBIReader, BBIZoomScanner, BedSchema, BigBedScanner, BigWigScanner};
@@ -49,7 +49,7 @@ impl PyBigWigScanner {
         let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
-        let scanner = BigWigScanner::new(info, fields.clone())?;
+        let scanner = BigWigScanner::new(info, fields.clone()).map_err(to_py)?;
         Ok(Self {
             _src: src,
             reader,
@@ -159,7 +159,7 @@ impl PyBigWigScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -199,7 +199,7 @@ impl PyBigWigScanner {
         let batch_reader = self
             .scanner
             .scan_query(fmt_reader, region, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 }
@@ -260,10 +260,11 @@ impl PyBigBedScanner {
             }
             Some(schema) => schema.parse(),
             None => BedSchema::new_from_nm(3, None),
-        }?;
+        }
+        .map_err(to_py)?;
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
-        let scanner = BigBedScanner::new(bed_schema, info, fields.clone())?;
+        let scanner = BigBedScanner::new(bed_schema, info, fields.clone()).map_err(to_py)?;
         let _schema: Option<String> = schema.map(|schema| schema.to_string());
         Ok(Self {
             _src: src,
@@ -391,7 +392,7 @@ impl PyBigBedScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -431,7 +432,7 @@ impl PyBigBedScanner {
         let batch_reader = self
             .scanner
             .scan_query(fmt_reader, region, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 }
@@ -494,7 +495,8 @@ impl PyBBIZoomScanner {
                     )));
                 }
                 let reader = fmt_reader.into_inner();
-                let scanner = BBIZoomScanner::new(ref_names, zoom_level, fields.clone())?;
+                let scanner =
+                    BBIZoomScanner::new(ref_names, zoom_level, fields.clone()).map_err(to_py)?;
                 Ok(Self {
                     src,
                     reader,
@@ -524,7 +526,8 @@ impl PyBBIZoomScanner {
                     )));
                 }
                 let reader = fmt_reader.into_inner();
-                let scanner = BBIZoomScanner::new(ref_names, zoom_level, fields.clone())?;
+                let scanner =
+                    BBIZoomScanner::new(ref_names, zoom_level, fields.clone()).map_err(to_py)?;
                 Ok(Self {
                     src,
                     reader,
@@ -600,7 +603,7 @@ impl PyBBIZoomScanner {
                 let batch_reader = self
                     .scanner
                     .scan(reader, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             PyBBIFileType::BigWig => {
@@ -609,7 +612,7 @@ impl PyBBIZoomScanner {
                 let batch_reader = self
                     .scanner
                     .scan(reader, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
         }
@@ -654,7 +657,7 @@ impl PyBBIZoomScanner {
                 let batch_reader = self
                     .scanner
                     .scan_query(reader, region, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             PyBBIFileType::BigWig => {
@@ -663,7 +666,7 @@ impl PyBBIZoomScanner {
                 let batch_reader = self
                     .scanner
                     .scan_query(reader, region, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
         }
@@ -701,19 +704,17 @@ pub fn read_bigwig(
         let fmt_reader = bigtools::BigWigRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigWigScanner::new(info, fields)?;
+        let scanner = BigWigScanner::new(info, fields).map_err(to_py)?;
         let batches = scanner
             .scan_query(fmt_reader, region, None, None, None)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         batches_to_ipc(batches)
     } else {
         let fmt_reader = bigtools::BigWigRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigWigScanner::new(info, fields)?;
-        let batches = scanner
-            .scan(fmt_reader, None, None, None)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+        let scanner = BigWigScanner::new(info, fields).map_err(to_py)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
 
@@ -744,7 +745,7 @@ pub fn read_bigbed(
     region: Option<String>,
     fields: Option<Vec<String>>,
 ) -> PyResult<Vec<u8>> {
-    let bed_schema: BedSchema = bed_schema.parse()?;
+    let bed_schema: BedSchema = bed_schema.parse().map_err(to_py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
 
     let ipc = if let Some(region) = region {
@@ -755,19 +756,17 @@ pub fn read_bigbed(
         let fmt_reader = bigtools::BigBedRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigBedScanner::new(bed_schema, info, fields)?;
+        let scanner = BigBedScanner::new(bed_schema, info, fields).map_err(to_py)?;
         let batches = scanner
             .scan_query(fmt_reader, region, None, None, None)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         batches_to_ipc(batches)
     } else {
         let fmt_reader = bigtools::BigBedRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigBedScanner::new(bed_schema, info, fields)?;
-        let batches = scanner
-            .scan(fmt_reader, None, None, None)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+        let scanner = BigBedScanner::new(bed_schema, info, fields).map_err(to_py)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
 

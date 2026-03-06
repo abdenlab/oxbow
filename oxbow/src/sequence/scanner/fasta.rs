@@ -1,4 +1,4 @@
-use std::io::{self, BufRead, Seek};
+use std::io::{BufRead, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::{Schema, SchemaRef};
@@ -8,6 +8,7 @@ use crate::batch::RecordBatchBuilder as _;
 use crate::sequence::model::batch_builder::BatchBuilder;
 use crate::sequence::model::field::FASTA_DEFAULT_FIELD_NAMES;
 use crate::sequence::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
+use crate::OxbowError;
 
 /// A FASTA scanner.
 ///
@@ -40,7 +41,7 @@ impl Scanner {
     /// Creates a FASTA scanner from schema parameters.
     ///
     /// The schema is validated and cached at construction time.
-    pub fn new(fields: Option<Vec<String>>) -> io::Result<Self> {
+    pub fn new(fields: Option<Vec<String>>) -> crate::Result<Self> {
         let batch_builder = BatchBuilder::new_fasta(fields.clone(), 0)?;
         let schema = batch_builder.schema();
         Ok(Self { fields, schema })
@@ -66,7 +67,7 @@ impl Scanner {
         &self,
         columns: Option<Vec<String>>,
         capacity: usize,
-    ) -> io::Result<BatchBuilder> {
+    ) -> crate::Result<BatchBuilder> {
         match columns {
             None => BatchBuilder::new_fasta(self.fields.clone(), capacity),
             Some(cols) => {
@@ -83,13 +84,10 @@ impl Scanner {
                     .map(|c| c.as_str())
                     .collect();
                 if !unknown.is_empty() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Unknown columns: {:?}. Available columns: {:?}",
-                            unknown, schema_names
-                        ),
-                    ));
+                    return Err(OxbowError::invalid_input(format!(
+                        "Unknown columns: {:?}. Available columns: {:?}",
+                        unknown, schema_names
+                    )));
                 }
 
                 let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
@@ -121,7 +119,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
@@ -138,7 +136,7 @@ impl Scanner {
         index: noodles::fasta::fai::Index,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter =

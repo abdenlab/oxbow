@@ -1,4 +1,4 @@
-use std::io::{self, BufRead, Read, Seek};
+use std::io::{BufRead, Read, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::{Schema, SchemaRef};
@@ -11,6 +11,7 @@ use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 use crate::variant::model::field::DEFAULT_FIELD_NAMES;
 use crate::variant::model::{BatchBuilder, GenotypeBy};
 use crate::variant::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
+use crate::OxbowError;
 
 /// A BCF scanner.
 ///
@@ -54,7 +55,7 @@ impl Scanner {
         genotype_fields: Option<Vec<String>>,
         samples: Option<Vec<String>>,
         genotype_by: Option<GenotypeBy>,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         let genotype_by = genotype_by.unwrap_or(GenotypeBy::Sample);
         let batch_builder = BatchBuilder::new(
             header.clone(),
@@ -181,7 +182,7 @@ impl Scanner {
         &self,
         columns: Option<Vec<String>>,
         capacity: usize,
-    ) -> io::Result<BatchBuilder> {
+    ) -> crate::Result<BatchBuilder> {
         match columns {
             None => BatchBuilder::new(
                 self.header.clone(),
@@ -206,13 +207,10 @@ impl Scanner {
                     .map(|c| c.as_str())
                     .collect();
                 if !unknown.is_empty() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Unknown columns: {:?}. Available columns: {:?}",
-                            unknown, schema_names
-                        ),
-                    ));
+                    return Err(OxbowError::invalid_input(format!(
+                        "Unknown columns: {:?}. Available columns: {:?}",
+                        unknown, schema_names
+                    )));
                 }
 
                 // Fixed fields: intersect with declared
@@ -285,7 +283,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
@@ -301,7 +299,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let reference_sequence_name = region.name().to_string();
         let interval = region.interval();
@@ -334,7 +332,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
@@ -353,7 +351,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
@@ -375,7 +373,7 @@ fn resolve_chrom_id(
     header: &noodles::vcf::Header,
     index: &impl BinningIndex,
     chrom: &str,
-) -> io::Result<usize> {
+) -> crate::Result<usize> {
     // For BCF, first try the source file's header, then try the index file's header.
     let id = header.contigs().get_index_of(chrom).or_else(|| {
         index.header().and_then(|index_header| {
@@ -386,12 +384,9 @@ fn resolve_chrom_id(
     });
 
     id.ok_or_else(|| {
-        io::Error::new(
-            io::ErrorKind::InvalidInput,
-            format!(
-                "Reference sequence '{}' not found in VCF header or Index header.",
-                chrom
-            ),
-        )
+        OxbowError::invalid_input(format!(
+            "Reference sequence '{}' not found in VCF header or Index header.",
+            chrom
+        ))
     })
 }

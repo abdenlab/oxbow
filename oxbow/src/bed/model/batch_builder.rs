@@ -1,4 +1,3 @@
-use std::io;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -30,7 +29,7 @@ impl BatchBuilder {
         field_names: Option<Vec<String>>,
         bed_schema: &BedSchema,
         capacity: usize,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         // All the standard and custom field names for the given BED schema.
         let standard_field_names = bed_schema.standard_field_names();
         let custom_field_names = bed_schema.custom_field_names();
@@ -152,7 +151,7 @@ impl RecordBatchBuilder for BatchBuilder {
 
 /// Append a BED record to the batch.
 impl Push<&noodles::bed::Record<3>> for BatchBuilder {
-    fn push(&mut self, record: &noodles::bed::Record<3>) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::bed::Record<3>) -> crate::Result<()> {
         // standard fields
         for (_, builder) in self.standard_field_builders.iter_mut() {
             builder.push(record)?;

@@ -63,7 +63,10 @@ pub mod alignment;
 pub mod batch;
 pub mod bbi;
 pub mod bed;
+pub mod error;
 pub mod gxf;
 pub mod sequence;
 pub mod util;
 pub mod variant;
+
+pub use error::{OxbowError, Result};

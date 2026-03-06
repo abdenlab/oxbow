@@ -1,4 +1,3 @@
-use std::io;
 use std::sync::Arc;
 
 use arrow::array::ArrayRef;
@@ -26,7 +25,7 @@ impl BatchBuilder {
         ref_names: &[String],
         field_names: Option<Vec<String>>,
         capacity: usize,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         let default_field_names: Vec<String> = DEFAULT_FIELD_NAMES
             .into_iter()
             .map(|name| name.to_string())
@@ -39,8 +38,8 @@ impl BatchBuilder {
 
         let mut field_builders = IndexMap::new();
         for field in &fields {
-            let builder =
-                FieldBuilder::new(field.clone(), ref_names, capacity).map_err(io::Error::other)?;
+            let builder = FieldBuilder::new(field.clone(), ref_names, capacity)
+                .map_err(|e| crate::OxbowError::invalid_data(e.to_string()))?;
             field_builders.insert(field.clone(), builder);
         }
 
@@ -86,7 +85,7 @@ impl RecordBatchBuilder for BatchBuilder {
 
 /// Append a BBIZoomRecord to the batch.
 impl Push<&BBIZoomRecord<'_>> for BatchBuilder {
-    fn push(&mut self, record: &BBIZoomRecord) -> io::Result<()> {
+    fn push(&mut self, record: &BBIZoomRecord) -> crate::Result<()> {
         for (_, builder) in &mut self.field_builders {
             match builder {
                 FieldBuilder::Chrom(builder) => builder.append_value(record.chrom),

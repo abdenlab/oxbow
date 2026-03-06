@@ -1,6 +1,7 @@
 use std::collections::HashMap;
-use std::io;
 use std::sync::Arc;
+
+use crate::OxbowError;
 
 use arrow::array::{ArrayRef, StructArray};
 use arrow::datatypes::{DataType, Field as ArrowField, FieldRef, SchemaRef};
@@ -54,7 +55,7 @@ impl BatchBuilder {
         sample_names: Option<Vec<String>>,
         genotype_by: GenotypeBy,
         capacity: usize,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         let ref_names = header
             .contigs()
             .iter()
@@ -74,7 +75,7 @@ impl BatchBuilder {
         for field in &fields {
             let builder = match field {
                 Field::Chrom => FieldBuilder::with_refs(field.clone(), capacity, &ref_names)
-                    .map_err(io::Error::other)?,
+                    .map_err(|e| crate::OxbowError::invalid_data(e.to_string()))?,
                 _ => FieldBuilder::new(field.clone(), capacity),
             };
             field_builders.insert(field.clone(), builder);
@@ -288,7 +289,7 @@ fn collect_info_fields<'a>(
 
 /// Append a VCF record to the batch.
 impl Push<&noodles::vcf::Record> for BatchBuilder {
-    fn push(&mut self, record: &noodles::vcf::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::vcf::Record) -> crate::Result<()> {
         for (_, builder) in self.field_builders.iter_mut() {
             builder.push(record, &self.header)?;
         }
@@ -330,10 +331,10 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
                         let builder = match builder {
                             GenotypeDataBuilder::BySample(b) => b,
                             _ => {
-                                return Err(io::Error::new(
-                                    io::ErrorKind::InvalidData,
-                                    format!("Invalid builder type for sample: {:?}", sample_name),
-                                ));
+                                return Err(OxbowError::invalid_data(format!(
+                                    "Invalid builder type for sample: {:?}",
+                                    sample_name
+                                )));
                             }
                         };
 
@@ -341,10 +342,10 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
                         let sample = match record_samples.get(&self.header, sample_name) {
                             Some(sample) => sample,
                             None => {
-                                return Err(io::Error::new(
-                                    io::ErrorKind::NotFound,
-                                    format!("Sample not found: {}", sample_name),
-                                ))
+                                return Err(OxbowError::not_found(format!(
+                                    "Sample not found: {}",
+                                    sample_name
+                                )))
                             }
                         };
 
@@ -368,10 +369,10 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
                         let builder = match builder {
                             GenotypeDataBuilder::ByField(b) => b,
                             _ => {
-                                return Err(io::Error::new(
-                                    io::ErrorKind::InvalidData,
-                                    format!("Invalid builder type for field: {:?}", key),
-                                ));
+                                return Err(OxbowError::invalid_data(format!(
+                                    "Invalid builder type for field: {:?}",
+                                    key
+                                )));
                             }
                         };
 
@@ -424,7 +425,7 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
 
 /// Append a BCF record to the batch.
 impl Push<&noodles::bcf::Record> for BatchBuilder {
-    fn push(&mut self, record: &noodles::bcf::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::bcf::Record) -> crate::Result<()> {
         for (_, builder) in self.field_builders.iter_mut() {
             builder.push(record, &self.header)?;
         }
@@ -463,10 +464,10 @@ impl Push<&noodles::bcf::Record> for BatchBuilder {
                         let builder = match builder {
                             GenotypeDataBuilder::BySample(b) => b,
                             _ => {
-                                return Err(io::Error::new(
-                                    io::ErrorKind::InvalidData,
-                                    format!("Invalid builder type for sample: {:?}", sample_name),
-                                ));
+                                return Err(OxbowError::invalid_data(format!(
+                                    "Invalid builder type for sample: {:?}",
+                                    sample_name
+                                )));
                             }
                         };
 
@@ -474,10 +475,10 @@ impl Push<&noodles::bcf::Record> for BatchBuilder {
                         let sample = match record_samples.get(&self.header, sample_name) {
                             Some(sample) => sample,
                             None => {
-                                return Err(io::Error::new(
-                                    io::ErrorKind::NotFound,
-                                    format!("Sample not found: {}", sample_name),
-                                ))
+                                return Err(OxbowError::not_found(format!(
+                                    "Sample not found: {}",
+                                    sample_name
+                                )))
                             }
                         };
 
@@ -501,10 +502,10 @@ impl Push<&noodles::bcf::Record> for BatchBuilder {
                         let builder = match builder {
                             GenotypeDataBuilder::ByField(b) => b,
                             _ => {
-                                return Err(io::Error::new(
-                                    io::ErrorKind::InvalidData,
-                                    format!("Invalid builder type for field: {:?}", key),
-                                ));
+                                return Err(OxbowError::invalid_data(format!(
+                                    "Invalid builder type for field: {:?}",
+                                    key
+                                )));
                             }
                         };
 

@@ -1,4 +1,3 @@
-use std::io;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -110,12 +109,12 @@ impl FieldBuilder {
 }
 
 pub trait Push<T> {
-    fn push(&mut self, record: T) -> io::Result<()>;
+    fn push(&mut self, record: T) -> crate::Result<()>;
 }
 
 /// Append a field value from a FASTQ record to the column.
 impl Push<&noodles::fastq::Record> for FieldBuilder {
-    fn push(&mut self, record: &noodles::fastq::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::fastq::Record) -> crate::Result<()> {
         match self {
             Self::Name(builder) => builder.append_value(record.name().to_string()),
             Self::Descr(builder) => builder.append_value(record.description().to_string()),
@@ -136,7 +135,7 @@ impl Push<&noodles::fastq::Record> for FieldBuilder {
 
 /// Append a field value from a FASTA record to the column.
 impl Push<&noodles::fasta::Record> for FieldBuilder {
-    fn push(&mut self, record: &noodles::fasta::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::fasta::Record) -> crate::Result<()> {
         match self {
             Self::Name(builder) => {
                 let name = record.name();
@@ -155,8 +154,7 @@ impl Push<&noodles::fasta::Record> for FieldBuilder {
                 builder.append_option(seq_str);
             }
             Self::Qual(_) => {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
+                return Err(crate::OxbowError::invalid_input(
                     "FASTA records do not have quality scores",
                 ));
             }

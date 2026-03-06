@@ -200,12 +200,12 @@ impl FieldBuilder {
 }
 
 pub trait Push<T> {
-    fn push(&mut self, record: T) -> io::Result<()>;
+    fn push(&mut self, record: T) -> crate::Result<()>;
 }
 
 /// Append a field value from a BED record to the column.
 impl Push<&noodles::bed::Record<3>> for FieldBuilder {
-    fn push(&mut self, record: &noodles::bed::Record<3>) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::bed::Record<3>) -> crate::Result<()> {
         match self {
             Self::Chrom(builder) => {
                 builder.append_value(record.reference_sequence_name().to_string());
@@ -304,7 +304,7 @@ impl Push<&noodles::bed::Record<3>> for FieldBuilder {
                             let mut rgb = [0; 3];
                             for (i, value) in s.split(',').enumerate() {
                                 rgb[i] = value.parse::<u8>().map_err(|_| {
-                                    io::Error::new(io::ErrorKind::InvalidData, "Invalid RGB value")
+                                    crate::OxbowError::invalid_data("Invalid RGB value")
                                 })?;
                             }
                             Some(rgb)
@@ -344,12 +344,7 @@ impl Push<&noodles::bed::Record<3>> for FieldBuilder {
                             s.split(",")
                                 .map(|s| s.parse::<usize>().map(|v| v as i64))
                                 .collect::<Result<Vec<i64>, _>>()
-                                .map_err(|_| {
-                                    io::Error::new(
-                                        io::ErrorKind::InvalidData,
-                                        "Invalid block sizes",
-                                    )
-                                })
+                                .map_err(|_| crate::OxbowError::invalid_data("Invalid block sizes"))
                         })
                         .transpose()?,
                     _ => None,
@@ -375,10 +370,7 @@ impl Push<&noodles::bed::Record<3>> for FieldBuilder {
                                 .map(|s| s.parse::<usize>().map(|v| v as i64))
                                 .collect::<Result<Vec<i64>, _>>()
                                 .map_err(|_| {
-                                    io::Error::new(
-                                        io::ErrorKind::InvalidData,
-                                        "Invalid block starts",
-                                    )
+                                    crate::OxbowError::invalid_data("Invalid block starts")
                                 })
                         })
                         .transpose()?,

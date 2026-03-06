@@ -15,3 +15,4 @@ noodles = { version = "0.107", features = ["bam", "bcf", "bed", "bgzf", "core", 
 bigtools = { version = "0.5.6", features = ["read"] }
 flate2 = "1.1.5"
 indexmap = "2.12.1"
+thiserror = "2"

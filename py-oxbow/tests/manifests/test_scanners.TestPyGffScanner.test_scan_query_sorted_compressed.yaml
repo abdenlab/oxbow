@@ -558,4 +558,4 @@ batch_size=4, fields=None, region="chr2":
     - exon
     - exon
     - CDS
-region="missing": Reference sequence missing not found in index header.
+region="missing": '''Reference sequence missing not found in index header.'''

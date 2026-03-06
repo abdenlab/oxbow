@@ -1,4 +1,3 @@
-use std::io;
 use std::iter::zip;
 use std::sync::Arc;
 
@@ -28,7 +27,7 @@ impl BatchBuilder {
         schema: BedSchema,
         field_names: Option<Vec<String>>,
         capacity: usize,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         let schema_field_names = schema
             .fields()
             .iter()
@@ -45,10 +44,10 @@ impl BatchBuilder {
                     .find(|field| &field.name == name)
                     .cloned()
                     .ok_or_else(|| {
-                        io::Error::new(
-                            io::ErrorKind::InvalidData,
-                            format!("Field '{}' not found in schema", name),
-                        )
+                        crate::OxbowError::invalid_data(format!(
+                            "Field '{}' not found in schema",
+                            name
+                        ))
                     })
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -99,7 +98,7 @@ impl RecordBatchBuilder for BatchBuilder {
 
 /// Append a BigBed record to the batch.
 impl Push<&BigBedRecord<'_>> for BatchBuilder {
-    fn push(&mut self, record: &BigBedRecord) -> io::Result<()> {
+    fn push(&mut self, record: &BigBedRecord) -> crate::Result<()> {
         let mut schema_defs = self.schema.fields().iter();
 
         if let Some(def) = schema_defs.next() {
@@ -109,8 +108,7 @@ impl Push<&BigBedRecord<'_>> for BatchBuilder {
                         b.append_value(record.chrom);
                     }
                     _ => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidData,
+                        return Err(crate::OxbowError::invalid_data(
                             "Wrong builder type for chrom",
                         ))
                     }
@@ -125,8 +123,7 @@ impl Push<&BigBedRecord<'_>> for BatchBuilder {
                         b.append_value(record.start);
                     }
                     _ => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidData,
+                        return Err(crate::OxbowError::invalid_data(
                             "Wrong builder type for start",
                         ))
                     }
@@ -141,8 +138,7 @@ impl Push<&BigBedRecord<'_>> for BatchBuilder {
                         b.append_value(record.end);
                     }
                     _ => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidData,
+                        return Err(crate::OxbowError::invalid_data(
                             "Wrong builder type for end",
                         ))
                     }
@@ -168,8 +164,7 @@ impl Push<&BigBedRecord<'_>> for BatchBuilder {
                             b.append_value(record.rest);
                         }
                         _ => {
-                            return Err(io::Error::new(
-                                io::ErrorKind::InvalidData,
+                            return Err(crate::OxbowError::invalid_data(
                                 "Wrong builder type for rest",
                             ))
                         }
@@ -185,7 +180,7 @@ impl Push<&BigBedRecord<'_>> for BatchBuilder {
 
 /// Append a BigWig record to the batch.
 impl Push<&BigWigRecord<'_>> for BatchBuilder {
-    fn push(&mut self, record: &BigWigRecord) -> io::Result<()> {
+    fn push(&mut self, record: &BigWigRecord) -> crate::Result<()> {
         let mut schema_defs = self.schema.fields().iter();
 
         if let Some(def) = schema_defs.next() {
@@ -195,8 +190,7 @@ impl Push<&BigWigRecord<'_>> for BatchBuilder {
                         b.append_value(record.chrom);
                     }
                     _ => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidData,
+                        return Err(crate::OxbowError::invalid_data(
                             "Wrong builder type for chrom",
                         ))
                     }
@@ -211,8 +205,7 @@ impl Push<&BigWigRecord<'_>> for BatchBuilder {
                         b.append_value(record.start);
                     }
                     _ => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidData,
+                        return Err(crate::OxbowError::invalid_data(
                             "Wrong builder type for start",
                         ))
                     }
@@ -227,8 +220,7 @@ impl Push<&BigWigRecord<'_>> for BatchBuilder {
                         b.append_value(record.end);
                     }
                     _ => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidData,
+                        return Err(crate::OxbowError::invalid_data(
                             "Wrong builder type for end",
                         ))
                     }
@@ -243,8 +235,7 @@ impl Push<&BigWigRecord<'_>> for BatchBuilder {
                         b.append_value(record.value);
                     }
                     _ => {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidData,
+                        return Err(crate::OxbowError::invalid_data(
                             "Wrong builder type for value",
                         ))
                     }

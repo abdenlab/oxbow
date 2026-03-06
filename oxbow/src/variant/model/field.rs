@@ -1,4 +1,3 @@
-use std::io;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -162,7 +161,7 @@ impl FieldBuilder {
 }
 
 pub trait Push<T> {
-    fn push(&mut self, record: T, header: &noodles::vcf::Header) -> io::Result<()>;
+    fn push(&mut self, record: T, header: &noodles::vcf::Header) -> crate::Result<()>;
 }
 
 /// Append a field value from a VCF record to the column.
@@ -171,7 +170,7 @@ impl Push<&noodles::vcf::Record> for FieldBuilder {
         &mut self,
         record: &noodles::vcf::Record,
         header: &noodles::vcf::Header,
-    ) -> io::Result<()> {
+    ) -> crate::Result<()> {
         match self {
             Self::Chrom(builder) => {
                 let rname = record.reference_sequence_name();
@@ -259,7 +258,7 @@ impl Push<&noodles::bcf::Record> for FieldBuilder {
         &mut self,
         record: &noodles::bcf::Record,
         header: &noodles::vcf::Header,
-    ) -> io::Result<()> {
+    ) -> crate::Result<()> {
         match self {
             Self::Chrom(builder) => {
                 let id = record.reference_sequence_id()?;
@@ -293,7 +292,7 @@ impl Push<&noodles::bcf::Record> for FieldBuilder {
                 let reference_bases = record.reference_bases();
                 let ref_bytes = reference_bases.as_ref();
                 let ref_str = String::from_utf8(ref_bytes.to_vec())
-                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+                    .map_err(|e| crate::OxbowError::invalid_data(e.to_string()))?;
                 builder.append_value(ref_str);
             }
             Self::Alt(builder) => {

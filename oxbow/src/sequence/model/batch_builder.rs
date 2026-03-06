@@ -1,4 +1,3 @@
-use std::io;
 use std::sync::Arc;
 
 use arrow::array::ArrayRef;
@@ -28,8 +27,8 @@ impl BatchBuilder {
     /// * `capacity` - The number of rows to preallocate for a batch.
     ///
     /// # Returns
-    /// A `Result` containing the `BatchBuilder` or an `io::Error` if the field names are invalid.
-    pub fn new_fastq(field_names: Option<Vec<String>>, capacity: usize) -> io::Result<Self> {
+    /// A `Result` containing the `BatchBuilder` or an `OxbowError` if the field names are invalid.
+    pub fn new_fastq(field_names: Option<Vec<String>>, capacity: usize) -> crate::Result<Self> {
         let default_field_names = FASTQ_DEFAULT_FIELD_NAMES
             .iter()
             .map(|s| s.to_string())
@@ -45,8 +44,8 @@ impl BatchBuilder {
     /// * `capacity` - The number of rows to preallocate for a batch.
     ///
     /// # Returns
-    /// A `Result` containing the `BatchBuilder` or an `io::Error` if the field names are invalid.
-    pub fn new_fasta(field_names: Option<Vec<String>>, capacity: usize) -> io::Result<Self> {
+    /// A `Result` containing the `BatchBuilder` or an `OxbowError` if the field names are invalid.
+    pub fn new_fasta(field_names: Option<Vec<String>>, capacity: usize) -> crate::Result<Self> {
         let default_field_names = FASTA_DEFAULT_FIELD_NAMES
             .iter()
             .map(|s| s.to_string())
@@ -54,7 +53,7 @@ impl BatchBuilder {
         Self::new(field_names.unwrap_or(default_field_names), capacity)
     }
 
-    fn new(field_names: Vec<String>, capacity: usize) -> io::Result<Self> {
+    fn new(field_names: Vec<String>, capacity: usize) -> crate::Result<Self> {
         let fields: Vec<Field> = field_names
             .into_iter()
             .map(|name| name.parse())
@@ -105,7 +104,7 @@ impl RecordBatchBuilder for BatchBuilder {
 
 /// Append a FASTA record to the batch.
 impl Push<&noodles::fasta::Record> for BatchBuilder {
-    fn push(&mut self, record: &noodles::fasta::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::fasta::Record) -> crate::Result<()> {
         for (_, builder) in self.field_builders.iter_mut() {
             builder.push(record)?;
         }
@@ -116,7 +115,7 @@ impl Push<&noodles::fasta::Record> for BatchBuilder {
 
 /// Append a FASTQ record to the batch.
 impl Push<&noodles::fastq::Record> for BatchBuilder {
-    fn push(&mut self, record: &noodles::fastq::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::fastq::Record) -> crate::Result<()> {
         for (_, builder) in self.field_builders.iter_mut() {
             builder.push(record)?;
         }

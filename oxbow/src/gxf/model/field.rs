@@ -1,4 +1,3 @@
-use std::io;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -127,12 +126,12 @@ impl FieldBuilder {
 }
 
 pub trait Push<T> {
-    fn push(&mut self, record: T) -> io::Result<()>;
+    fn push(&mut self, record: T) -> crate::Result<()>;
 }
 
 /// Append a field value from a GFF record to the column.
 impl<'a> Push<&'a noodles::gff::Record<'a>> for FieldBuilder {
-    fn push(&mut self, record: &noodles::gff::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::gff::Record) -> crate::Result<()> {
         match self {
             Self::SeqId(builder) => {
                 let seq_id = record.reference_sequence_name().to_string();
@@ -182,7 +181,7 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for FieldBuilder {
 
 /// Append a field value from a GTF record to the column.
 impl<'a> Push<&'a noodles::gtf::Record<'a>> for FieldBuilder {
-    fn push(&mut self, record: &noodles::gtf::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::gtf::Record) -> crate::Result<()> {
         match self {
             Self::SeqId(builder) => {
                 let seq_id = record.reference_sequence_name().to_string();

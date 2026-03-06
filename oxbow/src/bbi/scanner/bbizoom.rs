@@ -1,4 +1,4 @@
-use std::io::{self, Read, Seek};
+use std::io::{Read, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::{Schema as ArrowSchema, SchemaRef};
@@ -8,6 +8,7 @@ use crate::batch::RecordBatchBuilder as _;
 use crate::bbi::model::zoom::field::DEFAULT_FIELD_NAMES;
 use crate::bbi::model::zoom::BatchBuilder;
 use crate::bbi::scanner::batch_iterator::zoom::{BBIZoomBatchIterator, BBIZoomQueryBatchIterator};
+use crate::OxbowError;
 
 /// A scanner for the summary statistics from BBI file zoom level.
 ///
@@ -41,7 +42,7 @@ impl Scanner {
         ref_names: Vec<String>,
         zoom_level: u32,
         fields: Option<Vec<String>>,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         let batch_builder = BatchBuilder::new(&ref_names, fields.clone(), 0)?;
         let schema = batch_builder.schema();
         Ok(Self {
@@ -67,7 +68,7 @@ impl Scanner {
         &self,
         columns: Option<Vec<String>>,
         capacity: usize,
-    ) -> io::Result<BatchBuilder> {
+    ) -> crate::Result<BatchBuilder> {
         match columns {
             None => BatchBuilder::new(&self.ref_names, self.fields.clone(), capacity),
             Some(cols) => {
@@ -84,13 +85,10 @@ impl Scanner {
                     .map(|c| c.as_str())
                     .collect();
                 if !unknown.is_empty() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Unknown columns: {:?}. Available columns: {:?}",
-                            unknown, schema_names
-                        ),
-                    ));
+                    return Err(OxbowError::invalid_input(format!(
+                        "Unknown columns: {:?}. Available columns: {:?}",
+                        unknown, schema_names
+                    )));
                 }
 
                 BatchBuilder::new(&self.ref_names, Some(cols), capacity)
@@ -107,7 +105,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<Box<dyn RecordBatchReader + Send>> {
+    ) -> crate::Result<Box<dyn RecordBatchReader + Send>> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         match reader {
@@ -142,7 +140,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         match reader {

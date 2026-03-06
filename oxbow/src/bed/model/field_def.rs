@@ -1,4 +1,3 @@
-use std::io;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -52,15 +51,12 @@ impl FieldDef {
 }
 
 impl TryFrom<(String, String)> for FieldDef {
-    type Error = io::Error;
+    type Error = crate::OxbowError;
 
     fn try_from(def: (String, String)) -> Result<Self, Self::Error> {
         let (name, type_str) = def;
         let ty: FieldType = type_str.parse().map_err(|_| {
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Invalid tag type: {}", type_str),
-            )
+            crate::OxbowError::invalid_input(format!("Invalid tag type: {}", type_str))
         })?;
         Ok(Self { name, ty })
     }
@@ -227,7 +223,7 @@ impl FieldType {
 }
 
 impl FromStr for FieldType {
-    type Err = std::io::Error;
+    type Err = crate::OxbowError;
 
     /// Parse a string representation into a [`FieldType`].
     ///
@@ -380,15 +376,15 @@ impl FromStr for FieldType {
                 Ok(items) => Ok(Self::Set(items)),
                 Err(e) => Err(e),
             },
-            _ => Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Invalid AutoSql type: {}", s),
-            )),
+            _ => Err(crate::OxbowError::invalid_input(format!(
+                "Invalid AutoSql type: {}",
+                s
+            ))),
         }
     }
 }
 
-fn parse_size_param(s: &str, prefix: &str, suffix: &str) -> io::Result<usize> {
+fn parse_size_param(s: &str, prefix: &str, suffix: &str) -> crate::Result<usize> {
     if s.starts_with(prefix) && s.ends_with(suffix) {
         let size_str = &s[prefix.len()..s.len() - suffix.len()];
         if let Ok(size) = size_str.parse::<usize>() {
@@ -397,13 +393,17 @@ fn parse_size_param(s: &str, prefix: &str, suffix: &str) -> io::Result<usize> {
             }
         }
     };
-    Err(std::io::Error::new(
-        std::io::ErrorKind::InvalidInput,
-        format!("Invalid fixed-size list format: {}", s),
-    ))
+    Err(crate::OxbowError::invalid_input(format!(
+        "Invalid fixed-size list format: {}",
+        s
+    )))
 }
 
-fn parse_enum_param(s: &str, prefix: &str, suffix: &str) -> io::Result<Vec<std::string::String>> {
+fn parse_enum_param(
+    s: &str,
+    prefix: &str,
+    suffix: &str,
+) -> crate::Result<Vec<std::string::String>> {
     if s.starts_with(prefix) && s.ends_with(suffix) {
         let items: Vec<std::string::String> = s[prefix.len()..s.len() - suffix.len()]
             .split(',')
@@ -412,10 +412,10 @@ fn parse_enum_param(s: &str, prefix: &str, suffix: &str) -> io::Result<Vec<std::
             .collect();
         return Ok(items);
     };
-    Err(std::io::Error::new(
-        std::io::ErrorKind::InvalidInput,
-        format!("Invalid enum/set format: {}", s),
-    ))
+    Err(crate::OxbowError::invalid_input(format!(
+        "Invalid enum/set format: {}",
+        s
+    )))
 }
 
 /// A builder for an Arrow array (column) corresponding to an AutoSql field.
@@ -469,7 +469,7 @@ pub enum FieldBuilder {
 }
 
 impl FieldBuilder {
-    pub fn new(field_type: &FieldType, capacity: usize) -> io::Result<Self> {
+    pub fn new(field_type: &FieldType, capacity: usize) -> crate::Result<Self> {
         let builder = match field_type {
             FieldType::Byte => Self::Byte(Int8Builder::with_capacity(capacity)),
             FieldType::ByteList => {
@@ -552,7 +552,7 @@ impl FieldBuilder {
                 let n = items.len();
                 let values = arrow::array::StringArray::from(items.to_owned());
                 let builder = StringDictionaryBuilder::<Int32Type>::new_with_dictionary(n, &values)
-                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e.to_string()))?;
+                    .map_err(|e| crate::OxbowError::invalid_data(e.to_string()))?;
                 Self::Enum(builder)
             }
             FieldType::Set(items) => {
@@ -560,7 +560,7 @@ impl FieldBuilder {
                 let values = arrow::array::StringArray::from(items.to_owned());
                 let item_builder =
                     StringDictionaryBuilder::<Int32Type>::new_with_dictionary(n, &values)
-                        .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e.to_string()))?;
+                        .map_err(|e| crate::OxbowError::invalid_data(e.to_string()))?;
                 Self::Set(ListBuilder::<StringDictionaryBuilder<Int32Type>>::new(
                     item_builder,
                 ))
@@ -622,12 +622,12 @@ impl FieldBuilder {
 }
 
 pub trait Push<T> {
-    fn push(&mut self, record: T) -> io::Result<()>;
+    fn push(&mut self, record: T) -> crate::Result<()>;
 }
 
 /// Append a field value from a string to the column.
 impl Push<&str> for FieldBuilder {
-    fn push(&mut self, value: &str) -> io::Result<()> {
+    fn push(&mut self, value: &str) -> crate::Result<()> {
         match self {
             Self::Byte(builder) => {
                 match value.parse::<i8>() {
