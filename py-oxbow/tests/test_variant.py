@@ -68,21 +68,21 @@ class TestVcfFile:
         batches = ox.VcfFile(*input.args, **input.kwargs).batches()
         try:
             actual = len(list(batches))
-        except OSError as e:
+        except Exception as e:
             actual = str(e)
 
         assert manifest[f"fields={fields}"] == actual
 
     def test_input_encodings(self):
         file = ox.VcfFile("data/sample.vcf", compressed=False, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.VcfFile("data/sample.vcf", compressed=True, batch_size=3)
             next((file.batches()))
 
         file = ox.VcfFile("data/sample.vcf.gz", compressed=True, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.VcfFile("data/sample.vcf.gz", compressed=False, batch_size=3)
@@ -195,21 +195,21 @@ class TestBcfFile:
         batches = ox.BcfFile(*input.args, **input.kwargs).batches()
         try:
             actual = actual = len(list(batches))
-        except OSError as e:
+        except Exception as e:
             actual = str(e)
 
         assert manifest[f"fields={fields}"] == actual
 
     def test_input_encodings(self):
         file = ox.BcfFile("data/sample.bcf", compressed=True, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.BcfFile("data/sample.bcf", compressed=False, batch_size=3)
             next((file.batches()))
 
         file = ox.BcfFile("data/sample.ubcf", compressed=False, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.BcfFile("data/sample.ubcf", compressed=True, batch_size=3)

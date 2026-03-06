@@ -58,6 +58,16 @@ batch_size=4:
     - 20.0
     - 40.0
     - 60.0
+columns=("chrom", "start", "end"), batch_size=2:
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 9486520
+    - 10392620
+    start:
+    - 9486505
+    - 10392615
 fields=("chrom", "start", "end"), batch_size=2:
     chrom:
     - chr21

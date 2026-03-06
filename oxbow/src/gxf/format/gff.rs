@@ -1,7 +1,7 @@
 use std::io::{self, BufRead, Read, Seek};
 
 use arrow::array::RecordBatchReader;
-use arrow::datatypes::Schema;
+use arrow::datatypes::{Schema, SchemaRef};
 use noodles::bgzf::VirtualPosition;
 use noodles::csi::binning_index;
 use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
@@ -17,6 +17,10 @@ use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 
 /// A GFF scanner.
 ///
+/// Schema parameters (fields, attribute definitions) are declared at
+/// construction time. Scan methods accept only column projection,
+/// batch size, and limit.
+///
 /// # Examples
 ///
 /// ```no_run
@@ -27,23 +31,39 @@ use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 /// let inner = File::open("sample.gff").map(BufReader::new).unwrap();
 /// let mut fmt_reader = noodles::gff::io::Reader::new(inner);
 ///
-/// let scanner = Scanner::new(None);
-/// let attr_defs = scanner.attribute_defs(&mut fmt_reader, Some(1000)).unwrap();
-/// let batches = scanner.scan(fmt_reader, None, Some(attr_defs), None, Some(1000));
+/// let attr_defs = Scanner::attribute_defs(&mut fmt_reader, Some(1000)).unwrap();
+/// let scanner = Scanner::new(None, None, Some(attr_defs)).unwrap();
+/// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
     header: Option<binning_index::index::Header>,
+    fields: Option<Vec<String>>,
+    attr_defs: Option<Vec<(String, String)>>,
+    schema: SchemaRef,
 }
 
 impl Scanner {
-    /// Creates a GFF scanner.
-    pub fn new(header: Option<binning_index::index::Header>) -> Self {
-        Self { header }
+    /// Creates a GFF scanner from schema parameters.
+    ///
+    /// The schema is validated and cached at construction time.
+    pub fn new(
+        header: Option<binning_index::index::Header>,
+        fields: Option<Vec<String>>,
+        attr_defs: Option<Vec<(String, String)>>,
+    ) -> io::Result<Self> {
+        let batch_builder = BatchBuilder::new(fields.clone(), attr_defs.clone(), 0)?;
+        let schema = batch_builder.schema();
+        Ok(Self {
+            header,
+            fields,
+            attr_defs,
+            schema,
+        })
     }
 
     /// Returns the index header if one was provided.
-    pub fn header(&self) -> Option<binning_index::index::Header> {
-        self.header.clone()
+    pub fn header(&self) -> Option<&binning_index::index::Header> {
+        self.header.as_ref()
     }
 
     /// Returns the reference sequence names if an index header was provided.
@@ -68,13 +88,60 @@ impl Scanner {
     }
 
     /// Returns the Arrow schema.
-    pub fn schema(
+    pub fn schema(&self) -> &Schema {
+        &self.schema
+    }
+
+    /// Builds a BatchBuilder applying column projection.
+    ///
+    /// Returns an error if any requested column is not in the declared schema.
+    fn build_batch_builder(
         &self,
-        fields: Option<Vec<String>>,
-        attr_defs: Option<Vec<(String, String)>>,
-    ) -> io::Result<Schema> {
-        let batch_builder = BatchBuilder::new(fields, attr_defs, 0)?;
-        Ok(batch_builder.schema().as_ref().clone())
+        columns: Option<Vec<String>>,
+        capacity: usize,
+    ) -> io::Result<BatchBuilder> {
+        match columns {
+            None => BatchBuilder::new(self.fields.clone(), self.attr_defs.clone(), capacity),
+            Some(cols) => {
+                let schema_names: Vec<&str> = self
+                    .schema
+                    .fields()
+                    .iter()
+                    .map(|f| f.name().as_str())
+                    .collect();
+
+                let unknown: Vec<&str> = cols
+                    .iter()
+                    .filter(|c| !schema_names.iter().any(|s| s.eq_ignore_ascii_case(c)))
+                    .map(|c| c.as_str())
+                    .collect();
+                if !unknown.is_empty() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!(
+                            "Unknown columns: {:?}. Available columns: {:?}",
+                            unknown, schema_names
+                        ),
+                    ));
+                }
+
+                let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
+                    DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
+                });
+                let projected_fields: Vec<String> = declared_field_names
+                    .into_iter()
+                    .filter(|name| cols.iter().any(|c| c.eq_ignore_ascii_case(name)))
+                    .collect();
+
+                let attr_defs = if cols.iter().any(|c| c == "attributes") {
+                    self.attr_defs.clone()
+                } else {
+                    None
+                };
+
+                BatchBuilder::new(Some(projected_fields), attr_defs, capacity)
+            }
+        }
     }
 }
 
@@ -84,7 +151,6 @@ impl Scanner {
     /// The scan will begin at the current position of the reader and will
     /// move the cursor to the end of the last record scanned.
     pub fn attribute_defs<R: BufRead>(
-        &self,
         fmt_reader: &mut noodles::gff::io::Reader<R>,
         scan_rows: Option<usize>,
     ) -> io::Result<Vec<(String, String)>> {
@@ -118,38 +184,26 @@ impl Scanner {
     }
 
     /// Returns an iterator yielding record batches.
-    ///
-    /// The scan will begin at the current position of the reader and will
-    /// move the cursor to the end of the last record scanned.
     pub fn scan<R: BufRead>(
         &self,
         fmt_reader: noodles::gff::io::Reader<R>,
-        fields: Option<Vec<String>>,
-        attr_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
-        let batch_builder = BatchBuilder::new(fields, attr_defs, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
         Ok(batch_iter)
     }
 
     /// Returns an iterator yielding record batches satisfying a genomic range query.
-    ///
-    /// This operation requires a BGZF source and an Index.
-    ///
-    /// The scan will consume contiguous "chunks" of BGZF blocks and filter for
-    /// records that overlap the given region. The cursor will move to the end
-    /// of the last record scanned.
-    #[allow(clippy::too_many_arguments)]
     pub fn scan_query<R: BufRead + Seek>(
         &self,
         fmt_reader: noodles::gff::io::Reader<noodles::bgzf::io::Reader<R>>,
         region: noodles::core::Region,
         index: impl BinningIndex,
-        fields: Option<Vec<String>>,
-        attr_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
@@ -157,7 +211,7 @@ impl Scanner {
         let reference_sequence_name = region.name().to_string();
         let interval = region.interval();
 
-        let batch_builder = BatchBuilder::new(fields, attr_defs, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
         let Some(header) = index.header() else {
             return Err(io::Error::new(
@@ -183,23 +237,16 @@ impl Scanner {
     }
 
     /// Returns an iterator yielding record batches from specified byte ranges.
-    ///
-    /// This operation requires a seekable (typically uncompressed) source.
-    ///
-    /// The scan will traverse the specified byte ranges without filtering by genomic coordinates.
-    /// This is useful when you have pre-computed file offsets from a custom index. The byte ranges
-    /// must align with record boundaries.
     pub fn scan_byte_ranges<R: BufRead + Seek>(
         &self,
         fmt_reader: noodles::gff::io::Reader<R>,
         byte_ranges: Vec<(u64, u64)>,
-        fields: Option<Vec<String>>,
-        attr_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
-        let batch_builder = BatchBuilder::new(fields, attr_defs, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
         let inner_reader = fmt_reader.into_inner();
         let range_reader = ByteRangeReader::new(inner_reader, byte_ranges);
@@ -209,24 +256,17 @@ impl Scanner {
     }
 
     /// Returns an iterator yielding record batches from specified virtual position ranges.
-    ///
-    /// This operation requires a BGZF-compressed source.
-    ///
-    /// The scan will traverse the specified virtual position ranges without filtering by genomic
-    /// coordinates. This is useful when you have pre-computed virtual offsets from a custom index.
     pub fn scan_virtual_ranges<R: Read + Seek>(
         &self,
         fmt_reader: noodles::gff::io::Reader<noodles::bgzf::io::Reader<R>>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
-        fields: Option<Vec<String>>,
-        attr_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
-        let batch_builder = BatchBuilder::new(fields, attr_defs, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
-        // Convert virtual position tuples to Chunks
         let chunks: Vec<Chunk> = vpos_ranges
             .into_iter()
             .map(|(start, end)| Chunk::new(start, end))

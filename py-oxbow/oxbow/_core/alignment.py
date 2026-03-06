@@ -5,67 +5,18 @@ DataSource classes for htslib alignment formats.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Callable, Generator, Literal
+from typing import IO, Callable, Literal
 
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-import pyarrow as pa
-
 from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
 from oxbow.oxbow import PyBamScanner, PySamScanner, PyCramScanner
 
 
 class AlignmentFile(DataSource):
-    def _batchreader_builder(
-        self,
-        region: str | None = None,
-    ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
-        def builder(columns, batch_size):
-            scanner = self.scanner()
-            field_names = scanner.field_names()
-            scan_kwargs = self._schema_kwargs.copy()
-
-            if columns is not None:
-                scan_kwargs["fields"] = [col for col in columns if col in field_names]
-                if "tags" not in columns:
-                    scan_kwargs["tag_defs"] = []
-                elif scan_kwargs.get("tag_defs") == []:
-                    raise ValueError(
-                        "Cannot select `tags` column if no tag definitions are "
-                        "provided."
-                    )
-
-            if region is not None:
-                scan_kwargs["index"] = self._index
-                if region == "*":
-                    scan_fn = scanner.scan_unmapped
-                else:
-                    scan_fn = scanner.scan_query
-                    scan_kwargs["region"] = region
-            else:
-                scan_fn = scanner.scan
-
-            stream = scan_fn(**scan_kwargs, batch_size=batch_size)
-            return pa.RecordBatchReader.from_stream(
-                data=stream,
-                schema=pa.schema(stream.schema),
-            )
-
-        return builder
-
-    @property
-    def _batchreader_builders(
-        self,
-    ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
-        if self._regions:
-            for region in self._regions:
-                yield self._batchreader_builder(region)
-        else:
-            yield self._batchreader_builder()
-
     def __init__(
         self,
         source: str | Callable[[], IO[bytes] | str],
@@ -84,10 +35,28 @@ class AlignmentFile(DataSource):
             regions = [regions]
         self._regions = regions
 
-        self._scanner_kwargs = dict(compressed=compressed)
+        self._scanner_kwargs = dict(
+            compressed=compressed, fields=fields, tag_defs=tag_defs
+        )
         if tag_defs is None:
-            tag_defs = self.scanner().tag_defs(tag_scan_rows)
-        self._schema_kwargs = dict(fields=fields, tag_defs=tag_defs)
+            discovered = self._scanner_type(
+                self._source, **self._tag_discovery_kwargs()
+            ).tag_defs(tag_scan_rows)
+            self._scanner_kwargs["tag_defs"] = discovered
+
+    def _tag_discovery_kwargs(self) -> dict:
+        """Extra kwargs passed to the scanner used for tag discovery."""
+        return dict(compressed=self._scanner_kwargs.get("compressed", False))
+
+    def _scan_query(self, scanner, region, columns, batch_size):
+        if region == "*":
+            return scanner.scan_unmapped(
+                index=self._index, columns=columns, batch_size=batch_size
+            )
+        else:
+            return scanner.scan_query(
+                region=region, index=self._index, columns=columns, batch_size=batch_size
+            )
 
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
@@ -96,7 +65,6 @@ class AlignmentFile(DataSource):
             index=self._index_src,
             batch_size=self._batch_size,
             **self._scanner_kwargs,
-            **self._schema_kwargs,
         )
 
     @property
@@ -112,7 +80,7 @@ class AlignmentFile(DataSource):
     @property
     def tag_defs(self) -> list[tuple[str, str]]:
         """List of definitions for interpreting tag records."""
-        return self._schema_kwargs["tag_defs"]
+        return self._scanner_kwargs["tag_defs"]
 
 
 class SamFile(AlignmentFile):
@@ -125,6 +93,42 @@ class BamFile(AlignmentFile):
 
 class CramFile(AlignmentFile):
     _scanner_type = PyCramScanner
+
+    def __init__(
+        self,
+        source: str | Callable[[], IO[bytes] | str],
+        compressed: bool = False,
+        *,
+        fields: list[str] | None = None,
+        tag_defs: list[tuple[str, str]] | None = None,
+        tag_scan_rows: int = 1024,
+        regions: str | list[str] | None = None,
+        index: str | Callable[[], IO[bytes] | str] | None = None,
+        reference: str | Callable[[], IO[bytes] | str] | None = None,
+        reference_index: str | Callable[[], IO[bytes] | str] | None = None,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+    ):
+        self._reference = reference
+        self._reference_index = reference_index
+        super().__init__(
+            source,
+            compressed=compressed,
+            fields=fields,
+            tag_defs=tag_defs,
+            tag_scan_rows=tag_scan_rows,
+            regions=regions,
+            index=index,
+            batch_size=batch_size,
+        )
+        self._scanner_kwargs["reference"] = reference
+        self._scanner_kwargs["reference_index"] = reference_index
+
+    def _tag_discovery_kwargs(self) -> dict:
+        return dict(
+            compressed=self._scanner_kwargs.get("compressed", False),
+            reference=self._reference,
+            reference_index=self._reference_index,
+        )
 
 
 def from_sam(
@@ -286,8 +290,8 @@ def from_cram(
     tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
-    reference: None = None,
-    reference_index: None = None,
+    reference: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
+    reference_index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> CramFile:
     """
@@ -336,22 +340,12 @@ def from_cram(
     -----
     CRAM is a compressed binary format for storing sequence alignments.
 
-    .. warning::
-
-        External reference sequences (``reference`` and ``reference_index``)
-        are not yet supported via the high-level API. Either ensure that the
-        CRAM file contains an embedded reference or contains full sequences, or
-        use the low-level API (:class:`oxbow.core.PyCramScanner`) to provide an
-        external reference.
-
     See also
     --------
     from_sam : Create a SAM file data source.
     from_bam : Create a BAM file data source.
     """
     source, index, _ = prepare_source_and_index(source, index, False)
-    if reference is not None or reference_index is not None:
-        raise ValueError("CRAM files with an external reference are not yet supported.")
     return CramFile(
         source=source,
         fields=fields,
@@ -359,7 +353,7 @@ def from_cram(
         tag_scan_rows=tag_scan_rows,
         regions=regions,
         index=index,
-        # reference=reference,
-        # reference_index=reference_index,
+        reference=reference,
+        reference_index=reference_index,
         batch_size=batch_size,
     )

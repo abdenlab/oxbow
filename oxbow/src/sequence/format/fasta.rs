@@ -1,7 +1,7 @@
 use std::io::{self, BufRead, Seek};
 
 use arrow::array::RecordBatchReader;
-use arrow::datatypes::Schema;
+use arrow::datatypes::{Schema, SchemaRef};
 use noodles::core::Region;
 
 use crate::batch::RecordBatchBuilder as _;
@@ -10,6 +10,9 @@ use crate::sequence::model::batch_builder::BatchBuilder;
 use crate::sequence::model::field::FASTA_DEFAULT_FIELD_NAMES;
 
 /// A FASTA scanner.
+///
+/// Schema parameters (fields) are declared at construction time. Scan methods
+/// accept only column projection, batch size, and limit.
 ///
 /// # Examples
 ///
@@ -23,23 +26,24 @@ use crate::sequence::model::field::FASTA_DEFAULT_FIELD_NAMES;
 /// let fmt_reader = noodles::fasta::io::Reader::new(inner);
 /// let index = noodles::fasta::fai::fs::read("sample.fa.fai").unwrap();
 ///
-/// let scanner = Scanner::default();
-/// let regions = vec!["chr1:1-1000", "chr1:1001-2000", "chr1:2001-3000", "chr1:3001-4000"];
+/// let scanner = Scanner::new(None).unwrap();
+/// let regions = vec!["chr1:1-1000", "chr1:1001-2000"];
 /// let regions: Vec<Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
 /// let batches = scanner.scan_query(fmt_reader, regions, index, None, Some(2));
 /// ```
-pub struct Scanner {}
-
-impl Default for Scanner {
-    fn default() -> Self {
-        Self::new()
-    }
+pub struct Scanner {
+    fields: Option<Vec<String>>,
+    schema: SchemaRef,
 }
 
 impl Scanner {
-    /// Creates a FASTA scanner.
-    pub fn new() -> Self {
-        Self {}
+    /// Creates a FASTA scanner from schema parameters.
+    ///
+    /// The schema is validated and cached at construction time.
+    pub fn new(fields: Option<Vec<String>>) -> io::Result<Self> {
+        let batch_builder = BatchBuilder::new_fasta(fields.clone(), 0)?;
+        let schema = batch_builder.schema();
+        Ok(Self { fields, schema })
     }
 
     /// Returns the FASTA field names.
@@ -51,17 +55,62 @@ impl Scanner {
     }
 
     /// Returns the Arrow schema.
-    pub fn schema(&self, fields: Option<Vec<String>>) -> io::Result<Schema> {
-        let batch_builder = BatchBuilder::new_fasta(fields, 0)?;
-        Ok(batch_builder.schema().as_ref().clone())
+    pub fn schema(&self) -> &Schema {
+        &self.schema
+    }
+
+    /// Builds a BatchBuilder applying column projection.
+    ///
+    /// Returns an error if any requested column is not in the declared schema.
+    fn build_batch_builder(
+        &self,
+        columns: Option<Vec<String>>,
+        capacity: usize,
+    ) -> io::Result<BatchBuilder> {
+        match columns {
+            None => BatchBuilder::new_fasta(self.fields.clone(), capacity),
+            Some(cols) => {
+                let schema_names: Vec<&str> = self
+                    .schema
+                    .fields()
+                    .iter()
+                    .map(|f| f.name().as_str())
+                    .collect();
+
+                let unknown: Vec<&str> = cols
+                    .iter()
+                    .filter(|c| !schema_names.iter().any(|s| s.eq_ignore_ascii_case(c)))
+                    .map(|c| c.as_str())
+                    .collect();
+                if !unknown.is_empty() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!(
+                            "Unknown columns: {:?}. Available columns: {:?}",
+                            unknown, schema_names
+                        ),
+                    ));
+                }
+
+                let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
+                    FASTA_DEFAULT_FIELD_NAMES
+                        .iter()
+                        .map(|&s| s.to_string())
+                        .collect()
+                });
+                let projected_fields: Vec<String> = declared_field_names
+                    .into_iter()
+                    .filter(|name| cols.iter().any(|c| c.eq_ignore_ascii_case(name)))
+                    .collect();
+
+                BatchBuilder::new_fasta(Some(projected_fields), capacity)
+            }
+        }
     }
 }
 
 impl Scanner {
     /// Returns an iterator yielding record batches.
-    ///
-    /// The scan will begin at the current position of the reader and will
-    /// move the cursor to the end of the last record scanned.
     ///
     /// # Note
     /// Since reference sequences are often large, the default batch size is
@@ -69,12 +118,12 @@ impl Scanner {
     pub fn scan<R: BufRead>(
         &self,
         fmt_reader: noodles::fasta::io::Reader<R>,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1);
-        let batch_builder = BatchBuilder::new_fasta(fields, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
         Ok(batch_iter)
     }
@@ -87,11 +136,11 @@ impl Scanner {
         fmt_reader: noodles::fasta::io::Reader<R>,
         regions: Vec<Region>,
         index: noodles::fasta::fai::Index,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
-        let batch_builder = BatchBuilder::new_fasta(fields, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter =
             QueryBatchIterator::new(fmt_reader, index, regions, batch_builder, batch_size);
         Ok(batch_iter)
@@ -106,7 +155,7 @@ mod tests {
 
     #[test]
     fn test_scanner_default() {
-        let scanner = Scanner::default();
+        let scanner = Scanner::new(None).unwrap();
         assert_eq!(
             scanner.field_names(),
             FASTA_DEFAULT_FIELD_NAMES
@@ -118,13 +167,13 @@ mod tests {
 
     #[test]
     fn test_scanner_schema() {
-        let scanner = Scanner::new();
-        let schema = scanner.schema(None).unwrap();
-        assert_eq!(schema.fields().len(), FASTA_DEFAULT_FIELD_NAMES.len());
-        let schema = scanner
-            .schema(Some(vec!["name".to_string(), "sequence".to_string()]))
-            .unwrap();
-        assert_eq!(schema.fields().len(), 2);
+        let scanner = Scanner::new(None).unwrap();
+        assert_eq!(
+            scanner.schema().fields().len(),
+            FASTA_DEFAULT_FIELD_NAMES.len()
+        );
+        let scanner = Scanner::new(Some(vec!["name".to_string(), "sequence".to_string()])).unwrap();
+        assert_eq!(scanner.schema().fields().len(), 2);
     }
 
     #[test]
@@ -134,7 +183,7 @@ mod tests {
         let reader = BufReader::new(file);
         let fmt_reader = noodles::fasta::io::Reader::new(reader);
 
-        let scanner = Scanner::new();
+        let scanner = Scanner::new(None).unwrap();
         let mut batch_iter = scanner.scan(fmt_reader, None, Some(2), Some(10)).unwrap();
 
         let batch = batch_iter.next().unwrap().unwrap();
@@ -156,7 +205,7 @@ mod tests {
             fai::Record::new("seq3", 12, 24, 13, 13),
         ]);
 
-        let scanner = Scanner::new();
+        let scanner = Scanner::new(None).unwrap();
         let regions = ["seq1:1-4", "seq2:1-4", "seq3:1-4"];
         let regions: Vec<Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
         let mut batch_iter = scanner

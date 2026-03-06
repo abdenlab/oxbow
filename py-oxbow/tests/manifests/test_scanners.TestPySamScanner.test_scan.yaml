@@ -158,6 +158,19 @@ batch_size=4:
     - 0
     - 0
     - -39
+columns=["qname", "rname", "mapq"]:
+    mapq:
+    - 30
+    - 30
+    - 30
+    qname:
+    - r004
+    - r003
+    - r001
+    rname:
+    - chr1
+    - chr1
+    - chr2
 fields=("qname", "rname", "mapq"):
     mapq:
     - 30

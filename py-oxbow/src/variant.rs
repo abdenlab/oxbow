@@ -23,29 +23,69 @@ use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
 ///    The path to the VCF file or a file-like object.
 /// compressed : bool, optional [default: False]
 ///    Whether the source is BGZF-compressed.
+/// fields : list[str], optional
+///    Names of the fixed fields to project.
+/// info_fields : list[str], optional
+///    Names of the INFO fields to project.
+/// genotype_fields : list[str], optional
+///    Names of the sample-specific genotype fields to project.
+/// samples : list[str], optional
+///    Names of the samples to include in the genotype fields.
+/// genotype_by : Literal["sample", "field"], optional [default: "sample"]
+///    How to project the genotype fields. If "sample", the columns
+///    correspond to the samples. If "field", the columns correspond to
+///    the genotype fields.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyVcfScanner {
     src: Py<PyAny>,
     reader: Reader,
     scanner: VcfScanner,
     compressed: bool,
+    fields: Option<Vec<String>>,
+    info_fields: Option<Vec<String>>,
+    genotype_fields: Option<Vec<String>>,
+    samples: Option<Vec<String>>,
+    genotype_by: Option<String>,
 }
 
 #[pymethods]
 impl PyVcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false))]
-    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
+    #[pyo3(signature = (src, compressed=false, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        py: Python,
+        src: Py<PyAny>,
+        compressed: bool,
+        fields: Option<Vec<String>>,
+        info_fields: Option<Vec<String>>,
+        genotype_fields: Option<Vec<String>>,
+        samples: Option<Vec<String>>,
+        genotype_by: Option<String>,
+    ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::vcf::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let scanner = VcfScanner::new(header);
+        let gt_by = resolve_genotype_by(genotype_by.clone())?;
+        let scanner = VcfScanner::new(
+            header,
+            fields.clone(),
+            info_fields.clone(),
+            genotype_fields.clone(),
+            samples.clone(),
+            gt_by,
+        )?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
+            fields,
+            info_fields,
+            genotype_fields,
+            samples,
+            genotype_by,
         })
     }
 
@@ -56,6 +96,21 @@ impl PyVcfScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
+        if let Some(ref fields) = self.fields {
+            kwargs.set_item("fields", fields)?;
+        }
+        if let Some(ref info_fields) = self.info_fields {
+            kwargs.set_item("info_fields", info_fields)?;
+        }
+        if let Some(ref genotype_fields) = self.genotype_fields {
+            kwargs.set_item("genotype_fields", genotype_fields)?;
+        }
+        if let Some(ref samples) = self.samples {
+            kwargs.set_item("samples", samples)?;
+        }
+        if let Some(ref genotype_by) = self.genotype_by {
+            kwargs.set_item("genotype_by", genotype_by)?;
+        }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -101,56 +156,19 @@ impl PyVcfScanner {
 
     /// Return the Arrow schema.
     ///
-    /// Parameters
-    /// ----------
-    /// fields : list[str], optional
-    ///    Names of the fixed fields to project.
-    /// info_fields : list[str], optional
-    ///    Names of the INFO fields to project.
-    /// genotype_fields : list[str], optional
-    ///    Names of the sample-specific genotype fields to project.
-    /// samples : list[str], optional
-    ///    Names of the samples to include in the genotype fields.
-    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
-    ///    How to project the genotype fields. If "sample", the columns
-    ///    correspond to the samples. If "field", the columns correspond to
-    ///    the genotype fields.
-    ///
     /// Returns
     /// -------
     /// arro3 Schema (pycapsule)
-    #[pyo3(signature = (fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None))]
-    fn schema(
-        &self,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<String>,
-    ) -> PyResult<PySchema> {
-        let genotype_by = resolve_genotype_by(genotype_by)?;
-        let schema =
-            self.scanner
-                .schema(fields, info_fields, genotype_fields, samples, genotype_by)?;
-        Ok(PySchema::new(Arc::new(schema)))
+    fn schema(&self) -> PySchema {
+        PySchema::new(Arc::new(self.scanner.schema().clone()))
     }
 
     /// Scan batches of records from the file.
     ///
     /// Parameters
     /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// info_fields : list[str], optional
-    ///     Names of the INFO fields to project.
-    /// genotype_fields : list[str], optional
-    ///     Names of the sample-specific genotype fields to project.
-    /// samples : list[str], optional
-    ///     Names of the samples to include in the genotype fields.
-    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
-    ///     How to project the genotype fields. If "sample", the columns
-    ///     correspond to the samples. If "field", the columns correspond to
-    ///     the genotype fields.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -161,33 +179,18 @@ impl PyVcfScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (columns=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<String>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let genotype_by = resolve_genotype_by(genotype_by)?;
         let reader = self.reader.clone();
         let fmt_reader = noodles::vcf::io::Reader::new(reader);
         let batch_reader = self
             .scanner
-            .scan(
-                fmt_reader,
-                fields,
-                info_fields,
-                genotype_fields,
-                samples,
-                genotype_by,
-                batch_size,
-                limit,
-            )
+            .scan(fmt_reader, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -200,18 +203,8 @@ impl PyVcfScanner {
     /// ----------
     /// byte_ranges : list[tuple[int, int]]
     ///     List of (start, end) byte position tuples to read from.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// info_fields : list[str], optional
-    ///     Names of the INFO fields to project.
-    /// genotype_fields : list[str], optional
-    ///     Names of the sample-specific genotype fields to project.
-    /// samples : list[str], optional
-    ///     Names of the samples to include in the genotype fields.
-    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
-    ///     How to project the genotype fields. If "sample", the columns
-    ///     correspond to the samples. If "field", the columns correspond to
-    ///     the genotype fields.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -222,35 +215,19 @@ impl PyVcfScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (byte_ranges, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (byte_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_byte_ranges(
         &mut self,
         byte_ranges: Vec<(u64, u64)>,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<String>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let genotype_by = resolve_genotype_by(genotype_by)?;
         let reader = self.reader.clone();
         let fmt_reader = noodles::vcf::io::Reader::new(reader);
         let batch_reader = self
             .scanner
-            .scan_byte_ranges(
-                fmt_reader,
-                byte_ranges,
-                fields,
-                info_fields,
-                genotype_fields,
-                samples,
-                genotype_by,
-                batch_size,
-                limit,
-            )
+            .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -269,18 +246,8 @@ impl PyVcfScanner {
     ///     be given as either a packed virtual position (int), or an unpacked
     ///     tuple of ints ``(c, u)`` specifying the compressed and uncompressed
     ///     offsets, respectively.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// info_fields : list[str], optional
-    ///     Names of the INFO fields to project.
-    /// genotype_fields : list[str], optional
-    ///     Names of the sample-specific genotype fields to project.
-    /// samples : list[str], optional
-    ///     Names of the samples to include in the genotype fields.
-    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
-    ///     How to project the genotype fields. If "sample", the columns
-    ///     correspond to the samples. If "field", the columns correspond to
-    ///     the genotype fields.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -291,20 +258,14 @@ impl PyVcfScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (vpos_ranges, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (vpos_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_virtual_ranges(
         &mut self,
         vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<String>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let genotype_by = resolve_genotype_by(genotype_by)?;
         let vpos_ranges = vpos_ranges
             .into_iter()
             .map(|(start, end)| Ok((start.to_virtual_position()?, end.to_virtual_position()?)))
@@ -314,17 +275,7 @@ impl PyVcfScanner {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_virtual_ranges(
-                        fmt_reader,
-                        vpos_ranges,
-                        fields,
-                        info_fields,
-                        genotype_fields,
-                        samples,
-                        genotype_by,
-                        batch_size,
-                        limit,
-                    )
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -332,17 +283,7 @@ impl PyVcfScanner {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_virtual_ranges(
-                        fmt_reader,
-                        vpos_ranges,
-                        fields,
-                        info_fields,
-                        genotype_fields,
-                        samples,
-                        genotype_by,
-                        batch_size,
-                        limit,
-                    )
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -364,18 +305,8 @@ impl PyVcfScanner {
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
     ///     from the same path with an additional extension.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// info_fields : list[str], optional
-    ///     Names of the INFO fields to project.
-    /// genotype_fields : list[str], optional
-    ///     Names of the sample-specific genotype fields to project.
-    /// samples : list[str], optional
-    ///     Names of the samples to include in the genotype fields.
-    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
-    ///     How to project the genotype fields. If "sample", the columns
-    ///     correspond to the samples. If "field", the columns correspond to
-    ///     the genotype fields.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -386,25 +317,19 @@ impl PyVcfScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (region, index=None, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (region, index=None, columns=None, batch_size=1024, limit=None))]
     fn scan_query(
         &mut self,
         py: Python,
         region: String,
         index: Option<Py<PyAny>>,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<String>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
         let region = region
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
-        let genotype_by = resolve_genotype_by(genotype_by)?;
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
@@ -413,36 +338,14 @@ impl PyVcfScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader,
-                                region,
-                                index,
-                                fields,
-                                info_fields,
-                                genotype_fields,
-                                samples,
-                                genotype_by,
-                                batch_size,
-                                limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader,
-                                region,
-                                index,
-                                fields,
-                                info_fields,
-                                genotype_fields,
-                                samples,
-                                genotype_by,
-                                batch_size,
-                                limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -456,36 +359,14 @@ impl PyVcfScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader,
-                                region,
-                                index,
-                                fields,
-                                info_fields,
-                                genotype_fields,
-                                samples,
-                                genotype_by,
-                                batch_size,
-                                limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader,
-                                region,
-                                index,
-                                fields,
-                                info_fields,
-                                genotype_fields,
-                                samples,
-                                genotype_by,
-                                batch_size,
-                                limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -508,29 +389,69 @@ impl PyVcfScanner {
 /// compressed : bool, optional [default: True]
 ///     Whether the source is BGZF-compressed. If None, it is assumed to be
 ///     compressed.
+/// fields : list[str], optional
+///     Names of the fixed fields to project.
+/// info_fields : list[str], optional
+///     Names of the INFO fields to project.
+/// genotype_fields : list[str], optional
+///     Names of the sample-specific genotype fields to project.
+/// samples : list[str], optional
+///     Names of the samples to include in the genotype fields.
+/// genotype_by : Literal["sample", "field"], optional [default: "sample"]
+///     How to project the genotype fields. If "sample", the columns
+///     correspond to the samples. If "field", the columns correspond to
+///     the genotype fields.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBcfScanner {
     src: Py<PyAny>,
     reader: Reader,
     scanner: BcfScanner,
     compressed: bool,
+    fields: Option<Vec<String>>,
+    info_fields: Option<Vec<String>>,
+    genotype_fields: Option<Vec<String>>,
+    samples: Option<Vec<String>>,
+    genotype_by: Option<String>,
 }
 
 #[pymethods]
 impl PyBcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=true))]
-    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
+    #[pyo3(signature = (src, compressed=true, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        py: Python,
+        src: Py<PyAny>,
+        compressed: bool,
+        fields: Option<Vec<String>>,
+        info_fields: Option<Vec<String>>,
+        genotype_fields: Option<Vec<String>>,
+        samples: Option<Vec<String>>,
+        genotype_by: Option<String>,
+    ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bcf::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let scanner = BcfScanner::new(header);
+        let gt_by = resolve_genotype_by(genotype_by.clone())?;
+        let scanner = BcfScanner::new(
+            header,
+            fields.clone(),
+            info_fields.clone(),
+            genotype_fields.clone(),
+            samples.clone(),
+            gt_by,
+        )?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
+            fields,
+            info_fields,
+            genotype_fields,
+            samples,
+            genotype_by,
         })
     }
 
@@ -541,6 +462,21 @@ impl PyBcfScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
+        if let Some(ref fields) = self.fields {
+            kwargs.set_item("fields", fields)?;
+        }
+        if let Some(ref info_fields) = self.info_fields {
+            kwargs.set_item("info_fields", info_fields)?;
+        }
+        if let Some(ref genotype_fields) = self.genotype_fields {
+            kwargs.set_item("genotype_fields", genotype_fields)?;
+        }
+        if let Some(ref samples) = self.samples {
+            kwargs.set_item("samples", samples)?;
+        }
+        if let Some(ref genotype_by) = self.genotype_by {
+            kwargs.set_item("genotype_by", genotype_by)?;
+        }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -586,56 +522,19 @@ impl PyBcfScanner {
 
     /// Return the Arrow schema.
     ///
-    /// Parameters
-    /// ----------
-    /// fields : list[str], optional
-    ///    Names of the fixed fields to project.
-    /// info_fields : list[str], optional
-    ///    Names of the INFO fields to project.
-    /// genotype_fields : list[str], optional
-    ///    Names of the sample-specific genotype fields to project.
-    /// samples : list[str], optional
-    ///    Names of the samples to include in the genotype fields.
-    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
-    ///    How to project the genotype fields. If "sample", the columns
-    ///    correspond to the samples. If "field", the columns correspond to
-    ///    the genotype fields.
-    ///
     /// Returns
     /// -------
     /// arro3 Schema (pycapsule)
-    #[pyo3(signature = (fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None))]
-    fn schema(
-        &self,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<String>,
-    ) -> PyResult<PySchema> {
-        let genotype_by = resolve_genotype_by(genotype_by)?;
-        let schema =
-            self.scanner
-                .schema(fields, info_fields, genotype_fields, samples, genotype_by)?;
-        Ok(PySchema::new(Arc::new(schema)))
+    fn schema(&self) -> PySchema {
+        PySchema::new(Arc::new(self.scanner.schema().clone()))
     }
 
     /// Scan batches of records from the file.
     ///
     /// Parameters
     /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// info_fields : list[str], optional
-    ///     Names of the INFO fields to project.
-    /// genotype_fields : list[str], optional
-    ///     Names of the sample-specific genotype fields to project.
-    /// samples : list[str], optional
-    ///     Names of the samples to include in the genotype fields.
-    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
-    ///     How to project the genotype fields. If "sample", the columns
-    ///     correspond to the samples. If "field", the columns correspond to
-    ///     the genotype fields.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -646,33 +545,18 @@ impl PyBcfScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (columns=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<String>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let genotype_by = resolve_genotype_by(genotype_by)?;
         let reader = self.reader.clone();
         let fmt_reader = noodles::bcf::io::Reader::from(reader);
         let batch_reader = self
             .scanner
-            .scan(
-                fmt_reader,
-                fields,
-                info_fields,
-                genotype_fields,
-                samples,
-                genotype_by,
-                batch_size,
-                limit,
-            )
+            .scan(fmt_reader, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -685,18 +569,8 @@ impl PyBcfScanner {
     /// ----------
     /// byte_ranges : list[tuple[int, int]]
     ///     List of (start, end) byte position tuples to read from.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// info_fields : list[str], optional
-    ///     Names of the INFO fields to project.
-    /// genotype_fields : list[str], optional
-    ///     Names of the sample-specific genotype fields to project.
-    /// samples : list[str], optional
-    ///     Names of the samples to include in the genotype fields.
-    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
-    ///     How to project the genotype fields. If "sample", the columns
-    ///     correspond to the samples. If "field", the columns correspond to
-    ///     the genotype fields.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -707,35 +581,19 @@ impl PyBcfScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (byte_ranges, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (byte_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_byte_ranges(
         &mut self,
         byte_ranges: Vec<(u64, u64)>,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<String>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let genotype_by = resolve_genotype_by(genotype_by)?;
         let reader = self.reader.clone();
         let fmt_reader = noodles::bcf::io::Reader::from(reader);
         let batch_reader = self
             .scanner
-            .scan_byte_ranges(
-                fmt_reader,
-                byte_ranges,
-                fields,
-                info_fields,
-                genotype_fields,
-                samples,
-                genotype_by,
-                batch_size,
-                limit,
-            )
+            .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -754,18 +612,8 @@ impl PyBcfScanner {
     ///     be given as either a packed virtual position (int), or an unpacked
     ///     tuple of ints ``(c, u)`` specifying the compressed and uncompressed
     ///     offsets, respectively.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// info_fields : list[str], optional
-    ///     Names of the INFO fields to project.
-    /// genotype_fields : list[str], optional
-    ///     Names of the sample-specific genotype fields to project.
-    /// samples : list[str], optional
-    ///     Names of the samples to include in the genotype fields.
-    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
-    ///     How to project the genotype fields. If "sample", the columns
-    ///     correspond to the samples. If "field", the columns correspond to
-    ///     the genotype fields.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -776,20 +624,14 @@ impl PyBcfScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (vpos_ranges, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (vpos_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_virtual_ranges(
         &mut self,
         vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<String>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let genotype_by = resolve_genotype_by(genotype_by)?;
         let vpos_ranges = vpos_ranges
             .into_iter()
             .map(|(start, end)| Ok((start.to_virtual_position()?, end.to_virtual_position()?)))
@@ -799,17 +641,7 @@ impl PyBcfScanner {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_virtual_ranges(
-                        fmt_reader,
-                        vpos_ranges,
-                        fields,
-                        info_fields,
-                        genotype_fields,
-                        samples,
-                        genotype_by,
-                        batch_size,
-                        limit,
-                    )
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -817,17 +649,7 @@ impl PyBcfScanner {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_virtual_ranges(
-                        fmt_reader,
-                        vpos_ranges,
-                        fields,
-                        info_fields,
-                        genotype_fields,
-                        samples,
-                        genotype_by,
-                        batch_size,
-                        limit,
-                    )
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -849,18 +671,8 @@ impl PyBcfScanner {
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
     ///     from the same path with an additional extension.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// info_fields : list[str], optional
-    ///     Names of the INFO fields to project.
-    /// genotype_fields : list[str], optional
-    ///     Names of the sample-specific genotype fields to project.
-    /// samples : list[str], optional
-    ///     Names of the samples to include in the genotype fields.
-    /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
-    ///     How to project the genotype fields. If "sample", the columns
-    ///     correspond to the samples. If "field", the columns correspond to
-    ///     the genotype fields.
+    /// columns : list[str], optional
+    ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -871,25 +683,19 @@ impl PyBcfScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (region, index=None, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (region, index=None, columns=None, batch_size=1024, limit=None))]
     fn scan_query(
         &mut self,
         py: Python,
         region: String,
         index: Option<Py<PyAny>>,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
-        genotype_by: Option<String>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
         let region = region
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
-        let genotype_by = resolve_genotype_by(genotype_by)?;
 
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
@@ -899,36 +705,14 @@ impl PyBcfScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader,
-                                region,
-                                index,
-                                fields,
-                                info_fields,
-                                genotype_fields,
-                                samples,
-                                genotype_by,
-                                batch_size,
-                                limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader,
-                                region,
-                                index,
-                                fields,
-                                info_fields,
-                                genotype_fields,
-                                samples,
-                                genotype_by,
-                                batch_size,
-                                limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -942,36 +726,14 @@ impl PyBcfScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader,
-                                region,
-                                index,
-                                fields,
-                                info_fields,
-                                genotype_fields,
-                                samples,
-                                genotype_by,
-                                batch_size,
-                                limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader,
-                                region,
-                                index,
-                                fields,
-                                info_fields,
-                                genotype_fields,
-                                samples,
-                                genotype_by,
-                                batch_size,
-                                limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -1002,6 +764,10 @@ fn resolve_genotype_by(genotype_by: Option<String>) -> PyResult<Option<GenotypeB
 /// ----------
 /// src: str or file-like
 ///     The path to the VCF file or a file-like object.
+/// region : str, optional
+///     Genomic region in the format "chr:start-end".
+/// index : path or file-like, optional
+///     The index file to use for querying the region.
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 /// info_fields : list[str], optional
@@ -1039,9 +805,16 @@ pub fn read_vcf(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let mut fmt_reader = noodles::vcf::io::Reader::new(reader);
     let header = fmt_reader.read_header()?;
-    let scanner = VcfScanner::new(header);
     let reader = fmt_reader.into_inner();
     let genotype_by = resolve_genotype_by(genotype_by)?;
+    let scanner = VcfScanner::new(
+        header,
+        fields,
+        info_fields,
+        genotype_fields,
+        samples,
+        genotype_by,
+    )?;
 
     let ipc = if let Some(region) = region {
         let region = region
@@ -1052,35 +825,15 @@ pub fn read_vcf(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader,
-                    region,
-                    index.into_boxed(),
-                    fields,
-                    info_fields,
-                    genotype_fields,
-                    samples,
-                    genotype_by,
-                    None,
-                    None,
-                )?;
+                let batches =
+                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader,
-                    region,
-                    index.into_boxed(),
-                    fields,
-                    info_fields,
-                    genotype_fields,
-                    samples,
-                    genotype_by,
-                    None,
-                    None,
-                )?;
+                let batches =
+                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -1091,16 +844,7 @@ pub fn read_vcf(
         }
     } else {
         let fmt_reader = noodles::vcf::io::Reader::new(reader);
-        let batches = scanner.scan(
-            fmt_reader,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
-            genotype_by,
-            None,
-            None,
-        )?;
+        let batches = scanner.scan(fmt_reader, None, None, None)?;
         batches_to_ipc(batches)
     };
 
@@ -1113,6 +857,10 @@ pub fn read_vcf(
 /// ----------
 /// src: str or file-like
 ///     The path to the BCF file or a file-like object.
+/// region : str, optional
+///     Genomic region in the format "chr:start-end".
+/// index : path or file-like, optional
+///     The index file to use for querying the region.
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 /// info_fields : list[str], optional
@@ -1150,9 +898,16 @@ pub fn read_bcf(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let mut fmt_reader = noodles::bcf::io::Reader::from(reader);
     let header = fmt_reader.read_header()?;
-    let scanner = BcfScanner::new(header);
     let reader = fmt_reader.into_inner();
     let genotype_by = resolve_genotype_by(genotype_by)?;
+    let scanner = BcfScanner::new(
+        header,
+        fields,
+        info_fields,
+        genotype_fields,
+        samples,
+        genotype_by,
+    )?;
 
     let ipc = if let Some(region) = region {
         let region = region
@@ -1163,35 +918,15 @@ pub fn read_bcf(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader,
-                    region,
-                    index.into_boxed(),
-                    fields,
-                    info_fields,
-                    genotype_fields,
-                    samples,
-                    genotype_by,
-                    None,
-                    None,
-                )?;
+                let batches =
+                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader,
-                    region,
-                    index.into_boxed(),
-                    fields,
-                    info_fields,
-                    genotype_fields,
-                    samples,
-                    genotype_by,
-                    None,
-                    None,
-                )?;
+                let batches =
+                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -1202,16 +937,7 @@ pub fn read_bcf(
         }
     } else {
         let fmt_reader = noodles::bcf::io::Reader::from(reader);
-        let batches = scanner.scan(
-            fmt_reader,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
-            genotype_by,
-            None,
-            None,
-        )?;
+        let batches = scanner.scan(fmt_reader, None, None, None)?;
         batches_to_ipc(batches)
     };
 

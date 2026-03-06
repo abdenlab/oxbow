@@ -16,7 +16,7 @@ class TestPySamScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("qname", "rname", "mapq")),
+            Input(columns=["qname", "rname", "mapq"]),
         ],
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
@@ -29,7 +29,7 @@ class TestPySamScanner:
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("qname", "rname", "foo"))
+        input = Input(columns=["qname", "rname", "foo"])
         scanner = pickle.loads(
             pickle.dumps(pickle.loads(pickle.dumps(ox.PySamScanner("data/sample.sam"))))
         )
@@ -76,7 +76,7 @@ class TestPyBamScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("qname", "rname", "mapq")),
+            Input(columns=["qname", "rname", "mapq"]),
         ],
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
@@ -89,7 +89,7 @@ class TestPyBamScanner:
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("qname", "rname", "foo"))
+        input = Input(columns=["qname", "rname", "foo"])
         scanner = pickle.loads(
             pickle.dumps(pickle.loads(pickle.dumps(ox.PyBamScanner("data/sample.bam"))))
         )
@@ -151,17 +151,24 @@ class TestPyBcfScanner:
 
     @pytest.mark.parametrize(
         "input",
-        Input.permute(batch_size=[2], samples=[["HG00096", "HG00101", "HG00103"]]),
+        Input.permute(batch_size=[2]),
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyBcfScanner("data/sample.bcf")))
+        scanner = pickle.loads(
+            pickle.dumps(
+                ox.PyBcfScanner(
+                    "data/sample.bcf",
+                    samples=["HG00096", "HG00101", "HG00103"],
+                )
+            )
+        )
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("name", "sequence", "foo"))
+        input = Input(columns=["name", "sequence", "foo"])
         scanner = pickle.loads(pickle.dumps(ox.PyBcfScanner("data/sample.bcf")))
         error = None
         try:
@@ -177,11 +184,17 @@ class TestPyBcfScanner:
             region=["Y"],
             index=["data/sample.bcf.csi"],
             batch_size=[2],
-            samples=[["HG00096", "HG00101", "HG00103"]],
         ),
     )
     def test_scan_query(self, input, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyBcfScanner("data/sample.bcf")))
+        scanner = pickle.loads(
+            pickle.dumps(
+                ox.PyBcfScanner(
+                    "data/sample.bcf",
+                    samples=["HG00096", "HG00101", "HG00103"],
+                )
+            )
+        )
         schema = scanner.schema()
         stream = scanner.scan_query(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
@@ -200,15 +213,15 @@ class TestPyBcfScanner:
         assert batch.num_rows == 2
 
     def test_scan_virtual_ranges(self):
-        scanner = ox.PyBcfScanner("data/sample.bcf")
+        scanner = ox.PyBcfScanner("data/sample.bcf", samples=[])
         schema = scanner.schema()
         # unpacked virtual positions
-        stream = scanner.scan_virtual_ranges([((4713, 1341), (7244, 436))], samples=[])
+        stream = scanner.scan_virtual_ranges([((4713, 1341), (7244, 436))])
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         batch = reader.read_next_batch()
         assert batch.num_rows == 48
         # packed virtual positions
-        stream = scanner.scan_virtual_ranges([(308872509, 474743220)], samples=[])
+        stream = scanner.scan_virtual_ranges([(308872509, 474743220)])
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         batch2 = reader.read_next_batch()
         assert batch.to_pydict() == batch2.to_pydict()
@@ -301,11 +314,17 @@ class TestPyVcfScanner:
 
     @pytest.mark.parametrize(
         "input",
-        Input.permute(batch_size=[2], samples=[["NA12878i", "NA12891", "NA12892"]]),
+        Input.permute(batch_size=[2]),
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
         scanner = pickle.loads(
-            pickle.dumps(ox.PyVcfScanner("data/sample.vcf", compressed=False))
+            pickle.dumps(
+                ox.PyVcfScanner(
+                    "data/sample.vcf",
+                    compressed=False,
+                    samples=["NA12878i", "NA12891", "NA12892"],
+                )
+            )
         )
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
@@ -314,11 +333,17 @@ class TestPyVcfScanner:
 
     @pytest.mark.parametrize(
         "input",
-        Input.permute(batch_size=[2], samples=[["NA12878i", "NA12891", "NA12892"]]),
+        Input.permute(batch_size=[2]),
     )
     def test_scan_compressed(self, input, manifest: pytest_manifest.Manifest):
         scanner = pickle.loads(
-            pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True))
+            pickle.dumps(
+                ox.PyVcfScanner(
+                    "data/sample.vcf.gz",
+                    compressed=True,
+                    samples=["NA12878i", "NA12891", "NA12892"],
+                )
+            )
         )
         schema = scanner.schema()
         stream = scanner.scan(*input.args, **input.kwargs)
@@ -326,7 +351,7 @@ class TestPyVcfScanner:
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("name", "sequence", "foo"))
+        input = Input(columns=["name", "sequence", "foo"])
         scanner = pickle.loads(pickle.dumps(ox.PyVcfScanner("data/sample.vcf")))
         error = None
         try:
@@ -342,12 +367,17 @@ class TestPyVcfScanner:
             region=["X"],
             index=["data/sample.vcf.gz.csi", "data/sample.vcf.gz.tbi"],
             batch_size=[2],
-            samples=[["NA12878i", "NA12891", "NA12892"]],
         ),
     )
     def test_scan_query(self, input, manifest: pytest_manifest.Manifest):
         scanner = pickle.loads(
-            pickle.dumps(ox.PyVcfScanner("data/sample.vcf.gz", compressed=True))
+            pickle.dumps(
+                ox.PyVcfScanner(
+                    "data/sample.vcf.gz",
+                    compressed=True,
+                    samples=["NA12878i", "NA12891", "NA12892"],
+                )
+            )
         )
         schema = scanner.schema()
         stream = scanner.scan_query(*input.args, **input.kwargs)
@@ -391,7 +421,7 @@ class TestPyFastaScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("name", "sequence")),
+            Input(columns=["name", "sequence"]),
         ],
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
@@ -419,7 +449,7 @@ class TestPyFastaScanner:
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("name", "sequence", "foo"))
+        input = Input(columns=["name", "sequence", "foo"])
         scanner = pickle.loads(pickle.dumps(ox.PyFastaScanner("data/sample.fasta")))
         error = None
         try:
@@ -442,7 +472,7 @@ class TestPyFastqScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("name", "sequence")),
+            Input(columns=["name", "sequence"]),
         ],
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
@@ -453,7 +483,7 @@ class TestPyFastqScanner:
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("name", "sequence", "foo"))
+        input = Input(columns=["name", "sequence", "foo"])
         scanner = pickle.loads(pickle.dumps(ox.PyFastqScanner("data/sample.fastq")))
         error = None
         try:
@@ -497,7 +527,7 @@ class TestPyBedScanner:
             *Input.permute(batch_size=[1, 2, 3, 4], bed_schema=["bed3"]),
             *Input.permute(
                 batch_size=[2],
-                fields=[
+                columns=[
                     None,
                     ("chrom", "start", "end"),
                 ],
@@ -528,7 +558,7 @@ class TestPyBedScanner:
         assert manifest[key] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("nonexistent-field",))
+        input = Input(columns=("nonexistent-field",))
         error = None
         try:
             scanner = pickle.loads(
@@ -561,7 +591,7 @@ class TestPyBedScanner:
         schema = scanner.schema()
         assert "rest" in [field.name for field in schema]
 
-        reader = scanner.scan(fields=("start", "rest", "end"))
+        reader = scanner.scan(columns=("start", "rest", "end"))
         batch = reader.read_next_batch()
         assert "rest" in batch.schema.names
 
@@ -597,7 +627,7 @@ class TestPyBigBedScanner:
             *Input.permute(batch_size=[1, 2, 3, 4], bed_schema=["bed3"]),
             *Input.permute(
                 batch_size=[2],
-                fields=[
+                columns=[
                     None,
                     ("chrom", "start", "end"),
                     ("chrom", "start", "end", "rest"),
@@ -635,7 +665,7 @@ class TestPyBigBedScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("chrom", "start", "end", "chromStarts"), batch_size=2),
+            Input(columns=("chrom", "start", "end", "chromStarts"), batch_size=2),
         ],
     )
     def test_scan_with_autosql(self, input, manifest: pytest_manifest.Manifest):
@@ -658,7 +688,7 @@ class TestPyBigBedScanner:
             assert manifest[str(input)] == batch.to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("nonexistent-field",))
+        input = Input(columns=("nonexistent-field",))
         error = None
         try:
             scanner = pickle.loads(pickle.dumps(ox.PyBigBedScanner("data/sample.bb")))
@@ -686,7 +716,7 @@ class TestPyBigWigScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("chrom", "start", "end"), batch_size=2),
+            Input(columns=("chrom", "start", "end"), batch_size=2),
         ],
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
@@ -697,7 +727,7 @@ class TestPyBigWigScanner:
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
     def test_scan_invalid_field(self, manifest):
-        input = Input(fields=("nonexistent-field",))
+        input = Input(columns=("nonexistent-field",))
         error = None
         try:
             scanner = pickle.loads(pickle.dumps(ox.PyBigWigScanner("data/sample.bw")))
@@ -725,7 +755,7 @@ class TestPyGffScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("seqid", "start", "end")),
+            Input(columns=["seqid", "start", "end"]),
         ],
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
@@ -742,14 +772,16 @@ class TestPyGffScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("seqid", "start", "end")),
+            Input(columns=["seqid", "start", "end"]),
         ],
     )
     def test_scan_with_attributes(self, input, manifest: pytest_manifest.Manifest):
-        scanner = pickle.loads(pickle.dumps(ox.PyGffScanner("data/sample.gff")))
-        attr_defs = scanner.attribute_defs(1024)
-        schema = scanner.schema(attribute_defs=attr_defs)
-        stream = scanner.scan(*input.args, attribute_defs=attr_defs, **input.kwargs)
+        attr_defs = ox.PyGffScanner("data/sample.gff").attribute_defs(1024)
+        scanner = pickle.loads(
+            pickle.dumps(ox.PyGffScanner("data/sample.gff", attribute_defs=attr_defs))
+        )
+        schema = scanner.schema()
+        stream = scanner.scan(*input.args, **input.kwargs)
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         assert manifest[str(input)] == reader.read_next_batch().to_pydict()
 
@@ -760,7 +792,7 @@ class TestPyGffScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("seqid", "start", "end")),
+            Input(columns=["seqid", "start", "end"]),
         ],
     )
     def test_scan_sorted(self, input, manifest: pytest_manifest.Manifest):
@@ -777,7 +809,7 @@ class TestPyGffScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("seqid", "start", "end")),
+            Input(columns=["seqid", "start", "end"]),
         ],
     )
     def test_scan_sorted_compressed(self, input, manifest: pytest_manifest.Manifest):
@@ -794,7 +826,7 @@ class TestPyGffScanner:
         [
             *Input.permute(
                 batch_size=[1, 2, 3, 4],
-                fields=[None, ("seqid", "start", "end")],
+                columns=[None, ["seqid", "start", "end"]],
                 region=["chr1", "chr2"],
             ),
             Input(region="missing"),
@@ -859,7 +891,7 @@ class TestPyGtfScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("seqid", "start", "end")),
+            Input(columns=["seqid", "start", "end"]),
         ],
     )
     def test_scan(self, input, manifest: pytest_manifest.Manifest):
@@ -876,7 +908,7 @@ class TestPyGtfScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("seqid", "start", "end")),
+            Input(columns=["seqid", "start", "end"]),
         ],
     )
     def test_scan_sorted(self, input, manifest: pytest_manifest.Manifest):
@@ -893,7 +925,7 @@ class TestPyGtfScanner:
             Input(batch_size=2),
             Input(batch_size=3),
             Input(batch_size=4),
-            Input(fields=("seqid", "start", "end")),
+            Input(columns=["seqid", "start", "end"]),
         ],
     )
     def test_scan_sorted_compressed(self, input, manifest: pytest_manifest.Manifest):
@@ -910,7 +942,7 @@ class TestPyGtfScanner:
         [
             *Input.permute(
                 batch_size=[1, 2, 3, 4],
-                fields=[None, ("seqid", "start", "end")],
+                columns=[None, ["seqid", "start", "end"]],
                 region=["chr1", "chr12"],
             ),
             Input(region="missing"),
@@ -940,17 +972,19 @@ class TestPyGtfScanner:
             pass
         assert manifest[str(input)] == result
 
-    @pytest.mark.parametrize(
-        "input",
-        [
-            Input(),
-            Input(fields=("seqid", "start", "end")),
-        ],
-    )
-    def test_schema(self, input, manifest: pytest_manifest.Manifest):
+    def test_schema(self, manifest: pytest_manifest.Manifest):
         scanner = pickle.loads(pickle.dumps(ox.PyGtfScanner("data/sample.gtf")))
-        schema = scanner.schema(**input.kwargs)
-        assert manifest[f"schema({str(input)})"] == schema.names
+        schema = scanner.schema()
+        assert manifest == schema.names
+
+    def test_schema_with_fields(self, manifest: pytest_manifest.Manifest):
+        scanner = pickle.loads(
+            pickle.dumps(
+                ox.PyGtfScanner("data/sample.gtf", fields=["seqid", "start", "end"])
+            )
+        )
+        schema = scanner.schema()
+        assert manifest == schema.names
 
     def test_pickle(self):
         scanner = pickle.loads(pickle.dumps(ox.PyGtfScanner("data/sample.gtf")))

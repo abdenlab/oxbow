@@ -1,7 +1,7 @@
 use std::io::{self, BufRead, Read, Seek};
 
 use arrow::array::RecordBatchReader;
-use arrow::datatypes::Schema;
+use arrow::datatypes::{Schema, SchemaRef};
 use noodles::bgzf::VirtualPosition;
 use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 use noodles::csi::BinningIndex;
@@ -14,6 +14,9 @@ use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 
 /// A BED scanner.
 ///
+/// Schema parameters (fields) are declared at construction time. Scan methods
+/// accept only column projection, batch size, and limit.
+///
 /// # Examples
 ///
 /// ```no_run
@@ -25,28 +28,75 @@ use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 /// let mut fmt_reader = noodles::bed::io::Reader::new(inner);
 ///
 /// let bed_schema = "bed6+3".parse().unwrap();
-/// let scanner = Scanner::new(bed_schema);
+/// let scanner = Scanner::new(bed_schema, None).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000)).unwrap();
 /// ```
 pub struct Scanner {
     bed_schema: BedSchema,
+    fields: Option<Vec<String>>,
+    schema: SchemaRef,
 }
 
 impl Scanner {
-    /// Creates a BED scanner from a BED schema specifier.
-    pub fn new(bed_schema: BedSchema) -> Self {
-        Self { bed_schema }
+    /// Creates a BED scanner from a BED schema and optional field names.
+    ///
+    /// The schema is validated and cached at construction time.
+    pub fn new(bed_schema: BedSchema, fields: Option<Vec<String>>) -> io::Result<Self> {
+        let batch_builder = BatchBuilder::new(fields.clone(), &bed_schema, 0)?;
+        let schema = batch_builder.schema();
+        Ok(Self {
+            bed_schema,
+            fields,
+            schema,
+        })
     }
 
-    /// Returns the standard field names.
+    /// Returns the Arrow schema.
+    pub fn schema(&self) -> &Schema {
+        &self.schema
+    }
+
+    /// Returns the BED field names from the schema.
     pub fn field_names(&self) -> Vec<String> {
         self.bed_schema.field_names()
     }
 
-    /// Returns the Arrow schema.
-    pub fn schema(&self, fields: Option<Vec<String>>) -> io::Result<Schema> {
-        let batch_builder = BatchBuilder::new(fields, &self.bed_schema, 0)?;
-        Ok(batch_builder.schema().as_ref().clone())
+    /// Builds a BatchBuilder applying column projection.
+    ///
+    /// Returns an error if any requested column is not in the declared schema.
+    fn build_batch_builder(
+        &self,
+        columns: Option<Vec<String>>,
+        capacity: usize,
+    ) -> io::Result<BatchBuilder> {
+        match columns {
+            None => BatchBuilder::new(self.fields.clone(), &self.bed_schema, capacity),
+            Some(cols) => {
+                let schema_names: Vec<&str> = self
+                    .schema
+                    .fields()
+                    .iter()
+                    .map(|f| f.name().as_str())
+                    .collect();
+
+                let unknown: Vec<&str> = cols
+                    .iter()
+                    .filter(|c| !schema_names.iter().any(|s| s.eq_ignore_ascii_case(c)))
+                    .map(|c| c.as_str())
+                    .collect();
+                if !unknown.is_empty() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!(
+                            "Unknown columns: {:?}. Available columns: {:?}",
+                            unknown, schema_names
+                        ),
+                    ));
+                }
+
+                BatchBuilder::new(Some(cols), &self.bed_schema, capacity)
+            }
+        }
     }
 }
 
@@ -58,12 +108,12 @@ impl Scanner {
     pub fn scan<R: BufRead>(
         &self,
         fmt_reader: noodles::bed::io::Reader<3, R>,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
-        let batch_builder = BatchBuilder::new(fields, &self.bed_schema, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
         Ok(batch_iter)
     }
@@ -80,7 +130,7 @@ impl Scanner {
         fmt_reader: noodles::bed::io::Reader<3, noodles::bgzf::io::Reader<R>>,
         region: noodles::core::Region,
         index: impl BinningIndex,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
@@ -88,7 +138,7 @@ impl Scanner {
         let reference_sequence_name = region.name().to_string();
         let interval = region.interval();
 
-        let batch_builder = BatchBuilder::new(fields, &self.bed_schema, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
         let Some(header) = index.header() else {
             return Err(io::Error::new(
@@ -124,12 +174,12 @@ impl Scanner {
         &self,
         fmt_reader: noodles::bed::io::Reader<3, R>,
         byte_ranges: Vec<(u64, u64)>,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
-        let batch_builder = BatchBuilder::new(fields, &self.bed_schema, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
         let inner_reader = fmt_reader.into_inner();
         let range_reader = ByteRangeReader::new(inner_reader, byte_ranges);
@@ -148,12 +198,12 @@ impl Scanner {
         &self,
         fmt_reader: noodles::bed::io::Reader<3, noodles::bgzf::io::Reader<R>>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
-        fields: Option<Vec<String>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
-        let batch_builder = BatchBuilder::new(fields, &self.bed_schema, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
         // Convert virtual position tuples to Chunks
         let chunks: Vec<Chunk> = vpos_ranges

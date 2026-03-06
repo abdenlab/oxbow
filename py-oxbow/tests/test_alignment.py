@@ -1,5 +1,6 @@
 import cloudpickle
 import fsspec
+import pyarrow as pa
 import pytest
 from pytest_manifest import Manifest
 from utils import Input
@@ -55,7 +56,10 @@ class TestSamFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.SamFile("data/sample.sam", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 
@@ -63,14 +67,14 @@ class TestSamFile:
 
     def test_input_encodings(self):
         file = ox.SamFile("data/sample.sam", compressed=False, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(OSError):
             file = ox.SamFile("data/sample.sam", compressed=True, batch_size=3)
             next((file.batches()))
 
         file = ox.SamFile("data/sample.sam.gz", compressed=True, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(FileNotFoundError):
             file = ox.SamFile("doesnotexist.sam", compressed=False, batch_size=3)
@@ -133,7 +137,10 @@ class TestBamFile:
             "data/sample.bam", fields=fields, compressed=True
         ).batches()
         try:
-            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 
@@ -164,14 +171,14 @@ class TestBamFile:
 
     def test_input_encodings(self):
         file = ox.BamFile("data/sample.bam", compressed=True, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.BamFile("data/sample.bam", compressed=False, batch_size=3)
             next((file.batches()))
 
         file = ox.BamFile("data/sample.ubam", compressed=False, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.BamFile("data/sample.ubam", compressed=True, batch_size=3)
@@ -236,7 +243,10 @@ class TestCramFile:
             "data/sample.cram", fields=fields, compressed=True
         ).batches()
         try:
-            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 
@@ -287,3 +297,28 @@ class TestCramFile:
             regions=regions,
         )
         file.pl()
+
+    def test_with_reference(self):
+        file = ox.CramFile(
+            "data/sample-ref.cram",
+            reference="data/sample-ref.fa",
+            reference_index="data/sample-ref.fa.fai",
+        )
+        batch = pa.record_batch(next(file.batches()))
+        assert batch.num_rows == 5
+        # Verify bases are resolved (not Ns)
+        seqs = batch.column("seq").to_pylist()
+        assert all("N" not in s for s in seqs if s is not None)
+
+    def test_with_reference_and_regions(self):
+        file = ox.CramFile(
+            "data/sample-ref.cram",
+            reference="data/sample-ref.fa",
+            reference_index="data/sample-ref.fa.fai",
+            index="data/sample-ref.cram.crai",
+            regions=["chr1"],
+        )
+        batch = pa.record_batch(next(file.batches()))
+        assert batch.num_rows == 3
+        rnames = batch.column("rname").to_pylist()
+        assert all(r == "chr1" for r in rnames)

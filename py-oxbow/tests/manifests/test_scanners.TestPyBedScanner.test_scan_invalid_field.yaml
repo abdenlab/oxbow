@@ -1,1 +1,2 @@
-'Invalid field name: nonexistent-field'
+'Unknown columns: ["nonexistent-field"]. Available columns: ["chrom", "start", "end",
+    "name", "score", "strand", "thickStart", "thickEnd", "itemRgb"]'

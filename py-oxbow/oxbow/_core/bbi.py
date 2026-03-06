@@ -5,14 +5,12 @@ DataSource classes for BBI (BigWig and BigBed) formats and their zoom levels.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Callable, Generator
+from typing import IO, Callable
 
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
-
-import pyarrow as pa
 
 from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
 from oxbow.oxbow import (
@@ -23,41 +21,8 @@ from oxbow.oxbow import (
 
 
 class BbiFile(DataSource):
-    def _batchreader_builder(
-        self,
-        region: str | None = None,
-    ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
-        def builder(columns, batch_size):
-            scanner = self.scanner()
-            field_names = scanner.field_names()
-            scan_kwargs = self._schema_kwargs.copy()
-
-            if columns is not None:
-                scan_kwargs["fields"] = [col for col in columns if col in field_names]
-
-            if region is not None:
-                scan_fn = scanner.scan_query
-                scan_kwargs["region"] = region
-            else:
-                scan_fn = scanner.scan
-
-            stream = scan_fn(**scan_kwargs, batch_size=batch_size)
-            return pa.RecordBatchReader.from_stream(
-                data=stream,
-                schema=pa.schema(stream.schema),
-            )
-
-        return builder
-
-    @property
-    def _batchreader_builders(
-        self,
-    ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
-        if self._regions:
-            for region in self._regions:
-                yield self._batchreader_builder(region)
-        else:
-            yield self._batchreader_builder()
+    def _scan_query(self, scanner, region, columns, batch_size):
+        return scanner.scan_query(region=region, columns=columns, batch_size=batch_size)
 
     @property
     def chrom_names(self) -> list[str]:
@@ -118,8 +83,7 @@ class BigBedFile(BbiFile):
             regions = [regions]
         self._regions = regions
 
-        self._schema_kwargs = dict(fields=fields)
-        self._scanner_kwargs = dict(schema=schema)
+        self._scanner_kwargs = dict(schema=schema, fields=fields)
 
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
@@ -127,7 +91,6 @@ class BigBedFile(BbiFile):
             regions=regions,
             batch_size=self._batch_size,
             **self._scanner_kwargs,
-            **self._schema_kwargs,
         )
 
 
@@ -148,8 +111,7 @@ class BigWigFile(BbiFile):
             regions = [regions]
         self._regions = regions
 
-        self._schema_kwargs = dict(fields=fields)
-        self._scanner_kwargs = {}
+        self._scanner_kwargs = dict(fields=fields)
 
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
@@ -157,7 +119,6 @@ class BigWigFile(BbiFile):
             regions=regions,
             batch_size=self._batch_size,
             **self._scanner_kwargs,
-            **self._schema_kwargs,
         )
 
 
@@ -165,44 +126,10 @@ class BbiZoom(DataSource):
     _scanner_type = PyBBIZoomScanner
 
     def scanner(self) -> PyBBIZoomScanner:
-        return self._base.scanner().get_zoom(self._resolution)
+        return self._base.scanner().get_zoom(self._resolution, fields=self._fields)
 
-    def _batchreader_builder(
-        self,
-        scan_fn: Callable,
-        field_names: list[str],
-        region: str | None = None,
-    ) -> Callable[[list[str] | None, int], pa.RecordBatchReader]:
-        def builder(columns, batch_size):
-            scan_kwargs = self._schema_kwargs.copy()
-
-            if columns is not None:
-                scan_kwargs["fields"] = [col for col in columns if col in field_names]
-
-            if region is not None:
-                scan_kwargs["region"] = region
-
-            stream = scan_fn(**scan_kwargs, batch_size=batch_size)
-            return pa.RecordBatchReader.from_stream(
-                data=stream,
-                schema=pa.schema(stream.schema),
-            )
-
-        return builder
-
-    @property
-    def _batchreader_builders(
-        self,
-    ) -> Generator[Callable[[list[str] | None, int], pa.RecordBatchReader]]:
-        if self._regions:
-            for region in self._regions:
-                scanner = self.scanner()
-                yield self._batchreader_builder(
-                    scanner.scan_query, scanner.field_names(), region
-                )
-        else:
-            scanner = self.scanner()
-            yield self._batchreader_builder(scanner.scan, scanner.field_names())
+    def _scan_query(self, scanner, region, columns, batch_size):
+        return scanner.scan_query(region=region, columns=columns, batch_size=batch_size)
 
     def __init__(
         self,
@@ -220,15 +147,16 @@ class BbiZoom(DataSource):
         self._base = base
         self._resolution = resolution
         self._regions = regions
-        self._schema_kwargs = dict(fields=fields)
+        self._fields = fields
+        self._scanner_kwargs = {}
 
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
             self._base,
             self._resolution,
+            fields=self._fields,
             regions=regions,
             batch_size=self._batch_size,
-            **self._schema_kwargs,
         )
 
 

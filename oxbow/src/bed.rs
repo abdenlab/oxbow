@@ -3,4 +3,4 @@ pub mod format;
 pub mod model;
 
 pub use format::bed::Scanner as BedScanner;
-pub use model::BedSchema;
+pub use model::{BedSchema, FieldDef, FieldType};

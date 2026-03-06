@@ -15,6 +15,88 @@ batch_size=2, bed_schema="bed3":
     start:
     - 14797911
     - 17878425
+batch_size=2, columns=("chrom", "start", "end"), bed_schema="bed3":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, columns=("chrom", "start", "end"), bed_schema="bed3+3":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, columns=("chrom", "start", "end"), bed_schema="bed3+6":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, columns=("chrom", "start", "end"), bed_schema="bed6":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, columns=("chrom", "start", "end"), bed_schema="bed9":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, columns=("chrom", "start", "end", "rest"), bed_schema="bed3": 'Unknown
+    columns: ["rest"]. Available columns: ["chrom", "start", "end"]'
+batch_size=2, columns=("chrom", "start", "end", "rest"), bed_schema="bed3+3": 'Unknown
+    columns: ["rest"]. Available columns: ["chrom", "start", "end", "BED3+1", "BED3+2",
+    "BED3+3"]'
+batch_size=2, columns=("chrom", "start", "end", "rest"), bed_schema="bed3+6": 'Unknown
+    columns: ["rest"]. Available columns: ["chrom", "start", "end", "BED3+1", "BED3+2",
+    "BED3+3", "BED3+4", "BED3+5", "BED3+6"]'
+batch_size=2, columns=("chrom", "start", "end", "rest"), bed_schema="bed6": 'Unknown
+    columns: ["rest"]. Available columns: ["chrom", "start", "end", "name", "score",
+    "strand"]'
+batch_size=2, columns=("chrom", "start", "end", "rest"), bed_schema="bed9": 'Unknown
+    columns: ["rest"]. Available columns: ["chrom", "start", "end", "name", "score",
+    "strand", "thickStart", "thickEnd", "itemRgb"]'
+batch_size=2, columns=None, bed_schema="bed3":
+    chrom:
+    - chr21
+    - chr21
+    end:
+    - 14798156
+    - 17878829
+    start:
+    - 14797911
+    - 17878425
+batch_size=2, columns=None, bed_schema="bed3+3": 'Invalid argument error: all columns
+    in a record batch must have the same length'
+batch_size=2, columns=None, bed_schema="bed3+6": 'Invalid argument error: all columns
+    in a record batch must have the same length'
+batch_size=2, columns=None, bed_schema="bed6": 'Invalid argument error: all columns
+    in a record batch must have the same length'
+batch_size=2, columns=None, bed_schema="bed9": 'Invalid argument error: all columns
+    in a record batch must have the same length'
 batch_size=2, fields=("chrom", "start", "end"), bed_schema="bed3":
     chrom:
     - chr21

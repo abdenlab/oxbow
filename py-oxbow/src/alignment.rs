@@ -28,29 +28,43 @@ use oxbow::util::index::IndexType;
 ///     The path to the SAM file or a file-like object.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed.
+/// fields : list[str], optional
+///     Names of the fixed fields to include in the schema.
+/// tag_defs : list[tuple[str, str]], optional
+///     Definitions of tag fields to include in the schema.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PySamScanner {
     src: Py<PyAny>,
     reader: Reader,
     scanner: SamScanner,
     compressed: bool,
+    fields: Option<Vec<String>>,
+    tag_defs: Option<Vec<(String, String)>>,
 }
 
 #[pymethods]
 impl PySamScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false))]
-    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
+    #[pyo3(signature = (src, compressed=false, fields=None, tag_defs=None))]
+    fn new(
+        py: Python,
+        src: Py<PyAny>,
+        compressed: bool,
+        fields: Option<Vec<String>>,
+        tag_defs: Option<Vec<(String, String)>>,
+    ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::sam::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let scanner = SamScanner::new(header);
+        let scanner = SamScanner::new(header, fields.clone(), tag_defs.clone())?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
+            fields,
+            tag_defs,
         })
     }
 
@@ -59,8 +73,15 @@ impl PySamScanner {
     }
 
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
-        let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
+        let args = (self.src.clone_ref(py),);
         let kwargs = PyDict::new(py);
+        kwargs.set_item("compressed", self.compressed)?;
+        if let Some(ref fields) = self.fields {
+            kwargs.set_item("fields", fields)?;
+        }
+        if let Some(ref tag_defs) = self.tag_defs {
+            kwargs.set_item("tag_defs", tag_defs)?;
+        }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -83,7 +104,7 @@ impl PySamScanner {
     ///
     /// The reader stream is reset to its original position after scanning.
     ///
-    /// Parameters
+    /// Parametersuv
     /// ----------
     /// scan_rows : int, optional [default: 1024]
     ///    The number of records to scan. If None, all records are scanned.
@@ -100,21 +121,21 @@ impl PySamScanner {
             Reader::BgzfFile(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
-                let defs = self.scanner.tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = SamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
-                let defs = self.scanner.tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = SamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             _ => {
                 let pos = reader.stream_position()?;
                 let mut fmt_reader = noodles::sam::io::Reader::new(reader);
-                let defs = self.scanner.tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = SamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
                 fmt_reader
                     .into_inner()
                     .seek(std::io::SeekFrom::Start(pos))?;
@@ -125,34 +146,19 @@ impl PySamScanner {
 
     /// Return the Arrow schema.
     ///
-    /// Parameters
-    /// ----------
-    /// fields : list[str], optional
-    ///    Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///    Definitions of tag fields to project.
-    ///
     /// Returns
     /// -------
     /// arro3 Schema (pycapsule)
-    #[pyo3(signature = (fields=None, tag_defs=None))]
-    fn schema(
-        &self,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
-    ) -> PyResult<PySchema> {
-        let schema = self.scanner.schema(fields, tag_defs)?;
-        Ok(PySchema::new(Arc::new(schema)))
+    fn schema(&self) -> PySchema {
+        PySchema::new(Arc::new(self.scanner.schema().clone()))
     }
 
     /// Scan batches of records from the file.
     ///
     /// Parameters
     /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -163,11 +169,10 @@ impl PySamScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (columns=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -175,7 +180,7 @@ impl PySamScanner {
         let fmt_reader = noodles::sam::io::Reader::new(reader);
         let batch_reader = self
             .scanner
-            .scan(fmt_reader, fields, tag_defs, batch_size, limit)
+            .scan(fmt_reader, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -188,10 +193,8 @@ impl PySamScanner {
     /// ----------
     /// byte_ranges : list[tuple[int, int]]
     ///     List of (start, end) byte position tuples to read from.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -202,12 +205,11 @@ impl PySamScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (byte_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (byte_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_byte_ranges(
         &mut self,
         byte_ranges: Vec<(u64, u64)>,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -215,7 +217,7 @@ impl PySamScanner {
         let fmt_reader = noodles::sam::io::Reader::new(reader);
         let batch_reader = self
             .scanner
-            .scan_byte_ranges(fmt_reader, byte_ranges, fields, tag_defs, batch_size, limit)
+            .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -234,10 +236,8 @@ impl PySamScanner {
     ///     be given as either a packed virtual position (int), or an unpacked
     ///     tuple of ints ``(c, u)`` specifying the compressed and uncompressed
     ///     offsets, respectively.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -248,12 +248,11 @@ impl PySamScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (vpos_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (vpos_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_virtual_ranges(
         &mut self,
         vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -266,14 +265,7 @@ impl PySamScanner {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_virtual_ranges(
-                        fmt_reader,
-                        vpos_ranges,
-                        fields,
-                        tag_defs,
-                        batch_size,
-                        limit,
-                    )
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -281,14 +273,7 @@ impl PySamScanner {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_virtual_ranges(
-                        fmt_reader,
-                        vpos_ranges,
-                        fields,
-                        tag_defs,
-                        batch_size,
-                        limit,
-                    )
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -310,10 +295,8 @@ impl PySamScanner {
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
     ///     from the same path with an additional extension.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -324,15 +307,13 @@ impl PySamScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (region, index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (region, index=None, columns=None, batch_size=1024, limit=None))]
     fn scan_query(
         &mut self,
         py: Python,
         region: String,
         index: Option<Py<PyAny>>,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -348,18 +329,14 @@ impl PySamScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -373,18 +350,14 @@ impl PySamScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -407,10 +380,8 @@ impl PySamScanner {
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
     ///     from the same path with an additional extension.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -421,13 +392,12 @@ impl PySamScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (index=None, columns=None, batch_size=1024, limit=None))]
     fn scan_unmapped(
         &mut self,
         py: Python,
         index: Option<Py<PyAny>>,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -439,14 +409,14 @@ impl PySamScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
+                            .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
+                            .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -460,14 +430,14 @@ impl PySamScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
+                            .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
+                            .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -489,29 +459,43 @@ impl PySamScanner {
 ///     The path to the BAM file or a file-like object.
 /// compressed : bool, optional [default: True]
 ///     Whether the source is BGZF-compressed.
+/// fields : list[str], optional
+///     Names of the fixed fields to include in the schema.
+/// tag_defs : list[tuple[str, str]], optional
+///     Definitions of tag fields to include in the schema.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBamScanner {
     src: Py<PyAny>,
     reader: Reader,
     scanner: BamScanner,
     compressed: bool,
+    fields: Option<Vec<String>>,
+    tag_defs: Option<Vec<(String, String)>>,
 }
 
 #[pymethods]
 impl PyBamScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=true))]
-    fn new(py: Python, src: Py<PyAny>, compressed: bool) -> PyResult<Self> {
+    #[pyo3(signature = (src, compressed=true, fields=None, tag_defs=None))]
+    fn new(
+        py: Python,
+        src: Py<PyAny>,
+        compressed: bool,
+        fields: Option<Vec<String>>,
+        tag_defs: Option<Vec<(String, String)>>,
+    ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bam::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let scanner = BamScanner::new(header);
+        let scanner = BamScanner::new(header, fields.clone(), tag_defs.clone())?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
+            fields,
+            tag_defs,
         })
     }
 
@@ -520,8 +504,15 @@ impl PyBamScanner {
     }
 
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
-        let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
+        let args = (self.src.clone_ref(py),);
         let kwargs = PyDict::new(py);
+        kwargs.set_item("compressed", self.compressed)?;
+        if let Some(ref fields) = self.fields {
+            kwargs.set_item("fields", fields)?;
+        }
+        if let Some(ref tag_defs) = self.tag_defs {
+            kwargs.set_item("tag_defs", tag_defs)?;
+        }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -542,24 +533,11 @@ impl PyBamScanner {
 
     /// Return the Arrow schema.
     ///
-    /// Parameters
-    /// ----------
-    /// fields : list[str], optional
-    ///    Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///    Definitions of tag fields to project.
-    ///
     /// Returns
     /// -------
     /// arro3 Schema (pycapsule)
-    #[pyo3(signature = (fields=None, tag_defs=None))]
-    fn schema(
-        &self,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
-    ) -> PyResult<PySchema> {
-        let schema = self.scanner.schema(fields, tag_defs)?;
-        Ok(PySchema::new(Arc::new(schema)))
+    fn schema(&self) -> PySchema {
+        PySchema::new(Arc::new(self.scanner.schema().clone()))
     }
 
     /// Discover tag definitions by sniffing `scan_rows` records.
@@ -583,21 +561,21 @@ impl PyBamScanner {
             Reader::BgzfFile(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
-                let defs = self.scanner.tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = BamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
-                let defs = self.scanner.tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = BamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             _ => {
                 let pos = reader.stream_position()?;
                 let mut fmt_reader = noodles::bam::io::Reader::from(reader);
-                let defs = self.scanner.tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = BamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
                 fmt_reader
                     .into_inner()
                     .seek(std::io::SeekFrom::Start(pos))?;
@@ -610,10 +588,8 @@ impl PyBamScanner {
     ///
     /// Parameters
     /// ----------
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -624,11 +600,10 @@ impl PyBamScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (columns=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -636,7 +611,7 @@ impl PyBamScanner {
         let fmt_reader = noodles::bam::io::Reader::from(reader);
         let batch_reader = self
             .scanner
-            .scan(fmt_reader, fields, tag_defs, batch_size, limit)
+            .scan(fmt_reader, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -649,10 +624,8 @@ impl PyBamScanner {
     /// ----------
     /// byte_ranges : list[tuple[int, int]]
     ///     List of (start, end) byte position tuples to read from.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -663,12 +636,11 @@ impl PyBamScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (byte_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (byte_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_byte_ranges(
         &mut self,
         byte_ranges: Vec<(u64, u64)>,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -676,7 +648,7 @@ impl PyBamScanner {
         let fmt_reader = noodles::bam::io::Reader::from(reader);
         let batch_reader = self
             .scanner
-            .scan_byte_ranges(fmt_reader, byte_ranges, fields, tag_defs, batch_size, limit)
+            .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
             .map_err(PyErr::new::<PyValueError, _>)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
@@ -695,10 +667,8 @@ impl PyBamScanner {
     ///     be given as either a packed virtual position (int), or an unpacked
     ///     tuple of ints ``(c, u)`` specifying the compressed and uncompressed
     ///     offsets, respectively.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -709,12 +679,11 @@ impl PyBamScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (vpos_ranges, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (vpos_ranges, columns=None, batch_size=1024, limit=None))]
     fn scan_virtual_ranges(
         &mut self,
         vpos_ranges: Vec<(PyVirtualPosition, PyVirtualPosition)>,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -727,14 +696,7 @@ impl PyBamScanner {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_virtual_ranges(
-                        fmt_reader,
-                        vpos_ranges,
-                        fields,
-                        tag_defs,
-                        batch_size,
-                        limit,
-                    )
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -742,14 +704,7 @@ impl PyBamScanner {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
                 let batch_reader = self
                     .scanner
-                    .scan_virtual_ranges(
-                        fmt_reader,
-                        vpos_ranges,
-                        fields,
-                        tag_defs,
-                        batch_size,
-                        limit,
-                    )
+                    .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
                     .map_err(PyErr::new::<PyValueError, _>)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
@@ -771,10 +726,8 @@ impl PyBamScanner {
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
     ///     from the same path with an additional extension.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -785,15 +738,13 @@ impl PyBamScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (region, index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (region, index=None, columns=None, batch_size=1024, limit=None))]
     fn scan_query(
         &mut self,
         py: Python,
         region: String,
         index: Option<Py<PyAny>>,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -809,18 +760,14 @@ impl PyBamScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -834,18 +781,14 @@ impl PyBamScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_query(
-                                fmt_reader, region, index, fields, tag_defs, batch_size, limit,
-                            )
+                            .scan_query(fmt_reader, region, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -868,10 +811,8 @@ impl PyBamScanner {
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
     ///     from the same path with an additional extension.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -882,13 +823,12 @@ impl PyBamScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
+    #[pyo3(signature = (index=None, columns=None, batch_size=1024, limit=None))]
     fn scan_unmapped(
         &mut self,
         py: Python,
         index: Option<Py<PyAny>>,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -900,14 +840,14 @@ impl PyBamScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
+                            .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
+                            .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -921,14 +861,14 @@ impl PyBamScanner {
                     IndexType::Linear(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
+                            .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
-                            .scan_unmapped(fmt_reader, index, fields, tag_defs, batch_size, limit)
+                            .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
                             .map_err(PyErr::new::<PyValueError, _>)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
@@ -948,28 +888,53 @@ impl PyBamScanner {
 /// ----------
 /// src : str or file-like
 ///     The path to the CRAM file or a file-like object.
+/// fields : list[str], optional
+///     Names of the fixed fields to include in the schema.
+/// tag_defs : list[tuple[str, str]], optional
+///     Definitions of tag fields to include in the schema.
 #[pyclass]
 pub struct PyCramScanner {
     src: Py<PyAny>,
     reader: Reader,
     scanner: CramScanner,
+    fields: Option<Vec<String>>,
+    tag_defs: Option<Vec<(String, String)>>,
+    reference: Option<Py<PyAny>>,
+    reference_index: Option<Py<PyAny>>,
 }
 
 #[pymethods]
 impl PyCramScanner {
     #[new]
     #[allow(unused_variables)]
-    #[pyo3(signature = (src, compressed=None))]
-    fn new(py: Python, src: Py<PyAny>, compressed: Option<bool>) -> PyResult<Self> {
+    #[pyo3(signature = (src, compressed=None, fields=None, tag_defs=None, reference=None, reference_index=None))]
+    fn new(
+        py: Python,
+        src: Py<PyAny>,
+        compressed: Option<bool>,
+        fields: Option<Vec<String>>,
+        tag_defs: Option<Vec<(String, String)>>,
+        reference: Option<Py<PyAny>>,
+        reference_index: Option<Py<PyAny>>,
+    ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let mut fmt_reader = noodles::cram::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let scanner = CramScanner::new(header);
+        let repo = resolve_fasta_repository(
+            py,
+            reference.as_ref().map(|r| r.clone_ref(py)),
+            reference_index.as_ref().map(|r| r.clone_ref(py)),
+        )?;
+        let scanner = CramScanner::new(header, fields.clone(), tag_defs.clone(), repo)?;
         Ok(Self {
             src,
             reader,
             scanner,
+            fields,
+            tag_defs,
+            reference,
+            reference_index,
         })
     }
 
@@ -980,6 +945,18 @@ impl PyCramScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py),);
         let kwargs = PyDict::new(py);
+        if let Some(ref fields) = self.fields {
+            kwargs.set_item("fields", fields)?;
+        }
+        if let Some(ref tag_defs) = self.tag_defs {
+            kwargs.set_item("tag_defs", tag_defs)?;
+        }
+        if let Some(ref reference) = self.reference {
+            kwargs.set_item("reference", reference)?;
+        }
+        if let Some(ref reference_index) = self.reference_index {
+            kwargs.set_item("reference_index", reference_index)?;
+        }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -1000,24 +977,11 @@ impl PyCramScanner {
 
     /// Return the Arrow schema.
     ///
-    /// Parameters
-    /// ----------
-    /// fields : list[str], optional
-    ///    Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///    Definitions of tag fields to project.
-    ///
     /// Returns
     /// -------
     /// arro3 Schema (pycapsule)
-    #[pyo3(signature = (fields=None, tag_defs=None))]
-    fn schema(
-        &self,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
-    ) -> PyResult<PySchema> {
-        let schema = self.scanner.schema(fields, tag_defs)?;
-        Ok(PySchema::new(Arc::new(schema)))
+    fn schema(&self) -> PySchema {
+        PySchema::new(Arc::new(self.scanner.schema().clone()))
     }
 
     /// Discover tag definitions by sniffing `scan_rows` records.
@@ -1040,8 +1004,11 @@ impl PyCramScanner {
         match &mut reader {
             Reader::File(_) | Reader::PyFileLike(_) => {
                 let pos = reader.stream_position()?;
-                let mut fmt_reader = noodles::cram::io::Reader::new(reader);
-                let defs = self.scanner.tag_defs(&mut fmt_reader, scan_rows)?;
+                let header = self.scanner.header().clone();
+                let mut fmt_reader = noodles::cram::io::reader::Builder::default()
+                    .set_reference_sequence_repository(self.scanner.repo().clone())
+                    .build_from_reader(reader);
+                let defs = CramScanner::tag_defs(&mut fmt_reader, &header, scan_rows)?;
                 fmt_reader
                     .into_inner()
                     .seek(std::io::SeekFrom::Start(pos))?;
@@ -1057,16 +1024,8 @@ impl PyCramScanner {
     ///
     /// Parameters
     /// ----------
-    /// reference : path or file-like, optional
-    ///     The external reference FASTA file to use for decoding bases in the
-    ///     CRAM records. If not provided, sequence bases or references must be
-    ///     embedded in the CRAM file.
-    /// reference_index : path or file-like, optional
-    ///     The index file for the reference FASTA file.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -1077,24 +1036,16 @@ impl PyCramScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (reference=None, reference_index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (columns=None, batch_size=1024, limit=None))]
     fn scan(
         &mut self,
-        py: Python,
-        reference: Option<Py<PyAny>>,
-        reference_index: Option<Py<PyAny>>,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
         let reader = self.reader.clone();
-        let repo = resolve_fasta_repository(py, reference, reference_index)?;
         let fmt_reader = noodles::cram::io::Reader::new(reader);
-        let batch_reader = self
-            .scanner
-            .scan(fmt_reader, repo, fields, tag_defs, batch_size, limit)?;
+        let batch_reader = self.scanner.scan(fmt_reader, columns, batch_size, limit)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -1110,16 +1061,8 @@ impl PyCramScanner {
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
     ///     from the same path with an additional extension.
-    /// reference : path or file-like, optional
-    ///     The external reference FASTA file to use for decoding bases in the
-    ///     CRAM records. If not provided, sequence bases or references must be
-    ///     embedded in the CRAM file.
-    /// reference_index : path or file-like, optional
-    ///     The index file for the reference FASTA file.
-    /// fields : list[str], optional
-    ///     Names of the fixed fields to project.
-    /// tag_defs : list[tuple[str, str]], optional
-    ///     Definitions of tag fields to project.
+    /// columns : list[str], optional
+    ///     Names of the top-level columns to project.
     /// batch_size : int, optional [default: 1024]
     ///     The number of records to include in each batch.
     /// limit : int, optional
@@ -1130,17 +1073,13 @@ impl PyCramScanner {
     /// -------
     /// arro3 RecordBatchReader (pycapsule)
     ///     An iterator yielding Arrow record batches.
-    #[pyo3(signature = (region, index=None, reference=None, reference_index=None, fields=None, tag_defs=None, batch_size=1024, limit=None))]
-    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (region, index=None, columns=None, batch_size=1024, limit=None))]
     fn scan_query(
         &mut self,
         py: Python,
         region: String,
         index: Option<Py<PyAny>>,
-        reference: Option<Py<PyAny>>,
-        reference_index: Option<Py<PyAny>>,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
@@ -1148,21 +1087,20 @@ impl PyCramScanner {
             .parse::<Region>()
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let index = resolve_cram_index(py, &self.src, index)?;
-        let repo = resolve_fasta_repository(py, reference, reference_index)?;
 
         match self.reader.clone() {
             Reader::File(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
-                let batch_reader = self.scanner.scan_query(
-                    fmt_reader, repo, region, index, fields, tag_defs, batch_size, limit,
-                )?;
+                let batch_reader = self
+                    .scanner
+                    .scan_query(fmt_reader, region, index, columns, batch_size, limit)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::PyFileLike(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
-                let batch_reader = self.scanner.scan_query(
-                    fmt_reader, repo, region, index, fields, tag_defs, batch_size, limit,
-                )?;
+                let batch_reader = self
+                    .scanner
+                    .scan_query(fmt_reader, region, index, columns, batch_size, limit)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => {
@@ -1203,7 +1141,7 @@ pub fn read_sam(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let mut fmt_reader = noodles::sam::io::Reader::new(reader);
     let header = fmt_reader.read_header()?;
-    let scanner = SamScanner::new(header);
+    let scanner = SamScanner::new(header, fields, tag_defs)?;
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
@@ -1215,29 +1153,15 @@ pub fn read_sam(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader,
-                    region,
-                    index.into_boxed(),
-                    fields,
-                    tag_defs,
-                    None,
-                    None,
-                )?;
+                let batches =
+                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader,
-                    region,
-                    index.into_boxed(),
-                    fields,
-                    tag_defs,
-                    None,
-                    None,
-                )?;
+                let batches =
+                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -1248,7 +1172,7 @@ pub fn read_sam(
         }
     } else {
         let fmt_reader = noodles::sam::io::Reader::new(reader);
-        let batches = scanner.scan(fmt_reader, fields, tag_defs, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None)?;
         batches_to_ipc(batches)
     };
 
@@ -1286,7 +1210,7 @@ pub fn read_bam(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let mut fmt_reader = noodles::bam::io::Reader::from(reader);
     let header = fmt_reader.read_header()?;
-    let scanner = BamScanner::new(header);
+    let scanner = BamScanner::new(header, fields, tag_defs)?;
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
@@ -1298,29 +1222,15 @@ pub fn read_bam(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader,
-                    region,
-                    index.into_boxed(),
-                    fields,
-                    tag_defs,
-                    None,
-                    None,
-                )?;
+                let batches =
+                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader,
-                    region,
-                    index.into_boxed(),
-                    fields,
-                    tag_defs,
-                    None,
-                    None,
-                )?;
+                let batches =
+                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -1331,7 +1241,7 @@ pub fn read_bam(
         }
     } else {
         let fmt_reader = noodles::bam::io::Reader::from(reader);
-        let batches = scanner.scan(fmt_reader, fields, tag_defs, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None)?;
         batches_to_ipc(batches)
     };
 
@@ -1369,10 +1279,9 @@ pub fn read_cram(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
     let mut fmt_reader = noodles::cram::io::Reader::new(reader);
     let header = fmt_reader.read_header()?;
-    let scanner = CramScanner::new(header);
-    let reader = fmt_reader.into_inner();
-
     let repo = resolve_fasta_repository(py, reference, reference_index)?;
+    let scanner = CramScanner::new(header, fields, tag_defs, repo)?;
+    let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
         let region = region
@@ -1383,17 +1292,13 @@ pub fn read_cram(
             Reader::File(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
                 let index = resolve_cram_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader, repo, region, index, fields, tag_defs, None, None,
-                )?;
+                let batches = scanner.scan_query(fmt_reader, region, index, None, None, None)?;
                 batches_to_ipc(batches)
             }
             Reader::PyFileLike(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
                 let index = resolve_cram_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader, repo, region, index, fields, tag_defs, None, None,
-                )?;
+                let batches = scanner.scan_query(fmt_reader, region, index, None, None, None)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -1404,12 +1309,12 @@ pub fn read_cram(
         match reader {
             Reader::File(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
-                let batches = scanner.scan(fmt_reader, repo, fields, tag_defs, None, None)?;
+                let batches = scanner.scan(fmt_reader, None, None, None)?;
                 batches_to_ipc(batches)
             }
             Reader::PyFileLike(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
-                let batches = scanner.scan(fmt_reader, repo, fields, tag_defs, None, None)?;
+                let batches = scanner.scan(fmt_reader, None, None, None)?;
                 batches_to_ipc(batches)
             }
             _ => {

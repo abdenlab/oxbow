@@ -1,5 +1,6 @@
 import cloudpickle
 import fsspec
+import pyarrow as pa
 import pytest
 from pytest_manifest import Manifest
 
@@ -57,7 +58,10 @@ class TestGtfFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.GtfFile("data/sample.gtf", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 
@@ -65,10 +69,10 @@ class TestGtfFile:
 
     def test_input_encodings(self):
         file = ox.GtfFile("data/sample.gtf", compressed=False, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         file = ox.GtfFile("data/sample.sorted.gtf", compressed=False, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.GtfFile("data/sample.gtf", compressed=True, batch_size=3)
@@ -79,7 +83,7 @@ class TestGtfFile:
             next((file.batches()))
 
         file = ox.GtfFile("data/sample.sorted.gtf.gz", compressed=True, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.GtfFile(
@@ -167,7 +171,10 @@ class TestGffFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.GffFile("data/sample.gff", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": b.to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 
@@ -175,10 +182,10 @@ class TestGffFile:
 
     def test_input_encodings(self):
         file = ox.GffFile("data/sample.gff", compressed=False, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         file = ox.GffFile("data/sample.sorted.gff", compressed=False, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.GffFile("data/sample.gff", compressed=True, batch_size=3)
@@ -189,7 +196,7 @@ class TestGffFile:
             next((file.batches()))
 
         file = ox.GffFile("data/sample.sorted.gff.gz", compressed=True, batch_size=3)
-        assert len(next((file.batches()))) <= 3
+        assert next((file.batches())).num_rows <= 3
 
         with pytest.raises(BaseException):
             file = ox.GffFile(

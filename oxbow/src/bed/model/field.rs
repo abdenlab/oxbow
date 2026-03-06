@@ -11,21 +11,6 @@ use arrow::datatypes::{DataType, Field as ArrowField, UInt8Type};
 
 use crate::util::reset_dictarray_builder;
 
-pub const DEFAULT_FIELD_NAMES: [&str; 12] = [
-    "chrom",
-    "start",
-    "end",
-    "name",
-    "score",
-    "strand",
-    "thickStart",
-    "thickEnd",
-    "itemRgb",
-    "blockCount",
-    "blockSizes",
-    "blockStarts",
-];
-
 /// A BED field.
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Field {

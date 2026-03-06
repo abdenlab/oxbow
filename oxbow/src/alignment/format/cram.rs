@@ -1,7 +1,7 @@
 use std::io::{self, Read, Seek, SeekFrom};
 
 use arrow::array::RecordBatchReader;
-use arrow::datatypes::Schema;
+use arrow::datatypes::{Schema, SchemaRef};
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use noodles::core::region::Interval;
@@ -12,6 +12,9 @@ use crate::alignment::model::BatchBuilder;
 use crate::batch::{Push, RecordBatchBuilder as _};
 
 /// A CRAM scanner.
+///
+/// Schema parameters (fields, tag definitions) are declared at construction
+/// time. Scan methods accept only column projection, batch size, and limit.
 ///
 /// # Examples
 ///
@@ -29,23 +32,48 @@ use crate::batch::{Push, RecordBatchBuilder as _};
 /// let mut fmt_reader = noodles::cram::io::Reader::new(inner);
 /// let header = fmt_reader.read_header().unwrap();
 ///
-/// let scanner = Scanner::new(header);
-/// let tag_defs = scanner.tag_defs(&mut fmt_reader, Some(1000)).unwrap();
-/// let batches = scanner.scan(fmt_reader, repository, None, Some(tag_defs), None, Some(1000));
+/// let tag_defs = Scanner::tag_defs(&mut fmt_reader, &header, Some(1000)).unwrap();
+/// let scanner = Scanner::new(header, None, Some(tag_defs), repository).unwrap();
+/// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
     header: noodles::sam::Header,
+    fields: Option<Vec<String>>,
+    tag_defs: Option<Vec<(String, String)>>,
+    schema: SchemaRef,
+    repo: noodles::fasta::Repository,
 }
 
 impl Scanner {
-    /// Creates a CRAM scanner from a SAM header.
-    pub fn new(header: noodles::sam::Header) -> Self {
-        Self { header }
+    /// Creates a CRAM scanner from a SAM header and schema parameters.
+    ///
+    /// The schema is validated and cached at construction time. The FASTA
+    /// repository is stored and used by scan methods for decoding.
+    pub fn new(
+        header: noodles::sam::Header,
+        fields: Option<Vec<String>>,
+        tag_defs: Option<Vec<(String, String)>>,
+        repo: noodles::fasta::Repository,
+    ) -> io::Result<Self> {
+        let batch_builder = BatchBuilder::new(header.clone(), fields.clone(), tag_defs.clone(), 0)?;
+        let schema = batch_builder.schema();
+        Ok(Self {
+            header,
+            fields,
+            tag_defs,
+            schema,
+            repo,
+        })
     }
 
-    /// Returns the SAM header.
-    pub fn header(&self) -> noodles::sam::Header {
-        self.header.clone()
+    /// Returns a reference to the FASTA repository.
+    pub fn repo(&self) -> &noodles::fasta::Repository {
+        &self.repo
+    }
+
+    /// Returns a reference to the SAM header.
+    pub fn header(&self) -> &noodles::sam::Header {
+        &self.header
     }
 
     /// Returns the reference sequence names.
@@ -72,14 +100,70 @@ impl Scanner {
     }
 
     /// Returns the Arrow schema.
-    pub fn schema(
+    pub fn schema(&self) -> &Schema {
+        &self.schema
+    }
+
+    /// Builds a BatchBuilder applying column projection.
+    ///
+    /// Returns an error if any requested column is not in the declared schema.
+    fn build_batch_builder(
         &self,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
-    ) -> io::Result<Schema> {
-        let header = self.header();
-        let batch_builder = BatchBuilder::new(header, fields, tag_defs, 0)?;
-        Ok(batch_builder.schema().as_ref().clone())
+        columns: Option<Vec<String>>,
+        capacity: usize,
+    ) -> io::Result<BatchBuilder> {
+        match columns {
+            None => BatchBuilder::new(
+                self.header.clone(),
+                self.fields.clone(),
+                self.tag_defs.clone(),
+                capacity,
+            ),
+            Some(cols) => {
+                let schema_names: Vec<&str> = self
+                    .schema
+                    .fields()
+                    .iter()
+                    .map(|f| f.name().as_str())
+                    .collect();
+
+                let unknown: Vec<&str> = cols
+                    .iter()
+                    .filter(|c| !schema_names.iter().any(|s| s.eq_ignore_ascii_case(c)))
+                    .map(|c| c.as_str())
+                    .collect();
+                if !unknown.is_empty() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!(
+                            "Unknown columns: {:?}. Available columns: {:?}",
+                            unknown, schema_names
+                        ),
+                    ));
+                }
+
+                let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
+                    DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
+                });
+                let projected_fields: Vec<String> = declared_field_names
+                    .into_iter()
+                    .filter(|name| cols.iter().any(|c| c.eq_ignore_ascii_case(name)))
+                    .collect();
+
+                let tag_defs = if cols.iter().any(|c| c == "tags") {
+                    self.tag_defs.clone()
+                } else {
+                    None
+                };
+
+                BatchBuilder::new(
+                    self.header.clone(),
+                    Some(projected_fields),
+                    tag_defs,
+                    capacity,
+                )
+            }
+        }
     }
 }
 
@@ -89,12 +173,11 @@ impl Scanner {
     /// The scan will begin at the current position of the reader and will
     /// move the cursor to the end of the last record scanned.
     pub fn tag_defs<R: Read>(
-        &self,
         fmt_reader: &mut noodles::cram::io::Reader<R>,
+        header: &noodles::sam::Header,
         scan_rows: Option<usize>,
     ) -> io::Result<Vec<(String, String)>> {
-        let header = self.header();
-        let records = fmt_reader.records(&header);
+        let records = fmt_reader.records(header);
         let mut tag_scanner = TagScanner::new();
         match scan_rows {
             None => {
@@ -126,18 +209,16 @@ impl Scanner {
     pub fn scan<R: Read>(
         &self,
         fmt_reader: noodles::cram::io::Reader<R>,
-        repo: noodles::fasta::Repository,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
-        let batch_builder = BatchBuilder::new(self.header(), fields, tag_defs, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter = BatchIterator::new(
             fmt_reader,
-            self.header(),
-            &repo,
+            self.header.clone(),
+            &self.repo,
             batch_builder,
             batch_size,
             limit,
@@ -147,34 +228,31 @@ impl Scanner {
 
     /// Returns an iterator yielding record batches satisfying a genomic range query.
     ///
-    /// This operation requires a CRAI Index and the FASTA reference repository must be
-    /// provided separately from the CRAM reader.
+    /// This operation requires a CRAI Index. The FASTA reference repository
+    /// stored in the scanner is used for decoding.
     ///
     /// The scan will traverse one or more CRAM data containers and slices and
     /// filter for records that overlap the given region. The cursor will stop
     /// at the end of the last record scanned.
-    #[allow(clippy::too_many_arguments)]
     pub fn scan_query<R: Read + Seek>(
         &self,
         fmt_reader: noodles::cram::io::Reader<R>,
-        repo: noodles::fasta::Repository,
         region: noodles::core::Region,
         index: noodles::cram::crai::Index,
-        fields: Option<Vec<String>>,
-        tag_defs: Option<Vec<(String, String)>>,
+        columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> io::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let interval = region.interval();
 
-        let batch_builder = BatchBuilder::new(self.header(), fields, tag_defs, batch_size)?;
+        let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
         let reference_sequence_id = resolve_chrom_id(&self.header, region.name())?;
         let batch_iter = QueryBatchIterator::new(
             fmt_reader,
-            self.header(),
-            &repo,
+            self.header.clone(),
+            &self.repo,
             index,
             reference_sequence_id,
             interval,
