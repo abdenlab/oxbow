@@ -1,4 +1,4 @@
-use std::io::{self, BufRead, Seek};
+use std::io::{BufRead, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::{Schema, SchemaRef};
@@ -14,6 +14,7 @@ use crate::gxf::model::field::DEFAULT_FIELD_NAMES;
 use crate::gxf::model::BatchBuilder;
 use crate::gxf::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
+use crate::OxbowError;
 
 /// A GTF scanner.
 ///
@@ -50,7 +51,7 @@ impl Scanner {
         header: Option<binning_index::index::Header>,
         fields: Option<Vec<String>>,
         attr_defs: Option<Vec<(String, String)>>,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         let batch_builder = BatchBuilder::new(fields.clone(), attr_defs.clone(), 0)?;
         let schema = batch_builder.schema();
         Ok(Self {
@@ -67,7 +68,7 @@ impl Scanner {
     }
 
     /// Returns the reference sequence names if an index header was provided.
-    pub fn chrom_names(&self) -> io::Result<Vec<String>> {
+    pub fn chrom_names(&self) -> crate::Result<Vec<String>> {
         if let Some(header) = &self.header {
             Ok(header
                 .reference_sequence_names()
@@ -75,10 +76,7 @@ impl Scanner {
                 .map(|name| name.to_string())
                 .collect())
         } else {
-            Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "Index header not found.",
-            ))
+            Err(OxbowError::not_found("Index header not found."))
         }
     }
 
@@ -99,7 +97,7 @@ impl Scanner {
         &self,
         columns: Option<Vec<String>>,
         capacity: usize,
-    ) -> io::Result<BatchBuilder> {
+    ) -> crate::Result<BatchBuilder> {
         match columns {
             None => BatchBuilder::new(self.fields.clone(), self.attr_defs.clone(), capacity),
             Some(cols) => {
@@ -116,13 +114,10 @@ impl Scanner {
                     .map(|c| c.as_str())
                     .collect();
                 if !unknown.is_empty() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Unknown columns: {:?}. Available columns: {:?}",
-                            unknown, schema_names
-                        ),
-                    ));
+                    return Err(OxbowError::invalid_input(format!(
+                        "Unknown columns: {:?}. Available columns: {:?}",
+                        unknown, schema_names
+                    )));
                 }
 
                 let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
@@ -153,7 +148,7 @@ impl Scanner {
     pub fn attribute_defs<R: BufRead>(
         fmt_reader: &mut noodles::gtf::io::Reader<R>,
         scan_rows: Option<usize>,
-    ) -> io::Result<Vec<(String, String)>> {
+    ) -> crate::Result<Vec<(String, String)>> {
         let lines = fmt_reader.lines();
         let mut attr_scanner = AttributeScanner::new();
         match scan_rows {
@@ -190,7 +185,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
@@ -206,7 +201,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let reference_sequence_name = region.name().to_string();
         let interval = region.interval();
@@ -214,10 +209,7 @@ impl Scanner {
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
         let Some(header) = index.header() else {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "Index header not found.",
-            ));
+            return Err(OxbowError::not_found("Index header not found."));
         };
         let reference_sequence_id = super::resolve_chrom_id(header, &reference_sequence_name)?;
         let chunks = index.query(reference_sequence_id, interval)?;
@@ -244,7 +236,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
@@ -263,7 +255,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 

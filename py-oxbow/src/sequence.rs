@@ -12,7 +12,7 @@ use noodles::bgzf::gzi::io::Reader as GziReader;
 use noodles::bgzf::io::IndexedReader as IndexedBgzfReader;
 use noodles::core::Region;
 
-use crate::error::err_on_unwind;
+use crate::error::{err_on_unwind, to_py};
 use crate::util::{pyobject_to_bufreader, resolve_faidx, PyVirtualPosition, Reader};
 use oxbow::sequence::{FastaScanner, FastqScanner};
 use oxbow::util::batches_to_ipc;
@@ -48,7 +48,7 @@ impl PyFastqScanner {
     ) -> PyResult<Self> {
         let _src = src.clone_ref(py);
         let reader = pyobject_to_bufreader(py, src, false)?;
-        let scanner = FastqScanner::new(fields.clone())?;
+        let scanner = FastqScanner::new(fields.clone()).map_err(to_py)?;
         Ok(Self {
             src: _src,
             reader,
@@ -115,14 +115,14 @@ impl PyFastqScanner {
             let batch_reader = self
                 .scanner
                 .scan(fmt_reader, columns, batch_size, limit)
-                .map_err(PyErr::new::<PyValueError, _>)?;
+                .map_err(to_py)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         } else {
             let fmt_reader = noodles::fastq::io::Reader::new(reader);
             let batch_reader = self
                 .scanner
                 .scan(fmt_reader, columns, batch_size, limit)
-                .map_err(PyErr::new::<PyValueError, _>)?;
+                .map_err(to_py)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         }
     }
@@ -156,7 +156,7 @@ impl PyFastqScanner {
         let batch_reader = self
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -199,7 +199,7 @@ impl PyFastqScanner {
         let batch_reader = self
             .scanner
             .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 }
@@ -234,7 +234,7 @@ impl PyFastaScanner {
         fields: Option<Vec<String>>,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
-        let scanner = FastaScanner::new(fields.clone())?;
+        let scanner = FastaScanner::new(fields.clone()).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -305,14 +305,14 @@ impl PyFastaScanner {
             let batch_reader = self
                 .scanner
                 .scan(fmt_reader, columns, batch_size, limit)
-                .map_err(PyErr::new::<PyValueError, _>)?;
+                .map_err(to_py)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         } else {
             let fmt_reader = noodles::fasta::io::Reader::new(reader);
             let batch_reader = self
                 .scanner
                 .scan(fmt_reader, columns, batch_size, limit)
-                .map_err(PyErr::new::<PyValueError, _>)?;
+                .map_err(to_py)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         }
     }
@@ -371,14 +371,14 @@ impl PyFastaScanner {
             let batch_reader = self
                 .scanner
                 .scan_query(fmt_reader, regions, index, columns, batch_size)
-                .map_err(PyErr::new::<PyValueError, _>)?;
+                .map_err(to_py)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         } else {
             let fmt_reader = noodles::fasta::io::Reader::new(reader);
             let batch_reader = self
                 .scanner
                 .scan_query(fmt_reader, regions, index, columns, batch_size)
-                .map_err(PyErr::new::<PyValueError, _>)?;
+                .map_err(to_py)?;
             Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
         }
     }
@@ -408,16 +408,16 @@ pub fn read_fastq(
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src, false)?;
-    let scanner = FastqScanner::new(fields)?;
+    let scanner = FastqScanner::new(fields).map_err(to_py)?;
 
     let ipc = if compressed {
         let gz_reader = std::io::BufReader::new(MultiGzDecoder::new(reader));
         let fmt_reader = noodles::fastq::io::Reader::new(gz_reader);
-        let batches = scanner.scan(fmt_reader, None, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     } else {
         let fmt_reader = noodles::fastq::io::Reader::new(reader);
-        let batches = scanner.scan(fmt_reader, None, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
 
@@ -457,7 +457,7 @@ pub fn read_fasta(
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let scanner = FastaScanner::new(fields)?;
+    let scanner = FastaScanner::new(fields).map_err(to_py)?;
 
     let ipc = if let Some(regions) = regions {
         let index = resolve_faidx(py, &src, index)?;
@@ -482,18 +482,18 @@ pub fn read_fasta(
             let fmt_reader = noodles::fasta::io::Reader::new(bgzf_reader);
             let batches = scanner
                 .scan_query(fmt_reader, regions, index, None, None)
-                .map_err(PyErr::new::<PyValueError, _>)?;
+                .map_err(to_py)?;
             batches_to_ipc(batches)
         } else {
             let fmt_reader = noodles::fasta::io::Reader::new(reader);
             let batches = scanner
                 .scan_query(fmt_reader, regions, index, None, None)
-                .map_err(PyErr::new::<PyValueError, _>)?;
+                .map_err(to_py)?;
             batches_to_ipc(batches)
         }
     } else {
         let fmt_reader = noodles::fasta::io::Reader::new(reader);
-        let batches = scanner.scan(fmt_reader, None, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
 

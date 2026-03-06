@@ -1,5 +1,7 @@
 use std::io::{self, Read, Seek, SeekFrom};
 
+use crate::OxbowError;
+
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::{Schema, SchemaRef};
 use arrow::error::ArrowError;
@@ -54,7 +56,7 @@ impl Scanner {
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         repo: noodles::fasta::Repository,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         let batch_builder = BatchBuilder::new(header.clone(), fields.clone(), tag_defs.clone(), 0)?;
         let schema = batch_builder.schema();
         Ok(Self {
@@ -111,7 +113,7 @@ impl Scanner {
         &self,
         columns: Option<Vec<String>>,
         capacity: usize,
-    ) -> io::Result<BatchBuilder> {
+    ) -> crate::Result<BatchBuilder> {
         match columns {
             None => BatchBuilder::new(
                 self.header.clone(),
@@ -133,13 +135,10 @@ impl Scanner {
                     .map(|c| c.as_str())
                     .collect();
                 if !unknown.is_empty() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Unknown columns: {:?}. Available columns: {:?}",
-                            unknown, schema_names
-                        ),
-                    ));
+                    return Err(OxbowError::invalid_input(format!(
+                        "Unknown columns: {:?}. Available columns: {:?}",
+                        unknown, schema_names
+                    )));
                 }
 
                 let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
@@ -176,7 +175,7 @@ impl Scanner {
         fmt_reader: &mut noodles::cram::io::Reader<R>,
         header: &noodles::sam::Header,
         scan_rows: Option<usize>,
-    ) -> io::Result<Vec<(String, String)>> {
+    ) -> crate::Result<Vec<(String, String)>> {
         let records = fmt_reader.records(header);
         let mut tag_scanner = TagScanner::new();
         match scan_rows {
@@ -212,7 +211,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter = BatchIterator::new(
@@ -242,7 +241,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let interval = region.interval();
 

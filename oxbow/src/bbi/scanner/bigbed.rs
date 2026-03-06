@@ -1,4 +1,4 @@
-use std::io::{self, Read, Seek};
+use std::io::{Read, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::{Schema as ArrowSchema, SchemaRef};
@@ -8,6 +8,7 @@ use crate::batch::RecordBatchBuilder as _;
 use crate::bbi::model::base::BatchBuilder;
 use crate::bbi::model::base::BedSchema;
 use crate::bbi::scanner::batch_iterator::base::{BigBedBatchIterator, BigBedQueryBatchIterator};
+use crate::OxbowError;
 
 /// A BigBed scanner.
 ///
@@ -39,7 +40,7 @@ impl Scanner {
         bed_schema: BedSchema,
         info: bigtools::BBIFileInfo,
         fields: Option<Vec<String>>,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         let batch_builder = BatchBuilder::new(bed_schema.clone(), fields.clone(), 0)?;
         let schema = batch_builder.schema();
         Ok(Self {
@@ -66,7 +67,7 @@ impl Scanner {
         &self,
         columns: Option<Vec<String>>,
         capacity: usize,
-    ) -> io::Result<BatchBuilder> {
+    ) -> crate::Result<BatchBuilder> {
         match columns {
             None => BatchBuilder::new(self.bed_schema.clone(), self.fields.clone(), capacity),
             Some(cols) => {
@@ -83,13 +84,10 @@ impl Scanner {
                     .map(|c| c.as_str())
                     .collect();
                 if !unknown.is_empty() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Unknown columns: {:?}. Available columns: {:?}",
-                            unknown, schema_names
-                        ),
-                    ));
+                    return Err(OxbowError::invalid_input(format!(
+                        "Unknown columns: {:?}. Available columns: {:?}",
+                        unknown, schema_names
+                    )));
                 }
 
                 BatchBuilder::new(self.bed_schema.clone(), Some(cols), capacity)
@@ -137,7 +135,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter = BigBedBatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
@@ -152,7 +150,7 @@ impl Scanner {
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> io::Result<impl RecordBatchReader> {
+    ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter =

@@ -11,7 +11,7 @@ use pyo3_arrow::PySchema;
 use noodles::bgzf::io::Seek as _;
 use noodles::core::Region;
 
-use crate::error::err_on_unwind;
+use crate::error::{err_on_unwind, to_py};
 use crate::util::{
     pyobject_to_bufreader, resolve_cram_index, resolve_fasta_repository, resolve_index,
     PyVirtualPosition, Reader,
@@ -57,7 +57,7 @@ impl PySamScanner {
         let mut fmt_reader = noodles::sam::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let scanner = SamScanner::new(header, fields.clone(), tag_defs.clone())?;
+        let scanner = SamScanner::new(header, fields.clone(), tag_defs.clone()).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -121,21 +121,21 @@ impl PySamScanner {
             Reader::BgzfFile(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
-                let defs = SamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = SamScanner::tag_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
-                let defs = SamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = SamScanner::tag_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             _ => {
                 let pos = reader.stream_position()?;
                 let mut fmt_reader = noodles::sam::io::Reader::new(reader);
-                let defs = SamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = SamScanner::tag_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader
                     .into_inner()
                     .seek(std::io::SeekFrom::Start(pos))?;
@@ -181,7 +181,7 @@ impl PySamScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -218,7 +218,7 @@ impl PySamScanner {
         let batch_reader = self
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -266,7 +266,7 @@ impl PySamScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
@@ -274,7 +274,7 @@ impl PySamScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
@@ -330,14 +330,14 @@ impl PySamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -351,14 +351,14 @@ impl PySamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -410,14 +410,14 @@ impl PySamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -431,14 +431,14 @@ impl PySamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -488,7 +488,7 @@ impl PyBamScanner {
         let mut fmt_reader = noodles::bam::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let scanner = BamScanner::new(header, fields.clone(), tag_defs.clone())?;
+        let scanner = BamScanner::new(header, fields.clone(), tag_defs.clone()).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -561,21 +561,21 @@ impl PyBamScanner {
             Reader::BgzfFile(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
-                let defs = BamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = BamScanner::tag_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
-                let defs = BamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = BamScanner::tag_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             _ => {
                 let pos = reader.stream_position()?;
                 let mut fmt_reader = noodles::bam::io::Reader::from(reader);
-                let defs = BamScanner::tag_defs(&mut fmt_reader, scan_rows)?;
+                let defs = BamScanner::tag_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader
                     .into_inner()
                     .seek(std::io::SeekFrom::Start(pos))?;
@@ -612,7 +612,7 @@ impl PyBamScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -649,7 +649,7 @@ impl PyBamScanner {
         let batch_reader = self
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -697,7 +697,7 @@ impl PyBamScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
@@ -705,7 +705,7 @@ impl PyBamScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
@@ -761,14 +761,14 @@ impl PyBamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -782,14 +782,14 @@ impl PyBamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -841,14 +841,14 @@ impl PyBamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -862,14 +862,14 @@ impl PyBamScanner {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_unmapped(fmt_reader, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -926,7 +926,8 @@ impl PyCramScanner {
             reference.as_ref().map(|r| r.clone_ref(py)),
             reference_index.as_ref().map(|r| r.clone_ref(py)),
         )?;
-        let scanner = CramScanner::new(header, fields.clone(), tag_defs.clone(), repo)?;
+        let scanner =
+            CramScanner::new(header, fields.clone(), tag_defs.clone(), repo).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -1008,7 +1009,8 @@ impl PyCramScanner {
                 let mut fmt_reader = noodles::cram::io::reader::Builder::default()
                     .set_reference_sequence_repository(self.scanner.repo().clone())
                     .build_from_reader(reader);
-                let defs = CramScanner::tag_defs(&mut fmt_reader, &header, scan_rows)?;
+                let defs =
+                    CramScanner::tag_defs(&mut fmt_reader, &header, scan_rows).map_err(to_py)?;
                 fmt_reader
                     .into_inner()
                     .seek(std::io::SeekFrom::Start(pos))?;
@@ -1045,7 +1047,10 @@ impl PyCramScanner {
     ) -> PyResult<PyRecordBatchReader> {
         let reader = self.reader.clone();
         let fmt_reader = noodles::cram::io::Reader::new(reader);
-        let batch_reader = self.scanner.scan(fmt_reader, columns, batch_size, limit)?;
+        let batch_reader = self
+            .scanner
+            .scan(fmt_reader, columns, batch_size, limit)
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -1093,14 +1098,16 @@ impl PyCramScanner {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
                 let batch_reader = self
                     .scanner
-                    .scan_query(fmt_reader, region, index, columns, batch_size, limit)?;
+                    .scan_query(fmt_reader, region, index, columns, batch_size, limit)
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::PyFileLike(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
                 let batch_reader = self
                     .scanner
-                    .scan_query(fmt_reader, region, index, columns, batch_size, limit)?;
+                    .scan_query(fmt_reader, region, index, columns, batch_size, limit)
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => {
@@ -1141,7 +1148,7 @@ pub fn read_sam(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let mut fmt_reader = noodles::sam::io::Reader::new(reader);
     let header = fmt_reader.read_header()?;
-    let scanner = SamScanner::new(header, fields, tag_defs)?;
+    let scanner = SamScanner::new(header, fields, tag_defs).map_err(to_py)?;
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
@@ -1153,15 +1160,17 @@ pub fn read_sam(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -1172,7 +1181,7 @@ pub fn read_sam(
         }
     } else {
         let fmt_reader = noodles::sam::io::Reader::new(reader);
-        let batches = scanner.scan(fmt_reader, None, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
 
@@ -1210,7 +1219,7 @@ pub fn read_bam(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let mut fmt_reader = noodles::bam::io::Reader::from(reader);
     let header = fmt_reader.read_header()?;
-    let scanner = BamScanner::new(header, fields, tag_defs)?;
+    let scanner = BamScanner::new(header, fields, tag_defs).map_err(to_py)?;
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
@@ -1222,15 +1231,17 @@ pub fn read_bam(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -1241,7 +1252,7 @@ pub fn read_bam(
         }
     } else {
         let fmt_reader = noodles::bam::io::Reader::from(reader);
-        let batches = scanner.scan(fmt_reader, None, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
 
@@ -1280,7 +1291,7 @@ pub fn read_cram(
     let mut fmt_reader = noodles::cram::io::Reader::new(reader);
     let header = fmt_reader.read_header()?;
     let repo = resolve_fasta_repository(py, reference, reference_index)?;
-    let scanner = CramScanner::new(header, fields, tag_defs, repo)?;
+    let scanner = CramScanner::new(header, fields, tag_defs, repo).map_err(to_py)?;
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
@@ -1292,13 +1303,17 @@ pub fn read_cram(
             Reader::File(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
                 let index = resolve_cram_index(py, &src, index)?;
-                let batches = scanner.scan_query(fmt_reader, region, index, None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index, None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             Reader::PyFileLike(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
                 let index = resolve_cram_index(py, &src, index)?;
-                let batches = scanner.scan_query(fmt_reader, region, index, None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index, None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -1309,12 +1324,12 @@ pub fn read_cram(
         match reader {
             Reader::File(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
-                let batches = scanner.scan(fmt_reader, None, None, None)?;
+                let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             Reader::PyFileLike(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
-                let batches = scanner.scan(fmt_reader, None, None, None)?;
+                let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             _ => {

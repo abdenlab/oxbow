@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
-use std::io;
 use std::sync::Arc;
+
+use crate::OxbowError;
 
 use arrow::array::{ArrayRef, GenericStringBuilder, ListBuilder};
 use arrow::datatypes::{DataType, Field as ArrowField};
@@ -23,20 +24,17 @@ impl AttributeDef {
 }
 
 impl TryFrom<(String, String)> for AttributeDef {
-    type Error = io::Error;
+    type Error = OxbowError;
 
     fn try_from(def: (String, String)) -> Result<Self, Self::Error> {
         let (name, ty) = def;
         let ty = match ty.to_lowercase().as_str() {
             "string" => Ok(AttributeType::String),
             "array" => Ok(AttributeType::Array),
-            _ => Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!(
-                    "Invalid attribute type: '{}'. Must be 'String' or 'Array'.",
-                    ty
-                ),
-            )),
+            _ => Err(OxbowError::invalid_input(format!(
+                "Invalid attribute type: '{}'. Must be 'String' or 'Array'.",
+                ty
+            ))),
         }?;
         Ok(Self { name, ty })
     }
@@ -122,20 +120,17 @@ impl AttributeBuilder {
         }
     }
 
-    pub fn append_value(&mut self, value: &AttributeValue) -> io::Result<()> {
+    pub fn append_value(&mut self, value: &AttributeValue) -> crate::Result<()> {
         match self {
             Self::String(builder) => match value {
                 AttributeValue::String(v) => {
                     builder.append_value(v);
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected an attribute of type String, got {:?}",
-                        value
-                    ),
-                )),
+                _ => Err(crate::OxbowError::invalid_data(format!(
+                    "Type mismatch: expected an attribute of type String, got {:?}",
+                    value
+                ))),
             },
             Self::Array(builder) => match value {
                 AttributeValue::Array(array) => {

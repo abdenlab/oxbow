@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
-use std::io;
 use std::str::FromStr;
 use std::sync::Arc;
+
+use crate::OxbowError;
 
 use arrow::array::{ArrayRef, Float32Builder, GenericStringBuilder, Int64Builder, ListBuilder};
 use arrow::datatypes::{DataType, Field as ArrowField};
@@ -29,22 +30,16 @@ impl TagDef {
 }
 
 impl TryFrom<(String, String)> for TagDef {
-    type Error = io::Error;
+    type Error = OxbowError;
 
     fn try_from(def: (String, String)) -> Result<Self, Self::Error> {
         let (name, code) = def;
         if name.len() != 2 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Tag name must be 2 characters",
-            ));
+            return Err(OxbowError::invalid_input("Tag name must be 2 characters"));
         }
-        let ty: TagType = code.parse().map_err(|_| {
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Invalid tag type: {}", code),
-            )
-        })?;
+        let ty: TagType = code
+            .parse()
+            .map_err(|_| OxbowError::invalid_input(format!("Invalid tag type: {}", code)))?;
         Ok(Self { name, ty })
     }
 }
@@ -187,7 +182,7 @@ impl From<&Value<'_>> for TagType {
 }
 
 impl FromStr for TagType {
-    type Err = std::io::Error;
+    type Err = OxbowError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -208,10 +203,10 @@ impl FromStr for TagType {
             "Bi" => Ok(Self::ArrayInt32),
             "BI" => Ok(Self::ArrayUInt32),
             "Bf" => Ok(Self::ArrayFloat),
-            _ => Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                format!("Invalid tag type code: {}", s),
-            )),
+            _ => Err(OxbowError::invalid_input(format!(
+                "Invalid tag type code: {}",
+                s
+            ))),
         }
     }
 }
@@ -266,17 +261,17 @@ impl TagBuilder {
         }
     }
 
-    pub fn append_value(&mut self, value: &Value) -> io::Result<()> {
+    pub fn append_value(&mut self, value: &Value) -> crate::Result<()> {
         match self {
             Self::Character(builder) => {
                 if let Value::Character(v) = value {
                     builder.append_value(v.to_string());
                     Ok(())
                 } else {
-                    Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!("Type mismatch: expected Character, got {:?}", value),
-                    ))
+                    Err(OxbowError::invalid_data(format!(
+                        "Type mismatch: expected Character, got {:?}",
+                        value
+                    )))
                 }
             }
             Self::Hex(builder) => {
@@ -284,10 +279,10 @@ impl TagBuilder {
                     builder.append_value(v.to_string());
                     Ok(())
                 } else {
-                    Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!("Type mismatch: expected Hex, got {:?}", value),
-                    ))
+                    Err(OxbowError::invalid_data(format!(
+                        "Type mismatch: expected Hex, got {:?}",
+                        value
+                    )))
                 }
             }
             Self::Integer(builder) => match value.as_int() {
@@ -295,10 +290,10 @@ impl TagBuilder {
                     builder.append_value(v);
                     Ok(())
                 }
-                None => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!("Type mismatch: expected Integer, got {:?}", value),
-                )),
+                None => Err(OxbowError::invalid_data(format!(
+                    "Type mismatch: expected Integer, got {:?}",
+                    value
+                ))),
             },
             Self::Float(builder) => match value {
                 Value::Float(v) => {
@@ -321,13 +316,10 @@ impl TagBuilder {
                     builder.append_value(f32::from(*v));
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected Float or compatible integer, got {:?}",
-                        value
-                    ),
-                )),
+                _ => Err(OxbowError::invalid_data(format!(
+                    "Type mismatch: expected Float or compatible integer, got {:?}",
+                    value
+                ))),
             },
             Self::String(builder) => match value {
                 Value::String(v) => {
@@ -381,26 +373,23 @@ impl TagBuilder {
                     self.append_values(array)?;
                     Ok(())
                 } else {
-                    Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!(
-                            "Type mismatch: expected an Array, got non-array {:?}",
-                            value
-                        ),
-                    ))
+                    Err(OxbowError::invalid_data(format!(
+                        "Type mismatch: expected an Array, got non-array {:?}",
+                        value
+                    )))
                 }
             }
         }
     }
 
-    fn append_values(&mut self, array: &Array) -> io::Result<()> {
+    fn append_values(&mut self, array: &Array) -> crate::Result<()> {
         match self {
             Self::IntegerArray(builder) => match array {
                 Array::Int8(values) => {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(i64::from(v)),
-                            Err(e) => return Err(e),
+                            Err(e) => return Err(e.into()),
                         }
                     }
                     builder.append(true);
@@ -410,7 +399,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(i64::from(v)),
-                            Err(e) => return Err(e),
+                            Err(e) => return Err(e.into()),
                         }
                     }
                     builder.append(true);
@@ -420,7 +409,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(i64::from(v)),
-                            Err(e) => return Err(e),
+                            Err(e) => return Err(e.into()),
                         }
                     }
                     builder.append(true);
@@ -430,7 +419,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(i64::from(v)),
-                            Err(e) => return Err(e),
+                            Err(e) => return Err(e.into()),
                         }
                     }
                     builder.append(true);
@@ -440,7 +429,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(i64::from(v)),
-                            Err(e) => return Err(e),
+                            Err(e) => return Err(e.into()),
                         }
                     }
                     builder.append(true);
@@ -450,26 +439,23 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(i64::from(v)),
-                            Err(e) => return Err(e),
+                            Err(e) => return Err(e.into()),
                         }
                     }
                     builder.append(true);
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected Array<Int8/16/32/UInt8/16/32>, got {:?}",
-                        array
-                    ),
-                )),
+                _ => Err(OxbowError::invalid_data(format!(
+                    "Type mismatch: expected Array<Int8/16/32/UInt8/16/32>, got {:?}",
+                    array
+                ))),
             },
             Self::FloatArray(builder) => match array {
                 Array::Float(values) => {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(v),
-                            Err(e) => return Err(e),
+                            Err(e) => return Err(e.into()),
                         }
                     }
                     builder.append(true);
@@ -479,7 +465,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(f32::from(v)),
-                            Err(e) => return Err(e),
+                            Err(e) => return Err(e.into()),
                         }
                     }
                     builder.append(true);
@@ -489,7 +475,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(f32::from(v)),
-                            Err(e) => return Err(e),
+                            Err(e) => return Err(e.into()),
                         }
                     }
                     builder.append(true);
@@ -499,7 +485,7 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(f32::from(v)),
-                            Err(e) => return Err(e),
+                            Err(e) => return Err(e.into()),
                         }
                     }
                     builder.append(true);
@@ -509,27 +495,21 @@ impl TagBuilder {
                     for value in values.iter() {
                         match value {
                             Ok(v) => builder.values().append_value(f32::from(v)),
-                            Err(e) => return Err(e),
+                            Err(e) => return Err(e.into()),
                         }
                     }
                     builder.append(true);
                     Ok(())
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!(
-                        "Type mismatch: expected Array<Float> or compatible integers, got {:?}",
-                        array
-                    ),
-                )),
+                _ => Err(OxbowError::invalid_data(format!(
+                    "Type mismatch: expected Array<Float> or compatible integers, got {:?}",
+                    array
+                ))),
             },
-            _ => Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!(
-                    "Type mismatch: expected an Array, got non-array {:?}",
-                    array,
-                ),
-            )),
+            _ => Err(OxbowError::invalid_data(format!(
+                "Type mismatch: expected an Array, got non-array {:?}",
+                array,
+            ))),
         }
     }
 
@@ -546,48 +526,48 @@ impl TagBuilder {
     }
 }
 
-fn array_to_string(array: &Array) -> io::Result<String> {
+fn array_to_string(array: &Array) -> crate::Result<String> {
     match array {
         Array::Int8(values) => {
             let values: Result<Vec<String>, _> =
                 values.iter().map(|v| v.map(|x| x.to_string())).collect();
-            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            let values = values?;
             Ok(format!("[{}]", values.join(", ")))
         }
         Array::UInt8(values) => {
             let values: Result<Vec<String>, _> =
                 values.iter().map(|v| v.map(|x| x.to_string())).collect();
-            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            let values = values?;
             Ok(format!("[{}]", values.join(", ")))
         }
         Array::Int16(values) => {
             let values: Result<Vec<String>, _> =
                 values.iter().map(|v| v.map(|x| x.to_string())).collect();
-            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            let values = values?;
             Ok(format!("[{}]", values.join(", ")))
         }
         Array::UInt16(values) => {
             let values: Result<Vec<String>, _> =
                 values.iter().map(|v| v.map(|x| x.to_string())).collect();
-            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            let values = values?;
             Ok(format!("[{}]", values.join(", ")))
         }
         Array::Int32(values) => {
             let values: Result<Vec<String>, _> =
                 values.iter().map(|v| v.map(|x| x.to_string())).collect();
-            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            let values = values?;
             Ok(format!("[{}]", values.join(", ")))
         }
         Array::UInt32(values) => {
             let values: Result<Vec<String>, _> =
                 values.iter().map(|v| v.map(|x| x.to_string())).collect();
-            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            let values = values?;
             Ok(format!("[{}]", values.join(", ")))
         }
         Array::Float(values) => {
             let values: Result<Vec<String>, _> =
                 values.iter().map(|v| v.map(|x| x.to_string())).collect();
-            let values = values.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            let values = values?;
             Ok(format!("[{}]", values.join(", ")))
         }
     }

@@ -9,7 +9,7 @@ use pyo3_arrow::PySchema;
 
 use noodles::core::Region;
 
-use crate::error::err_on_unwind;
+use crate::error::{err_on_unwind, to_py};
 use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
 use oxbow::bed::{BedScanner, BedSchema};
 use oxbow::util::batches_to_ipc;
@@ -64,7 +64,7 @@ impl PyBedScanner {
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let _bed_schema: BedSchema = bed_schema.parse().unwrap();
-        let scanner = BedScanner::new(_bed_schema, fields.clone())?;
+        let scanner = BedScanner::new(_bed_schema, fields.clone()).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -134,7 +134,7 @@ impl PyBedScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -171,7 +171,7 @@ impl PyBedScanner {
         let batch_reader = self
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -219,7 +219,7 @@ impl PyBedScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
@@ -227,7 +227,7 @@ impl PyBedScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
@@ -283,14 +283,14 @@ impl PyBedScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -304,14 +304,14 @@ impl PyBedScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -367,7 +367,7 @@ pub fn read_bed(
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let bed_schema: BedSchema = bed_schema.parse().unwrap();
-    let scanner = BedScanner::new(bed_schema, fields)?;
+    let scanner = BedScanner::new(bed_schema, fields).map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
         let region = region
@@ -378,15 +378,17 @@ pub fn read_bed(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -397,7 +399,7 @@ pub fn read_bed(
         }
     } else {
         let fmt_reader = noodles::bed::io::Reader::new(reader);
-        let batches = scanner.scan(fmt_reader, None, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
 

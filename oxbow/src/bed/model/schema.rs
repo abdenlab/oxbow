@@ -1,7 +1,7 @@
-use std::io;
 use std::str::FromStr;
 
 use super::field_def::{bed_standard_fields, FieldDef, FieldType};
+use crate::OxbowError;
 
 /// Represents a typed BED schema using AutoSql-based field definitions.
 ///
@@ -52,18 +52,18 @@ impl BedSchema {
     /// Define a BED schema with `n` standard fields and an optional list of custom field definitions.
     ///
     /// The `n` standard fields have pre-defined types. See the BED format specification for details.
-    pub fn new(n: usize, custom: Option<Vec<FieldDef>>) -> io::Result<Self> {
+    pub fn new(n: usize, custom: Option<Vec<FieldDef>>) -> crate::Result<Self> {
         let standard_fields = bed_standard_fields();
         if n < 3 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Invalid BED schema: n < 3 (n={})", n),
-            ));
+            return Err(OxbowError::invalid_input(format!(
+                "Invalid BED schema: n < 3 (n={})",
+                n
+            )));
         } else if n > 12 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Invalid BED schema: n > 12 (n={})", n),
-            ));
+            return Err(OxbowError::invalid_input(format!(
+                "Invalid BED schema: n > 12 (n={})",
+                n
+            )));
         }
 
         let mut fields: Vec<FieldDef> = standard_fields.into_iter().take(n).collect();
@@ -98,7 +98,7 @@ impl BedSchema {
     ///
     /// All standard fields are assigned their default types. All custom fields are assigned type
     /// `String`.
-    pub fn new_from_nm(n: usize, m: Option<usize>) -> io::Result<Self> {
+    pub fn new_from_nm(n: usize, m: Option<usize>) -> crate::Result<Self> {
         let custom_fields = m.map(|m| {
             (1..=m)
                 .map(|i| FieldDef::new(format!("BED{}+{}", n, i), FieldType::String))
@@ -112,7 +112,7 @@ impl BedSchema {
     /// BedGraph can be considered a BED3+1 format, where the first three fields are the standard
     /// BED fields (chrom, start, end) and the fourth field is a floating point value representing
     /// a unique score assigned to the bases in the corresponding interval.
-    pub fn new_bedgraph() -> io::Result<Self> {
+    pub fn new_bedgraph() -> crate::Result<Self> {
         Self::new(
             3,
             Some(vec![FieldDef::new("value".to_string(), FieldType::Float)]),
@@ -175,7 +175,7 @@ impl std::fmt::Display for BedSchema {
 }
 
 impl FromStr for BedSchema {
-    type Err = io::Error;
+    type Err = OxbowError;
     /// Define a BED schema using the shorthand BED*n+m* notation.
     ///
     /// The specifier can be one of the following (case-insensitive):
@@ -200,11 +200,8 @@ impl FromStr for BedSchema {
             return Self::new_from_nm(6, Some(0));
         }
 
-        fn parse_error(s: &str) -> io::Error {
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Invalid BED format specifier: {}", s),
-            )
+        fn parse_error(s: &str) -> OxbowError {
+            OxbowError::invalid_input(format!("Invalid BED format specifier: {}", s))
         }
 
         if let Some(rest) = s.strip_prefix("bed") {

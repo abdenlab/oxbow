@@ -1,4 +1,3 @@
-use std::io;
 use std::sync::Arc;
 
 use arrow::array::{ArrayRef, StructArray};
@@ -31,7 +30,7 @@ impl BatchBuilder {
         field_names: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         capacity: usize,
-    ) -> io::Result<Self> {
+    ) -> crate::Result<Self> {
         let ref_names = header
             .reference_sequences()
             .iter()
@@ -52,7 +51,7 @@ impl BatchBuilder {
             let builder = match field {
                 Field::Rname | Field::Rnext => {
                     FieldBuilder::with_refs(field.clone(), capacity, &ref_names)
-                        .map_err(io::Error::other)?
+                        .map_err(|e| crate::OxbowError::invalid_data(e.to_string()))?
                 }
                 _ => FieldBuilder::new(field.clone(), capacity),
             };
@@ -143,7 +142,7 @@ impl RecordBatchBuilder for BatchBuilder {
 
 /// Append a SAM record to the batch.
 impl Push<&noodles::sam::Record> for BatchBuilder {
-    fn push(&mut self, record: &noodles::sam::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::sam::Record) -> crate::Result<()> {
         // fixed fields
         for (_, builder) in self.field_builders.iter_mut() {
             builder.push(record, &self.header)?;
@@ -183,7 +182,7 @@ impl Push<&noodles::sam::Record> for BatchBuilder {
 
 /// Append a BAM record to the batch.
 impl Push<&noodles::bam::Record> for BatchBuilder {
-    fn push(&mut self, record: &noodles::bam::Record) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::bam::Record) -> crate::Result<()> {
         // fixed fields
         for (_, builder) in self.field_builders.iter_mut() {
             builder.push(record, &self.header)?;
@@ -223,7 +222,7 @@ impl Push<&noodles::bam::Record> for BatchBuilder {
 
 /// Append a CRAM record to the batch.
 impl Push<&noodles::sam::alignment::RecordBuf> for BatchBuilder {
-    fn push(&mut self, record: &noodles::sam::alignment::RecordBuf) -> io::Result<()> {
+    fn push(&mut self, record: &noodles::sam::alignment::RecordBuf) -> crate::Result<()> {
         use noodles::sam::alignment::record::data::field::Value;
         // fixed fields
         for (_, builder) in self.field_builders.iter_mut() {

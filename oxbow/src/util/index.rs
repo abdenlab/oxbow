@@ -4,6 +4,8 @@ use std::io;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 
+use crate::OxbowError;
+
 use noodles::bam::bai;
 use noodles::core::region::Interval;
 use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
@@ -24,7 +26,7 @@ pub enum IndexType {
 }
 
 impl IndexType {
-    pub fn from_path(path: &str) -> io::Result<Self> {
+    pub fn from_path(path: &str) -> crate::Result<Self> {
         if path.ends_with(".csi") {
             let mut reader = File::open(path).map(csi::io::Reader::new)?;
             Ok(IndexType::Binned(reader.read_index()?))
@@ -35,8 +37,7 @@ impl IndexType {
             let mut reader = File::open(path).map(bai::io::Reader::new)?;
             Ok(IndexType::Linear(reader.read_index()?))
         } else {
-            Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
+            Err(OxbowError::invalid_input(
                 "Index file must end with .csi, .tbi, or .bai",
             ))
         }
@@ -176,7 +177,7 @@ pub fn partition_from_index(index: &IndexType, chunksize: u64) -> Vec<(u64, u16)
 }
 
 /// Load an index from a file reader, returning the appropriate IndexType.
-pub fn index_from_reader<R>(mut read: R) -> io::Result<IndexType>
+pub fn index_from_reader<R>(mut read: R) -> crate::Result<IndexType>
 where
     R: Read + Seek,
 {
@@ -200,8 +201,7 @@ where
             let mut tabix_reader = noodles::tabix::io::Reader::new(read);
             match tabix_reader.read_index() {
                 Ok(index) => Ok(IndexType::Linear(index)),
-                Err(_) => Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
+                Err(_) => Err(OxbowError::invalid_data(
                     "Failed to read index from reader.",
                 )),
             }
@@ -210,7 +210,7 @@ where
 }
 
 /// Find an index file for a given source path and load it.
-pub fn index_from_source_path(path: &str) -> io::Result<IndexType> {
+pub fn index_from_source_path(path: &str) -> crate::Result<IndexType> {
     let bai_path = format!("{}.bai", path);
     let csi_path = format!("{}.csi", path);
     let tbi_path = format!("{}.tbi", path);
@@ -221,8 +221,7 @@ pub fn index_from_source_path(path: &str) -> io::Result<IndexType> {
     } else if Path::new(&tbi_path).exists() {
         IndexType::from_path(&tbi_path)?
     } else {
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
+        return Err(OxbowError::not_found(
             "Could not find a .bai, .csi, or .tbi index file for the given file.",
         ));
     };

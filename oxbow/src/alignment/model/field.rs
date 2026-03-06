@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::io::Write;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -197,7 +197,7 @@ impl FieldBuilder {
 }
 
 pub trait Push<T> {
-    fn push(&mut self, record: T, header: &noodles::sam::Header) -> io::Result<()>;
+    fn push(&mut self, record: T, header: &noodles::sam::Header) -> crate::Result<()>;
 }
 
 /// Append a field value from a SAM record to the column.
@@ -206,7 +206,7 @@ impl Push<&noodles::sam::Record> for FieldBuilder {
         &mut self,
         record: &noodles::sam::Record,
         header: &noodles::sam::Header,
-    ) -> io::Result<()> {
+    ) -> crate::Result<()> {
         match self {
             Self::Qname(builder) => {
                 builder.append_option(record.name().map(|name| name.to_string()));
@@ -274,7 +274,7 @@ impl Push<&noodles::bam::Record> for FieldBuilder {
         &mut self,
         record: &noodles::bam::Record,
         header: &noodles::sam::Header,
-    ) -> io::Result<()> {
+    ) -> crate::Result<()> {
         match self {
             Self::Qname(builder) => {
                 builder.append_option(record.name().map(|name| name.to_string()));
@@ -339,7 +339,7 @@ impl Push<&noodles::sam::alignment::RecordBuf> for FieldBuilder {
         &mut self,
         record: &noodles::sam::alignment::RecordBuf,
         header: &noodles::sam::Header,
-    ) -> io::Result<()> {
+    ) -> crate::Result<()> {
         match self {
             Self::Qname(builder) => {
                 builder.append_option(record.name().map(|name| name.to_string()));

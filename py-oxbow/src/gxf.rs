@@ -11,7 +11,7 @@ use pyo3_arrow::PySchema;
 
 use noodles::core::Region;
 
-use crate::error::err_on_unwind;
+use crate::error::{err_on_unwind, to_py};
 use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
 use oxbow::gxf::{GffScanner, GtfScanner};
 use oxbow::util::batches_to_ipc;
@@ -52,7 +52,8 @@ impl PyGtfScanner {
     ) -> PyResult<Self> {
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-        let scanner = GtfScanner::new(None, fields.clone(), attribute_defs.clone())?;
+        let scanner =
+            GtfScanner::new(None, fields.clone(), attribute_defs.clone()).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -105,21 +106,21 @@ impl PyGtfScanner {
             Reader::BgzfFile(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
-                let defs = GtfScanner::attribute_defs(&mut fmt_reader, scan_rows)?;
+                let defs = GtfScanner::attribute_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
-                let defs = GtfScanner::attribute_defs(&mut fmt_reader, scan_rows)?;
+                let defs = GtfScanner::attribute_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             _ => {
                 let pos = reader.stream_position()?;
                 let mut fmt_reader = noodles::gtf::io::Reader::new(reader);
-                let defs = GtfScanner::attribute_defs(&mut fmt_reader, scan_rows)?;
+                let defs = GtfScanner::attribute_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader
                     .into_inner()
                     .seek(std::io::SeekFrom::Start(pos))?;
@@ -165,7 +166,7 @@ impl PyGtfScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -198,7 +199,7 @@ impl PyGtfScanner {
         let batch_reader = self
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -236,7 +237,7 @@ impl PyGtfScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
@@ -244,7 +245,7 @@ impl PyGtfScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
@@ -294,14 +295,14 @@ impl PyGtfScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -315,14 +316,14 @@ impl PyGtfScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -370,7 +371,8 @@ impl PyGffScanner {
     ) -> PyResult<Self> {
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-        let scanner = GffScanner::new(None, fields.clone(), attribute_defs.clone())?;
+        let scanner =
+            GffScanner::new(None, fields.clone(), attribute_defs.clone()).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -423,21 +425,21 @@ impl PyGffScanner {
             Reader::BgzfFile(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
-                let defs = GffScanner::attribute_defs(&mut fmt_reader, scan_rows)?;
+                let defs = GffScanner::attribute_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let pos = bgzf_reader.virtual_position();
                 let mut fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
-                let defs = GffScanner::attribute_defs(&mut fmt_reader, scan_rows)?;
+                let defs = GffScanner::attribute_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader.into_inner().seek_to_virtual_position(pos)?;
                 Ok(defs)
             }
             _ => {
                 let pos = reader.stream_position()?;
                 let mut fmt_reader = noodles::gff::io::Reader::new(reader);
-                let defs = GffScanner::attribute_defs(&mut fmt_reader, scan_rows)?;
+                let defs = GffScanner::attribute_defs(&mut fmt_reader, scan_rows).map_err(to_py)?;
                 fmt_reader
                     .into_inner()
                     .seek(std::io::SeekFrom::Start(pos))?;
@@ -482,7 +484,7 @@ impl PyGffScanner {
         let batch_reader = self
             .scanner
             .scan(fmt_reader, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -515,7 +517,7 @@ impl PyGffScanner {
         let batch_reader = self
             .scanner
             .scan_byte_ranges(fmt_reader, byte_ranges, columns, batch_size, limit)
-            .map_err(PyErr::new::<PyValueError, _>)?;
+            .map_err(to_py)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -553,7 +555,7 @@ impl PyGffScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
@@ -561,7 +563,7 @@ impl PyGffScanner {
                 let batch_reader = self
                     .scanner
                     .scan_virtual_ranges(fmt_reader, vpos_ranges, columns, batch_size, limit)
-                    .map_err(PyErr::new::<PyValueError, _>)?;
+                    .map_err(to_py)?;
                 Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
             }
             _ => Err(PyErr::new::<PyValueError, _>(
@@ -611,14 +613,14 @@ impl PyGffScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -632,14 +634,14 @@ impl PyGffScanner {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                     IndexType::Binned(index) => {
                         let batch_reader = self
                             .scanner
                             .scan_query(fmt_reader, region, index, columns, batch_size, limit)
-                            .map_err(PyErr::new::<PyValueError, _>)?;
+                            .map_err(to_py)?;
                         PyRecordBatchReader::new(err_on_unwind(batch_reader))
                     }
                 };
@@ -681,7 +683,7 @@ pub fn read_gtf(
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let scanner = GtfScanner::new(None, fields, attr_defs)?;
+    let scanner = GtfScanner::new(None, fields, attr_defs).map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
         let region = region
@@ -692,15 +694,17 @@ pub fn read_gtf(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -711,7 +715,7 @@ pub fn read_gtf(
         }
     } else {
         let fmt_reader = noodles::gtf::io::Reader::new(reader);
-        let batches = scanner.scan(fmt_reader, None, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
 
@@ -747,7 +751,7 @@ pub fn read_gff(
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let scanner = GffScanner::new(None, fields, attr_defs)?;
+    let scanner = GffScanner::new(None, fields, attr_defs).map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
         let region = region
@@ -758,15 +762,17 @@ pub fn read_gff(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
+                let batches = scanner
+                    .scan_query(fmt_reader, region, index.into_boxed(), None, None, None)
+                    .map_err(to_py)?;
                 batches_to_ipc(batches)
             }
             _ => {
@@ -777,7 +783,7 @@ pub fn read_gff(
         }
     } else {
         let fmt_reader = noodles::gff::io::Reader::new(reader);
-        let batches = scanner.scan(fmt_reader, None, None, None)?;
+        let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
 

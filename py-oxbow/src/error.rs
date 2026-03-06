@@ -2,6 +2,23 @@ use std::{panic, panic::AssertUnwindSafe};
 
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatchReader;
+use pyo3::exceptions::{PyIOError, PyKeyError, PyValueError};
+use pyo3::PyErr;
+
+/// Converts an [`oxbow::OxbowError`] into a [`pyo3::PyErr`], mapping error
+/// variants to appropriate Python exception types:
+///
+/// - [`OxbowError::NotFound`] -> [`PyKeyError`]
+/// - [`OxbowError::Io`] -> [`PyIOError`]
+/// - All others -> [`PyValueError`]
+pub(crate) fn to_py(err: oxbow::OxbowError) -> PyErr {
+    let msg = err.display_with_backtrace();
+    match err {
+        oxbow::OxbowError::NotFound { .. } => PyErr::new::<PyKeyError, _>(msg),
+        oxbow::OxbowError::Io(_) => PyErr::new::<PyIOError, _>(msg),
+        _ => PyErr::new::<PyValueError, _>(msg),
+    }
+}
 
 /// An Arrow RecordBatchReader wrapper that converts panics to errors during iteration.
 ///
