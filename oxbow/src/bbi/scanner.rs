@@ -1,3 +1,4 @@
+pub mod batch_iterator;
 pub mod bbizoom;
 pub mod bigbed;
 pub mod bigwig;

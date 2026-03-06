@@ -5,9 +5,9 @@ use arrow::datatypes::{Schema as ArrowSchema, SchemaRef};
 
 pub use super::BBIReader;
 use crate::batch::RecordBatchBuilder as _;
-use crate::bbi::batch_iterator::zoom::{BBIZoomBatchIterator, BBIZoomQueryBatchIterator};
 use crate::bbi::model::zoom::field::DEFAULT_FIELD_NAMES;
 use crate::bbi::model::zoom::BatchBuilder;
+use crate::bbi::scanner::batch_iterator::zoom::{BBIZoomBatchIterator, BBIZoomQueryBatchIterator};
 
 /// A scanner for the summary statistics from BBI file zoom level.
 ///
@@ -17,7 +17,7 @@ use crate::bbi::model::zoom::BatchBuilder;
 /// # Examples
 ///
 /// ```no_run
-/// use oxbow::bbi::format::bbizoom::Scanner;
+/// use oxbow::bbi::scanner::bbizoom::Scanner;
 /// use oxbow::bbi::BBIReader;
 ///
 /// let mut fmt_reader = bigtools::BigWigRead::open_file("sample.bigWig").unwrap();

@@ -6,10 +6,10 @@ use noodles::bgzf::VirtualPosition;
 use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 use noodles::csi::BinningIndex;
 
-use crate::alignment::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::alignment::model::field::DEFAULT_FIELD_NAMES;
 use crate::alignment::model::tag::TagScanner;
 use crate::alignment::model::BatchBuilder;
+use crate::alignment::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::batch::RecordBatchBuilder as _;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 
@@ -21,7 +21,7 @@ use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 /// # Examples
 ///
 /// ```no_run
-/// use oxbow::alignment::format::sam::Scanner;
+/// use oxbow::alignment::scanner::sam::Scanner;
 /// use std::fs::File;
 /// use std::io::BufReader;
 ///
@@ -228,7 +228,7 @@ impl Scanner {
 
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
-        let reference_sequence_id = resolve_chrom_id(&self.header, region.name())?;
+        let reference_sequence_id = super::resolve_chrom_id(&self.header, region.name())?;
         let chunks = index.query(reference_sequence_id, interval)?;
         let bgzf_reader = fmt_reader.into_inner();
         let query_reader = BgzfChunkReader::new(bgzf_reader, chunks);
@@ -323,23 +323,4 @@ impl Scanner {
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
         Ok(batch_iter)
     }
-}
-
-fn resolve_chrom_id(
-    header: &noodles::sam::Header,
-    reference_sequence_name: &[u8],
-) -> io::Result<usize> {
-    let Some(id) = header
-        .reference_sequences()
-        .get_index_of(reference_sequence_name)
-    else {
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            format!(
-                "Reference sequence {:?} not found in index header.",
-                reference_sequence_name
-            ),
-        ));
-    };
-    Ok(id)
 }

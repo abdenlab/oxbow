@@ -5,9 +5,9 @@ use arrow::datatypes::{Schema as ArrowSchema, SchemaRef};
 use bigtools::BigWigRead;
 
 use crate::batch::RecordBatchBuilder as _;
-use crate::bbi::batch_iterator::base::{BigWigBatchIterator, BigWigQueryBatchIterator};
 use crate::bbi::model::base::BatchBuilder;
 use crate::bbi::model::base::BedSchema;
+use crate::bbi::scanner::batch_iterator::base::{BigWigBatchIterator, BigWigQueryBatchIterator};
 
 /// A BigWig scanner.
 ///
@@ -17,7 +17,7 @@ use crate::bbi::model::base::BedSchema;
 /// # Examples
 ///
 /// ```no_run
-/// use oxbow::bbi::format::bigwig::Scanner;
+/// use oxbow::bbi::scanner::bigwig::Scanner;
 /// let mut fmt_reader = bigtools::BigWigRead::open_file("sample.bigWig").unwrap();
 /// let info = fmt_reader.info();
 ///

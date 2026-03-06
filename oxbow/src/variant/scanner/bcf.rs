@@ -8,9 +8,9 @@ use noodles::csi::BinningIndex;
 
 use crate::batch::RecordBatchBuilder as _;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
-use crate::variant::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::variant::model::field::DEFAULT_FIELD_NAMES;
 use crate::variant::model::{BatchBuilder, GenotypeBy};
+use crate::variant::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 
 /// A BCF scanner.
 ///
@@ -21,7 +21,7 @@ use crate::variant::model::{BatchBuilder, GenotypeBy};
 /// # Examples
 ///
 /// ```no_run
-/// use oxbow::variant::format::bcf::Scanner;
+/// use oxbow::variant::scanner::bcf::Scanner;
 /// use std::fs::File;
 /// use std::io::BufReader;
 ///
