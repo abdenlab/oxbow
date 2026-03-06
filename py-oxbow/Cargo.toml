@@ -15,5 +15,5 @@ arrow = { workspace = true }
 noodles = { workspace = true }
 bigtools = { workspace = true }
 flate2 = { workspace = true }
-pyo3 = { version = "0.27", features = ["abi3-py39"] }
-pyo3-arrow = { version = "0.15", default-features = false }
+pyo3 = { version = "0.28", features = ["abi3-py39"] }
+pyo3-arrow = { version = "0.17", default-features = false }

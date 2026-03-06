@@ -8,9 +8,9 @@ members = [
 
 [workspace.dependencies]
 oxbow = { path = "oxbow" }
-arrow = { version = "57" }
-arrow-array = { version = "57" }
-arrow-schema = { version = "57" }
+arrow = { version = "58" }
+arrow-array = { version = "58" }
+arrow-schema = { version = "58" }
 noodles = { version = "0.107", features = ["bam", "bcf", "bed", "bgzf", "core", "csi", "cram", "fasta", "fastq", "gff", "gtf", "sam", "tabix", "vcf"] }
 bigtools = { version = "0.5.6", features = ["read"] }
 flate2 = "1.1.5"
