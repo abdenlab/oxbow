@@ -1,4 +1,4 @@
-use std::io::{self, BufRead, Read, Seek};
+use std::io::{self, BufRead, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::{Schema, SchemaRef};
@@ -214,9 +214,9 @@ impl Scanner {
     /// The scan will consume contiguous "chunks" of BGZF blocks and filter for
     /// records that overlap the given region. The cursor will move to the end
     /// of the last record scanned.
-    pub fn scan_query<R: BufRead + Seek>(
+    pub fn scan_query<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
-        fmt_reader: noodles::sam::io::Reader<noodles::bgzf::io::Reader<R>>,
+        fmt_reader: noodles::sam::io::Reader<R>,
         region: noodles::core::Region,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
@@ -251,9 +251,9 @@ impl Scanner {
     ///
     /// The scan will start at the offset where unmapped reads begin and
     /// continue until the source stream is exhausted.
-    pub fn scan_unmapped<R: BufRead + Seek>(
+    pub fn scan_unmapped<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
-        mut fmt_reader: noodles::sam::io::Reader<noodles::bgzf::io::Reader<R>>,
+        mut fmt_reader: noodles::sam::io::Reader<R>,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
@@ -300,9 +300,9 @@ impl Scanner {
     ///
     /// The scan will traverse the specified virtual position ranges without filtering by genomic
     /// coordinates. This is useful when you have pre-computed virtual offsets from a custom index.
-    pub fn scan_virtual_ranges<R: Read + Seek>(
+    pub fn scan_virtual_ranges<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
-        fmt_reader: noodles::sam::io::Reader<noodles::bgzf::io::Reader<R>>,
+        fmt_reader: noodles::sam::io::Reader<R>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,

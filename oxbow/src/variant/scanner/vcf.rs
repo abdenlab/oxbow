@@ -1,4 +1,4 @@
-use std::io::{self, BufRead, Read, Seek};
+use std::io::{self, BufRead, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::{Schema, SchemaRef};
@@ -295,9 +295,9 @@ impl Scanner {
     }
 
     /// Returns an iterator yielding record batches satisfying a genomic range query.
-    pub fn scan_query<R: BufRead + Seek>(
+    pub fn scan_query<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
-        fmt_reader: noodles::vcf::io::Reader<noodles::bgzf::io::Reader<R>>,
+        fmt_reader: noodles::vcf::io::Reader<R>,
         region: noodles::core::Region,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
@@ -348,9 +348,9 @@ impl Scanner {
     }
 
     /// Returns an iterator yielding record batches from specified virtual position ranges.
-    pub fn scan_virtual_ranges<R: Read + Seek>(
+    pub fn scan_virtual_ranges<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
-        fmt_reader: noodles::vcf::io::Reader<noodles::bgzf::io::Reader<R>>,
+        fmt_reader: noodles::vcf::io::Reader<R>,
         vpos_ranges: Vec<(VirtualPosition, VirtualPosition)>,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
