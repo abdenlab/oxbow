@@ -59,7 +59,10 @@ class TestFastaFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.FastaFile("data/sample.fasta", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 
@@ -110,7 +113,10 @@ class TestFastaFile:
         )
         batches = ox.FastaFile(*input.args, **input.kwargs).batches()
         try:
-            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except ValueError as e:
             actual = str(e)
 
@@ -214,7 +220,10 @@ class TestFastqFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.FastqFile("data/sample.fastq", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 

@@ -56,7 +56,10 @@ class TestSamFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.SamFile("data/sample.sam", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 
@@ -134,7 +137,10 @@ class TestBamFile:
             "data/sample.bam", fields=fields, compressed=True
         ).batches()
         try:
-            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 
@@ -237,7 +243,10 @@ class TestCramFile:
             "data/sample.cram", fields=fields, compressed=True
         ).batches()
         try:
-            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 

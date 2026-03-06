@@ -58,7 +58,10 @@ class TestGtfFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.GtfFile("data/sample.gtf", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 
@@ -168,7 +171,10 @@ class TestGffFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.GffFile("data/sample.gff", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 

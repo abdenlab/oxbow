@@ -56,7 +56,10 @@ class TestBedFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.BedFile("data/sample.bed", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except OSError as e:
             actual = str(e)
 

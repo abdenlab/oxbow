@@ -54,7 +54,10 @@ class TestBigBedFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.BigBedFile("data/sample.bb", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except (OSError, ValueError) as e:
             actual = str(e)
 
@@ -130,7 +133,10 @@ class TestBigWigFile:
     def test_batches(self, fields, manifest: Manifest):
         batches = ox.BigWigFile("data/sample.bw", fields=fields).batches()
         try:
-            actual = {f"batch-{i:02}": pa.record_batch(b).to_pydict() for i, b in enumerate(batches)}
+            actual = {
+                f"batch-{i:02}": pa.record_batch(b).to_pydict()
+                for i, b in enumerate(batches)
+            }
         except (OSError, ValueError) as e:
             actual = str(e)
 

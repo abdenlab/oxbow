@@ -105,7 +105,11 @@ impl PyBigWigScanner {
     /// PyBBIZoomScanner
     ///     A scanner for the specified zoom level.
     #[pyo3(signature = (zoom_level, fields=None))]
-    fn get_zoom(&mut self, zoom_level: u32, fields: Option<Vec<String>>) -> PyResult<PyBBIZoomScanner> {
+    fn get_zoom(
+        &mut self,
+        zoom_level: u32,
+        fields: Option<Vec<String>>,
+    ) -> PyResult<PyBBIZoomScanner> {
         Python::attach(|py| {
             PyBBIZoomScanner::new(
                 py,
@@ -333,7 +337,11 @@ impl PyBigBedScanner {
     /// PyBBIZoomScanner
     ///     A scanner for the specified zoom level.
     #[pyo3(signature = (zoom_level, fields=None))]
-    fn get_zoom(&mut self, zoom_level: u32, fields: Option<Vec<String>>) -> PyResult<PyBBIZoomScanner> {
+    fn get_zoom(
+        &mut self,
+        zoom_level: u32,
+        fields: Option<Vec<String>>,
+    ) -> PyResult<PyBBIZoomScanner> {
         Python::attach(|py| {
             PyBBIZoomScanner::new(
                 py,

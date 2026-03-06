@@ -22,9 +22,7 @@ from oxbow.oxbow import (
 
 class BbiFile(DataSource):
     def _scan_query(self, scanner, region, columns, batch_size):
-        return scanner.scan_query(
-            region=region, columns=columns, batch_size=batch_size
-        )
+        return scanner.scan_query(region=region, columns=columns, batch_size=batch_size)
 
     @property
     def chrom_names(self) -> list[str]:
@@ -131,9 +129,7 @@ class BbiZoom(DataSource):
         return self._base.scanner().get_zoom(self._resolution, fields=self._fields)
 
     def _scan_query(self, scanner, region, columns, batch_size):
-        return scanner.scan_query(
-            region=region, columns=columns, batch_size=batch_size
-        )
+        return scanner.scan_query(region=region, columns=columns, batch_size=batch_size)
 
     def __init__(
         self,

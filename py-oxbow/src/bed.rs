@@ -378,27 +378,15 @@ pub fn read_bed(
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader,
-                    region,
-                    index.into_boxed(),
-                    None,
-                    None,
-                    None,
-                )?;
+                let batches =
+                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
                 batches_to_ipc(batches)
             }
             Reader::BgzfPyFileLike(bgzf_reader) => {
                 let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
                 let index = resolve_index(py, &src, index)?;
-                let batches = scanner.scan_query(
-                    fmt_reader,
-                    region,
-                    index.into_boxed(),
-                    None,
-                    None,
-                    None,
-                )?;
+                let batches =
+                    scanner.scan_query(fmt_reader, region, index.into_boxed(), None, None, None)?;
                 batches_to_ipc(batches)
             }
             _ => {

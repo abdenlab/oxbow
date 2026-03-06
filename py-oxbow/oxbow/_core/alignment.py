@@ -35,7 +35,9 @@ class AlignmentFile(DataSource):
             regions = [regions]
         self._regions = regions
 
-        self._scanner_kwargs = dict(compressed=compressed, fields=fields, tag_defs=tag_defs)
+        self._scanner_kwargs = dict(
+            compressed=compressed, fields=fields, tag_defs=tag_defs
+        )
         if tag_defs is None:
             discovered = self._scanner_type(
                 self._source, **self._tag_discovery_kwargs()

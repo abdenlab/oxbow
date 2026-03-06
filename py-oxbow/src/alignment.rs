@@ -1045,9 +1045,7 @@ impl PyCramScanner {
     ) -> PyResult<PyRecordBatchReader> {
         let reader = self.reader.clone();
         let fmt_reader = noodles::cram::io::Reader::new(reader);
-        let batch_reader = self
-            .scanner
-            .scan(fmt_reader, columns, batch_size, limit)?;
+        let batch_reader = self.scanner.scan(fmt_reader, columns, batch_size, limit)?;
         Ok(PyRecordBatchReader::new(err_on_unwind(batch_reader)))
     }
 
@@ -1294,15 +1292,13 @@ pub fn read_cram(
             Reader::File(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
                 let index = resolve_cram_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index, None, None, None)?;
+                let batches = scanner.scan_query(fmt_reader, region, index, None, None, None)?;
                 batches_to_ipc(batches)
             }
             Reader::PyFileLike(reader) => {
                 let fmt_reader = noodles::cram::io::Reader::new(reader);
                 let index = resolve_cram_index(py, &src, index)?;
-                let batches =
-                    scanner.scan_query(fmt_reader, region, index, None, None, None)?;
+                let batches = scanner.scan_query(fmt_reader, region, index, None, None, None)?;
                 batches_to_ipc(batches)
             }
             _ => {
