@@ -1,0 +1,7 @@
+@SQ	SN:chr1	LN:45
+@SQ	SN:chr2	LN:40
+read1	99	chr1	1	30	10M	=	20	29	ACGTACGTAC	*	NM:i:0
+read1	147	chr1	20	30	10M	=	1	-29	TACGTACGTA	*	NM:i:0
+read2	0	chr1	5	40	8M	*	0	0	ACGTACGT	*	NM:i:0
+read3	16	chr2	10	25	12M	*	0	0	GCATGCATGCAT	*	NM:i:0
+read4	0	chr2	1	50	5M2I5M	*	0	0	TGCATATGCATG	*	NM:i:2

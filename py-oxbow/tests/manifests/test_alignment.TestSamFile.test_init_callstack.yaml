@@ -4,6 +4,8 @@ SamFile("data/does-not-exist.sam"): |-
         <-  None
         ->  oxbow._core.base.DataSource._source
         <-  'data/does-not-exist.sam'
+        ->  oxbow._core.alignment.AlignmentFile._tag_discovery_kwargs()
+        <-  {'compressed': 'False'}
     !!  FileNotFoundError("No such file or directory (os error 2)")
 SamFile("data/malformed.sam"): |-
     ->  oxbow._core.alignment.AlignmentFile.__init__("data/malformed.sam")
@@ -11,6 +13,8 @@ SamFile("data/malformed.sam"): |-
         <-  None
         ->  oxbow._core.base.DataSource._source
         <-  'data/malformed.sam'
+        ->  oxbow._core.alignment.AlignmentFile._tag_discovery_kwargs()
+        <-  {'compressed': 'False'}
     <-  None
 SamFile("data/sample.sam"): |-
     ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.sam")
@@ -18,4 +22,6 @@ SamFile("data/sample.sam"): |-
         <-  None
         ->  oxbow._core.base.DataSource._source
         <-  'data/sample.sam'
+        ->  oxbow._core.alignment.AlignmentFile._tag_discovery_kwargs()
+        <-  {'compressed': 'False'}
     <-  None

@@ -288,3 +288,28 @@ class TestCramFile:
             regions=regions,
         )
         file.pl()
+
+    def test_with_reference(self):
+        file = ox.CramFile(
+            "data/sample-ref.cram",
+            reference="data/sample-ref.fa",
+            reference_index="data/sample-ref.fa.fai",
+        )
+        batch = pa.record_batch(next(file.batches()))
+        assert batch.num_rows == 5
+        # Verify bases are resolved (not Ns)
+        seqs = batch.column("seq").to_pylist()
+        assert all("N" not in s for s in seqs if s is not None)
+
+    def test_with_reference_and_regions(self):
+        file = ox.CramFile(
+            "data/sample-ref.cram",
+            reference="data/sample-ref.fa",
+            reference_index="data/sample-ref.fa.fai",
+            index="data/sample-ref.cram.crai",
+            regions=["chr1"],
+        )
+        batch = pa.record_batch(next(file.batches()))
+        assert batch.num_rows == 3
+        rnames = batch.column("rname").to_pylist()
+        assert all(r == "chr1" for r in rnames)

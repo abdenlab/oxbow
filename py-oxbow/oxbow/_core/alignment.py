@@ -37,10 +37,14 @@ class AlignmentFile(DataSource):
 
         self._scanner_kwargs = dict(compressed=compressed, fields=fields, tag_defs=tag_defs)
         if tag_defs is None:
-            discovered = self._scanner_type(self._source, compressed=compressed).tag_defs(
-                tag_scan_rows
-            )
+            discovered = self._scanner_type(
+                self._source, **self._tag_discovery_kwargs()
+            ).tag_defs(tag_scan_rows)
             self._scanner_kwargs["tag_defs"] = discovered
+
+    def _tag_discovery_kwargs(self) -> dict:
+        """Extra kwargs passed to the scanner used for tag discovery."""
+        return dict(compressed=self._scanner_kwargs.get("compressed", False))
 
     def _scan_query(self, scanner, region, columns, batch_size):
         if region == "*":
@@ -102,6 +106,8 @@ class CramFile(AlignmentFile):
         reference_index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
+        self._reference = reference
+        self._reference_index = reference_index
         super().__init__(
             source,
             compressed=compressed,
@@ -114,6 +120,13 @@ class CramFile(AlignmentFile):
         )
         self._scanner_kwargs["reference"] = reference
         self._scanner_kwargs["reference_index"] = reference_index
+
+    def _tag_discovery_kwargs(self) -> dict:
+        return dict(
+            compressed=self._scanner_kwargs.get("compressed", False),
+            reference=self._reference,
+            reference_index=self._reference_index,
+        )
 
 
 def from_sam(

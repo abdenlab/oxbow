@@ -1005,7 +1005,9 @@ impl PyCramScanner {
             Reader::File(_) | Reader::PyFileLike(_) => {
                 let pos = reader.stream_position()?;
                 let header = self.scanner.header().clone();
-                let mut fmt_reader = noodles::cram::io::Reader::new(reader);
+                let mut fmt_reader = noodles::cram::io::reader::Builder::default()
+                    .set_reference_sequence_repository(self.scanner.repo().clone())
+                    .build_from_reader(reader);
                 let defs = CramScanner::tag_defs(&mut fmt_reader, &header, scan_rows)?;
                 fmt_reader
                     .into_inner()

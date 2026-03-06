@@ -4,6 +4,8 @@ BamFile("data/does-not-exist.bam", compressed=True): |-
         <-  None
         ->  oxbow._core.base.DataSource._source
         <-  'data/does-not-exist.bam'
+        ->  oxbow._core.alignment.AlignmentFile._tag_discovery_kwargs()
+        <-  {'compressed': 'True'}
     !!  FileNotFoundError("No such file or directory (os error 2)")
 BamFile("data/malformed.bam", compressed=True): |-
     ->  oxbow._core.alignment.AlignmentFile.__init__("data/malformed.bam", compressed=True)
@@ -11,6 +13,8 @@ BamFile("data/malformed.bam", compressed=True): |-
         <-  None
         ->  oxbow._core.base.DataSource._source
         <-  'data/malformed.bam'
+        ->  oxbow._core.alignment.AlignmentFile._tag_discovery_kwargs()
+        <-  {'compressed': 'True'}
     !!  OSError("failed to fill whole buffer")
 BamFile("data/sample.bam", compressed=True): |-
     ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.bam", compressed=True)
@@ -18,4 +22,6 @@ BamFile("data/sample.bam", compressed=True): |-
         <-  None
         ->  oxbow._core.base.DataSource._source
         <-  'data/sample.bam'
+        ->  oxbow._core.alignment.AlignmentFile._tag_discovery_kwargs()
+        <-  {'compressed': 'True'}
     <-  None

@@ -5,6 +5,8 @@ CramFile("data/does-not-exist.cram"): |-
             <-  None
             ->  oxbow._core.base.DataSource._source
             <-  'data/does-not-exist.cram'
+            ->  oxbow._core.alignment.CramFile._tag_discovery_kwargs()
+            <-  {'compressed': 'False', 'reference': 'None', 'reference_index': 'None'}
         !!  FileNotFoundError("No such file or directory (os error 2)")
     !!  FileNotFoundError("No such file or directory (os error 2)")
 CramFile("data/malformed.cram"): |-
@@ -14,6 +16,8 @@ CramFile("data/malformed.cram"): |-
             <-  None
             ->  oxbow._core.base.DataSource._source
             <-  'data/malformed.cram'
+            ->  oxbow._core.alignment.CramFile._tag_discovery_kwargs()
+            <-  {'compressed': 'False', 'reference': 'None', 'reference_index': 'None'}
         <-  None
     <-  None
 CramFile("data/sample.cram"): |-
@@ -23,5 +27,7 @@ CramFile("data/sample.cram"): |-
             <-  None
             ->  oxbow._core.base.DataSource._source
             <-  'data/sample.cram'
+            ->  oxbow._core.alignment.CramFile._tag_discovery_kwargs()
+            <-  {'compressed': 'False', 'reference': 'None', 'reference_index': 'None'}
         <-  None
     <-  None
