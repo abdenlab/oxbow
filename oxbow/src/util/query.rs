@@ -2,7 +2,9 @@ use std::io::{self, BufRead, Read, Seek};
 use std::vec;
 
 use noodles::bgzf::VirtualPosition;
-use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
+
+/// A virtual position range in a BGZF-encoded file.
+pub type VirtualRange = (VirtualPosition, VirtualPosition);
 
 /// A reader that decodes a sequence of virtual position ranges ("chunks") in a BGZF-encoded file.
 ///
@@ -15,13 +17,12 @@ use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 /// use std::fs::File;
 /// use std::io::{self, BufReader};
 /// use noodles::bgzf::VirtualPosition;
-/// use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 ///
 /// let inner = File::open("sample.bam").unwrap();
 /// let bgzf_reader = noodles::bgzf::io::Reader::new(BufReader::new(inner));
 /// let chunks = vec![
-///     Chunk::new(VirtualPosition::from(0), VirtualPosition::from(6)),
-///     Chunk::new(VirtualPosition::from(12), VirtualPosition::from(18)),
+///     (VirtualPosition::from(0), VirtualPosition::from(6)),
+///     (VirtualPosition::from(12), VirtualPosition::from(18)),
 /// ];
 /// let mut chunk_reader = BgzfChunkReader::new(bgzf_reader, chunks);
 /// ```
@@ -38,12 +39,13 @@ use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 /// let chrom_id = 4;
 /// let interval = "101-200".parse::<Interval>().unwrap();
 /// let bgzf_reader = noodles::bgzf::io::Reader::new(BufReader::new(inner));
-/// let chunks = index.query(chrom_id, interval).unwrap();
+/// let chunks: Vec<_> = index.query(chrom_id, interval).unwrap()
+///     .into_iter().map(|c| (c.start(), c.end())).collect();
 /// let mut chunk_reader = BgzfChunkReader::new(bgzf_reader, chunks);
 /// ```
 pub struct BgzfChunkReader<R> {
     reader: R,
-    chunks: vec::IntoIter<Chunk>,
+    chunks: vec::IntoIter<VirtualRange>,
     state: State,
 }
 
@@ -57,7 +59,7 @@ impl<R> BgzfChunkReader<R>
 where
     R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek,
 {
-    pub fn new(reader: R, chunks: Vec<Chunk>) -> Self {
+    pub fn new(reader: R, chunks: Vec<VirtualRange>) -> Self {
         Self {
             reader,
             chunks: chunks.into_iter(),
@@ -87,9 +89,9 @@ where
             match self.state {
                 State::Seek => {
                     self.state = match self.chunks.next() {
-                        Some(chunk) => {
-                            self.reader.seek_to_virtual_position(chunk.start())?;
-                            State::Read(chunk.end())
+                        Some((start, end)) => {
+                            self.reader.seek_to_virtual_position(start)?;
+                            State::Read(end)
                         }
                         None => State::Done,
                     }

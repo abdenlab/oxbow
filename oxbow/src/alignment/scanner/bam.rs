@@ -3,7 +3,6 @@ use std::io::{BufRead, Read, Seek};
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::{Schema, SchemaRef};
 use noodles::bgzf::VirtualPosition;
-use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 use noodles::csi::BinningIndex;
 
 use crate::alignment::model::field::DEFAULT_FIELD_NAMES;
@@ -234,6 +233,7 @@ impl Scanner {
 
         let reference_sequence_id = super::resolve_chrom_id(&self.header, region.name())?;
         let chunks = index.query(reference_sequence_id, interval)?;
+        let chunks = chunks.into_iter().map(|c| (c.start(), c.end())).collect();
         let bgzf_reader = fmt_reader.into_inner();
         let query_reader = BgzfChunkReader::new(bgzf_reader, chunks);
         let fmt_reader = noodles::bam::io::Reader::from(query_reader);
@@ -315,14 +315,8 @@ impl Scanner {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
-        // Convert virtual position tuples to Chunks
-        let chunks: Vec<Chunk> = vpos_ranges
-            .into_iter()
-            .map(|(start, end)| Chunk::new(start, end))
-            .collect();
-
         let bgzf_reader = fmt_reader.into_inner();
-        let range_reader = BgzfChunkReader::new(bgzf_reader, chunks);
+        let range_reader = BgzfChunkReader::new(bgzf_reader, vpos_ranges);
         let fmt_reader = noodles::bam::io::Reader::from(range_reader);
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
         Ok(batch_iter)

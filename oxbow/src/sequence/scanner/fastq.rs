@@ -10,7 +10,6 @@ use crate::sequence::scanner::batch_iterator::BatchIterator;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 use crate::OxbowError;
 use noodles::bgzf::VirtualPosition;
-use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 
 /// A FASTQ scanner.
 ///
@@ -151,13 +150,8 @@ impl Scanner {
         let batch_size = batch_size.unwrap_or(1024);
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
 
-        let chunks: Vec<Chunk> = vpos_ranges
-            .into_iter()
-            .map(|(start, end)| Chunk::new(start, end))
-            .collect();
-
         let bgzf_reader = fmt_reader.into_inner();
-        let range_reader = BgzfChunkReader::new(bgzf_reader, chunks);
+        let range_reader = BgzfChunkReader::new(bgzf_reader, vpos_ranges);
         let fmt_reader = noodles::fastq::io::Reader::new(range_reader);
         let batch_iter = BatchIterator::new(fmt_reader, batch_builder, batch_size, limit);
         Ok(batch_iter)

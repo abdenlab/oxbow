@@ -6,9 +6,9 @@ use std::path::Path;
 
 use crate::OxbowError;
 
+use crate::util::query::VirtualRange;
 use noodles::bam::bai;
 use noodles::core::region::Interval;
-use noodles::csi::binning_index::index::reference_sequence::bin::Chunk;
 use noodles::csi::binning_index::index::reference_sequence::index::{
     BinnedIndex as BinnedRefIndex, Index as RefIndex, LinearIndex as LinearRefIndex,
 };
@@ -54,11 +54,12 @@ impl IndexType {
         &self,
         reference_sequence_id: usize,
         interval: Interval,
-    ) -> io::Result<Vec<Chunk>> {
-        match self {
+    ) -> io::Result<Vec<VirtualRange>> {
+        let chunks = match self {
             IndexType::Linear(index) => index.query(reference_sequence_id, interval),
             IndexType::Binned(index) => index.query(reference_sequence_id, interval),
-        }
+        }?;
+        Ok(chunks.into_iter().map(|c| (c.start(), c.end())).collect())
     }
 }
 
