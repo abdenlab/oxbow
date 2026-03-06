@@ -55,5 +55,6 @@ fn oxbow_sandbox(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_bigwig, m)?)?;
     m.add_function(wrap_pyfunction!(partition_from_index, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    m.add("__core_version__", oxbow::VERSION)?;
     Ok(())
 }
