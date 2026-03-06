@@ -224,10 +224,9 @@ impl Push<&noodles::bed::Record<3>> for FieldBuilder {
             Self::Name(builder) => {
                 let other_fields = record.other_fields();
                 let name = match other_fields.get(0) {
-                    Some(bytes) => match bytes {
-                        b"." => None,
-                        _ => std::str::from_utf8(bytes).ok().map(|s| s.to_string()),
-                    },
+                    Some(bytes) if bytes != b"." => {
+                        std::str::from_utf8(bytes).ok().map(|s| s.to_string())
+                    }
                     _ => None,
                 };
                 builder.append_option(name);
