@@ -56,6 +56,9 @@
 //!
 //! Licensed under MIT or Apache-2.0.
 //!
+/// The version of the oxbow core library.
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 pub mod alignment;
 pub mod batch;
 pub mod bbi;

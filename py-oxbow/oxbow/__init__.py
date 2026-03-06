@@ -39,12 +39,15 @@ from oxbow.oxbow import (
     read_vcf,
 )
 
+from oxbow.oxbow import __core_version__
+
 try:
     __version__ = version("oxbow")
 except PackageNotFoundError:
     __version__ = "unknown"
 
 __all__ = [
+    "__core_version__",
     "__version__",
     "from_bam",
     "from_bcf",
