@@ -1687,7 +1687,7 @@ dependencies = [
 
 [[package]]
 name = "py-oxbow"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "arrow",
  "bigtools",
