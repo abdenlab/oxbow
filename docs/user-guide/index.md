@@ -9,5 +9,6 @@ This section is still under construction.
 :maxdepth: 2
 
 matrix
+examples/index
 ```
 

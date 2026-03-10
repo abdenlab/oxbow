@@ -10,4 +10,3 @@ This section is still under construction.
 
 sam_mark_duplicates
 ```
-
