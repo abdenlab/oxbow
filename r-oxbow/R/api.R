@@ -30,14 +30,14 @@ read_cram <- function(path, reference = NULL, reference_index = NULL, region = N
 
 #' Return Arrow IPC format from a VCF file.
 #' @export
-read_vcf <- function(path, region = NULL, index = NULL, fields = NULL, info_field = NULL, genotype_fields = NULL, genotype_by = "sample") {
-  read_vcf_impl(path, region, index, fields, scan_rows)
+read_vcf <- function(path, region = NULL, index = NULL, fields = NULL, info_fields = NULL, genotype_fields = NULL, samples = NULL, genotype_by = "sample", sample_prefix = NULL) {
+  read_vcf_impl(path, region, index, fields, info_fields, genotype_fields, samples, genotype_by, sample_prefix)
 }
 
 #' Return Arrow IPC format from a BCF file.
 #' @export
-read_bcf <- function(path, region = NULL, index = NULL, fields = NULL, info_fields = NULL, genotype_fields = NULL, genotype_by = "sample") {
-  read_bcf_impl(path, region, index, fields, scan_rows)
+read_bcf <- function(path, region = NULL, index = NULL, fields = NULL, info_fields = NULL, genotype_fields = NULL, samples = NULL, genotype_by = "sample", sample_prefix = NULL) {
+  read_bcf_impl(path, region, index, fields, info_fields, genotype_fields, samples, genotype_by, sample_prefix)
 }
 
 #' Return Arrow IPC format from a GTF file.

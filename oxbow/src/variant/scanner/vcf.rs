@@ -29,7 +29,7 @@ use crate::OxbowError;
 /// let mut fmt_reader = noodles::vcf::io::Reader::new(inner);
 /// let header = fmt_reader.read_header().unwrap();
 ///
-/// let scanner = Scanner::new(header, None, None, None, None, None).unwrap();
+/// let scanner = Scanner::new(header, None, None, None, None, None, None).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -39,6 +39,7 @@ pub struct Scanner {
     genotype_fields: Option<Vec<String>>,
     samples: Option<Vec<String>>,
     genotype_by: GenotypeBy,
+    sample_prefix: Option<String>,
     schema: SchemaRef,
 }
 
@@ -54,6 +55,7 @@ impl Scanner {
         genotype_fields: Option<Vec<String>>,
         samples: Option<Vec<String>>,
         genotype_by: Option<GenotypeBy>,
+        sample_prefix: Option<String>,
     ) -> crate::Result<Self> {
         let genotype_by = genotype_by.unwrap_or(GenotypeBy::Sample);
         let batch_builder = BatchBuilder::new(
@@ -63,6 +65,7 @@ impl Scanner {
             genotype_fields.clone(),
             samples.clone(),
             genotype_by.clone(),
+            sample_prefix.clone(),
             0,
         )?;
         let schema = batch_builder.schema();
@@ -73,6 +76,7 @@ impl Scanner {
             genotype_fields,
             samples,
             genotype_by,
+            sample_prefix,
             schema,
         })
     }
@@ -190,6 +194,7 @@ impl Scanner {
                 self.genotype_fields.clone(),
                 self.samples.clone(),
                 self.genotype_by.clone(),
+                self.sample_prefix.clone(),
                 capacity,
             ),
             Some(cols) => {
@@ -236,7 +241,13 @@ impl Scanner {
                             self.samples.clone().unwrap_or_else(|| self.sample_names());
                         let projected_samples: Vec<String> = declared_samples
                             .into_iter()
-                            .filter(|name| cols.iter().any(|c| c == name))
+                            .filter(|name| {
+                                let col_name = match &self.sample_prefix {
+                                    Some(prefix) => format!("{}{}", prefix, name),
+                                    None => name.clone(),
+                                };
+                                cols.iter().any(|c| c == &col_name)
+                            })
                             .collect();
                         if projected_samples.is_empty() {
                             (Some(vec![]), Some(vec![]))
@@ -269,6 +280,7 @@ impl Scanner {
                     genotype_fields,
                     samples,
                     self.genotype_by.clone(),
+                    self.sample_prefix.clone(),
                     capacity,
                 )
             }

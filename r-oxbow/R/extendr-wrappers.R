@@ -26,10 +26,10 @@ read_bam_impl <- function(path, region, index, fields, scan_rows) .Call(wrap__re
 read_cram_impl <- function(path, reference, reference_index, region, index, fields, scan_rows) .Call(wrap__read_cram_impl, path, reference, reference_index, region, index, fields, scan_rows)
 
 #' Return Arrow IPC format from a VCF file.
-read_vcf_impl <- function(path, region, index, fields, info_fields, genotype_fields, samples, genotype_by) .Call(wrap__read_vcf_impl, path, region, index, fields, info_fields, genotype_fields, samples, genotype_by)
+read_vcf_impl <- function(path, region, index, fields, info_fields, genotype_fields, samples, genotype_by, sample_prefix) .Call(wrap__read_vcf_impl, path, region, index, fields, info_fields, genotype_fields, samples, genotype_by, sample_prefix)
 
 #' Return Arrow IPC format from a BCF file.
-read_bcf_impl <- function(path, region, index, fields, info_fields, genotype_fields, samples, genotype_by) .Call(wrap__read_bcf_impl, path, region, index, fields, info_fields, genotype_fields, samples, genotype_by)
+read_bcf_impl <- function(path, region, index, fields, info_fields, genotype_fields, samples, genotype_by, sample_prefix) .Call(wrap__read_bcf_impl, path, region, index, fields, info_fields, genotype_fields, samples, genotype_by, sample_prefix)
 
 #' Return Arrow IPC format from a GTF file.
 read_gtf_impl <- function(path, region, index, fields, scan_rows) .Call(wrap__read_gtf_impl, path, region, index, fields, scan_rows)

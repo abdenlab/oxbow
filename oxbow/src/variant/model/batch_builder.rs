@@ -47,6 +47,7 @@ pub struct BatchBuilder {
 
 impl BatchBuilder {
     /// Creates a new `BatchBuilder` for VCF/BCF records.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         header: noodles::vcf::Header,
         field_names: Option<Vec<String>>,
@@ -54,6 +55,7 @@ impl BatchBuilder {
         genotype_field_names: Option<Vec<String>>,
         sample_names: Option<Vec<String>>,
         genotype_by: GenotypeBy,
+        sample_prefix: Option<String>,
         capacity: usize,
     ) -> crate::Result<Self> {
         let ref_names = header
@@ -166,8 +168,12 @@ impl BatchBuilder {
                             GenotypeDataBuilder::BySample(b) => b.get_arrow_fields(),
                             _ => panic!("Invalid builder type for sample: {:?}", name),
                         };
+                        let col_name = match &sample_prefix {
+                            Some(prefix) => format!("{}{}", prefix, name),
+                            None => name.clone(),
+                        };
                         arrow_fields.push(ArrowField::new(
-                            name,
+                            col_name,
                             DataType::Struct(arrow::datatypes::Fields::from(nested)),
                             true,
                         ));
@@ -627,6 +633,7 @@ mod tests {
             None,
             None,
             GenotypeBy::Sample,
+            None,
             10,
         )
         .unwrap();
@@ -656,6 +663,7 @@ mod tests {
             None,
             None,
             GenotypeBy::Sample,
+            None,
             10,
         )
         .unwrap();
@@ -674,6 +682,7 @@ mod tests {
             None,
             None,
             GenotypeBy::Sample,
+            None,
             10,
         )
         .unwrap();
@@ -715,6 +724,7 @@ mod tests {
             None,
             Some(vec![]),
             GenotypeBy::Sample,
+            None,
             10,
         )
         .unwrap();
