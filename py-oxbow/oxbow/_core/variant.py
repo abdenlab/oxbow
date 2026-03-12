@@ -27,6 +27,7 @@ class VariantFile(DataSource):
         samples: list[str] | None = None,
         genotype_fields: list[str] | None = None,
         genotype_by: Literal["sample", "field"] = "sample",
+        sample_prefix: str | None = None,
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
@@ -44,6 +45,7 @@ class VariantFile(DataSource):
             samples=samples,
             genotype_fields=genotype_fields,
             genotype_by=genotype_by,
+            sample_prefix=sample_prefix,
         )
 
     def _scan_query(self, scanner, region, columns, batch_size):
@@ -103,6 +105,7 @@ def from_vcf(
     samples: list[str] | None = None,
     genotype_fields: list[str] | None = None,
     genotype_by: Literal["sample", "field"] = "sample",
+    sample_prefix: str | None = None,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
@@ -141,6 +144,8 @@ def from_vcf(
         sample is provided as a separate column with nested FORMAT fields. If
         "field", each FORMAT field is provided as a separate column with nested
         sample name fields.
+    sample_prefix : str, optional
+        Prefix to prepend sample column names
     regions : str | list[str], optional
         One or more genomic regions to query. Only applicable if an associated
         index file is available.
@@ -178,6 +183,7 @@ def from_vcf(
         samples=samples,
         genotype_fields=genotype_fields,
         genotype_by=genotype_by,
+        sample_prefix=sample_prefix,
         regions=regions,
         index=index,
         batch_size=batch_size,
@@ -193,6 +199,7 @@ def from_bcf(
     samples: list[str] | None = None,
     genotype_fields: list[str] | None = None,
     genotype_by: Literal["sample", "field"] = "sample",
+    sample_prefix: str | None = None,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
@@ -229,6 +236,8 @@ def from_bcf(
         sample is provided as a separate column with nested FORMAT fields. If
         "field", each FORMAT field is provided as a separate column with nested
         sample name fields.
+    sample_prefix : str, optional
+        Prefix to prepend sample column ames
     regions : str | list[str], optional
         One or more genomic regions to query. Only applicable if an associated
         index file is available.
@@ -266,6 +275,7 @@ def from_bcf(
         samples=samples,
         genotype_fields=genotype_fields,
         genotype_by=genotype_by,
+        sample_prefix=sample_prefix,
         regions=regions,
         index=index,
         batch_size=batch_size,

@@ -35,6 +35,8 @@ use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
 ///    How to project the genotype fields. If "sample", the columns
 ///    correspond to the samples. If "field", the columns correspond to
 ///    the genotype fields.
+/// sample_prefix : str, optional
+///    Prefix to prepend sample column names.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyVcfScanner {
     src: Py<PyAny>,
@@ -46,12 +48,13 @@ pub struct PyVcfScanner {
     genotype_fields: Option<Vec<String>>,
     samples: Option<Vec<String>>,
     genotype_by: Option<String>,
+    sample_prefix: Option<String>,
 }
 
 #[pymethods]
 impl PyVcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None))]
+    #[pyo3(signature = (src, compressed=false, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, sample_prefix=None))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python,
@@ -62,6 +65,7 @@ impl PyVcfScanner {
         genotype_fields: Option<Vec<String>>,
         samples: Option<Vec<String>>,
         genotype_by: Option<String>,
+        sample_prefix: Option<String>,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::vcf::io::Reader::new(reader);
@@ -75,6 +79,7 @@ impl PyVcfScanner {
             genotype_fields.clone(),
             samples.clone(),
             gt_by,
+            sample_prefix.clone(),
         )
         .map_err(to_py)?;
         Ok(Self {
@@ -87,6 +92,7 @@ impl PyVcfScanner {
             genotype_fields,
             samples,
             genotype_by,
+            sample_prefix,
         })
     }
 
@@ -111,6 +117,9 @@ impl PyVcfScanner {
         }
         if let Some(ref genotype_by) = self.genotype_by {
             kwargs.set_item("genotype_by", genotype_by)?;
+        }
+        if let Some(ref sample_prefix) = self.sample_prefix {
+            kwargs.set_item("sample_prefix", sample_prefix)?;
         }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
@@ -402,6 +411,8 @@ impl PyVcfScanner {
 ///     How to project the genotype fields. If "sample", the columns
 ///     correspond to the samples. If "field", the columns correspond to
 ///     the genotype fields.
+/// sample_prefix : str, optional
+///     A prefix to prepend to each sample column name in the output schema.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBcfScanner {
     src: Py<PyAny>,
@@ -413,12 +424,13 @@ pub struct PyBcfScanner {
     genotype_fields: Option<Vec<String>>,
     samples: Option<Vec<String>>,
     genotype_by: Option<String>,
+    sample_prefix: Option<String>,
 }
 
 #[pymethods]
 impl PyBcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=true, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None))]
+    #[pyo3(signature = (src, compressed=true, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, sample_prefix=None))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python,
@@ -429,6 +441,7 @@ impl PyBcfScanner {
         genotype_fields: Option<Vec<String>>,
         samples: Option<Vec<String>>,
         genotype_by: Option<String>,
+        sample_prefix: Option<String>,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bcf::io::Reader::from(reader);
@@ -442,6 +455,7 @@ impl PyBcfScanner {
             genotype_fields.clone(),
             samples.clone(),
             gt_by,
+            sample_prefix.clone(),
         )
         .map_err(to_py)?;
         Ok(Self {
@@ -454,6 +468,7 @@ impl PyBcfScanner {
             genotype_fields,
             samples,
             genotype_by,
+            sample_prefix,
         })
     }
 
@@ -478,6 +493,9 @@ impl PyBcfScanner {
         }
         if let Some(ref genotype_by) = self.genotype_by {
             kwargs.set_item("genotype_by", genotype_by)?;
+        }
+        if let Some(ref sample_prefix) = self.sample_prefix {
+            kwargs.set_item("sample_prefix", sample_prefix)?;
         }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
@@ -790,7 +808,7 @@ fn resolve_genotype_by(genotype_by: Option<String>) -> PyResult<Option<GenotypeB
 /// bytes
 ///     Arrow IPC
 #[pyfunction]
-#[pyo3(signature = (src, region=None, index=None, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, compressed=false))]
+#[pyo3(signature = (src, region=None, index=None, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, sample_prefix=None, compressed=false))]
 #[allow(clippy::too_many_arguments)]
 pub fn read_vcf(
     py: Python,
@@ -802,6 +820,7 @@ pub fn read_vcf(
     genotype_fields: Option<Vec<String>>,
     samples: Option<Vec<String>>,
     genotype_by: Option<String>,
+    sample_prefix: Option<String>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
@@ -816,6 +835,7 @@ pub fn read_vcf(
         genotype_fields,
         samples,
         genotype_by,
+        sample_prefix,
     )
     .map_err(to_py)?;
 
@@ -886,7 +906,7 @@ pub fn read_vcf(
 /// bytes
 ///     Arrow IPC
 #[pyfunction]
-#[pyo3(signature = (src, region=None, index=None, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, compressed=true))]
+#[pyo3(signature = (src, region=None, index=None, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, sample_prefix=None, compressed=true))]
 #[allow(clippy::too_many_arguments)]
 pub fn read_bcf(
     py: Python,
@@ -898,6 +918,7 @@ pub fn read_bcf(
     genotype_fields: Option<Vec<String>>,
     samples: Option<Vec<String>>,
     genotype_by: Option<String>,
+    sample_prefix: Option<String>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
@@ -912,6 +933,7 @@ pub fn read_bcf(
         genotype_fields,
         samples,
         genotype_by,
+        sample_prefix,
     )
     .map_err(to_py)?;
 

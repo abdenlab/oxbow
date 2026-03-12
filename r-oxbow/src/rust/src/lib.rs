@@ -275,6 +275,7 @@ pub fn read_vcf_impl(
     genotype_fields: Option<Vec<String>>,
     samples: Option<Vec<String>>,
     genotype_by: Option<String>,
+    sample_prefix: Option<String>,
 ) -> Vec<u8> {
     let compressed = path.ends_with(".gz");
     let reader = std::fs::File::open(path)
@@ -300,6 +301,7 @@ pub fn read_vcf_impl(
             genotype_fields,
             samples,
             Some(genotype_by),
+            sample_prefix,
         )
         .unwrap();
         let batches = scanner
@@ -317,6 +319,7 @@ pub fn read_vcf_impl(
             genotype_fields,
             samples,
             Some(genotype_by),
+            sample_prefix,
         )
         .unwrap();
         let batches = scanner.scan(fmt_reader, None, None, None).unwrap();
@@ -331,6 +334,7 @@ pub fn read_vcf_impl(
             genotype_fields,
             samples,
             Some(genotype_by),
+            sample_prefix,
         )
         .unwrap();
         let batches = scanner.scan(fmt_reader, None, None, None).unwrap();
@@ -352,6 +356,7 @@ pub fn read_bcf_impl(
     genotype_fields: Option<Vec<String>>,
     samples: Option<Vec<String>>,
     genotype_by: Option<String>,
+    sample_prefix: Option<String>,
 ) -> Vec<u8> {
     let compressed = true;
     let reader = std::fs::File::open(path)
@@ -377,6 +382,7 @@ pub fn read_bcf_impl(
             genotype_fields,
             samples,
             Some(genotype_by),
+            sample_prefix,
         )
         .unwrap();
         let batches = scanner
@@ -394,6 +400,7 @@ pub fn read_bcf_impl(
             genotype_fields,
             samples,
             Some(genotype_by),
+            sample_prefix,
         )
         .unwrap();
         let batches = scanner.scan(fmt_reader, None, None, None).unwrap();
@@ -408,6 +415,7 @@ pub fn read_bcf_impl(
             genotype_fields,
             samples,
             Some(genotype_by),
+            sample_prefix,
         )
         .unwrap();
         let batches = scanner.scan(fmt_reader, None, None, None).unwrap();
