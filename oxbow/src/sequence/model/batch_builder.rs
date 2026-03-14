@@ -1,7 +1,5 @@
-use std::sync::Arc;
-
 use arrow::array::ArrayRef;
-use arrow::datatypes::{Field as ArrowField, SchemaRef};
+use arrow::datatypes::SchemaRef;
 use arrow::error::ArrowError;
 use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
@@ -9,7 +7,8 @@ use indexmap::IndexMap;
 use crate::batch::{Push, RecordBatchBuilder};
 
 use super::field::Push as _;
-use super::field::{Field, FieldBuilder, FASTA_DEFAULT_FIELD_NAMES, FASTQ_DEFAULT_FIELD_NAMES};
+use super::field::{Field, FieldBuilder};
+use super::Model;
 
 /// A builder for Arrow record batches of sequence records.
 pub struct BatchBuilder {
@@ -20,56 +19,27 @@ pub struct BatchBuilder {
 
 impl BatchBuilder {
     /// Creates a new `BatchBuilder` for FASTQ records.
-    ///
-    /// # Arguments
-    /// * `field_names` - Optional vector of field names to project. If `None`, the default field
-    ///   names are used.
-    /// * `capacity` - The number of rows to preallocate for a batch.
-    ///
-    /// # Returns
-    /// A `Result` containing the `BatchBuilder` or an `OxbowError` if the field names are invalid.
-    pub fn new_fastq(field_names: Option<Vec<String>>, capacity: usize) -> crate::Result<Self> {
-        let default_field_names = FASTQ_DEFAULT_FIELD_NAMES
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
-        Self::new(field_names.unwrap_or(default_field_names), capacity)
+    pub fn new_fastq(fields: Option<Vec<String>>, capacity: usize) -> crate::Result<Self> {
+        let model = Model::new_fastq(fields)?;
+        Self::from_model(&model, capacity)
     }
 
     /// Creates a new `BatchBuilder` for FASTA records.
-    ///
-    /// # Arguments
-    /// * `field_names` - Optional vector of field names to project. If `None`, the default field
-    ///   names are used.
-    /// * `capacity` - The number of rows to preallocate for a batch.
-    ///
-    /// # Returns
-    /// A `Result` containing the `BatchBuilder` or an `OxbowError` if the field names are invalid.
-    pub fn new_fasta(field_names: Option<Vec<String>>, capacity: usize) -> crate::Result<Self> {
-        let default_field_names = FASTA_DEFAULT_FIELD_NAMES
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
-        Self::new(field_names.unwrap_or(default_field_names), capacity)
+    pub fn new_fasta(fields: Option<Vec<String>>, capacity: usize) -> crate::Result<Self> {
+        let model = Model::new_fasta(fields)?;
+        Self::from_model(&model, capacity)
     }
 
-    fn new(field_names: Vec<String>, capacity: usize) -> crate::Result<Self> {
-        let fields: Vec<Field> = field_names
-            .into_iter()
-            .map(|name| name.parse())
-            .collect::<Result<Vec<_>, _>>()?;
-
+    /// Creates a new `BatchBuilder` from a [`Model`].
+    pub fn from_model(model: &Model, capacity: usize) -> crate::Result<Self> {
         let mut field_builders = IndexMap::new();
-        for field in &fields {
+        for field in model.fields() {
             let builder = FieldBuilder::new(field.clone(), capacity);
             field_builders.insert(field.clone(), builder);
         }
 
-        let arrow_fields: Vec<ArrowField> = fields.iter().map(|f| f.get_arrow_field()).collect();
-        let schema = Arc::new(arrow::datatypes::Schema::new(arrow_fields));
-
         Ok(Self {
-            schema,
+            schema: model.schema().clone(),
             row_count: 0,
             field_builders,
         })
@@ -130,36 +100,23 @@ mod tests {
 
     #[test]
     fn test_new_fastq_with_default_fields() {
-        let capacity = 10;
-        let batch_builder = BatchBuilder::new_fastq(None, capacity).unwrap();
-
-        assert_eq!(
-            batch_builder.schema().fields().len(),
-            FASTQ_DEFAULT_FIELD_NAMES.len()
-        );
+        let batch_builder = BatchBuilder::new_fastq(None, 10).unwrap();
+        assert_eq!(batch_builder.schema().fields().len(), 4);
     }
 
     #[test]
     fn test_new_fasta_with_default_fields() {
-        let capacity = 10;
-        let batch_builder = BatchBuilder::new_fasta(None, capacity).unwrap();
-
-        assert_eq!(
-            batch_builder.schema().fields().len(),
-            FASTA_DEFAULT_FIELD_NAMES.len()
-        );
+        let batch_builder = BatchBuilder::new_fasta(None, 10).unwrap();
+        assert_eq!(batch_builder.schema().fields().len(), 3);
     }
 
     #[test]
     fn test_schema() {
-        let capacity = 10;
-        let batch_builder = BatchBuilder::new_fastq(None, capacity).unwrap();
-
+        let batch_builder = BatchBuilder::new_fastq(None, 10).unwrap();
         let schema = batch_builder.schema();
-        assert_eq!(schema.fields().len(), FASTQ_DEFAULT_FIELD_NAMES.len());
-        for (field, default_name) in schema.fields().iter().zip(FASTQ_DEFAULT_FIELD_NAMES) {
-            assert_eq!(field.name(), default_name);
-        }
+        assert_eq!(schema.fields().len(), 4);
+        assert_eq!(schema.field(0).name(), "name");
+        assert_eq!(schema.field(3).name(), "quality");
     }
 
     #[test]
@@ -200,6 +157,6 @@ mod tests {
 
         let record_batch = batch_builder.finish().unwrap();
         assert_eq!(record_batch.num_rows(), 0);
-        assert_eq!(record_batch.num_columns(), FASTQ_DEFAULT_FIELD_NAMES.len());
+        assert_eq!(record_batch.num_columns(), 4);
     }
 }
