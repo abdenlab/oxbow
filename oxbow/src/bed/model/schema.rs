@@ -119,6 +119,34 @@ impl BedSchema {
         )
     }
 
+    /// Define a BED schema from a complete list of field definitions.
+    ///
+    /// This allows fully custom schemas (e.g., narrowPeak) where field names
+    /// and types are provided explicitly. The first 3 fields must be
+    /// chrom, start, end (or equivalent) — this is not validated.
+    pub fn from_defs(defs: Vec<FieldDef>) -> crate::Result<Self> {
+        if defs.len() < 3 {
+            return Err(OxbowError::invalid_input(format!(
+                "BED schema requires at least 3 fields, got {}",
+                defs.len()
+            )));
+        }
+        // Determine how many match standard BED fields
+        let standard = bed_standard_fields();
+        let n = defs
+            .iter()
+            .zip(standard.iter())
+            .take_while(|(d, s)| d.name == s.name)
+            .count()
+            .max(3); // At least 3 standard
+        let m = defs.len() - n;
+        Ok(Self {
+            n,
+            m: Some(m),
+            fields: defs,
+        })
+    }
+
     pub fn fields(&self) -> &Vec<FieldDef> {
         &self.fields
     }

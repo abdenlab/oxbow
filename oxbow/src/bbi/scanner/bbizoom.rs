@@ -1,14 +1,12 @@
 use std::io::{Read, Seek};
 
 use arrow::array::RecordBatchReader;
-use arrow::datatypes::{Schema as ArrowSchema, SchemaRef};
+use arrow::datatypes::Schema as ArrowSchema;
 
 pub use super::BBIReader;
-use crate::batch::RecordBatchBuilder as _;
-use crate::bbi::model::zoom::field::DEFAULT_FIELD_NAMES;
 use crate::bbi::model::zoom::BatchBuilder;
+use crate::bbi::model::zoom::Model;
 use crate::bbi::scanner::batch_iterator::zoom::{BBIZoomBatchIterator, BBIZoomQueryBatchIterator};
-use crate::OxbowError;
 
 /// A scanner for the summary statistics from BBI file zoom level.
 ///
@@ -30,37 +28,37 @@ use crate::OxbowError;
 pub struct Scanner {
     ref_names: Vec<String>,
     zoom_level: u32,
-    fields: Option<Vec<String>>,
-    schema: SchemaRef,
+    model: Model,
 }
 
 impl Scanner {
     /// Creates a BBI zoom level scanner.
-    ///
-    /// The schema is validated and cached at construction time.
     pub fn new(
         ref_names: Vec<String>,
         zoom_level: u32,
         fields: Option<Vec<String>>,
     ) -> crate::Result<Self> {
-        let batch_builder = BatchBuilder::new(&ref_names, fields.clone(), 0)?;
-        let schema = batch_builder.schema();
+        let model = Model::new(fields)?;
         Ok(Self {
             ref_names,
             zoom_level,
-            fields,
-            schema,
+            model,
         })
+    }
+
+    /// Returns a reference to the [`Model`].
+    pub fn model(&self) -> &Model {
+        &self.model
     }
 
     /// Returns the field names.
     pub fn field_names(&self) -> Vec<String> {
-        DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
+        self.model.field_names()
     }
 
     /// Returns the Arrow schema.
     pub fn schema(&self) -> &ArrowSchema {
-        &self.schema
+        self.model.schema()
     }
 
     /// Builds a BatchBuilder applying column projection.
@@ -70,28 +68,10 @@ impl Scanner {
         capacity: usize,
     ) -> crate::Result<BatchBuilder> {
         match columns {
-            None => BatchBuilder::new(&self.ref_names, self.fields.clone(), capacity),
+            None => BatchBuilder::new(&self.ref_names, Some(self.model.field_names()), capacity),
             Some(cols) => {
-                let schema_names: Vec<&str> = self
-                    .schema
-                    .fields()
-                    .iter()
-                    .map(|f| f.name().as_str())
-                    .collect();
-
-                let unknown: Vec<&str> = cols
-                    .iter()
-                    .filter(|c| !schema_names.iter().any(|s| s.eq_ignore_ascii_case(c)))
-                    .map(|c| c.as_str())
-                    .collect();
-                if !unknown.is_empty() {
-                    return Err(OxbowError::invalid_input(format!(
-                        "Unknown columns: {:?}. Available columns: {:?}",
-                        unknown, schema_names
-                    )));
-                }
-
-                BatchBuilder::new(&self.ref_names, Some(cols), capacity)
+                let projected = self.model.project(&cols)?;
+                BatchBuilder::new(&self.ref_names, Some(projected.field_names()), capacity)
             }
         }
     }

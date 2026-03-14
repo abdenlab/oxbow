@@ -46,9 +46,7 @@ pub struct PyBedScanner {
     src: Py<PyAny>,
     reader: Reader,
     scanner: BedScanner,
-    bed_schema: String,
     compressed: bool,
-    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
@@ -63,15 +61,13 @@ impl PyBedScanner {
         fields: Option<Vec<String>>,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-        let _bed_schema: BedSchema = bed_schema.parse().unwrap();
-        let scanner = BedScanner::new(_bed_schema, fields.clone()).map_err(to_py)?;
+        let parsed_schema: BedSchema = bed_schema.parse().map_err(to_py)?;
+        let scanner = BedScanner::new(parsed_schema, fields).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
             scanner,
-            bed_schema,
             compressed,
-            fields,
         })
     }
 
@@ -80,15 +76,14 @@ impl PyBedScanner {
     }
 
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
+        let model = self.scanner.model();
         let args = (
             self.src.clone_ref(py),
-            self.bed_schema.clone().into_py_any(py)?,
+            model.bed_schema().to_string().into_py_any(py)?,
         );
         let kwargs = PyDict::new(py);
         kwargs.set_item("compressed", self.compressed)?;
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
-        }
+        kwargs.set_item("fields", model.field_names())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 

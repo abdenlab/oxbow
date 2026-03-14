@@ -37,7 +37,6 @@ pub struct PyBigWigScanner {
     _src: Py<PyAny>,
     reader: Reader,
     scanner: BigWigScanner,
-    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
@@ -49,12 +48,11 @@ impl PyBigWigScanner {
         let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
-        let scanner = BigWigScanner::new(info, fields.clone()).map_err(to_py)?;
+        let scanner = BigWigScanner::new(info, fields).map_err(to_py)?;
         Ok(Self {
             _src: src,
             reader,
             scanner,
-            fields,
         })
     }
 
@@ -65,9 +63,7 @@ impl PyBigWigScanner {
     fn __getnewargs_ex__(&self, py: Python) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self._src.clone_ref(py),);
         let kwargs = PyDict::new(py);
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
-        }
+        kwargs.set_item("fields", self.scanner.model().field_names())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -225,7 +221,6 @@ pub struct PyBigBedScanner {
     _schema: Option<String>,
     reader: Reader,
     scanner: BigBedScanner,
-    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
@@ -264,14 +259,13 @@ impl PyBigBedScanner {
         .map_err(to_py)?;
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
-        let scanner = BigBedScanner::new(bed_schema, info, fields.clone()).map_err(to_py)?;
+        let scanner = BigBedScanner::new(bed_schema, info, fields).map_err(to_py)?;
         let _schema: Option<String> = schema.map(|schema| schema.to_string());
         Ok(Self {
             _src: src,
             _schema,
             reader,
             scanner,
-            fields,
         })
     }
 
@@ -285,9 +279,7 @@ impl PyBigBedScanner {
             self._schema.clone().into_py_any(py)?,
         );
         let kwargs = PyDict::new(py);
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
-        }
+        kwargs.set_item("fields", self.scanner.model().field_names())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -458,7 +450,6 @@ pub struct PyBBIZoomScanner {
     bbi_type: PyBBIFileType,
     zoom_level: u32,
     scanner: BBIZoomScanner,
-    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
@@ -495,15 +486,13 @@ impl PyBBIZoomScanner {
                     )));
                 }
                 let reader = fmt_reader.into_inner();
-                let scanner =
-                    BBIZoomScanner::new(ref_names, zoom_level, fields.clone()).map_err(to_py)?;
+                let scanner = BBIZoomScanner::new(ref_names, zoom_level, fields).map_err(to_py)?;
                 Ok(Self {
                     src,
                     reader,
                     bbi_type,
                     zoom_level,
                     scanner,
-                    fields,
                 })
             }
             PyBBIFileType::BigWig => {
@@ -526,15 +515,13 @@ impl PyBBIZoomScanner {
                     )));
                 }
                 let reader = fmt_reader.into_inner();
-                let scanner =
-                    BBIZoomScanner::new(ref_names, zoom_level, fields.clone()).map_err(to_py)?;
+                let scanner = BBIZoomScanner::new(ref_names, zoom_level, fields).map_err(to_py)?;
                 Ok(Self {
                     src,
                     reader,
                     bbi_type,
                     zoom_level,
                     scanner,
-                    fields,
                 })
             }
         }
@@ -551,9 +538,7 @@ impl PyBBIZoomScanner {
             self.zoom_level.into_py_any(py)?,
         );
         let kwargs = PyDict::new(py);
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
-        }
+        kwargs.set_item("fields", self.scanner.field_names())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
