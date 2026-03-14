@@ -1,2 +1,1 @@
-'Unknown columns: ["foo"]. Available columns: ["name", "description", "sequence",
-    "quality"]'
+'Unknown columns: ["foo"]. Available: ["name", "description", "sequence", "quality"]'

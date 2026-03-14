@@ -201,7 +201,8 @@ fields=('chrom', 'start', 'end'):
         - 200001
         - 350001
         - 500001
-fields=('nonexistent-field',): 'Invalid field name: nonexistent-field'
+fields=('nonexistent-field',): 'Field ''nonexistent-field'' not in BED schema. Available:
+    ["chrom", "start", "end", "rest"]'
 fields=None:
     batch-00:
         chrom:

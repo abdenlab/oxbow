@@ -1,2 +1,2 @@
-'Unknown columns: ["foo"]. Available columns: ["qname", "flag", "rname", "pos", "mapq",
-    "cigar", "rnext", "pnext", "tlen", "seq", "qual", "end"]'
+'Unknown columns: ["foo"]. Available: ["qname", "flag", "rname", "pos", "mapq", "cigar",
+    "rnext", "pnext", "tlen", "seq", "qual", "end"]'

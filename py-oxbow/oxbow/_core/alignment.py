@@ -42,7 +42,7 @@ class AlignmentFile(DataSource):
             discovered = self._scanner_type(
                 self._source, **self._tag_discovery_kwargs()
             ).tag_defs(tag_scan_rows)
-            self._scanner_kwargs["tag_defs"] = discovered
+            self._scanner_kwargs["tag_defs"] = discovered or None
 
     def _tag_discovery_kwargs(self) -> dict:
         """Extra kwargs passed to the scanner used for tag discovery."""

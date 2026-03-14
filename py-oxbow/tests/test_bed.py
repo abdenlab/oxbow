@@ -60,7 +60,7 @@ class TestBedFile:
                 f"batch-{i:02}": pa.record_batch(b).to_pydict()
                 for i, b in enumerate(batches)
             }
-        except OSError as e:
+        except (OSError, ValueError) as e:
             actual = str(e)
 
         assert manifest[f"fields={fields}"] == actual
@@ -119,7 +119,7 @@ class TestBedFile:
         )
         batch = next(ds.batches())
         assert list(batch.schema.names) == ["name", "end", "start"]
-        with pytest.raises(OSError):
+        with pytest.raises((OSError, ValueError)):
             next(
                 ox.BedFile(
                     "data/sample.bed", bed_schema="bed4", fields=["rest"]
@@ -134,13 +134,13 @@ class TestBedFile:
         batch = next(ds.batches())
         # Extended fields get shuffled to the end in the order provided
         assert list(batch.schema.names) == ["end", "start", "BED4+2", "BED4+1"]
-        with pytest.raises(OSError):
+        with pytest.raises((OSError, ValueError)):
             next(
                 ox.BedFile(
                     "data/sample.bed", bed_schema="bed4", fields=["BED4+3"]
                 ).batches()
             )
-        with pytest.raises(OSError):
+        with pytest.raises((OSError, ValueError)):
             next(
                 ox.BedFile(
                     "data/sample.bed", bed_schema="bed4", fields=["rest"]
