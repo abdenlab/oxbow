@@ -29,17 +29,15 @@ use oxbow::util::index::IndexType;
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed.
 /// fields : list[str], optional
-///     Names of the fixed fields to include in the schema.
+///     Names of the standard SAM fields to include.
 /// tag_defs : list[tuple[str, str]], optional
-///     Definitions of tag fields to include in the schema.
+///     Tag definitions. None means no tags column.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PySamScanner {
     src: Py<PyAny>,
     reader: Reader,
     scanner: SamScanner,
     compressed: bool,
-    fields: Option<Vec<String>>,
-    tag_defs: Option<Vec<(String, String)>>,
 }
 
 #[pymethods]
@@ -57,14 +55,12 @@ impl PySamScanner {
         let mut fmt_reader = noodles::sam::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let scanner = SamScanner::new(header, fields.clone(), tag_defs.clone()).map_err(to_py)?;
+        let scanner = SamScanner::new(header, fields, tag_defs).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
-            fields,
-            tag_defs,
         })
     }
 
@@ -76,13 +72,21 @@ impl PySamScanner {
         let args = (self.src.clone_ref(py),);
         let kwargs = PyDict::new(py);
         kwargs.set_item("compressed", self.compressed)?;
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
-        }
-        if let Some(ref tag_defs) = self.tag_defs {
-            kwargs.set_item("tag_defs", tag_defs)?;
+        let model = self.scanner.model();
+        kwargs.set_item("fields", model.field_names())?;
+        if let Some(tag_defs) = model.tag_defs() {
+            let tag_defs_raw = tag_defs
+                .iter()
+                .map(|def| def.to_tuple())
+                .collect::<Vec<_>>();
+            kwargs.set_item("tag_defs", tag_defs_raw)?;
         }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
+    }
+
+    /// Return the string representation of the alignment model.
+    fn model(&self) -> String {
+        self.scanner.model().to_string()
     }
 
     /// Return the names of the reference sequences.
@@ -95,7 +99,7 @@ impl PySamScanner {
         self.scanner.chrom_sizes()
     }
 
-    /// Return the names of the fixed fields.
+    /// Return the names of the standard SAM fields.
     fn field_names(&self) -> Vec<String> {
         self.scanner.field_names()
     }
@@ -460,17 +464,15 @@ impl PySamScanner {
 /// compressed : bool, optional [default: True]
 ///     Whether the source is BGZF-compressed.
 /// fields : list[str], optional
-///     Names of the fixed fields to include in the schema.
+///     Names of the standard SAM fields to include.
 /// tag_defs : list[tuple[str, str]], optional
-///     Definitions of tag fields to include in the schema.
+///     Tag definitions. None means no tags column.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBamScanner {
     src: Py<PyAny>,
     reader: Reader,
     scanner: BamScanner,
     compressed: bool,
-    fields: Option<Vec<String>>,
-    tag_defs: Option<Vec<(String, String)>>,
 }
 
 #[pymethods]
@@ -488,14 +490,12 @@ impl PyBamScanner {
         let mut fmt_reader = noodles::bam::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let scanner = BamScanner::new(header, fields.clone(), tag_defs.clone()).map_err(to_py)?;
+        let scanner = BamScanner::new(header, fields, tag_defs).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
-            fields,
-            tag_defs,
         })
     }
 
@@ -507,13 +507,21 @@ impl PyBamScanner {
         let args = (self.src.clone_ref(py),);
         let kwargs = PyDict::new(py);
         kwargs.set_item("compressed", self.compressed)?;
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
-        }
-        if let Some(ref tag_defs) = self.tag_defs {
-            kwargs.set_item("tag_defs", tag_defs)?;
+        let model = self.scanner.model();
+        kwargs.set_item("fields", model.field_names())?;
+        if let Some(tag_defs) = model.tag_defs() {
+            let tag_defs_raw = tag_defs
+                .iter()
+                .map(|def| def.to_tuple())
+                .collect::<Vec<_>>();
+            kwargs.set_item("tag_defs", tag_defs_raw)?;
         }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
+    }
+
+    /// Return the string representation of the alignment model.
+    fn model(&self) -> String {
+        self.scanner.model().to_string()
     }
 
     /// Return the names of the reference sequences.
@@ -526,7 +534,7 @@ impl PyBamScanner {
         self.scanner.chrom_sizes()
     }
 
-    /// Return the names of the fixed fields.
+    /// Return the names of the standard SAM fields.
     fn field_names(&self) -> Vec<String> {
         self.scanner.field_names()
     }
@@ -889,16 +897,14 @@ impl PyBamScanner {
 /// src : str or file-like
 ///     The path to the CRAM file or a file-like object.
 /// fields : list[str], optional
-///     Names of the fixed fields to include in the schema.
+///     Names of the standard SAM fields to include.
 /// tag_defs : list[tuple[str, str]], optional
-///     Definitions of tag fields to include in the schema.
+///     Tag definitions. None means no tags column.
 #[pyclass]
 pub struct PyCramScanner {
     src: Py<PyAny>,
     reader: Reader,
     scanner: CramScanner,
-    fields: Option<Vec<String>>,
-    tag_defs: Option<Vec<(String, String)>>,
     reference: Option<Py<PyAny>>,
     reference_index: Option<Py<PyAny>>,
 }
@@ -926,14 +932,11 @@ impl PyCramScanner {
             reference.as_ref().map(|r| r.clone_ref(py)),
             reference_index.as_ref().map(|r| r.clone_ref(py)),
         )?;
-        let scanner =
-            CramScanner::new(header, fields.clone(), tag_defs.clone(), repo).map_err(to_py)?;
+        let scanner = CramScanner::new(header, fields, tag_defs, repo).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
             scanner,
-            fields,
-            tag_defs,
             reference,
             reference_index,
         })
@@ -946,10 +949,10 @@ impl PyCramScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py),);
         let kwargs = PyDict::new(py);
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
-        }
-        if let Some(ref tag_defs) = self.tag_defs {
+        let model = self.scanner.model();
+        kwargs.set_item("fields", model.field_names())?;
+        if let Some(defs) = model.tag_defs() {
+            let tag_defs: Vec<_> = defs.iter().map(|def| def.to_tuple()).collect();
             kwargs.set_item("tag_defs", tag_defs)?;
         }
         if let Some(ref reference) = self.reference {
@@ -959,6 +962,11 @@ impl PyCramScanner {
             kwargs.set_item("reference_index", reference_index)?;
         }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
+    }
+
+    /// Return the string representation of the alignment model.
+    fn model(&self) -> String {
+        self.scanner.model().to_string()
     }
 
     /// Return the names of the reference sequences.
@@ -971,7 +979,7 @@ impl PyCramScanner {
         self.scanner.chrom_sizes()
     }
 
-    /// Return the names of the fixed fields.
+    /// Return the names of the standard SAM fields.
     fn field_names(&self) -> Vec<String> {
         self.scanner.field_names()
     }
@@ -1124,9 +1132,9 @@ impl PyCramScanner {
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
 /// fields : list[str], optional
-///     Names of the fixed fields to project.
+///     Names of the standard SAM fields to project.
 /// tag_defs : list[tuple[str, str]], optional
-///    Definitions of tag fields to project.
+///    Tag definitions. None means no tags column.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed.
 ///
@@ -1195,9 +1203,9 @@ pub fn read_sam(
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
 /// fields : list[str], optional
-///     Names of the fixed fields to project.
+///     Names of the standard SAM fields to project.
 /// tag_defs : list[tuple[str, str]], optional
-///    Definitions of tag fields to project.
+///    Tag definitions. None means no tags column.
 /// compressed : bool, optional [default: True]
 ///     Whether the source is BGZF-compressed.
 ///
@@ -1266,9 +1274,9 @@ pub fn read_bam(
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
 /// fields : list[str], optional
-///     Names of the fixed fields to project.
+///     Names of the standard SAM fields to project.
 /// tag_defs : list[tuple[str, str]], optional
-///    Definitions of tag fields to project.
+///    Tag definitions. None means no tags column.
 ///
 /// Returns
 /// -------

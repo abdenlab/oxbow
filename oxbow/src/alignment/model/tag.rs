@@ -24,8 +24,18 @@ impl TagDef {
         self.name.as_bytes().try_into().unwrap()
     }
 
+    pub fn to_tuple(&self) -> (String, String) {
+        (self.name.clone(), self.ty.code().to_string())
+    }
+
     pub fn get_arrow_field(&self) -> ArrowField {
         ArrowField::new(&self.name, self.ty.arrow_type(), true)
+    }
+}
+
+impl std::fmt::Display for TagDef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.name, self.ty)
     }
 }
 
@@ -178,6 +188,12 @@ impl From<&Value<'_>> for TagType {
                 Subtype::Float => Self::ArrayFloat,
             },
         }
+    }
+}
+
+impl std::fmt::Display for TagType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.code())
     }
 }
 
