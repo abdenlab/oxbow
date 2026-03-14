@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::OxbowError;
 
 use arrow::array::{ArrayRef, StructArray};
-use arrow::datatypes::{DataType, Field as ArrowField, FieldRef, SchemaRef};
+use arrow::datatypes::{FieldRef, SchemaRef};
 use arrow::error::ArrowError;
 use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
@@ -16,9 +16,10 @@ use noodles::vcf::variant::record::samples::Series;
 use crate::batch::{Push, RecordBatchBuilder};
 
 use super::field::Push as _;
-use super::field::{Field, FieldBuilder, DEFAULT_FIELD_NAMES};
+use super::field::{Field, FieldBuilder};
 use super::genotype::{GenotypeDef, SampleStructBuilder, SeriesStructBuilder};
 use super::info::{InfoBuilder, InfoDef};
+use super::Model;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum GenotypeBy {
@@ -47,6 +48,8 @@ pub struct BatchBuilder {
 
 impl BatchBuilder {
     /// Creates a new `BatchBuilder` for VCF/BCF records.
+    ///
+    /// Derives INFO and FORMAT definitions from the header.
     pub fn new(
         header: noodles::vcf::Header,
         field_names: Option<Vec<String>>,
@@ -56,23 +59,31 @@ impl BatchBuilder {
         genotype_by: GenotypeBy,
         capacity: usize,
     ) -> crate::Result<Self> {
-        let ref_names = header
+        let model = Model::from_header(
+            &header,
+            field_names,
+            info_field_names,
+            genotype_field_names,
+            sample_names,
+            Some(genotype_by),
+        )?;
+        Self::from_model(&model, header, capacity)
+    }
+
+    /// Creates a new `BatchBuilder` from a [`Model`].
+    pub fn from_model(
+        model: &Model,
+        header: noodles::vcf::Header,
+        capacity: usize,
+    ) -> crate::Result<Self> {
+        let ref_names: Vec<String> = header
             .contigs()
             .iter()
             .map(|(name, _)| name.to_string())
-            .collect::<Vec<String>>();
-
-        let default_field_names: Vec<String> = DEFAULT_FIELD_NAMES
-            .iter()
-            .map(|name| name.to_string())
             .collect();
-        let fields: Vec<Field> = field_names
-            .unwrap_or(default_field_names)
-            .into_iter()
-            .map(|name| name.parse())
-            .collect::<Result<Vec<_>, _>>()?;
+
         let mut field_builders = IndexMap::new();
-        for field in &fields {
+        for field in model.fields() {
             let builder = match field {
                 Field::Chrom => FieldBuilder::with_refs(field.clone(), capacity, &ref_names)
                     .map_err(|e| crate::OxbowError::invalid_data(e.to_string()))?,
@@ -81,117 +92,39 @@ impl BatchBuilder {
             field_builders.insert(field.clone(), builder);
         }
 
-        let default_info_names: Vec<String> = header
-            .infos()
-            .iter()
-            .map(|(name, _)| name.to_string())
-            .collect();
-        let info_defs = info_field_names
-            .unwrap_or(default_info_names)
-            .into_iter()
-            .filter_map(|name| {
-                let info = header.infos().get(&name)?;
-                Some(InfoDef::new(name, &info.number(), &info.ty()))
-            })
-            .collect::<Vec<InfoDef>>();
+        let info_defs: Vec<InfoDef> = model.info_defs().unwrap_or(&[]).to_vec();
         let mut info_builders = IndexMap::new();
         for def in &info_defs {
             let builder = InfoBuilder::new(&def.ty);
             info_builders.insert(def.clone(), builder);
         }
 
-        let default_sample_names = header
-            .sample_names()
-            .iter()
-            .cloned()
-            .collect::<Vec<String>>();
-        let sample_names = sample_names.unwrap_or(default_sample_names);
+        let genotype_defs: Vec<GenotypeDef> = model.genotype_defs().unwrap_or(&[]).to_vec();
+        let sample_names: Vec<String> = model.samples().unwrap_or(&[]).to_vec();
+        let genotype_by = model.genotype_by().clone();
 
-        let default_genotype_names: Vec<String> = header
-            .formats()
-            .iter()
-            .map(|(name, _)| name.to_string())
-            .collect();
-        let genotype_defs = genotype_field_names
-            .unwrap_or(default_genotype_names)
-            .into_iter()
-            .filter_map(|name| {
-                let format = header.formats().get(&name)?;
-                Some(GenotypeDef::new(name, &format.number(), &format.ty()))
-            })
-            .collect::<Vec<GenotypeDef>>();
         let genotype_builders = match genotype_by {
-            GenotypeBy::Sample => {
-                let sample_builders = sample_names
-                    .iter()
-                    .map(|sample_name| {
-                        let builder = SampleStructBuilder::new(genotype_defs.clone());
-                        (
-                            sample_name.to_string(),
-                            GenotypeDataBuilder::BySample(builder),
-                        )
-                    })
-                    .collect::<IndexMap<String, GenotypeDataBuilder>>();
-                sample_builders
-            }
-            GenotypeBy::Field => {
-                let series_builders = genotype_defs
-                    .iter()
-                    .map(|def| {
-                        let builder = SeriesStructBuilder::new(def.clone(), sample_names.clone());
-                        (def.name.clone(), GenotypeDataBuilder::ByField(builder))
-                    })
-                    .collect::<IndexMap<String, GenotypeDataBuilder>>();
-                series_builders
-            }
+            GenotypeBy::Sample => sample_names
+                .iter()
+                .map(|sample_name| {
+                    let builder = SampleStructBuilder::new(genotype_defs.clone());
+                    (
+                        sample_name.to_string(),
+                        GenotypeDataBuilder::BySample(builder),
+                    )
+                })
+                .collect::<IndexMap<String, GenotypeDataBuilder>>(),
+            GenotypeBy::Field => genotype_defs
+                .iter()
+                .map(|def| {
+                    let builder = SeriesStructBuilder::new(def.clone(), sample_names.clone());
+                    (def.name.clone(), GenotypeDataBuilder::ByField(builder))
+                })
+                .collect::<IndexMap<String, GenotypeDataBuilder>>(),
         };
 
-        // Build schema once
-        let mut arrow_fields: Vec<ArrowField> =
-            fields.iter().map(|f| f.get_arrow_field()).collect();
-        if !info_defs.is_empty() {
-            let nested: Vec<ArrowField> =
-                info_defs.iter().map(|def| def.get_arrow_field()).collect();
-            arrow_fields.push(ArrowField::new(
-                "info",
-                DataType::Struct(arrow::datatypes::Fields::from(nested)),
-                true,
-            ));
-        }
-        if !sample_names.is_empty() && !genotype_defs.is_empty() {
-            match genotype_by {
-                GenotypeBy::Sample => {
-                    for (name, builder) in &genotype_builders {
-                        let nested = match builder {
-                            GenotypeDataBuilder::BySample(b) => b.get_arrow_fields(),
-                            _ => panic!("Invalid builder type for sample: {:?}", name),
-                        };
-                        arrow_fields.push(ArrowField::new(
-                            name,
-                            DataType::Struct(arrow::datatypes::Fields::from(nested)),
-                            true,
-                        ));
-                    }
-                }
-                GenotypeBy::Field => {
-                    for (name, builder) in &genotype_builders {
-                        let nested = match builder {
-                            GenotypeDataBuilder::ByField(b) => b.get_arrow_fields(),
-                            _ => panic!("Invalid builder type for field: {:?}", name),
-                        };
-                        arrow_fields.push(ArrowField::new(
-                            name,
-                            DataType::Struct(arrow::datatypes::Fields::from(nested)),
-                            true,
-                        ));
-                    }
-                }
-            }
-        }
-        let schema = Arc::new(arrow::datatypes::Schema::new(arrow_fields));
-
         Ok(Self {
-            schema,
+            schema: model.schema().clone(),
             row_count: 0,
             header,
             info_defs,
