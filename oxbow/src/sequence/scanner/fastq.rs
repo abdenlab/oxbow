@@ -3,7 +3,7 @@ use std::io::{BufRead, Seek};
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema;
 
-use crate::sequence::model::batch_builder::BatchBuilder;
+use crate::sequence::model::BatchBuilder;
 use crate::sequence::model::Model;
 use crate::sequence::scanner::batch_iterator::BatchIterator;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};

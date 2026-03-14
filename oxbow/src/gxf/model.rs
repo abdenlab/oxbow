@@ -1,8 +1,8 @@
 pub mod attribute;
-pub mod batch_builder;
+pub mod batch;
 pub mod field;
 
-pub use batch_builder::BatchBuilder;
+pub use batch::BatchBuilder;
 
 use std::sync::Arc;
 

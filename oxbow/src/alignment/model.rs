@@ -1,8 +1,8 @@
-pub mod batch_builder;
+pub mod batch;
 pub mod field;
 pub mod tag;
 
-pub use batch_builder::BatchBuilder;
+pub use batch::BatchBuilder;
 
 use std::fmt;
 use std::str::FromStr;

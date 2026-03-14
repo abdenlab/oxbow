@@ -1,8 +1,8 @@
-pub mod batch_builder;
+pub mod batch;
 pub mod field;
 
 pub use crate::bed::model::schema::BedSchema;
-pub use batch_builder::BatchBuilder;
+pub use batch::BatchBuilder;
 
 pub struct BigBedRecord<'a> {
     pub chrom: &'a str,

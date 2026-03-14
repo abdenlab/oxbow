@@ -1,9 +1,9 @@
-pub mod batch_builder;
+pub mod batch;
 pub mod field;
 pub mod genotype;
 pub mod info;
 
-pub use batch_builder::{BatchBuilder, GenotypeBy};
+pub use batch::{BatchBuilder, GenotypeBy};
 
 use std::sync::Arc;
 

@@ -1,9 +1,9 @@
-pub mod batch_builder;
+pub mod batch;
 pub mod field;
 pub mod field_def;
 pub mod schema;
 
-pub use batch_builder::BatchBuilder;
+pub use batch::BatchBuilder;
 pub use field_def::{
     bed_standard_fields, FieldBuilder as GenericFieldBuilder, FieldDef, FieldType,
 };
