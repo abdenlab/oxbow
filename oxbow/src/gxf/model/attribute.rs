@@ -18,6 +18,10 @@ pub struct AttributeDef {
 }
 
 impl AttributeDef {
+    pub fn to_tuple(&self) -> (String, String) {
+        (self.name.clone(), self.ty.to_string())
+    }
+
     pub fn get_arrow_field(&self) -> ArrowField {
         ArrowField::new(&self.name, self.ty.arrow_type(), true)
     }
