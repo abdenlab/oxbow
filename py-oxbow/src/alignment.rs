@@ -1,6 +1,9 @@
 use std::io::Seek;
 use std::sync::Arc;
 
+use arrow::array::{ArrayRef, RecordBatchIterator, StringArray, UInt32Array};
+use arrow::datatypes::{DataType, Field, Schema};
+use arrow::record_batch::RecordBatch;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -1347,4 +1350,42 @@ pub fn read_cram(
     };
 
     ipc.map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
+}
+
+/// Return reference sequence names and lengths from a BAM file header as Arrow IPC bytes.
+///
+/// Parameters
+/// ----------
+/// src : str or file-like
+///     The path to the BAM file or a file-like object.
+///
+/// Returns
+/// -------
+/// bytes
+///     Arrow IPC bytes with "name" (Utf8) and "length" (UInt32) columns.
+#[pyfunction]
+pub fn read_bam_references(py: Python, src: Py<PyAny>) -> PyResult<Vec<u8>> {
+    let reader = pyobject_to_bufreader(py, src, true)?;
+    let mut fmt_reader = noodles::bam::io::Reader::from(reader);
+    let header = fmt_reader.read_header()?;
+    let scanner = BamScanner::new(header, None, None).map_err(to_py)?;
+    let chrom_sizes = scanner.chrom_sizes();
+
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("name", DataType::Utf8, false),
+        Field::new("length", DataType::UInt32, false),
+    ]));
+    let names: Vec<&str> = chrom_sizes.iter().map(|(n, _)| n.as_str()).collect();
+    let lengths: Vec<u32> = chrom_sizes.iter().map(|(_, l)| *l).collect();
+    let batch = RecordBatch::try_new(
+        schema.clone(),
+        vec![
+            Arc::new(StringArray::from(names)) as ArrayRef,
+            Arc::new(UInt32Array::from(lengths)) as ArrayRef,
+        ],
+    )
+    .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+
+    let reader = RecordBatchIterator::new(vec![Ok(batch)], schema);
+    batches_to_ipc(reader).map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
 }
