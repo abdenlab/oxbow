@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::OxbowError;
 
 use arrow::array::{ArrayRef, StructArray};
-use arrow::datatypes::{FieldRef, SchemaRef};
+use arrow::datatypes::{Field as ArrowField, FieldRef, SchemaRef};
 use arrow::error::ArrowError;
 use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
@@ -41,6 +41,7 @@ pub struct BatchBuilder {
     genotype_defs: Vec<GenotypeDef>,
     sample_names: Vec<String>,
     genotype_by: GenotypeBy,
+    unnest_samples: bool,
     field_builders: IndexMap<Field, FieldBuilder>,
     info_builders: IndexMap<InfoDef, InfoBuilder>,
     genotype_builders: IndexMap<String, GenotypeDataBuilder>,
@@ -66,6 +67,7 @@ impl BatchBuilder {
             genotype_field_names,
             sample_names,
             Some(genotype_by),
+            None,
         )?;
         Self::from_model(&model, header, capacity)
     }
@@ -131,6 +133,7 @@ impl BatchBuilder {
             genotype_defs,
             sample_names,
             genotype_by,
+            unnest_samples: model.unnest_samples(),
             field_builders,
             info_builders,
             genotype_builders,
@@ -171,25 +174,46 @@ impl RecordBatchBuilder for BatchBuilder {
 
         // genotype data (optional)
         if !self.sample_names.is_empty() && !self.genotype_defs.is_empty() {
+            let mut genotype_arrays: Vec<(FieldRef, ArrayRef)> = Vec::new();
+
             match self.genotype_by {
                 GenotypeBy::Sample => {
-                    for (_, builder) in &mut self.genotype_builders {
-                        let builder = match builder {
+                    for (name, builder) in &mut self.genotype_builders {
+                        let b = match builder {
                             GenotypeDataBuilder::BySample(b) => b,
                             _ => unreachable!(),
                         };
-                        columns.push(Arc::new(builder.finish()));
+                        let arr = Arc::new(b.finish()) as ArrayRef;
+                        genotype_arrays.push((
+                            Arc::new(ArrowField::new(name, arr.data_type().clone(), true)),
+                            arr,
+                        ));
                     }
                 }
                 GenotypeBy::Field => {
-                    for (_, builder) in &mut self.genotype_builders {
-                        let builder = match builder {
+                    for (name, builder) in &mut self.genotype_builders {
+                        let b = match builder {
                             GenotypeDataBuilder::ByField(b) => b,
                             _ => unreachable!(),
                         };
-                        columns.push(Arc::new(builder.finish()));
+                        let arr = Arc::new(b.finish()) as ArrayRef;
+                        genotype_arrays.push((
+                            Arc::new(ArrowField::new(name, arr.data_type().clone(), true)),
+                            arr,
+                        ));
                     }
                 }
+            }
+
+            if self.unnest_samples {
+                // Top-level columns
+                for (_, arr) in genotype_arrays {
+                    columns.push(arr);
+                }
+            } else {
+                // Wrap in a single "samples" struct
+                let samples_struct = StructArray::from(genotype_arrays);
+                columns.push(Arc::new(samples_struct));
             }
         }
 

@@ -46,7 +46,7 @@ pub struct PyVcfScanner {
 #[pymethods]
 impl PyVcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None))]
+    #[pyo3(signature = (src, compressed=false, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, unnest_samples=true))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python,
@@ -57,14 +57,23 @@ impl PyVcfScanner {
         genotype_fields: Option<Vec<String>>,
         samples: Option<Vec<String>>,
         genotype_by: Option<String>,
+        unnest_samples: bool,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::vcf::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
         let gt_by = resolve_genotype_by(genotype_by)?;
-        let scanner = VcfScanner::new(header, fields, info_fields, genotype_fields, samples, gt_by)
-            .map_err(to_py)?;
+        let scanner = VcfScanner::new(
+            header,
+            fields,
+            info_fields,
+            genotype_fields,
+            samples,
+            gt_by,
+            Some(unnest_samples),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -98,6 +107,7 @@ impl PyVcfScanner {
             GenotypeBy::Field => "field",
         };
         kwargs.set_item("genotype_by", gt_by)?;
+        kwargs.set_item("unnest_samples", model.unnest_samples())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -399,7 +409,7 @@ pub struct PyBcfScanner {
 #[pymethods]
 impl PyBcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=true, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None))]
+    #[pyo3(signature = (src, compressed=true, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, unnest_samples=true))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python,
@@ -410,14 +420,23 @@ impl PyBcfScanner {
         genotype_fields: Option<Vec<String>>,
         samples: Option<Vec<String>>,
         genotype_by: Option<String>,
+        unnest_samples: bool,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bcf::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
         let gt_by = resolve_genotype_by(genotype_by)?;
-        let scanner = BcfScanner::new(header, fields, info_fields, genotype_fields, samples, gt_by)
-            .map_err(to_py)?;
+        let scanner = BcfScanner::new(
+            header,
+            fields,
+            info_fields,
+            genotype_fields,
+            samples,
+            gt_by,
+            Some(unnest_samples),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -451,6 +470,7 @@ impl PyBcfScanner {
             GenotypeBy::Field => "field",
         };
         kwargs.set_item("genotype_by", gt_by)?;
+        kwargs.set_item("unnest_samples", model.unnest_samples())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -788,6 +808,7 @@ pub fn read_vcf(
         genotype_fields,
         samples,
         genotype_by,
+        None,
     )
     .map_err(to_py)?;
 
@@ -884,6 +905,7 @@ pub fn read_bcf(
         genotype_fields,
         samples,
         genotype_by,
+        None,
     )
     .map_err(to_py)?;
 
