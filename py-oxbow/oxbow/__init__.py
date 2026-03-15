@@ -26,6 +26,7 @@ from oxbow._core.variant import (
 )
 from oxbow.oxbow import (
     read_bam,
+    read_bam_references,
     read_bcf,
     read_bed,
     read_bigbed,
@@ -36,6 +37,7 @@ from oxbow.oxbow import (
     read_gff,
     read_gtf,
     read_sam,
+    read_tabix,
     read_vcf,
 )
 
@@ -65,6 +67,7 @@ __all__ = [
     "read_fastq",
     "read_sam",
     "read_bam",
+    "read_bam_references",
     "read_cram",
     "read_bcf",
     "read_vcf",
@@ -73,6 +76,7 @@ __all__ = [
     "read_bigwig",
     "read_gff",
     "read_gtf",
+    "read_tabix",
 ]
 
 from_bam.__module__ = __name__
