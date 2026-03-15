@@ -27,7 +27,7 @@ use crate::OxbowError;
 /// let mut fmt_reader = noodles::bcf::io::Reader::new(inner);
 /// let header = fmt_reader.read_header().unwrap();
 ///
-/// let scanner = Scanner::new(header, None, None, None, None, None).unwrap();
+/// let scanner = Scanner::new(header, None, None, None, None, None, None).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -45,6 +45,7 @@ impl Scanner {
         genotype_fields: Option<Vec<String>>,
         samples: Option<Vec<String>>,
         genotype_by: Option<GenotypeBy>,
+        unnest_samples: Option<bool>,
     ) -> crate::Result<Self> {
         let model = Model::from_header(
             &header,
@@ -53,6 +54,7 @@ impl Scanner {
             genotype_fields,
             samples,
             genotype_by,
+            unnest_samples,
         )?;
         Ok(Self { header, model })
     }
