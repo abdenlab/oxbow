@@ -5,7 +5,7 @@ DataSource classes for the BED family of formats.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Callable, Literal
+from typing import IO, TYPE_CHECKING, Callable, Literal, Union
 
 try:
     from typing import Self
@@ -15,6 +15,10 @@ except ImportError:
 from oxbow._core.base import DEFAULT_BATCH_SIZE, DataSource, prepare_source_and_index
 from oxbow.oxbow import PyBedScanner
 
+if TYPE_CHECKING:
+    CustomFieldDefs = Union[list[tuple[str, str]], dict[str, str]]
+    BedSchemaLike = Union[str, tuple[str, CustomFieldDefs]]
+
 
 class BedFile(DataSource):
     _scanner_type = PyBedScanner
@@ -22,7 +26,7 @@ class BedFile(DataSource):
     def __init__(
         self,
         source: str | Callable[[], IO[bytes] | str],
-        bed_schema: str = "bed3+",
+        bed_schema: BedSchemaLike = "bed3+",
         compressed: bool = False,
         *,
         fields: list[str] | None = None,
@@ -62,7 +66,7 @@ class BedFile(DataSource):
 
 def from_bed(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
-    bed_schema: str = "bed3+",
+    bed_schema: BedSchemaLike = "bed3+",
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: list[str] | None = None,
@@ -78,10 +82,13 @@ def from_bed(
     source : str, pathlib.Path, or Callable
         The URI or path to the BED file, or a callable that opens the file
         as a file-like object.
-    bed_schema : str, optional [default: "bed3+"]
-        Schema for intepreting the BED file. The default is "bed3+", which
-        includes the first three standard fields (chrom, start, end) and
-        any additional data is lumped into a single "rest" column.
+    bed_schema : str or tuple[str, list | dict], optional
+        Schema for interpreting the BED file. Can be a specifier string
+        (e.g., "bed6", "bed3+", "bedgraph") or a tuple of
+        ``(base_specifier, custom_defs)`` where ``custom_defs`` is a list
+        of ``(name, type)`` tuples or a dict mapping field names to type
+        strings. The default is "bed3+", which includes the first three
+        standard fields and lumps any additional data into a "rest" column.
     compression : Literal["infer", "bgzf", "gzip", None], default: "infer"
         Compression of the source bytestream. If "infer" and ``source`` is a
         URI or path, the file's compression is guessed based on the extension,

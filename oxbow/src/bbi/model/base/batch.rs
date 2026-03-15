@@ -1,8 +1,7 @@
 use std::iter::zip;
-use std::sync::Arc;
 
 use arrow::array::ArrayRef;
-use arrow::datatypes::{Field as ArrowField, Schema as ArrowSchema, SchemaRef};
+use arrow::datatypes::SchemaRef;
 use arrow::error::ArrowError;
 use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
@@ -11,69 +10,53 @@ use crate::batch::{Push, RecordBatchBuilder};
 
 use super::field::Push as _;
 pub use super::field::{FieldBuilder, FieldDef, FieldType};
-pub use super::{BedSchema, BigBedRecord, BigWigRecord};
+pub use super::{BedSchema, BigBedRecord, BigWigRecord, Model};
 
 /// A builder for an Arrow record batch of BBI records defined by AutoSql.
 pub struct BatchBuilder {
-    arrow_schema: SchemaRef,
+    schema: SchemaRef,
     row_count: usize,
-    schema: BedSchema,
+    bed_schema: BedSchema,
+    bed_schema_field_defs: Vec<FieldDef>,
     builders: IndexMap<FieldDef, FieldBuilder>,
 }
 
 impl BatchBuilder {
     /// Creates a new `BatchBuilder` for BigWig or BigBed records.
     pub fn new(
-        schema: BedSchema,
-        field_names: Option<Vec<String>>,
+        bed_schema: BedSchema,
+        fields: Option<Vec<String>>,
         capacity: usize,
     ) -> crate::Result<Self> {
-        let schema_field_names = schema
-            .fields()
-            .iter()
-            .map(|def| def.name.clone())
-            .collect::<Vec<String>>();
+        let model = Model::new(bed_schema, fields)?;
+        Self::from_model(&model, capacity)
+    }
 
-        let field_names: Vec<String> = field_names.unwrap_or(schema_field_names);
-        let field_defs: Vec<FieldDef> = field_names
-            .iter()
-            .map(|name| {
-                schema
-                    .fields()
-                    .iter()
-                    .find(|field| &field.name == name)
-                    .cloned()
-                    .ok_or_else(|| {
-                        crate::OxbowError::invalid_data(format!(
-                            "Field '{}' not found in schema",
-                            name
-                        ))
-                    })
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
+    /// Creates a new `BatchBuilder` from a [`Model`].
+    pub fn from_model(model: &Model, capacity: usize) -> crate::Result<Self> {
         let mut builders = IndexMap::new();
-        for def in &field_defs {
+        for def in model.fields() {
             let builder = FieldBuilder::new(&def.ty, capacity)?;
             builders.insert(def.clone(), builder);
         }
 
-        let arrow_fields: Vec<ArrowField> =
-            field_defs.iter().map(|def| def.get_arrow_field()).collect();
-        let arrow_schema = Arc::new(ArrowSchema::new(arrow_fields));
-
         Ok(Self {
-            arrow_schema,
+            schema: model.schema().clone(),
             row_count: 0,
-            schema,
+            bed_schema: model.bed_schema().clone(),
+            bed_schema_field_defs: model.bed_schema_field_defs(),
             builders,
         })
+    }
+
+    pub fn bed_schema(&self) -> &BedSchema {
+        &self.bed_schema
     }
 }
 
 impl RecordBatchBuilder for BatchBuilder {
     fn schema(&self) -> SchemaRef {
-        self.arrow_schema.clone()
+        self.schema.clone()
     }
 
     fn finish(&mut self) -> Result<RecordBatch, ArrowError> {
@@ -84,12 +67,12 @@ impl RecordBatchBuilder for BatchBuilder {
             .collect();
         let batch = if columns.is_empty() {
             RecordBatch::try_new_with_options(
-                self.arrow_schema.clone(),
+                self.schema.clone(),
                 columns,
                 &RecordBatchOptions::new().with_row_count(Some(self.row_count)),
             )
         } else {
-            RecordBatch::try_new(self.arrow_schema.clone(), columns)
+            RecordBatch::try_new(self.schema.clone(), columns)
         };
         self.row_count = 0;
         batch
@@ -99,7 +82,7 @@ impl RecordBatchBuilder for BatchBuilder {
 /// Append a BigBed record to the batch.
 impl Push<&BigBedRecord<'_>> for BatchBuilder {
     fn push(&mut self, record: &BigBedRecord) -> crate::Result<()> {
-        let mut schema_defs = self.schema.fields().iter();
+        let mut schema_defs = self.bed_schema_field_defs.iter();
 
         if let Some(def) = schema_defs.next() {
             if let Some(builder) = self.builders.get_mut(def) {
@@ -146,30 +129,30 @@ impl Push<&BigBedRecord<'_>> for BatchBuilder {
             }
         }
 
-        match self.schema.custom_field_count() {
-            Some(0) => {}
-            Some(_) => {
-                let rest = record.rest.split('\t');
-                for (def, value) in zip(schema_defs, rest) {
-                    if let Some(builder) = self.builders.get_mut(def) {
-                        builder.push(value)?;
+        // Parse remaining fields from the tab-separated rest string.
+        // schema_defs still has defs for fields 4+ (standard and custom).
+        if self.bed_schema.custom_field_count().is_none() {
+            // BEDn+ mode: lump all rest into a single "rest" field
+            let rest_def = FieldDef::new("rest".to_string(), FieldType::String);
+            if let Some(builder) = self.builders.get_mut(&rest_def) {
+                match builder {
+                    FieldBuilder::String(b) => {
+                        b.append_value(record.rest);
+                    }
+                    _ => {
+                        return Err(crate::OxbowError::invalid_data(
+                            "Wrong builder type for rest",
+                        ))
                     }
                 }
-            }
-            None => {
-                let rest_def = FieldDef::new("rest".to_string(), FieldType::String);
-                if let Some(builder) = self.builders.get_mut(&rest_def) {
-                    match builder {
-                        FieldBuilder::String(b) => {
-                            b.append_value(record.rest);
-                        }
-                        _ => {
-                            return Err(crate::OxbowError::invalid_data(
-                                "Wrong builder type for rest",
-                            ))
-                        }
-                    }
-                };
+            };
+        } else if !record.rest.is_empty() {
+            // BEDn or BEDn+m: parse each field positionally
+            let rest = record.rest.split('\t');
+            for (def, value) in zip(schema_defs, rest) {
+                if let Some(builder) = self.builders.get_mut(def) {
+                    builder.push(value)?;
+                }
             }
         }
 
@@ -181,7 +164,7 @@ impl Push<&BigBedRecord<'_>> for BatchBuilder {
 /// Append a BigWig record to the batch.
 impl Push<&BigWigRecord<'_>> for BatchBuilder {
     fn push(&mut self, record: &BigWigRecord) -> crate::Result<()> {
-        let mut schema_defs = self.schema.fields().iter();
+        let mut schema_defs = self.bed_schema_field_defs.iter();
 
         if let Some(def) = schema_defs.next() {
             if let Some(builder) = self.builders.get_mut(def) {
@@ -261,19 +244,21 @@ mod tests {
     #[test]
     fn test_batch_builder_new() {
         let bed_schema = create_test_bedschema();
-        let builder = BatchBuilder::new(bed_schema.clone(), None, 10).unwrap();
+        let model = Model::new(bed_schema, None).unwrap();
+        let builder = BatchBuilder::from_model(&model, 10).unwrap();
 
-        assert_eq!(builder.schema().fields().len(), bed_schema.fields().len());
-        assert_eq!(builder.builders.len(), bed_schema.fields().len());
+        assert_eq!(builder.schema().fields().len(), 4);
+        assert_eq!(builder.builders.len(), 4);
     }
 
     #[test]
     fn test_schema() {
         let bed_schema = create_test_bedschema();
-        let builder = BatchBuilder::new(bed_schema.clone(), None, 10).unwrap();
+        let model = Model::new(bed_schema, None).unwrap();
+        let builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let schema = builder.schema();
-        assert_eq!(bed_schema.fields().len(), schema.fields().len());
+        assert_eq!(schema.fields().len(), 4);
         assert_eq!(schema.field(0).name(), "chrom");
         assert_eq!(schema.field(1).name(), "start");
         assert_eq!(schema.field(2).name(), "end");
@@ -284,7 +269,8 @@ mod tests {
     #[test]
     fn test_push_bigbed_record() {
         let schema = create_test_bedschema();
-        let mut builder = BatchBuilder::new(schema, None, 10).unwrap();
+        let model = Model::new(schema, None).unwrap();
+        let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let record = BigBedRecord {
             chrom: "chr1",
@@ -328,7 +314,8 @@ mod tests {
     #[test]
     fn test_push_bigwig_record() {
         let schema = create_test_bedschema();
-        let mut builder = BatchBuilder::new(schema, None, 10).unwrap();
+        let model = Model::new(schema, None).unwrap();
+        let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let record = BigWigRecord {
             chrom: "chr1",
@@ -381,10 +368,80 @@ mod tests {
     #[test]
     fn test_finish_empty_batch() {
         let schema = create_test_bedschema();
-        let mut builder = BatchBuilder::new(schema, None, 10).unwrap();
+        let model = Model::new(schema, None).unwrap();
+        let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let batch = builder.finish().unwrap();
         assert_eq!(batch.num_rows(), 0);
         assert_eq!(batch.num_columns(), 4);
+    }
+
+    #[test]
+    fn test_bigbed_bed6_no_custom() {
+        // bed6 with no custom fields — standard fields 4-6 are in rest
+        let bed_schema: BedSchema = "bed6".parse().unwrap();
+        let model = Model::new(bed_schema, None).unwrap();
+        let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
+
+        let record = BigBedRecord {
+            chrom: "chr1",
+            start: 100,
+            end: 200,
+            rest: &"gene1\t500\t+".to_string(),
+        };
+        builder.push(&record).unwrap();
+        let batch = builder.finish().unwrap();
+
+        assert_eq!(batch.num_rows(), 1);
+        assert_eq!(batch.num_columns(), 6);
+        // name (field 4) should be parsed from rest
+        assert_eq!(
+            batch
+                .column(3)
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap()
+                .value(0),
+            "gene1"
+        );
+        // score (field 5)
+        assert_eq!(
+            batch
+                .column(4)
+                .as_any()
+                .downcast_ref::<arrow::array::UInt16Array>()
+                .unwrap()
+                .value(0),
+            500
+        );
+    }
+
+    #[test]
+    fn test_bigbed_bed6_projected() {
+        // bed6 projected to chrom + strand — strand is field 6, skipping name/score
+        let bed_schema: BedSchema = "bed6".parse().unwrap();
+        let model = Model::new(bed_schema, Some(vec!["chrom".into(), "strand".into()])).unwrap();
+        let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
+
+        let record = BigBedRecord {
+            chrom: "chr1",
+            start: 100,
+            end: 200,
+            rest: &"gene1\t500\t+".to_string(),
+        };
+        builder.push(&record).unwrap();
+        let batch = builder.finish().unwrap();
+
+        assert_eq!(batch.num_rows(), 1);
+        assert_eq!(batch.num_columns(), 2);
+        assert_eq!(
+            batch
+                .column(1)
+                .as_any()
+                .downcast_ref::<arrow::array::StringArray>()
+                .unwrap()
+                .value(0),
+            "+"
+        );
     }
 }

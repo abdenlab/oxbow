@@ -6,8 +6,8 @@ use bigtools::BigBedRead;
 
 use crate::bbi::model::base::BatchBuilder;
 use crate::bbi::model::base::BedSchema;
+use crate::bbi::model::base::Model;
 use crate::bbi::scanner::batch_iterator::base::{BigBedBatchIterator, BigBedQueryBatchIterator};
-use crate::bed::model::Model;
 
 /// A BigBed scanner.
 ///
@@ -67,18 +67,10 @@ impl Scanner {
         capacity: usize,
     ) -> crate::Result<BatchBuilder> {
         match columns {
-            None => BatchBuilder::new(
-                self.model.bed_schema().clone(),
-                Some(self.model.field_names()),
-                capacity,
-            ),
+            None => BatchBuilder::from_model(&self.model, capacity),
             Some(cols) => {
                 let projected = self.model.project(&cols)?;
-                BatchBuilder::new(
-                    projected.bed_schema().clone(),
-                    Some(projected.field_names()),
-                    capacity,
-                )
+                BatchBuilder::from_model(&projected, capacity)
             }
         }
     }

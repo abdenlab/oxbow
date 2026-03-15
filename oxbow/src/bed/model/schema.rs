@@ -1,15 +1,30 @@
 use std::str::FromStr;
 
-use super::field_def::{bed_standard_fields, FieldDef, FieldType};
+use super::field_def::{FieldDef, FieldType};
 use crate::OxbowError;
 
-/// Represents a typed BED schema using AutoSql-based field definitions.
+/// The 12 standard BED field names.
+pub const STANDARD_FIELD_NAMES: [&str; 12] = [
+    "chrom",
+    "start",
+    "end",
+    "name",
+    "score",
+    "strand",
+    "thickStart",
+    "thickEnd",
+    "itemRgb",
+    "blockCount",
+    "blockSizes",
+    "blockStarts",
+];
+
+/// Represents a BED schema defining the logical field structure.
 ///
-/// A BED schema can be created in several ways:
-///
-/// * Defined from `n` standard fields and a vec of custom [`FieldDef`].
-/// * Defined from `n` and `Option<m>` parameters.
-/// * Parsing a `BED`*n\[+\[m\]\]* or `bedGraph` specifier.
+/// A BED schema specifies `n` standard fields (3–12) and an optional set of
+/// custom extension fields. Standard field names are fixed by the spec; their
+/// Arrow types are determined by the format-specific Model (BED vs BBI).
+/// Custom fields carry explicit types via [`FieldDef`].
 ///
 /// # Examples
 ///
@@ -45,15 +60,12 @@ use crate::OxbowError;
 pub struct BedSchema {
     n: usize,
     m: Option<usize>,
-    fields: Vec<FieldDef>,
+    custom: Vec<FieldDef>,
 }
 
 impl BedSchema {
     /// Define a BED schema with `n` standard fields and an optional list of custom field definitions.
-    ///
-    /// The `n` standard fields have pre-defined types. See the BED format specification for details.
     pub fn new(n: usize, custom: Option<Vec<FieldDef>>) -> crate::Result<Self> {
-        let standard_fields = bed_standard_fields();
         if n < 3 {
             return Err(OxbowError::invalid_input(format!(
                 "Invalid BED schema: n < 3 (n={})",
@@ -66,25 +78,16 @@ impl BedSchema {
             )));
         }
 
-        let mut fields: Vec<FieldDef> = standard_fields.into_iter().take(n).collect();
-
-        let m = match custom {
-            // extension m is 0 or more
-            Some(custom) => {
-                let len = custom.len();
-                if !custom.is_empty() {
-                    fields.extend(custom);
-                }
-                Some(len)
-            }
+        let (m, custom) = match custom {
+            Some(custom) => (Some(custom.len()), custom),
             // extension m is undefined: lump into "rest"
-            None => {
-                fields.push(FieldDef::new("rest".to_string(), FieldType::String));
-                None
-            }
+            None => (
+                None,
+                vec![FieldDef::new("rest".to_string(), FieldType::String)],
+            ),
         };
 
-        Ok(Self { n, m, fields })
+        Ok(Self { n, m, custom })
     }
 
     /// Define a BED schema by specifying *n* and *m* parameters.
@@ -96,8 +99,7 @@ impl BedSchema {
     /// the schema will contain `n` standard fields followed by `m` custom fields named `BED{n}+1`,
     /// `BED{n}+2`, ..., `BED{n}+m`.
     ///
-    /// All standard fields are assigned their default types. All custom fields are assigned type
-    /// `String`.
+    /// All custom fields are assigned type `String`.
     pub fn new_from_nm(n: usize, m: Option<usize>) -> crate::Result<Self> {
         let custom_fields = m.map(|m| {
             (1..=m)
@@ -119,72 +121,46 @@ impl BedSchema {
         )
     }
 
-    /// Define a BED schema from a complete list of field definitions.
-    ///
-    /// This allows fully custom schemas (e.g., narrowPeak) where field names
-    /// and types are provided explicitly. The first 3 fields must be
-    /// chrom, start, end (or equivalent) — this is not validated.
-    pub fn from_defs(defs: Vec<FieldDef>) -> crate::Result<Self> {
-        if defs.len() < 3 {
-            return Err(OxbowError::invalid_input(format!(
-                "BED schema requires at least 3 fields, got {}",
-                defs.len()
-            )));
-        }
-        // Determine how many match standard BED fields
-        let standard = bed_standard_fields();
-        let n = defs
-            .iter()
-            .zip(standard.iter())
-            .take_while(|(d, s)| d.name == s.name)
-            .count()
-            .max(3); // At least 3 standard
-        let m = defs.len() - n;
-        Ok(Self {
-            n,
-            m: Some(m),
-            fields: defs,
-        })
-    }
-
-    pub fn fields(&self) -> &Vec<FieldDef> {
-        &self.fields
-    }
-
+    /// All field names (standard + custom).
     pub fn field_names(&self) -> Vec<String> {
-        self.fields.iter().map(|field| field.name.clone()).collect()
+        let mut names: Vec<String> = STANDARD_FIELD_NAMES
+            .iter()
+            .take(self.n)
+            .map(|&s| s.to_string())
+            .collect();
+        names.extend(self.custom.iter().map(|d| d.name.clone()));
+        names
     }
 
+    /// The number of standard fields (3–12).
     pub fn standard_field_count(&self) -> usize {
         self.n
     }
 
+    /// The standard field names.
     pub fn standard_field_names(&self) -> Vec<String> {
-        self.fields
+        STANDARD_FIELD_NAMES
             .iter()
             .take(self.n)
-            .map(|field| field.name.clone())
+            .map(|&s| s.to_string())
             .collect()
     }
 
-    pub fn standard_fields(&self) -> Vec<FieldDef> {
-        self.fields.iter().take(self.n).cloned().collect()
-    }
-
+    /// The number of custom fields, if defined.
+    ///
+    /// `None` means the extension count is undefined (BEDn+ mode).
     pub fn custom_field_count(&self) -> Option<usize> {
         self.m
     }
 
+    /// The custom field names.
     pub fn custom_field_names(&self) -> Vec<String> {
-        self.fields
-            .iter()
-            .skip(self.n)
-            .map(|field| field.name.clone())
-            .collect()
+        self.custom.iter().map(|d| d.name.clone()).collect()
     }
 
-    pub fn custom_fields(&self) -> Vec<FieldDef> {
-        self.fields.iter().skip(self.n).cloned().collect()
+    /// The custom field definitions (with types).
+    pub fn custom_fields(&self) -> &[FieldDef] {
+        &self.custom
     }
 }
 
@@ -205,26 +181,10 @@ impl std::fmt::Display for BedSchema {
 impl FromStr for BedSchema {
     type Err = OxbowError;
     /// Define a BED schema using the shorthand BED*n+m* notation.
-    ///
-    /// The specifier can be one of the following (case-insensitive):
-    ///
-    /// - `BED`: Equivalent to `BED6`.
-    /// - `BED{n}`: `n` standard fields and 0 custom fields.
-    /// - `BED{n}+{m}`: `n` standard fields followed by `m` custom fields.
-    /// - `BED{n}+`: `n` standard fields followed by an undefined number of custom fields.
-    /// - `bedGraph`: special case of a BED3+1, where the fourth field is a 32-bit floating point
-    ///   field named `value`.
-    ///
-    /// # Notes
-    /// - For `BED{n}+m`, custom fields are named `BED{n}+1`, `BED{n}+2`, ..., `BED{n}+m`.
-    /// - For `BED{n}+`, custom fields are collapsed into a single field named `rest`.
-    /// - Since, *n+m* notation does not specify the types of custom fields, they are assigned type
-    ///   `String`.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.to_ascii_lowercase();
 
         if s == "bed" {
-            // Interpret as BED6
             return Self::new_from_nm(6, Some(0));
         }
 
@@ -236,18 +196,15 @@ impl FromStr for BedSchema {
             if rest == "graph" {
                 Self::new_bedgraph()
             } else if let Some(n) = rest.strip_suffix('+') {
-                // BEDn+
                 let n = n.parse::<usize>().map_err(|_| parse_error(&s))?;
                 Self::new_from_nm(n, None)
             } else if let Some(pos) = rest.find('+') {
-                // BEDn+m
                 let n = rest[..pos].parse::<usize>().map_err(|_| parse_error(&s))?;
                 let m = rest[pos + 1..]
                     .parse::<usize>()
                     .map_err(|_| parse_error(&s))?;
                 Self::new_from_nm(n, Some(m))
             } else {
-                // BEDn
                 let n = rest.parse::<usize>().map_err(|_| parse_error(&s))?;
                 Self::new_from_nm(n, Some(0))
             }
@@ -315,8 +272,8 @@ mod tests {
         let spec: BedSchema = "bedgraph".parse().unwrap();
         assert_eq!(spec.standard_field_count(), 3);
         assert_eq!(spec.custom_field_count(), Some(1));
-        assert_eq!(spec.fields()[3].name, "value");
-        assert_eq!(spec.fields()[3].ty, FieldType::Float);
+        assert_eq!(spec.custom_fields()[0].name, "value");
+        assert_eq!(spec.custom_fields()[0].ty, FieldType::Float);
     }
 
     #[test]

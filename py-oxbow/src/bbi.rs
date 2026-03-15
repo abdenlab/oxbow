@@ -226,41 +226,48 @@ pub struct PyBigBedScanner {
 #[pymethods]
 impl PyBigBedScanner {
     #[new]
-    #[pyo3(signature = (src, schema="bed3+", fields=None))]
+    #[pyo3(signature = (src, schema=None, fields=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
-        schema: Option<&str>,
+        schema: Option<Py<PyAny>>,
         fields: Option<Vec<String>>,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let mut fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
-        let bed_schema = match schema {
-            Some("autosql") => {
-                let autosql_str = fmt_reader.autosql().unwrap().unwrap();
-                let mut declarations = parse_autosql(&autosql_str).unwrap();
-                if declarations.len() > 1 {
-                    return Err(PyErr::new::<PyValueError, _>(
-                        "Autosql schema must contain exactly one declaration.",
-                    ));
+        let bed_schema = match &schema {
+            Some(obj) => {
+                // Check for "autosql" special string
+                if let Ok(s) = obj.extract::<String>(py) {
+                    if s == "autosql" {
+                        let autosql_str = fmt_reader.autosql().unwrap().unwrap();
+                        let mut declarations = parse_autosql(&autosql_str).unwrap();
+                        if declarations.len() > 1 {
+                            return Err(PyErr::new::<PyValueError, _>(
+                                "Autosql schema must contain exactly one declaration.",
+                            ));
+                        }
+                        let declaration = declarations.pop().unwrap();
+                        let field_defs: Vec<_> = declaration
+                            .fields
+                            .iter()
+                            .skip(3)
+                            .map(FieldDef::try_from)
+                            .collect::<Result<_, _>>()?;
+                        BedSchema::new(3, Some(field_defs)).map_err(to_py)?
+                    } else {
+                        crate::bed::resolve_bed_schema(py, obj)?
+                    }
+                } else {
+                    crate::bed::resolve_bed_schema(py, obj)?
                 }
-                let declaration = declarations.pop().unwrap();
-                let field_defs: Vec<_> = declaration
-                    .fields
-                    .iter()
-                    .skip(3)
-                    .map(FieldDef::try_from)
-                    .collect::<Result<_, _>>()?;
-                BedSchema::new(3, Some(field_defs))
             }
-            Some(schema) => schema.parse(),
-            None => BedSchema::new_from_nm(3, None),
-        }
-        .map_err(to_py)?;
+            None => BedSchema::new_from_nm(3, None).map_err(to_py)?,
+        };
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
         let scanner = BigBedScanner::new(bed_schema, info, fields).map_err(to_py)?;
-        let _schema: Option<String> = schema.map(|schema| schema.to_string());
+        let _schema: Option<String> = schema.as_ref().and_then(|s| s.extract::<String>(py).ok());
         Ok(Self {
             _src: src,
             _schema,

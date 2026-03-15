@@ -72,12 +72,12 @@ impl Scanner {
         capacity: usize,
     ) -> crate::Result<BatchBuilder> {
         match columns {
-            None => BatchBuilder::new(None, self.model.bed_schema(), capacity),
+            None => BatchBuilder::new(self.model.bed_schema(), None, capacity),
             Some(cols) => {
                 let projected = self.model.project(&cols)?;
                 BatchBuilder::new(
-                    Some(projected.field_names()),
                     projected.bed_schema(),
+                    Some(projected.field_names()),
                     capacity,
                 )
             }

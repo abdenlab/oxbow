@@ -11,9 +11,70 @@ use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
-use oxbow::bed::{BedScanner, BedSchema};
+use oxbow::bed::{BedScanner, BedSchema, FieldDef, FieldType};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
+
+/// Extract custom field definitions from a Python list or dict.
+fn extract_custom_defs(obj: &Bound<'_, PyAny>) -> PyResult<Vec<FieldDef>> {
+    if let Ok(dict) = obj.cast::<pyo3::types::PyDict>() {
+        return dict
+            .iter()
+            .map(|(k, v)| {
+                let name: String = k.extract()?;
+                let ty_str: String = v.extract()?;
+                let ty: FieldType = ty_str.parse().map_err(to_py)?;
+                Ok(FieldDef::new(name, ty))
+            })
+            .collect::<PyResult<Vec<_>>>();
+    }
+
+    if let Ok(list) = obj.cast::<pyo3::types::PyList>() {
+        return list
+            .iter()
+            .map(|item| {
+                let (name, ty_str): (String, String) = item.extract()?;
+                let ty: FieldType = ty_str.parse().map_err(to_py)?;
+                Ok(FieldDef::new(name, ty))
+            })
+            .collect::<PyResult<Vec<_>>>();
+    }
+
+    Err(PyErr::new::<PyValueError, _>(
+        "Custom field definitions must be a list[tuple[str, str]] or dict[str, str]",
+    ))
+}
+
+/// Parse a BED schema from a Python object.
+///
+/// Accepts:
+/// - `str`: a BED schema specifier (e.g., "bed6+3", "bedgraph")
+/// - `tuple[str, list | dict]`: a base specifier + custom field definitions
+///   (e.g., `("bed6", [("signalValue", "float"), ...])`)
+pub fn resolve_bed_schema(py: Python, obj: &Py<PyAny>) -> PyResult<BedSchema> {
+    let obj = obj.bind(py);
+
+    if let Ok(s) = obj.extract::<String>() {
+        return s.parse::<BedSchema>().map_err(to_py);
+    }
+
+    if let Ok(tuple) = obj.cast::<pyo3::types::PyTuple>() {
+        if tuple.len() != 2 {
+            return Err(PyErr::new::<PyValueError, _>(
+                "Schema tuple must have exactly 2 elements: (base_specifier, custom_defs)",
+            ));
+        }
+        let base: String = tuple.get_item(0)?.extract()?;
+        let base_schema: BedSchema = base.parse().map_err(to_py)?;
+        let n = base_schema.standard_field_count();
+        let custom_defs = extract_custom_defs(&tuple.get_item(1)?)?;
+        return BedSchema::new(n, Some(custom_defs)).map_err(to_py);
+    }
+
+    Err(PyErr::new::<PyValueError, _>(
+        "bed_schema must be a str or a tuple of (str, list | dict)",
+    ))
+}
 
 /// A BED file scanner.
 ///
@@ -21,26 +82,13 @@ use oxbow::util::index::IndexType;
 /// ----------
 /// src : str or file-like
 ///     The path to the BED file or a file-like object.
-/// bed_schema : str
-///     The BED schema specifier, e.g., "bed6+3".
+/// bed_schema : str, list[tuple[str, str]], or dict[str, str]
+///     The BED schema. Can be a specifier string (e.g., "bed6+3"), a list
+///     of (name, type) tuples, or a dict mapping names to types.
 /// compressed : bool, optional [default: False]
-///     Whether the source is BGZF-compressed. If None, it is assumed to be
-///     uncompressed.
+///     Whether the source is BGZF-compressed.
 /// fields : list[str], optional
 ///     Names of the BED fields to include in the schema.
-///
-/// Notes
-/// -----
-/// The BED schema specifier can be one of the following (case-insensitive):
-///
-/// - ``bed``: Equivalent to ``BED6``.
-/// - ``bed{n}``: `n` standard fields and 0 custom fields.
-/// - ``bed{n}+{m}``: `n` standard fields followed by `m` custom fields.
-/// - ``bed{n}+``: `n` standard fields followed by an undefined number of custom fields.
-///
-/// While the 12 standard fields have defined types, custom fields are
-/// interpreted as text. ``bed{n}+`` custom fields are collapsed into a single
-/// field named `rest`.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBedScanner {
     src: Py<PyAny>,
@@ -56,12 +104,12 @@ impl PyBedScanner {
     fn new(
         py: Python,
         src: Py<PyAny>,
-        bed_schema: String,
+        bed_schema: Py<PyAny>,
         compressed: bool,
         fields: Option<Vec<String>>,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-        let parsed_schema: BedSchema = bed_schema.parse().map_err(to_py)?;
+        let parsed_schema = resolve_bed_schema(py, &bed_schema)?;
         let scanner = BedScanner::new(parsed_schema, fields).map_err(to_py)?;
         Ok(Self {
             src,
@@ -325,10 +373,10 @@ impl PyBedScanner {
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
-/// bed_schema : str
-///     The BED schema specifier, e.g., "bed6+3".
+/// bed_schema : str, list[tuple[str, str]], or dict[str, str]
+///     The BED schema.
 /// fields : list[str], optional
-///     Names of the fixed fields to project.
+///     Names of the fields to project.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed.
 ///
@@ -336,32 +384,19 @@ impl PyBedScanner {
 /// -------
 /// bytes
 ///     Arrow IPC
-///
-/// Notes
-/// -----
-/// The BED schema specifier can be one of the following (case-insensitive):
-///
-/// - ``bed``: Equivalent to ``BED6``.
-/// - ``bed{n}``: `n` standard fields and 0 custom fields.
-/// - ``bed{n}+{m}``: `n` standard fields followed by `m` custom fields.
-/// - ``bed{n}+``: `n` standard fields followed by an undefined number of custom fields.
-///
-/// While the 12 standard fields have defined types, custom fields are
-/// interpreted as text. ``bed{n}+`` custom fields are collapsed into a single
-/// field named `rest`.
 #[pyfunction]
 #[pyo3(signature = (src, bed_schema, region=None, index=None, fields=None, compressed=false))]
 pub fn read_bed(
     py: Python,
     src: Py<PyAny>,
-    bed_schema: String,
+    bed_schema: Py<PyAny>,
     region: Option<String>,
     index: Option<Py<PyAny>>,
     fields: Option<Vec<String>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let bed_schema: BedSchema = bed_schema.parse().unwrap();
+    let bed_schema = resolve_bed_schema(py, &bed_schema)?;
     let scanner = BedScanner::new(bed_schema, fields).map_err(to_py)?;
 
     let ipc = if let Some(region) = region {

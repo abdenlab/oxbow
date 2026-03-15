@@ -86,6 +86,30 @@ class TestBigBedFile:
         file = ox.BigBedFile("data/sample.bb", regions=regions)
         file.pl()
 
+    def test_autosql_schema(self):
+        """Autosql-derived schemas produce correct data for projected columns."""
+        file = ox.BigBedFile("data/autosql-sample.bb", schema="autosql")
+        batch = next(file.batches())
+
+        # All autosql fields are present
+        names = list(batch.schema.names)
+        assert "chrom" in names
+        assert "chromStarts" in names
+
+        # Projection to a subset including a non-standard autosql field
+        file = ox.BigBedFile(
+            "data/autosql-sample.bb",
+            schema="autosql",
+            fields=["chrom", "start", "end", "chromStarts"],
+        )
+        batch = next(file.batches())
+        assert list(batch.schema.names) == ["chrom", "start", "end", "chromStarts"]
+
+        # chromStarts should have actual list data, not nulls
+        col = batch.column("chromStarts")
+        assert col[0].as_py() is not None, "chromStarts should not be null"
+        assert isinstance(col[0].as_py(), list), "chromStarts should be a list"
+
 
 class TestBigWigFile:
     @pytest.mark.parametrize(

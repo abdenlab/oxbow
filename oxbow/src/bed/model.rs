@@ -9,20 +9,21 @@ pub use field_def::{
 };
 pub use schema::BedSchema;
 
+use std::str::FromStr;
 use std::sync::Arc;
 
 use arrow::datatypes::{Field as ArrowField, Schema, SchemaRef};
 
 use crate::OxbowError;
+use field::Field;
 
-/// A data model for BED/BBI records.
+/// A data model for BED records.
 ///
 /// Wraps a [`BedSchema`] (which defines the parsing interpretation) with an
 /// optional field projection to select which columns to include in output.
 ///
-/// - `bed_schema` defines how to parse each record (standard + custom fields).
-/// - `fields` projects which of those fields become Arrow columns.
-///   `None` → all fields from the bed_schema.
+/// Uses BED-specific Arrow types for standard fields (e.g., Int64 for
+/// positions) and FieldDef types for custom fields.
 ///
 /// # Examples
 ///
@@ -42,7 +43,7 @@ use crate::OxbowError;
 #[derive(Clone, Debug)]
 pub struct Model {
     bed_schema: BedSchema,
-    fields: Vec<FieldDef>,
+    field_names: Vec<String>,
     schema: SchemaRef,
 }
 
@@ -52,34 +53,49 @@ impl Model {
     /// - `bed_schema`: the parsing interpretation.
     /// - `fields`: column names to project. `None` → all fields from the schema.
     pub fn new(bed_schema: BedSchema, fields: Option<Vec<String>>) -> crate::Result<Self> {
-        let projected = match fields {
-            None => bed_schema.fields().clone(),
+        let available_names = bed_schema.field_names();
+        let projected_names = match fields {
+            None => available_names.clone(),
             Some(names) => {
-                let available = bed_schema.fields();
-                let mut projected = Vec::new();
                 for name in &names {
-                    let def = available
-                        .iter()
-                        .find(|d| d.name.eq_ignore_ascii_case(name))
-                        .ok_or_else(|| {
-                            OxbowError::invalid_input(format!(
-                                "Field '{}' not in BED schema. Available: {:?}",
-                                name,
-                                bed_schema.field_names()
-                            ))
-                        })?;
-                    projected.push(def.clone());
+                    if !available_names.iter().any(|a| a.eq_ignore_ascii_case(name)) {
+                        return Err(OxbowError::invalid_input(format!(
+                            "Field '{}' not in BED schema. Available: {:?}",
+                            name, available_names
+                        )));
+                    }
                 }
-                projected
+                names
             }
         };
 
-        let arrow_fields: Vec<ArrowField> = projected.iter().map(|d| d.get_arrow_field()).collect();
+        let standard_names = bed_schema.standard_field_names();
+        let custom_fields = bed_schema.custom_fields();
+        let arrow_fields: Vec<ArrowField> = projected_names
+            .iter()
+            .map(|name| {
+                // Standard fields: use the specialized BED Field types
+                if standard_names.iter().any(|s| s.eq_ignore_ascii_case(name)) {
+                    if let Ok(field) = Field::from_str(name) {
+                        return field.get_arrow_field();
+                    }
+                }
+                // Custom fields: use FieldDef types
+                if let Some(def) = custom_fields
+                    .iter()
+                    .find(|d| d.name.eq_ignore_ascii_case(name))
+                {
+                    return def.get_arrow_field();
+                }
+                // Fallback (shouldn't happen after validation)
+                ArrowField::new(name, arrow::datatypes::DataType::Utf8, true)
+            })
+            .collect();
         let schema = Arc::new(Schema::new(arrow_fields));
 
         Ok(Self {
             bed_schema,
-            fields: projected,
+            field_names: projected_names,
             schema,
         })
     }
@@ -89,14 +105,9 @@ impl Model {
         &self.bed_schema
     }
 
-    /// The projected field definitions.
-    pub fn fields(&self) -> &[FieldDef] {
-        &self.fields
-    }
-
     /// The projected field names.
     pub fn field_names(&self) -> Vec<String> {
-        self.fields.iter().map(|d| d.name.clone()).collect()
+        self.field_names.clone()
     }
 
     /// The Arrow schema for the projected fields.
@@ -114,8 +125,6 @@ impl Model {
     }
 
     /// Create a projected model containing only the specified columns.
-    ///
-    /// Returns an error if any column name is not in this model's schema.
     pub fn project(&self, columns: &[String]) -> crate::Result<Self> {
         let available = self.column_names();
         let unknown: Vec<&str> = columns
@@ -131,10 +140,10 @@ impl Model {
         }
 
         let projected: Vec<String> = self
-            .fields
+            .field_names
             .iter()
-            .filter(|d| columns.iter().any(|c| c.eq_ignore_ascii_case(&d.name)))
-            .map(|d| d.name.clone())
+            .filter(|n| columns.iter().any(|c| c.eq_ignore_ascii_case(n)))
+            .cloned()
             .collect();
 
         Self::new(self.bed_schema.clone(), Some(projected))
@@ -143,7 +152,7 @@ impl Model {
 
 impl PartialEq for Model {
     fn eq(&self, other: &Self) -> bool {
-        self.bed_schema == other.bed_schema && self.fields == other.fields
+        self.bed_schema == other.bed_schema && self.field_names == other.field_names
     }
 }
 
@@ -190,16 +199,14 @@ mod tests {
     #[test]
     fn test_custom_schema() {
         let defs = vec![
-            FieldDef::new("chrom".into(), FieldType::String),
-            FieldDef::new("start".into(), FieldType::Uint),
-            FieldDef::new("end".into(), FieldType::Uint),
             FieldDef::new("signalValue".into(), FieldType::Float),
+            FieldDef::new("pValue".into(), FieldType::Float),
         ];
-        let bed_schema = BedSchema::from_defs(defs).unwrap();
+        let bed_schema = BedSchema::new(3, Some(defs)).unwrap();
         let model = Model::new(bed_schema, None).unwrap();
         assert_eq!(
             model.field_names(),
-            vec!["chrom", "start", "end", "signalValue"]
+            vec!["chrom", "start", "end", "signalValue", "pValue"]
         );
     }
 
@@ -226,5 +233,55 @@ mod tests {
         let bed_schema: BedSchema = "bed3".parse().unwrap();
         let result = Model::new(bed_schema, Some(vec!["nonexistent".into()]));
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_bed3_projected_subset() {
+        let bed_schema: BedSchema = "bed3".parse().unwrap();
+        let model = Model::new(bed_schema, Some(vec!["chrom".into(), "end".into()])).unwrap();
+        assert_eq!(model.field_names(), vec!["chrom", "end"]);
+    }
+
+    #[test]
+    fn test_bed9_noncontiguous_projection() {
+        let bed_schema: BedSchema = "bed9".parse().unwrap();
+        let model = Model::new(
+            bed_schema,
+            Some(vec!["chrom".into(), "strand".into(), "itemRgb".into()]),
+        )
+        .unwrap();
+        assert_eq!(model.field_names(), vec!["chrom", "strand", "itemRgb"]);
+        assert_eq!(model.schema().fields().len(), 3);
+    }
+
+    #[test]
+    fn test_bed12_with_custom_mixed_projection() {
+        let defs = vec![
+            FieldDef::new("extra1".into(), FieldType::Float),
+            FieldDef::new("extra2".into(), FieldType::String),
+        ];
+        let bed_schema = BedSchema::new(12, Some(defs)).unwrap();
+        let model = Model::new(bed_schema, None).unwrap();
+        assert_eq!(model.field_names().len(), 14);
+
+        let projected = model
+            .project(&["chrom".into(), "blockSizes".into(), "extra1".into()])
+            .unwrap();
+        assert_eq!(
+            projected.field_names(),
+            vec!["chrom", "blockSizes", "extra1"]
+        );
+    }
+
+    #[test]
+    fn test_bedgraph_arrow_types() {
+        use arrow::datatypes::DataType;
+
+        let bed_schema = BedSchema::new_bedgraph().unwrap();
+        let model = Model::new(bed_schema, None).unwrap();
+        // Standard fields use BED types (Int64 for positions)
+        assert_eq!(model.schema().field(1).data_type(), &DataType::Int64);
+        // Custom "value" field uses FieldDef type (Float32)
+        assert_eq!(model.schema().field(3).data_type(), &DataType::Float32);
     }
 }
