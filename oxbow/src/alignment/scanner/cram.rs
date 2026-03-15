@@ -1,16 +1,14 @@
 use std::io::{self, Read, Seek, SeekFrom};
 
-use crate::OxbowError;
-
 use arrow::array::RecordBatchReader;
-use arrow::datatypes::{Schema, SchemaRef};
+use arrow::datatypes::Schema;
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 use noodles::core::region::Interval;
 
-use crate::alignment::model::field::DEFAULT_FIELD_NAMES;
 use crate::alignment::model::tag::TagScanner;
 use crate::alignment::model::BatchBuilder;
+use crate::alignment::AlignmentModel;
 use crate::batch::{Push, RecordBatchBuilder as _};
 
 /// A CRAM scanner.
@@ -40,32 +38,47 @@ use crate::batch::{Push, RecordBatchBuilder as _};
 /// ```
 pub struct Scanner {
     header: noodles::sam::Header,
-    fields: Option<Vec<String>>,
-    tag_defs: Option<Vec<(String, String)>>,
-    schema: SchemaRef,
+    model: AlignmentModel,
     repo: noodles::fasta::Repository,
 }
 
 impl Scanner {
     /// Creates a CRAM scanner from a SAM header and schema parameters.
     ///
-    /// The schema is validated and cached at construction time. The FASTA
-    /// repository is stored and used by scan methods for decoding.
+    /// - `fields`: standard SAM field names. `None` → all 12 standard fields.
+    /// - `tag_defs`: `None` → no tags column. `Some(vec![])` → empty struct.
+    ///
+    /// The FASTA repository is stored and used by scan methods for decoding.
     pub fn new(
         header: noodles::sam::Header,
         fields: Option<Vec<String>>,
         tag_defs: Option<Vec<(String, String)>>,
         repo: noodles::fasta::Repository,
     ) -> crate::Result<Self> {
-        let batch_builder = BatchBuilder::new(header.clone(), fields.clone(), tag_defs.clone(), 0)?;
-        let schema = batch_builder.schema();
+        let model = AlignmentModel::new(fields, tag_defs)?;
         Ok(Self {
             header,
-            fields,
-            tag_defs,
-            schema,
+            model,
             repo,
         })
+    }
+
+    /// Creates a CRAM scanner from an [`AlignmentModel`].
+    pub fn with_model(
+        header: noodles::sam::Header,
+        model: AlignmentModel,
+        repo: noodles::fasta::Repository,
+    ) -> Self {
+        Self {
+            header,
+            model,
+            repo,
+        }
+    }
+
+    /// Returns a reference to the [`AlignmentModel`].
+    pub fn model(&self) -> &AlignmentModel {
+        &self.model
     }
 
     /// Returns a reference to the FASTA repository.
@@ -96,14 +109,14 @@ impl Scanner {
             .collect()
     }
 
-    /// Returns the fixed field names.
+    /// Returns the field names declared in the model.
     pub fn field_names(&self) -> Vec<String> {
-        DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
+        self.model.field_names()
     }
 
     /// Returns the Arrow schema.
     pub fn schema(&self) -> &Schema {
-        &self.schema
+        self.model.schema()
     }
 
     /// Builds a BatchBuilder applying column projection.
@@ -114,55 +127,11 @@ impl Scanner {
         columns: Option<Vec<String>>,
         capacity: usize,
     ) -> crate::Result<BatchBuilder> {
-        match columns {
-            None => BatchBuilder::new(
-                self.header.clone(),
-                self.fields.clone(),
-                self.tag_defs.clone(),
-                capacity,
-            ),
-            Some(cols) => {
-                let schema_names: Vec<&str> = self
-                    .schema
-                    .fields()
-                    .iter()
-                    .map(|f| f.name().as_str())
-                    .collect();
-
-                let unknown: Vec<&str> = cols
-                    .iter()
-                    .filter(|c| !schema_names.iter().any(|s| s.eq_ignore_ascii_case(c)))
-                    .map(|c| c.as_str())
-                    .collect();
-                if !unknown.is_empty() {
-                    return Err(OxbowError::invalid_input(format!(
-                        "Unknown columns: {:?}. Available columns: {:?}",
-                        unknown, schema_names
-                    )));
-                }
-
-                let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
-                    DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
-                });
-                let projected_fields: Vec<String> = declared_field_names
-                    .into_iter()
-                    .filter(|name| cols.iter().any(|c| c.eq_ignore_ascii_case(name)))
-                    .collect();
-
-                let tag_defs = if cols.iter().any(|c| c == "tags") {
-                    self.tag_defs.clone()
-                } else {
-                    None
-                };
-
-                BatchBuilder::new(
-                    self.header.clone(),
-                    Some(projected_fields),
-                    tag_defs,
-                    capacity,
-                )
-            }
-        }
+        let model = match columns {
+            None => self.model.clone(),
+            Some(cols) => self.model.project(&cols)?,
+        };
+        BatchBuilder::from_model(&model, self.header.clone(), capacity)
     }
 }
 

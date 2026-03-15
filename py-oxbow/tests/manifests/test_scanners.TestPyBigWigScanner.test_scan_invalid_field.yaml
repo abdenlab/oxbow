@@ -1,2 +1,1 @@
-'Unknown columns: ["nonexistent-field"]. Available columns: ["chrom", "start", "end",
-    "value"]'
+'Unknown columns: ["nonexistent-field"]. Available: ["chrom", "start", "end", "value"]'

@@ -1,16 +1,15 @@
 use std::io::{BufRead, Seek};
 
 use arrow::array::RecordBatchReader;
-use arrow::datatypes::{Schema, SchemaRef};
+use arrow::datatypes::Schema;
 use noodles::bgzf::VirtualPosition;
 use noodles::csi::binning_index;
 use noodles::csi::BinningIndex;
 
-use crate::batch::RecordBatchBuilder as _;
 use crate::gxf::model::attribute::AttributeScanner;
 use crate::gxf::model::attribute::Push as _;
-use crate::gxf::model::field::DEFAULT_FIELD_NAMES;
 use crate::gxf::model::BatchBuilder;
+use crate::gxf::model::Model;
 use crate::gxf::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 use crate::OxbowError;
@@ -37,28 +36,31 @@ use crate::OxbowError;
 /// ```
 pub struct Scanner {
     header: Option<binning_index::index::Header>,
-    fields: Option<Vec<String>>,
-    attr_defs: Option<Vec<(String, String)>>,
-    schema: SchemaRef,
+    model: Model,
 }
 
 impl Scanner {
     /// Creates a GTF scanner from schema parameters.
     ///
-    /// The schema is validated and cached at construction time.
+    /// - `fields`: standard GXF field names. `None` → all 8 standard fields.
+    /// - `attr_defs`: `None` → no attributes column. `Some(vec![])` → empty struct.
     pub fn new(
         header: Option<binning_index::index::Header>,
         fields: Option<Vec<String>>,
         attr_defs: Option<Vec<(String, String)>>,
     ) -> crate::Result<Self> {
-        let batch_builder = BatchBuilder::new(fields.clone(), attr_defs.clone(), 0)?;
-        let schema = batch_builder.schema();
-        Ok(Self {
-            header,
-            fields,
-            attr_defs,
-            schema,
-        })
+        let model = Model::new(fields, attr_defs)?;
+        Ok(Self { header, model })
+    }
+
+    /// Creates a GTF scanner from a [`Model`].
+    pub fn with_model(header: Option<binning_index::index::Header>, model: Model) -> Self {
+        Self { header, model }
+    }
+
+    /// Returns a reference to the [`Model`].
+    pub fn model(&self) -> &Model {
+        &self.model
     }
 
     /// Returns the index header if one was provided.
@@ -81,12 +83,12 @@ impl Scanner {
 
     /// Returns the fixed field names.
     pub fn field_names(&self) -> Vec<String> {
-        DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
+        self.model.field_names()
     }
 
     /// Returns the Arrow schema.
     pub fn schema(&self) -> &Schema {
-        &self.schema
+        self.model.schema()
     }
 
     /// Builds a BatchBuilder applying column projection.
@@ -98,42 +100,10 @@ impl Scanner {
         capacity: usize,
     ) -> crate::Result<BatchBuilder> {
         match columns {
-            None => BatchBuilder::new(self.fields.clone(), self.attr_defs.clone(), capacity),
+            None => BatchBuilder::from_model(&self.model, capacity),
             Some(cols) => {
-                let schema_names: Vec<&str> = self
-                    .schema
-                    .fields()
-                    .iter()
-                    .map(|f| f.name().as_str())
-                    .collect();
-
-                let unknown: Vec<&str> = cols
-                    .iter()
-                    .filter(|c| !schema_names.iter().any(|s| s.eq_ignore_ascii_case(c)))
-                    .map(|c| c.as_str())
-                    .collect();
-                if !unknown.is_empty() {
-                    return Err(OxbowError::invalid_input(format!(
-                        "Unknown columns: {:?}. Available columns: {:?}",
-                        unknown, schema_names
-                    )));
-                }
-
-                let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
-                    DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
-                });
-                let projected_fields: Vec<String> = declared_field_names
-                    .into_iter()
-                    .filter(|name| cols.iter().any(|c| c.eq_ignore_ascii_case(name)))
-                    .collect();
-
-                let attr_defs = if cols.iter().any(|c| c == "attributes") {
-                    self.attr_defs.clone()
-                } else {
-                    None
-                };
-
-                BatchBuilder::new(Some(projected_fields), attr_defs, capacity)
+                let projected = self.model.project(&cols)?;
+                BatchBuilder::from_model(&projected, capacity)
             }
         }
     }

@@ -62,7 +62,7 @@ class TestGtfFile:
                 f"batch-{i:02}": pa.record_batch(b).to_pydict()
                 for i, b in enumerate(batches)
             }
-        except OSError as e:
+        except (OSError, ValueError) as e:
             actual = str(e)
 
         assert manifest[f"fields={fields}"] == actual
@@ -175,7 +175,7 @@ class TestGffFile:
                 f"batch-{i:02}": pa.record_batch(b).to_pydict()
                 for i, b in enumerate(batches)
             }
-        except OSError as e:
+        except (OSError, ValueError) as e:
             actual = str(e)
 
         assert manifest[f"fields={fields}"] == actual

@@ -42,7 +42,7 @@ class GxfFile(DataSource):
             discovered = self._scanner_type(
                 self._source, compressed=compressed
             ).attribute_defs(attribute_scan_rows)
-            self._scanner_kwargs["attribute_defs"] = discovered
+            self._scanner_kwargs["attribute_defs"] = discovered or None
 
     def _scan_query(self, scanner, region, columns, batch_size):
         return scanner.scan_query(

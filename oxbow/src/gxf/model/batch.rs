@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use arrow::array::{ArrayRef, StructArray};
 use arrow::datatypes::FieldRef;
-use arrow::datatypes::{DataType, Field as ArrowField, SchemaRef};
+use arrow::datatypes::SchemaRef;
 use arrow::error::ArrowError;
 use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
@@ -10,69 +10,53 @@ use indexmap::IndexMap;
 use crate::batch::{Push, RecordBatchBuilder};
 use crate::gxf::model::attribute::{AttributeBuilder, AttributeDef, AttributeValue};
 use crate::gxf::model::field::Push as _;
-use crate::gxf::model::field::{Field, FieldBuilder, DEFAULT_FIELD_NAMES};
+use crate::gxf::model::field::{Field, FieldBuilder};
+
+use super::Model;
 
 /// A builder for an Arrow record batch of GXF (GTF/GFF) features.
 pub struct BatchBuilder {
     schema: SchemaRef,
     row_count: usize,
-    attr_defs: Vec<AttributeDef>,
+    has_attributes: bool,
     field_builders: IndexMap<Field, FieldBuilder>,
     attr_builders: IndexMap<AttributeDef, AttributeBuilder>,
 }
 
 impl BatchBuilder {
     /// Creates a new `BatchBuilder` for GTF/GFF records.
+    ///
+    /// - `fields`: standard GXF field names. `None` → all 8 standard fields.
+    /// - `attr_defs`: `None` → no attributes column. `Some(vec![])` → empty struct.
     pub fn new(
-        field_names: Option<Vec<String>>,
+        fields: Option<Vec<String>>,
         attr_defs: Option<Vec<(String, String)>>,
         capacity: usize,
     ) -> crate::Result<Self> {
-        let default_field_names: Vec<String> = DEFAULT_FIELD_NAMES
-            .into_iter()
-            .map(|name| name.to_string())
-            .collect();
-        let fields: Vec<Field> = field_names
-            .unwrap_or(default_field_names)
-            .into_iter()
-            .map(|name| name.parse())
-            .collect::<Result<Vec<_>, _>>()?;
+        let model = Model::new(fields, attr_defs)?;
+        Self::from_model(&model, capacity)
+    }
+
+    /// Creates a new `BatchBuilder` from a [`Model`].
+    pub fn from_model(model: &Model, capacity: usize) -> crate::Result<Self> {
         let mut field_builders = IndexMap::new();
-        for field in &fields {
+        for field in model.fields() {
             let builder = FieldBuilder::new(field.clone(), capacity);
             field_builders.insert(field.clone(), builder);
         }
 
-        let attr_defs: Vec<AttributeDef> = attr_defs
-            .unwrap_or_default()
-            .into_iter()
-            .map(AttributeDef::try_from)
-            .collect::<Result<Vec<_>, _>>()?;
         let mut attr_builders = IndexMap::new();
-        for def in &attr_defs {
-            let builder = AttributeBuilder::new(&def.ty);
-            attr_builders.insert(def.clone(), builder);
+        if let Some(defs) = model.attr_defs() {
+            for def in defs {
+                let builder = AttributeBuilder::new(&def.ty);
+                attr_builders.insert(def.clone(), builder);
+            }
         }
-
-        // Build schema once
-        let mut arrow_fields: Vec<ArrowField> =
-            fields.iter().map(|f| f.get_arrow_field()).collect();
-        if !attr_defs.is_empty() {
-            let nested_fields: Vec<ArrowField> =
-                attr_defs.iter().map(|def| def.get_arrow_field()).collect();
-            let attr_field = ArrowField::new(
-                "attributes",
-                DataType::Struct(arrow::datatypes::Fields::from(nested_fields)),
-                true,
-            );
-            arrow_fields.push(attr_field);
-        }
-        let schema = Arc::new(arrow::datatypes::Schema::new(arrow_fields));
 
         Ok(Self {
-            schema,
+            schema: model.schema().clone(),
             row_count: 0,
-            attr_defs,
+            has_attributes: model.has_attributes(),
             field_builders,
             attr_builders,
         })
@@ -93,17 +77,22 @@ impl RecordBatchBuilder for BatchBuilder {
             .collect();
 
         // attributes (optional)
-        if !self.attr_defs.is_empty() {
-            let attr_arrays: Vec<(FieldRef, ArrayRef)> = self
-                .attr_builders
-                .iter_mut()
-                .map(|(def, builder)| {
-                    let arrow_field = def.get_arrow_field();
-                    (Arc::new(arrow_field), builder.finish())
-                })
-                .collect();
-            let attrs = StructArray::from(attr_arrays);
-            columns.push(Arc::new(attrs));
+        if self.has_attributes {
+            if self.attr_builders.is_empty() {
+                let attrs = StructArray::new_empty_fields(self.row_count, None);
+                columns.push(Arc::new(attrs));
+            } else {
+                let attr_arrays: Vec<(FieldRef, ArrayRef)> = self
+                    .attr_builders
+                    .iter_mut()
+                    .map(|(def, builder)| {
+                        let arrow_field = def.get_arrow_field();
+                        (Arc::new(arrow_field), builder.finish())
+                    })
+                    .collect();
+                let attrs = StructArray::from(attr_arrays);
+                columns.push(Arc::new(attrs));
+            }
         }
 
         let batch = if columns.is_empty() {
@@ -128,7 +117,7 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for BatchBuilder {
         }
 
         // attributes (optional)
-        if !self.attr_defs.is_empty() {
+        if self.has_attributes {
             let attrs = record.attributes();
             for (def, builder) in self.attr_builders.iter_mut() {
                 match attrs.get(def.name.as_bytes()) {
@@ -164,7 +153,7 @@ impl<'a> Push<&'a noodles::gtf::Record<'a>> for BatchBuilder {
         }
 
         // attributes (optional)
-        if !self.attr_defs.is_empty() {
+        if self.has_attributes {
             let attrs = record.attributes()?;
             for (def, builder) in self.attr_builders.iter_mut() {
                 match <GtfAttributes as FeatureAttributes>::get(&attrs, def.name.as_bytes()) {
@@ -221,7 +210,8 @@ mod tests {
 
         let batch_builder = BatchBuilder::new(field_names, attr_defs, capacity).unwrap();
 
-        assert_eq!(batch_builder.attr_defs.len(), 1);
+        assert!(batch_builder.has_attributes);
+        assert_eq!(batch_builder.attr_builders.len(), 1);
     }
 
     #[test]

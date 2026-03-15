@@ -1,14 +1,12 @@
 use std::io::{BufRead, Seek};
 
 use arrow::array::RecordBatchReader;
-use arrow::datatypes::{Schema, SchemaRef};
+use arrow::datatypes::Schema;
 use noodles::bgzf::VirtualPosition;
 use noodles::csi::BinningIndex;
 
-use crate::batch::RecordBatchBuilder as _;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
-use crate::variant::model::field::DEFAULT_FIELD_NAMES;
-use crate::variant::model::{BatchBuilder, GenotypeBy};
+use crate::variant::model::{BatchBuilder, GenotypeBy, Model};
 use crate::variant::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::OxbowError;
 
@@ -34,18 +32,11 @@ use crate::OxbowError;
 /// ```
 pub struct Scanner {
     header: noodles::vcf::Header,
-    fields: Option<Vec<String>>,
-    info_fields: Option<Vec<String>>,
-    genotype_fields: Option<Vec<String>>,
-    samples: Option<Vec<String>>,
-    genotype_by: GenotypeBy,
-    schema: SchemaRef,
+    model: Model,
 }
 
 impl Scanner {
     /// Creates a VCF scanner from a VCF header and schema parameters.
-    ///
-    /// The schema is validated and cached at construction time.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         header: noodles::vcf::Header,
@@ -55,26 +46,25 @@ impl Scanner {
         samples: Option<Vec<String>>,
         genotype_by: Option<GenotypeBy>,
     ) -> crate::Result<Self> {
-        let genotype_by = genotype_by.unwrap_or(GenotypeBy::Sample);
-        let batch_builder = BatchBuilder::new(
-            header.clone(),
-            fields.clone(),
-            info_fields.clone(),
-            genotype_fields.clone(),
-            samples.clone(),
-            genotype_by.clone(),
-            0,
-        )?;
-        let schema = batch_builder.schema();
-        Ok(Self {
-            header,
+        let model = Model::from_header(
+            &header,
             fields,
             info_fields,
             genotype_fields,
             samples,
             genotype_by,
-            schema,
-        })
+        )?;
+        Ok(Self { header, model })
+    }
+
+    /// Creates a VCF scanner from a [`Model`].
+    pub fn with_model(header: noodles::vcf::Header, model: Model) -> Self {
+        Self { header, model }
+    }
+
+    /// Returns a reference to the [`Model`].
+    pub fn model(&self) -> &Model {
+        &self.model
     }
 
     /// Returns a reference to the VCF header.
@@ -102,15 +92,15 @@ impl Scanner {
 
     /// Returns the fixed field names.
     pub fn field_names(&self) -> Vec<String> {
-        DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
+        self.model.field_names()
     }
 
-    /// Returns the INFO field names.
+    /// Returns the INFO field names from the header.
     pub fn info_field_names(&self) -> Vec<String> {
         self.header.infos().iter().map(|(k, _)| k.clone()).collect()
     }
 
-    /// Returns the INFO field definitions.
+    /// Returns the INFO field definitions from the header.
     pub fn info_field_defs(&self) -> Vec<(String, String, String)> {
         use noodles::vcf::header::record::value::map::info::Number;
         self.header
@@ -130,7 +120,7 @@ impl Scanner {
             .collect()
     }
 
-    /// Returns the FORMAT field names.
+    /// Returns the FORMAT field names from the header.
     pub fn genotype_field_names(&self) -> Vec<String> {
         self.header
             .formats()
@@ -139,7 +129,7 @@ impl Scanner {
             .collect()
     }
 
-    /// Returns the FORMAT field definitions.
+    /// Returns the FORMAT field definitions from the header.
     pub fn genotype_field_defs(&self) -> Vec<(String, String, String)> {
         use noodles::vcf::header::record::value::map::format::Number;
         self.header
@@ -164,113 +154,27 @@ impl Scanner {
             .collect()
     }
 
-    /// Returns the sample names.
+    /// Returns the sample names from the header.
     pub fn sample_names(&self) -> Vec<String> {
         self.header.sample_names().iter().cloned().collect()
     }
 
     /// Returns the Arrow schema.
     pub fn schema(&self) -> &Schema {
-        &self.schema
+        self.model.schema()
     }
 
     /// Builds a BatchBuilder applying column projection.
-    ///
-    /// Returns an error if any requested column is not in the declared schema.
     fn build_batch_builder(
         &self,
         columns: Option<Vec<String>>,
         capacity: usize,
     ) -> crate::Result<BatchBuilder> {
         match columns {
-            None => BatchBuilder::new(
-                self.header.clone(),
-                self.fields.clone(),
-                self.info_fields.clone(),
-                self.genotype_fields.clone(),
-                self.samples.clone(),
-                self.genotype_by.clone(),
-                capacity,
-            ),
+            None => BatchBuilder::from_model(&self.model, self.header.clone(), capacity),
             Some(cols) => {
-                let schema_names: Vec<&str> = self
-                    .schema
-                    .fields()
-                    .iter()
-                    .map(|f| f.name().as_str())
-                    .collect();
-
-                let unknown: Vec<&str> = cols
-                    .iter()
-                    .filter(|c| !schema_names.iter().any(|s| s.eq_ignore_ascii_case(c)))
-                    .map(|c| c.as_str())
-                    .collect();
-                if !unknown.is_empty() {
-                    return Err(OxbowError::invalid_input(format!(
-                        "Unknown columns: {:?}. Available columns: {:?}",
-                        unknown, schema_names
-                    )));
-                }
-
-                // Fixed fields: intersect with declared
-                let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
-                    DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect()
-                });
-                let projected_fields: Vec<String> = declared_field_names
-                    .into_iter()
-                    .filter(|name| cols.iter().any(|c| c.eq_ignore_ascii_case(name)))
-                    .collect();
-
-                // Include info only if "info" is in the requested columns
-                let info_fields = if cols.iter().any(|c| c == "info") {
-                    self.info_fields.clone()
-                } else {
-                    Some(vec![])
-                };
-
-                // Genotype/sample columns: filter based on genotype_by mode
-                let (genotype_fields, samples) = match self.genotype_by {
-                    GenotypeBy::Sample => {
-                        // Non-fixed, non-"info" columns are sample names
-                        let declared_samples: Vec<String> =
-                            self.samples.clone().unwrap_or_else(|| self.sample_names());
-                        let projected_samples: Vec<String> = declared_samples
-                            .into_iter()
-                            .filter(|name| cols.iter().any(|c| c == name))
-                            .collect();
-                        if projected_samples.is_empty() {
-                            (Some(vec![]), Some(vec![]))
-                        } else {
-                            (self.genotype_fields.clone(), Some(projected_samples))
-                        }
-                    }
-                    GenotypeBy::Field => {
-                        // Non-fixed, non-"info" columns are genotype field names
-                        let declared_gt_fields: Vec<String> = self
-                            .genotype_fields
-                            .clone()
-                            .unwrap_or_else(|| self.genotype_field_names());
-                        let projected_gt: Vec<String> = declared_gt_fields
-                            .into_iter()
-                            .filter(|name| cols.iter().any(|c| c == name))
-                            .collect();
-                        if projected_gt.is_empty() {
-                            (Some(vec![]), Some(vec![]))
-                        } else {
-                            (Some(projected_gt), self.samples.clone())
-                        }
-                    }
-                };
-
-                BatchBuilder::new(
-                    self.header.clone(),
-                    Some(projected_fields),
-                    info_fields,
-                    genotype_fields,
-                    samples,
-                    self.genotype_by.clone(),
-                    capacity,
-                )
+                let projected = self.model.project(&cols)?;
+                BatchBuilder::from_model(&projected, self.header.clone(), capacity)
             }
         }
     }

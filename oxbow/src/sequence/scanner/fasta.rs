@@ -1,14 +1,12 @@
 use std::io::{BufRead, Seek};
 
 use arrow::array::RecordBatchReader;
-use arrow::datatypes::{Schema, SchemaRef};
+use arrow::datatypes::Schema;
 use noodles::core::Region;
 
-use crate::batch::RecordBatchBuilder as _;
-use crate::sequence::model::batch_builder::BatchBuilder;
-use crate::sequence::model::field::FASTA_DEFAULT_FIELD_NAMES;
+use crate::sequence::model::BatchBuilder;
+use crate::sequence::model::Model;
 use crate::sequence::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
-use crate::OxbowError;
 
 /// A FASTA scanner.
 ///
@@ -33,75 +31,49 @@ use crate::OxbowError;
 /// let batches = scanner.scan_query(fmt_reader, regions, index, None, Some(2));
 /// ```
 pub struct Scanner {
-    fields: Option<Vec<String>>,
-    schema: SchemaRef,
+    model: Model,
 }
 
 impl Scanner {
     /// Creates a FASTA scanner from schema parameters.
     ///
-    /// The schema is validated and cached at construction time.
+    /// `fields`: field names. `None` → `["name", "description", "sequence"]`.
     pub fn new(fields: Option<Vec<String>>) -> crate::Result<Self> {
-        let batch_builder = BatchBuilder::new_fasta(fields.clone(), 0)?;
-        let schema = batch_builder.schema();
-        Ok(Self { fields, schema })
+        let model = Model::new_fasta(fields)?;
+        Ok(Self { model })
     }
 
-    /// Returns the FASTA field names.
+    /// Creates a FASTA scanner from a [`Model`].
+    pub fn with_model(model: Model) -> Self {
+        Self { model }
+    }
+
+    /// Returns a reference to the [`Model`].
+    pub fn model(&self) -> &Model {
+        &self.model
+    }
+
+    /// Returns the field names.
     pub fn field_names(&self) -> Vec<String> {
-        FASTA_DEFAULT_FIELD_NAMES
-            .iter()
-            .map(|&s| s.to_string())
-            .collect()
+        self.model.field_names()
     }
 
     /// Returns the Arrow schema.
     pub fn schema(&self) -> &Schema {
-        &self.schema
+        self.model.schema()
     }
 
     /// Builds a BatchBuilder applying column projection.
-    ///
-    /// Returns an error if any requested column is not in the declared schema.
     fn build_batch_builder(
         &self,
         columns: Option<Vec<String>>,
         capacity: usize,
     ) -> crate::Result<BatchBuilder> {
         match columns {
-            None => BatchBuilder::new_fasta(self.fields.clone(), capacity),
+            None => BatchBuilder::from_model(&self.model, capacity),
             Some(cols) => {
-                let schema_names: Vec<&str> = self
-                    .schema
-                    .fields()
-                    .iter()
-                    .map(|f| f.name().as_str())
-                    .collect();
-
-                let unknown: Vec<&str> = cols
-                    .iter()
-                    .filter(|c| !schema_names.iter().any(|s| s.eq_ignore_ascii_case(c)))
-                    .map(|c| c.as_str())
-                    .collect();
-                if !unknown.is_empty() {
-                    return Err(OxbowError::invalid_input(format!(
-                        "Unknown columns: {:?}. Available columns: {:?}",
-                        unknown, schema_names
-                    )));
-                }
-
-                let declared_field_names: Vec<String> = self.fields.clone().unwrap_or_else(|| {
-                    FASTA_DEFAULT_FIELD_NAMES
-                        .iter()
-                        .map(|&s| s.to_string())
-                        .collect()
-                });
-                let projected_fields: Vec<String> = declared_field_names
-                    .into_iter()
-                    .filter(|name| cols.iter().any(|c| c.eq_ignore_ascii_case(name)))
-                    .collect();
-
-                BatchBuilder::new_fasta(Some(projected_fields), capacity)
+                let projected = self.model.project(&cols)?;
+                BatchBuilder::from_model(&projected, capacity)
             }
         }
     }
@@ -156,20 +128,14 @@ mod tests {
         let scanner = Scanner::new(None).unwrap();
         assert_eq!(
             scanner.field_names(),
-            FASTA_DEFAULT_FIELD_NAMES
-                .iter()
-                .map(|&s| s.to_string())
-                .collect::<Vec<_>>()
+            vec!["name", "description", "sequence"]
         );
     }
 
     #[test]
     fn test_scanner_schema() {
         let scanner = Scanner::new(None).unwrap();
-        assert_eq!(
-            scanner.schema().fields().len(),
-            FASTA_DEFAULT_FIELD_NAMES.len()
-        );
+        assert_eq!(scanner.schema().fields().len(), 3);
         let scanner = Scanner::new(Some(vec!["name".to_string(), "sequence".to_string()])).unwrap();
         assert_eq!(scanner.schema().fields().len(), 2);
     }

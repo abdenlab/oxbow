@@ -41,11 +41,6 @@ pub struct PyVcfScanner {
     reader: Reader,
     scanner: VcfScanner,
     compressed: bool,
-    fields: Option<Vec<String>>,
-    info_fields: Option<Vec<String>>,
-    genotype_fields: Option<Vec<String>>,
-    samples: Option<Vec<String>>,
-    genotype_by: Option<String>,
 }
 
 #[pymethods]
@@ -67,26 +62,14 @@ impl PyVcfScanner {
         let mut fmt_reader = noodles::vcf::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let gt_by = resolve_genotype_by(genotype_by.clone())?;
-        let scanner = VcfScanner::new(
-            header,
-            fields.clone(),
-            info_fields.clone(),
-            genotype_fields.clone(),
-            samples.clone(),
-            gt_by,
-        )
-        .map_err(to_py)?;
+        let gt_by = resolve_genotype_by(genotype_by)?;
+        let scanner = VcfScanner::new(header, fields, info_fields, genotype_fields, samples, gt_by)
+            .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
-            genotype_by,
         })
     }
 
@@ -97,21 +80,24 @@ impl PyVcfScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
+        let model = self.scanner.model();
+        kwargs.set_item("fields", model.field_names())?;
+        if let Some(defs) = model.info_defs() {
+            let names: Vec<&str> = defs.iter().map(|d| d.name.as_str()).collect();
+            kwargs.set_item("info_fields", names)?;
         }
-        if let Some(ref info_fields) = self.info_fields {
-            kwargs.set_item("info_fields", info_fields)?;
+        if let Some(defs) = model.genotype_defs() {
+            let names: Vec<&str> = defs.iter().map(|d| d.name.as_str()).collect();
+            kwargs.set_item("genotype_fields", names)?;
         }
-        if let Some(ref genotype_fields) = self.genotype_fields {
-            kwargs.set_item("genotype_fields", genotype_fields)?;
-        }
-        if let Some(ref samples) = self.samples {
+        if let Some(samples) = model.samples() {
             kwargs.set_item("samples", samples)?;
         }
-        if let Some(ref genotype_by) = self.genotype_by {
-            kwargs.set_item("genotype_by", genotype_by)?;
-        }
+        let gt_by = match model.genotype_by() {
+            GenotypeBy::Sample => "sample",
+            GenotypeBy::Field => "field",
+        };
+        kwargs.set_item("genotype_by", gt_by)?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -408,11 +394,6 @@ pub struct PyBcfScanner {
     reader: Reader,
     scanner: BcfScanner,
     compressed: bool,
-    fields: Option<Vec<String>>,
-    info_fields: Option<Vec<String>>,
-    genotype_fields: Option<Vec<String>>,
-    samples: Option<Vec<String>>,
-    genotype_by: Option<String>,
 }
 
 #[pymethods]
@@ -434,26 +415,14 @@ impl PyBcfScanner {
         let mut fmt_reader = noodles::bcf::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let gt_by = resolve_genotype_by(genotype_by.clone())?;
-        let scanner = BcfScanner::new(
-            header,
-            fields.clone(),
-            info_fields.clone(),
-            genotype_fields.clone(),
-            samples.clone(),
-            gt_by,
-        )
-        .map_err(to_py)?;
+        let gt_by = resolve_genotype_by(genotype_by)?;
+        let scanner = BcfScanner::new(header, fields, info_fields, genotype_fields, samples, gt_by)
+            .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
-            genotype_by,
         })
     }
 
@@ -464,21 +433,24 @@ impl PyBcfScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
+        let model = self.scanner.model();
+        kwargs.set_item("fields", model.field_names())?;
+        if let Some(defs) = model.info_defs() {
+            let names: Vec<&str> = defs.iter().map(|d| d.name.as_str()).collect();
+            kwargs.set_item("info_fields", names)?;
         }
-        if let Some(ref info_fields) = self.info_fields {
-            kwargs.set_item("info_fields", info_fields)?;
+        if let Some(defs) = model.genotype_defs() {
+            let names: Vec<&str> = defs.iter().map(|d| d.name.as_str()).collect();
+            kwargs.set_item("genotype_fields", names)?;
         }
-        if let Some(ref genotype_fields) = self.genotype_fields {
-            kwargs.set_item("genotype_fields", genotype_fields)?;
-        }
-        if let Some(ref samples) = self.samples {
+        if let Some(samples) = model.samples() {
             kwargs.set_item("samples", samples)?;
         }
-        if let Some(ref genotype_by) = self.genotype_by {
-            kwargs.set_item("genotype_by", genotype_by)?;
-        }
+        let gt_by = match model.genotype_by() {
+            GenotypeBy::Sample => "sample",
+            GenotypeBy::Field => "field",
+        };
+        kwargs.set_item("genotype_by", gt_by)?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 

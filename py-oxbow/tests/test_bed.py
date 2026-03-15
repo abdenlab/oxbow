@@ -60,7 +60,7 @@ class TestBedFile:
                 f"batch-{i:02}": pa.record_batch(b).to_pydict()
                 for i, b in enumerate(batches)
             }
-        except OSError as e:
+        except (OSError, ValueError) as e:
             actual = str(e)
 
         assert manifest[f"fields={fields}"] == actual
@@ -119,7 +119,7 @@ class TestBedFile:
         )
         batch = next(ds.batches())
         assert list(batch.schema.names) == ["name", "end", "start"]
-        with pytest.raises(OSError):
+        with pytest.raises((OSError, ValueError)):
             next(
                 ox.BedFile(
                     "data/sample.bed", bed_schema="bed4", fields=["rest"]
@@ -134,13 +134,13 @@ class TestBedFile:
         batch = next(ds.batches())
         # Extended fields get shuffled to the end in the order provided
         assert list(batch.schema.names) == ["end", "start", "BED4+2", "BED4+1"]
-        with pytest.raises(OSError):
+        with pytest.raises((OSError, ValueError)):
             next(
                 ox.BedFile(
                     "data/sample.bed", bed_schema="bed4", fields=["BED4+3"]
                 ).batches()
             )
-        with pytest.raises(OSError):
+        with pytest.raises((OSError, ValueError)):
             next(
                 ox.BedFile(
                     "data/sample.bed", bed_schema="bed4", fields=["rest"]
@@ -157,3 +157,83 @@ class TestBedFile:
         batch = next(ds.batches())
         # Extended fields get shuffled to the end
         assert list(batch.schema.names) == ["end", "start", "rest"]
+
+    def test_custom_schema(self):
+        import pyarrow as pa
+
+        # sample.bed is a BED9 file. Reinterpret with custom column names
+        # and types for the 6 extension columns beyond BED3.
+        ds = ox.BedFile(
+            "data/sample.bed",
+            bed_schema=(
+                "bed3",
+                [
+                    ("label", "string"),
+                    ("score", "float"),
+                    ("orientation", "string"),
+                    ("block_start", "uint"),
+                    ("block_end", "uint"),
+                    ("color", "string"),
+                ],
+            ),
+        )
+        batch = next(ds.batches())
+        assert list(batch.schema.names) == [
+            "chrom",
+            "start",
+            "end",
+            "label",
+            "score",
+            "orientation",
+            "block_start",
+            "block_end",
+            "color",
+        ]
+
+        # Custom column types are respected
+        assert batch.schema.field("label").type == pa.utf8()
+        assert batch.schema.field("score").type == pa.float32()
+        assert batch.schema.field("block_start").type == pa.uint32()
+
+        # Dict form works the same way
+        ds = ox.BedFile(
+            "data/sample.bed",
+            bed_schema=(
+                "bed3",
+                {"label": "string", "score": "float"},
+            ),
+        )
+        batch = next(ds.batches())
+        assert list(batch.schema.names) == [
+            "chrom",
+            "start",
+            "end",
+            "label",
+            "score",
+        ]
+
+        # Custom schema with projection
+        ds = ox.BedFile(
+            "data/sample.bed",
+            bed_schema=(
+                "bed3",
+                [("label", "string"), ("score_text", "string")],
+            ),
+            fields=["chrom", "label"],
+        )
+        batch = next(ds.batches())
+        assert list(batch.schema.names) == ["chrom", "label"]
+
+        # Projection of a non-first custom field (tests positional alignment)
+        ds = ox.BedFile(
+            "data/sample.bed",
+            bed_schema=(
+                "bed3",
+                [("label", "string"), ("score_text", "string"), ("orient", "string")],
+            ),
+            fields=["chrom", "orient"],
+        )
+        batch = next(ds.batches())
+        assert list(batch.schema.names) == ["chrom", "orient"]
+        # orient is the 3rd custom field (6th overall), should have actual data
+        assert batch.column("orient")[0].as_py() is not None

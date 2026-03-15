@@ -31,6 +31,15 @@ impl GenotypeDef {
         Self { name, ty }
     }
 
+    pub fn get_arrow_field(&self, name: &str) -> ArrowField {
+        let data_type = if self.name == "GT" {
+            GenotypeType::gt_arrow_type()
+        } else {
+            self.ty.arrow_type()
+        };
+        ArrowField::new(name, data_type, true)
+    }
+
     pub fn try_from_strings(def: (String, String, String)) -> Result<Self, OxbowError> {
         let (name, number, ty) = def;
         let number = match number.as_str() {
@@ -123,6 +132,49 @@ impl GenotypeType {
             Self::IntegerList => None,
             Self::FloatList => None,
         }
+    }
+
+    pub fn arrow_type(&self) -> DataType {
+        match self {
+            Self::Character | Self::String => DataType::Utf8,
+            Self::CharacterList | Self::StringList => {
+                DataType::List(Arc::new(ArrowField::new("item", DataType::Utf8, true)))
+            }
+            Self::CharacterFixedSizeList(n) | Self::StringFixedSizeList(n) => {
+                DataType::FixedSizeList(
+                    Arc::new(ArrowField::new("item", DataType::Utf8, true)),
+                    *n as i32,
+                )
+            }
+            Self::Integer => DataType::Int32,
+            Self::IntegerList => {
+                DataType::List(Arc::new(ArrowField::new("item", DataType::Int32, true)))
+            }
+            Self::IntegerFixedSizeList(n) => DataType::FixedSizeList(
+                Arc::new(ArrowField::new("item", DataType::Int32, true)),
+                *n as i32,
+            ),
+            Self::Float => DataType::Float32,
+            Self::FloatList => {
+                DataType::List(Arc::new(ArrowField::new("item", DataType::Float32, true)))
+            }
+            Self::FloatFixedSizeList(n) => DataType::FixedSizeList(
+                Arc::new(ArrowField::new("item", DataType::Float32, true)),
+                *n as i32,
+            ),
+        }
+    }
+
+    /// The Arrow type for the GT genotype field (special struct).
+    pub fn gt_arrow_type() -> DataType {
+        let list_of_i32 = DataType::List(Arc::new(ArrowField::new("item", DataType::Int32, true)));
+        let list_of_bool =
+            DataType::List(Arc::new(ArrowField::new("item", DataType::Boolean, true)));
+        let nested_fields = arrow::datatypes::Fields::from(vec![
+            ArrowField::new("allele", list_of_i32, true),
+            ArrowField::new("phased", list_of_bool, true),
+        ]);
+        DataType::Struct(nested_fields)
     }
 }
 

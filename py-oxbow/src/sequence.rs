@@ -33,7 +33,6 @@ pub struct PyFastqScanner {
     reader: Reader,
     scanner: FastqScanner,
     compressed: bool,
-    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
@@ -48,13 +47,12 @@ impl PyFastqScanner {
     ) -> PyResult<Self> {
         let _src = src.clone_ref(py);
         let reader = pyobject_to_bufreader(py, src, false)?;
-        let scanner = FastqScanner::new(fields.clone()).map_err(to_py)?;
+        let scanner = FastqScanner::new(fields).map_err(to_py)?;
         Ok(Self {
             src: _src,
             reader,
             scanner,
             compressed,
-            fields,
         })
     }
 
@@ -65,9 +63,7 @@ impl PyFastqScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
-        }
+        kwargs.set_item("fields", self.scanner.model().field_names())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -220,7 +216,6 @@ pub struct PyFastaScanner {
     reader: Reader,
     scanner: FastaScanner,
     compressed: bool,
-    fields: Option<Vec<String>>,
 }
 
 #[pymethods]
@@ -234,13 +229,12 @@ impl PyFastaScanner {
         fields: Option<Vec<String>>,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
-        let scanner = FastaScanner::new(fields.clone()).map_err(to_py)?;
+        let scanner = FastaScanner::new(fields).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
-            fields,
         })
     }
 
@@ -251,9 +245,7 @@ impl PyFastaScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
-        }
+        kwargs.set_item("fields", self.scanner.model().field_names())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 

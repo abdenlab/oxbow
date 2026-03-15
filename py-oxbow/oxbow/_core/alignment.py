@@ -42,7 +42,7 @@ class AlignmentFile(DataSource):
             discovered = self._scanner_type(
                 self._source, **self._tag_discovery_kwargs()
             ).tag_defs(tag_scan_rows)
-            self._scanner_kwargs["tag_defs"] = discovered
+            self._scanner_kwargs["tag_defs"] = discovered or None
 
     def _tag_discovery_kwargs(self) -> dict:
         """Extra kwargs passed to the scanner used for tag discovery."""
@@ -158,13 +158,13 @@ def from_sam(
         uncompressed. For more customized decoding, provide a callable
         ``source`` instead.
     fields : list[str], optional
-        Specific fixed fields to project. By default, all fixed fields are
+        Standard SAM fields to include. By default, all standard fields are
         included.
     tag_defs : list[tuple[str, str]], optional [default: None]
-        Definitions for variable tag fields to project. These will be nested in
-        a "tags" column. If None, tag definitions are discovered by scanning
-        records in the file, which is controlled by the ``tag_scan_rows``
-        parameter. To omit tags entirely, set ``tag_defs=[]``.
+        Definitions for tags to project. These will be nested in a "tags"
+        column. If None, tag definitions are discovered by scanning records in
+        the file, which is controlled by the ``tag_scan_rows`` parameter. To
+        omit tags entirely, set ``tag_defs=[]``.
     tag_scan_rows : int, optional [default: 1024]
         Number of rows to scan for tag definitions.
     regions : str | list[str], optional
@@ -233,13 +233,13 @@ def from_bam(
         uncompressed. For more custom decoding, provide a callable ``source``
         instead.
     fields : list[str], optional
-        Specific fixed fields to project. By default, all fixed fields are
+        Standard SAM fields to include. By default, all standard fields are
         included.
     tag_defs : list[tuple[str, str]], optional [default: None]
-        Definitions for variable tag fields to project. These will be nested in
-        a "tags" column. If None, tag definitions are discovered by scanning
-        records in the file, which is controlled by the ``tag_scan_rows``
-        parameter. To omit tags entirely, set ``tag_defs=[]``.
+        Definitions for tags to project. These will be nested in a "tags"
+        column. If None, tag definitions are discovered by scanning records in
+        the file, which is controlled by the ``tag_scan_rows`` parameter. To
+        omit tags entirely, set ``tag_defs=[]``.
     tag_scan_rows : int, optional [default: 1024]
         Number of rows to scan for tag definitions.
     regions : str | list[str], optional
@@ -303,13 +303,13 @@ def from_cram(
         The URI or path to the CRAM file, or a callable that opens the file
         as a file-like object.
     fields : list[str], optional
-        Specific fixed fields to project. By default, all fixed fields are
+        Standard SAM fields to include. By default, all standard fields are
         included.
     tag_defs : list[tuple[str, str]], optional [default: None]
-        Definitions for variable tag fields to project. These will be nested in
-        a "tags" column. If None, tag definitions are discovered by scanning
-        records in the file, which is controlled by the ``tag_scan_rows``
-        parameter. To omit tags entirely, set ``tag_defs=[]``.
+        Definitions for tags to project. These will be nested in a "tags"
+        column. If None, tag definitions are discovered by scanning records in
+        the file, which is controlled by the ``tag_scan_rows`` parameter. To
+        omit tags entirely, set ``tag_defs=[]``.
     tag_scan_rows : int, optional [default: 1024]
         Number of rows to scan for tag definitions.
     regions : str | list[str], optional

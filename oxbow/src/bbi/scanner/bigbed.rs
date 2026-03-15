@@ -1,14 +1,13 @@
 use std::io::{Read, Seek};
 
 use arrow::array::RecordBatchReader;
-use arrow::datatypes::{Schema as ArrowSchema, SchemaRef};
+use arrow::datatypes::Schema as ArrowSchema;
 use bigtools::BigBedRead;
 
-use crate::batch::RecordBatchBuilder as _;
 use crate::bbi::model::base::BatchBuilder;
 use crate::bbi::model::base::BedSchema;
+use crate::bbi::model::base::Model;
 use crate::bbi::scanner::batch_iterator::base::{BigBedBatchIterator, BigBedQueryBatchIterator};
-use crate::OxbowError;
 
 /// A BigBed scanner.
 ///
@@ -26,40 +25,39 @@ use crate::OxbowError;
 /// let scanner = Scanner::new("bed12".parse().unwrap(), info.clone(), None).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 pub struct Scanner {
-    bed_schema: BedSchema,
+    model: Model,
     info: bigtools::BBIFileInfo,
-    fields: Option<Vec<String>>,
-    schema: SchemaRef,
 }
 
 impl Scanner {
     /// Creates a BigBed scanner from a BED schema, BBI file info, and optional field names.
-    ///
-    /// The schema is validated and cached at construction time.
     pub fn new(
         bed_schema: BedSchema,
         info: bigtools::BBIFileInfo,
         fields: Option<Vec<String>>,
     ) -> crate::Result<Self> {
-        let batch_builder = BatchBuilder::new(bed_schema.clone(), fields.clone(), 0)?;
-        let schema = batch_builder.schema();
-        Ok(Self {
-            bed_schema,
-            info,
-            fields,
-            schema,
-        })
+        let model = Model::new(bed_schema, fields)?;
+        Ok(Self { model, info })
+    }
+
+    /// Creates a BigBed scanner from a [`Model`].
+    pub fn with_model(model: Model, info: bigtools::BBIFileInfo) -> Self {
+        Self { model, info }
+    }
+
+    /// Returns a reference to the [`Model`].
+    pub fn model(&self) -> &Model {
+        &self.model
     }
 
     /// Returns the field names.
     pub fn field_names(&self) -> Vec<String> {
-        let fields = self.bed_schema.fields();
-        fields.iter().map(|def| def.name.clone()).collect()
+        self.model.field_names()
     }
 
     /// Returns the Arrow schema.
     pub fn schema(&self) -> &ArrowSchema {
-        &self.schema
+        self.model.schema()
     }
 
     /// Builds a BatchBuilder applying column projection.
@@ -69,28 +67,10 @@ impl Scanner {
         capacity: usize,
     ) -> crate::Result<BatchBuilder> {
         match columns {
-            None => BatchBuilder::new(self.bed_schema.clone(), self.fields.clone(), capacity),
+            None => BatchBuilder::from_model(&self.model, capacity),
             Some(cols) => {
-                let schema_names: Vec<&str> = self
-                    .schema
-                    .fields()
-                    .iter()
-                    .map(|f| f.name().as_str())
-                    .collect();
-
-                let unknown: Vec<&str> = cols
-                    .iter()
-                    .filter(|c| !schema_names.iter().any(|s| s.eq_ignore_ascii_case(c)))
-                    .map(|c| c.as_str())
-                    .collect();
-                if !unknown.is_empty() {
-                    return Err(OxbowError::invalid_input(format!(
-                        "Unknown columns: {:?}. Available columns: {:?}",
-                        unknown, schema_names
-                    )));
-                }
-
-                BatchBuilder::new(self.bed_schema.clone(), Some(cols), capacity)
+                let projected = self.model.project(&cols)?;
+                BatchBuilder::from_model(&projected, capacity)
             }
         }
     }

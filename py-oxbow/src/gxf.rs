@@ -35,8 +35,6 @@ pub struct PyGtfScanner {
     reader: Reader,
     scanner: GtfScanner,
     compressed: bool,
-    fields: Option<Vec<String>>,
-    attribute_defs: Option<Vec<(String, String)>>,
 }
 
 #[pymethods]
@@ -52,15 +50,12 @@ impl PyGtfScanner {
     ) -> PyResult<Self> {
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-        let scanner =
-            GtfScanner::new(None, fields.clone(), attribute_defs.clone()).map_err(to_py)?;
+        let scanner = GtfScanner::new(None, fields, attribute_defs).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
-            fields,
-            attribute_defs,
         })
     }
 
@@ -71,11 +66,11 @@ impl PyGtfScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
-        }
-        if let Some(ref attribute_defs) = self.attribute_defs {
-            kwargs.set_item("attribute_defs", attribute_defs)?;
+        let model = self.scanner.model();
+        kwargs.set_item("fields", model.field_names())?;
+        if let Some(defs) = model.attr_defs() {
+            let attr_defs: Vec<_> = defs.iter().map(|d| d.to_tuple()).collect();
+            kwargs.set_item("attribute_defs", attr_defs)?;
         }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
@@ -354,8 +349,6 @@ pub struct PyGffScanner {
     reader: Reader,
     scanner: GffScanner,
     compressed: bool,
-    fields: Option<Vec<String>>,
-    attribute_defs: Option<Vec<(String, String)>>,
 }
 
 #[pymethods]
@@ -371,15 +364,12 @@ impl PyGffScanner {
     ) -> PyResult<Self> {
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-        let scanner =
-            GffScanner::new(None, fields.clone(), attribute_defs.clone()).map_err(to_py)?;
+        let scanner = GffScanner::new(None, fields, attribute_defs).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
             scanner,
             compressed,
-            fields,
-            attribute_defs,
         })
     }
 
@@ -390,11 +380,11 @@ impl PyGffScanner {
     fn __getnewargs_ex__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
-        if let Some(ref fields) = self.fields {
-            kwargs.set_item("fields", fields)?;
-        }
-        if let Some(ref attribute_defs) = self.attribute_defs {
-            kwargs.set_item("attribute_defs", attribute_defs)?;
+        let model = self.scanner.model();
+        kwargs.set_item("fields", model.field_names())?;
+        if let Some(defs) = model.attr_defs() {
+            let attr_defs: Vec<_> = defs.iter().map(|d| d.to_tuple()).collect();
+            kwargs.set_item("attribute_defs", attr_defs)?;
         }
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
