@@ -10,7 +10,9 @@ use pyo3_arrow::PySchema;
 use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
-use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
+use crate::util::{
+    pyobject_to_bufreader, resolve_fields, resolve_index, PyVirtualPosition, Reader,
+};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
 use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
@@ -52,10 +54,10 @@ impl PyVcfScanner {
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
+        info_fields: Option<Py<PyAny>>,
+        genotype_fields: Option<Py<PyAny>>,
+        samples: Option<Py<PyAny>>,
         genotype_by: Option<String>,
         unnest_samples: bool,
     ) -> PyResult<Self> {
@@ -66,10 +68,10 @@ impl PyVcfScanner {
         let gt_by = resolve_genotype_by(genotype_by)?;
         let scanner = VcfScanner::new(
             header,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
+            resolve_fields(fields, py)?,
+            resolve_fields(info_fields, py)?,
+            resolve_fields(genotype_fields, py)?,
+            resolve_fields(samples, py)?,
             gt_by,
             Some(unnest_samples),
         )
@@ -415,10 +417,10 @@ impl PyBcfScanner {
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
+        info_fields: Option<Py<PyAny>>,
+        genotype_fields: Option<Py<PyAny>>,
+        samples: Option<Py<PyAny>>,
         genotype_by: Option<String>,
         unnest_samples: bool,
     ) -> PyResult<Self> {
@@ -429,10 +431,10 @@ impl PyBcfScanner {
         let gt_by = resolve_genotype_by(genotype_by)?;
         let scanner = BcfScanner::new(
             header,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
+            resolve_fields(fields, py)?,
+            resolve_fields(info_fields, py)?,
+            resolve_fields(genotype_fields, py)?,
+            resolve_fields(samples, py)?,
             gt_by,
             Some(unnest_samples),
         )
@@ -789,10 +791,10 @@ pub fn read_vcf(
     src: Py<PyAny>,
     region: Option<String>,
     index: Option<Py<PyAny>>,
-    fields: Option<Vec<String>>,
-    info_fields: Option<Vec<String>>,
-    genotype_fields: Option<Vec<String>>,
-    samples: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
+    info_fields: Option<Py<PyAny>>,
+    genotype_fields: Option<Py<PyAny>>,
+    samples: Option<Py<PyAny>>,
     genotype_by: Option<String>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
@@ -803,10 +805,10 @@ pub fn read_vcf(
     let genotype_by = resolve_genotype_by(genotype_by)?;
     let scanner = VcfScanner::new(
         header,
-        fields,
-        info_fields,
-        genotype_fields,
-        samples,
+        resolve_fields(fields, py)?,
+        resolve_fields(info_fields, py)?,
+        resolve_fields(genotype_fields, py)?,
+        resolve_fields(samples, py)?,
         genotype_by,
         None,
     )
@@ -886,10 +888,10 @@ pub fn read_bcf(
     src: Py<PyAny>,
     region: Option<String>,
     index: Option<Py<PyAny>>,
-    fields: Option<Vec<String>>,
-    info_fields: Option<Vec<String>>,
-    genotype_fields: Option<Vec<String>>,
-    samples: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
+    info_fields: Option<Py<PyAny>>,
+    genotype_fields: Option<Py<PyAny>>,
+    samples: Option<Py<PyAny>>,
     genotype_by: Option<String>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
@@ -900,10 +902,10 @@ pub fn read_bcf(
     let genotype_by = resolve_genotype_by(genotype_by)?;
     let scanner = BcfScanner::new(
         header,
-        fields,
-        info_fields,
-        genotype_fields,
-        samples,
+        resolve_fields(fields, py)?,
+        resolve_fields(info_fields, py)?,
+        resolve_fields(genotype_fields, py)?,
+        resolve_fields(samples, py)?,
         genotype_by,
         None,
     )

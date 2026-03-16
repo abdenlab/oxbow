@@ -1,8 +1,11 @@
 use std::io::BufReader;
 use std::io::{BufRead, Read, Seek};
 
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyString};
+
+use oxbow::Select;
 
 use noodles::bgzf::gzi::Index as GzIndex;
 use noodles::bgzf::io::Seek as BgzfSeek;
@@ -374,4 +377,34 @@ pub fn partition_from_index(
         .collect();
 
     Ok(partition)
+}
+
+/// Convert a Python `fields` argument to `Select<String>`.
+///
+/// Accepts:
+/// - `"*"` → `Select::All`
+/// - `None` → `Select::Omit`
+/// - `list[str]` → `Select::Some(vec)`
+pub fn resolve_fields(fields: Option<Py<PyAny>>, py: Python) -> PyResult<Select<String>> {
+    match fields {
+        None => Ok(Select::Omit),
+        Some(obj) => {
+            let obj = obj.bind(py);
+            if let Ok(s) = obj.extract::<String>() {
+                if s == "*" {
+                    return Ok(Select::All);
+                }
+                return Err(PyErr::new::<PyValueError, _>(format!(
+                    "Invalid fields specifier '{}'. Use '*' for all fields.",
+                    s
+                )));
+            }
+            if let Ok(list) = obj.extract::<Vec<String>>() {
+                return Ok(Select::Some(list));
+            }
+            Err(PyErr::new::<PyValueError, _>(
+                "fields must be '*', None, or a list of field names",
+            ))
+        }
+    }
 }

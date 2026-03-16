@@ -13,7 +13,9 @@ use noodles::bgzf::io::IndexedReader as IndexedBgzfReader;
 use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
-use crate::util::{pyobject_to_bufreader, resolve_faidx, PyVirtualPosition, Reader};
+use crate::util::{
+    pyobject_to_bufreader, resolve_faidx, resolve_fields, PyVirtualPosition, Reader,
+};
 use oxbow::sequence::{FastaScanner, FastqScanner};
 use oxbow::util::batches_to_ipc;
 
@@ -43,8 +45,9 @@ impl PyFastqScanner {
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
     ) -> PyResult<Self> {
+        let fields = resolve_fields(fields, py)?;
         let _src = src.clone_ref(py);
         let reader = pyobject_to_bufreader(py, src, false)?;
         let scanner = FastqScanner::new(fields).map_err(to_py)?;
@@ -226,8 +229,9 @@ impl PyFastaScanner {
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
     ) -> PyResult<Self> {
+        let fields = resolve_fields(fields, py)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let scanner = FastaScanner::new(fields).map_err(to_py)?;
         Ok(Self {
@@ -396,9 +400,10 @@ impl PyFastaScanner {
 pub fn read_fastq(
     py: Python,
     src: Py<PyAny>,
-    fields: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
+    let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src, false)?;
     let scanner = FastqScanner::new(fields).map_err(to_py)?;
 
@@ -445,9 +450,10 @@ pub fn read_fasta(
     regions: Option<Vec<String>>,
     index: Option<Py<PyAny>>,
     gzi: Option<Py<PyAny>>,
-    fields: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
+    let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let scanner = FastaScanner::new(fields).map_err(to_py)?;
 

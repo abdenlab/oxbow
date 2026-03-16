@@ -22,10 +22,10 @@ class VariantFile(DataSource):
         source: str | Callable[[], IO[bytes] | str],
         compressed: bool = False,
         *,
-        fields=None,
-        info_fields: list[str] | None = None,
-        samples: list[str] | None = None,
-        genotype_fields: list[str] | None = None,
+        fields: Literal["*"] | list[str] | None = "*",
+        info_fields: Literal["*"] | list[str] | None = "*",
+        samples: Literal["*"] | list[str] | None = "*",
+        genotype_fields: Literal["*"] | list[str] | None = "*",
         genotype_by: Literal["sample", "field"] = "sample",
         unnest_samples: bool = True,
         regions: str | list[str] | None = None,
@@ -100,10 +100,10 @@ def from_vcf(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
-    fields: list[str] | None = None,
-    info_fields: list[str] | None = None,
-    samples: list[str] | None = None,
-    genotype_fields: list[str] | None = None,
+    fields: Literal["*"] | list[str] | None = "*",
+    info_fields: Literal["*"] | list[str] | None = "*",
+    samples: Literal["*"] | list[str] | None = "*",
+    genotype_fields: Literal["*"] | list[str] | None = "*",
     genotype_by: Literal["sample", "field"] = "sample",
     unnest_samples: bool = True,
     regions: str | list[str] | None = None,
@@ -125,20 +125,21 @@ def from_vcf(
         regular GZIP. If None, the source bytestream is assumed to be
         uncompressed. For more customized decoding, provide a callable
         ``source`` instead.
-    fields : list[str], optional
-        Specific fixed fields to project. By default, all fixed fields are
-        included.
-    info_fields : list[str], optional [default: None]
-        INFO fields to project. These will be nested under an "info" column.
-        If None, all INFO fields declared in the header are included. To omit
-        all INFO fields, set ``info_fields=[]``.
-    samples : list[str], optional [default: None]
-        A subset of samples to include in the genotype output. If None, all
-        samples declared in the header are included. To omit all sample
-        genotype data, set ``samples=[]``.
-    genotype_fields : list[str], optional [default: None]
-        Genotype (aka "FORMAT") fields to project for each sample. If None, all
-        FORMAT fields declared in the header are included.
+    fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        Fixed fields to project. ``"*"`` includes all standard fields. Pass a
+        list to select specific fields. ``None`` omits all fixed fields.
+    info_fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        INFO fields to project, nested under an ``"info"`` column. ``"*"``
+        includes all INFO fields declared in the header. Pass a list to select
+        specific fields. ``None`` omits the info column entirely.
+    samples : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        Samples to include in the genotype output. ``"*"`` includes all samples
+        declared in the header. Pass a list to select specific samples. ``None``
+        omits all sample genotype data.
+    genotype_fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        Genotype (aka "FORMAT") fields to project for each sample. ``"*"``
+        includes all FORMAT fields declared in the header. Pass a list to select
+        specific fields. ``None`` omits the genotype fields.
     genotype_by : Literal["sample", "field"], optional [default: "sample"]
         Determines how genotype-specific data is organized. If "sample", each
         sample is provided as a separate column with nested FORMAT fields. If
@@ -192,10 +193,10 @@ def from_bcf(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["bgzf", None] = "bgzf",
     *,
-    fields: list[str] | None = None,
-    info_fields: list[str] | None = None,
-    samples: list[str] | None = None,
-    genotype_fields: list[str] | None = None,
+    fields: Literal["*"] | list[str] | None = "*",
+    info_fields: Literal["*"] | list[str] | None = "*",
+    samples: Literal["*"] | list[str] | None = "*",
+    genotype_fields: Literal["*"] | list[str] | None = "*",
     genotype_by: Literal["sample", "field"] = "sample",
     unnest_samples: bool = True,
     regions: str | list[str] | None = None,
@@ -215,20 +216,21 @@ def from_bcf(
         assumed to be BGZF-compressed. If None, the source is assumed to be
         uncompressed. For more custom decoding, provide a callable ``source``
         instead.
-    fields : list[str], optional
-        Specific fixed fields to project. By default, all fixed fields are
-        included.
-    info_fields : list[str], optional [default: None]
-        INFO fields to project. These will be nested under an "info" column.
-        If None, all INFO fields declared in the header are included. To omit
-        all INFO fields, set ``info_fields=[]``.
-    samples : list[str], optional [default: None]
-        A subset of samples to include in the genotype output. If None, all
-        samples declared in the header are included. To omit all sample
-        genotype data, set ``samples=[]``.
-    genotype_fields : list[str], optional [default: None]
-        Genotype (aka "FORMAT") fields to project for each sample. If None, all
-        FORMAT fields declared in the header are included.
+    fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        Fixed fields to project. ``"*"`` includes all standard fields. Pass a
+        list to select specific fields. ``None`` omits all fixed fields.
+    info_fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        INFO fields to project, nested under an ``"info"`` column. ``"*"``
+        includes all INFO fields declared in the header. Pass a list to select
+        specific fields. ``None`` omits the info column entirely.
+    samples : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        Samples to include in the genotype output. ``"*"`` includes all samples
+        declared in the header. Pass a list to select specific samples. ``None``
+        omits all sample genotype data.
+    genotype_fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        Genotype (aka "FORMAT") fields to project for each sample. ``"*"``
+        includes all FORMAT fields declared in the header. Pass a list to select
+        specific fields. ``None`` omits the genotype fields.
     genotype_by : Literal["sample", "field"], optional [default: "sample"]
         Determines how genotype-specific data is organized. If "sample", each
         sample is provided as a separate column with nested FORMAT fields. If

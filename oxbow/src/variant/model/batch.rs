@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::OxbowError;
+use crate::{OxbowError, Select};
 
 use arrow::array::{ArrayRef, StructArray};
 use arrow::datatypes::{Field as ArrowField, FieldRef, SchemaRef};
@@ -53,10 +53,10 @@ impl BatchBuilder {
     /// Derives INFO and FORMAT definitions from the header.
     pub fn new(
         header: noodles::vcf::Header,
-        field_names: Option<Vec<String>>,
-        info_field_names: Option<Vec<String>>,
-        genotype_field_names: Option<Vec<String>>,
-        sample_names: Option<Vec<String>>,
+        field_names: Select<String>,
+        info_field_names: Select<String>,
+        genotype_field_names: Select<String>,
+        sample_names: Select<String>,
         genotype_by: GenotypeBy,
         capacity: usize,
     ) -> crate::Result<Self> {
@@ -579,10 +579,10 @@ mod tests {
         let header = create_test_header();
         let batch_builder = BatchBuilder::new(
             header.clone(),
-            None,
-            None,
-            None,
-            None,
+            Select::All,
+            Select::All,
+            Select::All,
+            Select::All,
             GenotypeBy::Sample,
             10,
         )
@@ -596,8 +596,16 @@ mod tests {
     #[test]
     fn test_schema() {
         let header = create_test_header();
-        let batch_builder =
-            BatchBuilder::new(header, None, None, None, None, GenotypeBy::Sample, 10).unwrap();
+        let batch_builder = BatchBuilder::new(
+            header,
+            Select::All,
+            Select::All,
+            Select::All,
+            Select::All,
+            GenotypeBy::Sample,
+            10,
+        )
+        .unwrap();
 
         let schema = batch_builder.schema();
         assert!(schema.fields().len() > 0);
@@ -608,10 +616,10 @@ mod tests {
         let header = create_test_header();
         let mut batch_builder = BatchBuilder::new(
             header.clone(),
-            None,
-            None,
-            None,
-            None,
+            Select::All,
+            Select::All,
+            Select::All,
+            Select::All,
             GenotypeBy::Sample,
             10,
         )
@@ -626,10 +634,10 @@ mod tests {
         let header = create_test_header();
         let mut batch_builder = BatchBuilder::new(
             header.clone(),
-            None,
-            None,
-            None,
-            None,
+            Select::All,
+            Select::All,
+            Select::All,
+            Select::All,
             GenotypeBy::Sample,
             10,
         )
@@ -667,10 +675,10 @@ mod tests {
 
         let mut batch_builder = BatchBuilder::new(
             header,
-            None,
-            None,
-            None,
-            Some(vec![]),
+            Select::All,
+            Select::All,
+            Select::All,
+            Select::Omit,
             GenotypeBy::Sample,
             10,
         )

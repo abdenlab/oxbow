@@ -12,7 +12,7 @@ use crate::gxf::model::BatchBuilder;
 use crate::gxf::model::Model;
 use crate::gxf::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
-use crate::OxbowError;
+use crate::{OxbowError, Select};
 
 /// A GFF scanner.
 ///
@@ -24,6 +24,7 @@ use crate::OxbowError;
 ///
 /// ```no_run
 /// use oxbow::gxf::scanner::gff::Scanner;
+/// use oxbow::Select;
 /// use std::fs::File;
 /// use std::io::BufReader;
 ///
@@ -31,7 +32,7 @@ use crate::OxbowError;
 /// let mut fmt_reader = noodles::gff::io::Reader::new(inner);
 ///
 /// let attr_defs = Scanner::attribute_defs(&mut fmt_reader, Some(1000)).unwrap();
-/// let scanner = Scanner::new(None, None, Some(attr_defs)).unwrap();
+/// let scanner = Scanner::new(None, Select::All, Some(attr_defs)).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -42,11 +43,11 @@ pub struct Scanner {
 impl Scanner {
     /// Creates a GFF scanner from schema parameters.
     ///
-    /// - `fields`: standard GXF field names. `None` → all 8 standard fields.
+    /// - `fields`: standard GXF field selection. `All` → all 8 standard fields.
     /// - `attr_defs`: `None` → no attributes column. `Some(vec![])` → empty struct.
     pub fn new(
         header: Option<binning_index::index::Header>,
-        fields: Option<Vec<String>>,
+        fields: Select<String>,
         attr_defs: Option<Vec<(String, String)>>,
     ) -> crate::Result<Self> {
         let model = Model::new(fields, attr_defs)?;

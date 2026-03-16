@@ -7,6 +7,7 @@ use crate::sequence::model::BatchBuilder;
 use crate::sequence::model::Model;
 use crate::sequence::scanner::batch_iterator::BatchIterator;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
+use crate::Select;
 use noodles::bgzf::VirtualPosition;
 
 /// A FASTQ scanner.
@@ -18,13 +19,14 @@ use noodles::bgzf::VirtualPosition;
 ///
 /// ```no_run
 /// use oxbow::sequence::scanner::fastq::Scanner;
+/// use oxbow::Select;
 /// use std::fs::File;
 /// use std::io::BufReader;
 ///
 /// let inner = File::open("sample.R1.fastq").map(BufReader::new).unwrap();
 /// let fmt_reader = noodles::fastq::io::Reader::new(inner);
 ///
-/// let scanner = Scanner::new(None).unwrap();
+/// let scanner = Scanner::new(Select::All).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -34,8 +36,8 @@ pub struct Scanner {
 impl Scanner {
     /// Creates a FASTQ scanner from schema parameters.
     ///
-    /// `fields`: field names. `None` → `["name", "description", "sequence", "quality"]`.
-    pub fn new(fields: Option<Vec<String>>) -> crate::Result<Self> {
+    /// `fields`: `All` → `["name", "description", "sequence", "quality"]`.
+    pub fn new(fields: Select<String>) -> crate::Result<Self> {
         let model = Model::new_fastq(fields)?;
         Ok(Self { model })
     }
@@ -136,7 +138,7 @@ mod tests {
 
     #[test]
     fn test_scanner_default() {
-        let scanner = Scanner::new(None).unwrap();
+        let scanner = Scanner::new(Select::All).unwrap();
         assert_eq!(
             scanner.field_names(),
             vec!["name", "description", "sequence", "quality"]
@@ -145,9 +147,13 @@ mod tests {
 
     #[test]
     fn test_scanner_schema() {
-        let scanner = Scanner::new(None).unwrap();
+        let scanner = Scanner::new(Select::All).unwrap();
         assert_eq!(scanner.schema().fields().len(), 4);
-        let scanner = Scanner::new(Some(vec!["name".to_string(), "quality".to_string()])).unwrap();
+        let scanner = Scanner::new(Select::Some(vec![
+            "name".to_string(),
+            "quality".to_string(),
+        ]))
+        .unwrap();
         assert_eq!(scanner.schema().fields().len(), 2);
     }
 
@@ -158,7 +164,7 @@ mod tests {
         let file = std::io::Cursor::new(data);
         let fmt_reader = noodles::fastq::io::Reader::new(file);
 
-        let scanner = Scanner::new(None).unwrap();
+        let scanner = Scanner::new(Select::All).unwrap();
         let mut batch_iter = scanner.scan(fmt_reader, None, Some(2), None).unwrap();
 
         let batch = batch_iter.next().unwrap().unwrap();
@@ -175,7 +181,7 @@ mod tests {
         let file = std::io::Cursor::new(data);
         let fmt_reader = noodles::fastq::io::Reader::new(file);
 
-        let scanner = Scanner::new(None).unwrap();
+        let scanner = Scanner::new(Select::All).unwrap();
         let mut batch_iter = scanner.scan(fmt_reader, None, Some(3), Some(2)).unwrap();
 
         let batch = batch_iter.next().unwrap().unwrap();

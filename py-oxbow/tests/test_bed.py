@@ -49,6 +49,7 @@ class TestBedFile:
         "fields",
         [
             None,
+            "*",
             ("chrom", "start", "end"),
             ("nonexistent-field",),
         ],

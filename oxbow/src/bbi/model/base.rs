@@ -6,7 +6,7 @@ use std::sync::Arc;
 use arrow::datatypes::{Field as ArrowField, Schema, SchemaRef};
 
 pub use crate::bed::model::schema::BedSchema;
-use crate::OxbowError;
+use crate::{OxbowError, Select};
 pub use batch::BatchBuilder;
 use field::{bed_standard_fields, FieldDef};
 
@@ -73,11 +73,12 @@ impl Model {
     ///
     /// - `bed_schema`: the parsing interpretation.
     /// - `fields`: column names to project. `None` → all fields from the schema.
-    pub fn new(bed_schema: BedSchema, fields: Option<Vec<String>>) -> crate::Result<Self> {
+    pub fn new(bed_schema: BedSchema, fields: Select<String>) -> crate::Result<Self> {
         let all_defs = bed_schema_field_defs(&bed_schema);
         let projected = match fields {
-            None => all_defs,
-            Some(names) => {
+            Select::All => all_defs,
+            Select::Omit => Vec::new(),
+            Select::Some(names) => {
                 let mut projected = Vec::new();
                 for name in &names {
                     let def = all_defs
@@ -155,7 +156,7 @@ impl Model {
             .map(|d| d.name.clone())
             .collect();
 
-        Self::new(self.bed_schema.clone(), Some(projected))
+        Self::new(self.bed_schema.clone(), Select::Some(projected))
     }
 }
 
@@ -168,7 +169,7 @@ mod tests {
     #[test]
     fn test_bedgraph_model() {
         let bed_schema = BedSchema::new_bedgraph().unwrap();
-        let model = Model::new(bed_schema, None).unwrap();
+        let model = Model::new(bed_schema, Select::All).unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "start", "end", "value"]);
         // BBI uses UInt32 for positions (AutoSql types)
         assert_eq!(model.schema().field(1).data_type(), &DataType::UInt32);
@@ -178,7 +179,7 @@ mod tests {
     #[test]
     fn test_bed6_model() {
         let bed_schema: BedSchema = "bed6".parse().unwrap();
-        let model = Model::new(bed_schema, None).unwrap();
+        let model = Model::new(bed_schema, Select::All).unwrap();
         assert_eq!(model.field_names().len(), 6);
         assert_eq!(model.schema().field(1).data_type(), &DataType::UInt32);
     }
@@ -186,7 +187,7 @@ mod tests {
     #[test]
     fn test_bed6_projection() {
         let bed_schema: BedSchema = "bed6".parse().unwrap();
-        let model = Model::new(bed_schema, None).unwrap();
+        let model = Model::new(bed_schema, Select::All).unwrap();
         let projected = model.project(&["chrom".into(), "strand".into()]).unwrap();
         assert_eq!(projected.field_names(), vec!["chrom", "strand"]);
     }
@@ -195,7 +196,7 @@ mod tests {
     fn test_custom_fields() {
         let defs = vec![FieldDef::new("extra".into(), FieldType::Float)];
         let bed_schema = BedSchema::new(3, Some(defs)).unwrap();
-        let model = Model::new(bed_schema, None).unwrap();
+        let model = Model::new(bed_schema, Select::All).unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "start", "end", "extra"]);
         assert_eq!(model.schema().field(3).data_type(), &DataType::Float32);
     }
@@ -208,7 +209,7 @@ mod tests {
             FieldDef::new("c".into(), FieldType::String),
         ];
         let bed_schema = BedSchema::new(3, Some(defs)).unwrap();
-        let model = Model::new(bed_schema, None).unwrap();
+        let model = Model::new(bed_schema, Select::All).unwrap();
         let projected = model.project(&["chrom".into(), "c".into()]).unwrap();
         assert_eq!(projected.field_names(), vec!["chrom", "c"]);
     }

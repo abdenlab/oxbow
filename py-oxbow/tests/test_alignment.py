@@ -48,7 +48,7 @@ class TestSamFile:
     @pytest.mark.parametrize(
         "fields",
         [
-            None,
+            "*",
             ["qname", "rname", "mapq"],
             ["qname", "rname", "foo"],
         ],

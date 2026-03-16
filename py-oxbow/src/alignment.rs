@@ -13,8 +13,8 @@ use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{
-    pyobject_to_bufreader, resolve_cram_index, resolve_fasta_repository, resolve_index,
-    PyVirtualPosition, Reader,
+    pyobject_to_bufreader, resolve_cram_index, resolve_fasta_repository, resolve_fields,
+    resolve_index, PyVirtualPosition, Reader,
 };
 use oxbow::alignment::{BamScanner, CramScanner, SamScanner};
 use oxbow::util::batches_to_ipc;
@@ -28,8 +28,9 @@ use oxbow::util::index::IndexType;
 ///     The path to the SAM file or a file-like object.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed.
-/// fields : list[str], optional
-///     Names of the standard SAM fields to include.
+/// fields : str or list[str] or None, optional [default: "*"]
+///     Standard SAM fields to include. ``"*"`` for all, ``None`` to omit,
+///     or a list of field names.
 /// tag_defs : list[tuple[str, str]], optional
 ///     Tag definitions. None means no tags column.
 #[pyclass(module = "oxbow.oxbow")]
@@ -48,9 +49,10 @@ impl PySamScanner {
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
         tag_defs: Option<Vec<(String, String)>>,
     ) -> PyResult<Self> {
+        let fields = resolve_fields(fields, py)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::sam::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
@@ -463,8 +465,9 @@ impl PySamScanner {
 ///     The path to the BAM file or a file-like object.
 /// compressed : bool, optional [default: True]
 ///     Whether the source is BGZF-compressed.
-/// fields : list[str], optional
-///     Names of the standard SAM fields to include.
+/// fields : str or list[str] or None, optional [default: "*"]
+///     Standard SAM fields to include. ``"*"`` for all, ``None`` to omit,
+///     or a list of field names.
 /// tag_defs : list[tuple[str, str]], optional
 ///     Tag definitions. None means no tags column.
 #[pyclass(module = "oxbow.oxbow")]
@@ -483,9 +486,10 @@ impl PyBamScanner {
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
         tag_defs: Option<Vec<(String, String)>>,
     ) -> PyResult<Self> {
+        let fields = resolve_fields(fields, py)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bam::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
@@ -896,8 +900,9 @@ impl PyBamScanner {
 /// ----------
 /// src : str or file-like
 ///     The path to the CRAM file or a file-like object.
-/// fields : list[str], optional
-///     Names of the standard SAM fields to include.
+/// fields : str or list[str] or None, optional [default: "*"]
+///     Standard SAM fields to include. ``"*"`` for all, ``None`` to omit,
+///     or a list of field names.
 /// tag_defs : list[tuple[str, str]], optional
 ///     Tag definitions. None means no tags column.
 #[pyclass]
@@ -918,11 +923,12 @@ impl PyCramScanner {
         py: Python,
         src: Py<PyAny>,
         compressed: Option<bool>,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
         tag_defs: Option<Vec<(String, String)>>,
         reference: Option<Py<PyAny>>,
         reference_index: Option<Py<PyAny>>,
     ) -> PyResult<Self> {
+        let fields = resolve_fields(fields, py)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let mut fmt_reader = noodles::cram::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
@@ -1131,8 +1137,8 @@ impl PyCramScanner {
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
-/// fields : list[str], optional
-///     Names of the standard SAM fields to project.
+/// fields : str or list[str] or None, optional
+///     Standard SAM fields to project.
 /// tag_defs : list[tuple[str, str]], optional
 ///    Tag definitions. None means no tags column.
 /// compressed : bool, optional [default: False]
@@ -1149,10 +1155,11 @@ pub fn read_sam(
     src: Py<PyAny>,
     region: Option<String>,
     index: Option<Py<PyAny>>,
-    fields: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
     tag_defs: Option<Vec<(String, String)>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
+    let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let mut fmt_reader = noodles::sam::io::Reader::new(reader);
     let header = fmt_reader.read_header()?;
@@ -1202,8 +1209,8 @@ pub fn read_sam(
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
-/// fields : list[str], optional
-///     Names of the standard SAM fields to project.
+/// fields : str or list[str] or None, optional
+///     Standard SAM fields to project.
 /// tag_defs : list[tuple[str, str]], optional
 ///    Tag definitions. None means no tags column.
 /// compressed : bool, optional [default: True]
@@ -1220,10 +1227,11 @@ pub fn read_bam(
     src: Py<PyAny>,
     region: Option<String>,
     index: Option<Py<PyAny>>,
-    fields: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
     tag_defs: Option<Vec<(String, String)>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
+    let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let mut fmt_reader = noodles::bam::io::Reader::from(reader);
     let header = fmt_reader.read_header()?;
@@ -1273,8 +1281,8 @@ pub fn read_bam(
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
-/// fields : list[str], optional
-///     Names of the standard SAM fields to project.
+/// fields : str or list[str] or None, optional
+///     Standard SAM fields to project.
 /// tag_defs : list[tuple[str, str]], optional
 ///    Tag definitions. None means no tags column.
 ///
@@ -1292,9 +1300,10 @@ pub fn read_cram(
     index: Option<Py<PyAny>>,
     reference: Option<Py<PyAny>>,
     reference_index: Option<Py<PyAny>>,
-    fields: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
     tag_defs: Option<Vec<(String, String)>>,
 ) -> PyResult<Vec<u8>> {
+    let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
     let mut fmt_reader = noodles::cram::io::Reader::new(reader);
     let header = fmt_reader.read_header()?;

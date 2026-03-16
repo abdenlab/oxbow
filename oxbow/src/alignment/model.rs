@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use arrow::datatypes::{DataType, Field as ArrowField, Schema, SchemaRef};
 
-use crate::OxbowError;
+use crate::{OxbowError, Select};
 use field::{Field, DEFAULT_FIELD_NAMES};
 use tag::TagDef;
 
@@ -32,15 +32,16 @@ use tag::TagDef;
 ///
 /// ```
 /// use oxbow::alignment::model::Model;
+/// use oxbow::Select;
 ///
 /// // Default: all 12 standard fields, no tags column.
-/// let model = Model::new(None, None).unwrap();
+/// let model = Model::new(Select::All, None).unwrap();
 /// assert_eq!(model.field_names().len(), 12);
 /// assert!(!model.has_tags());
 ///
 /// // Custom: selected fields with tags.
 /// let model = Model::new(
-///     Some(vec!["qname".into(), "pos".into()]),
+///     Select::Some(vec!["qname".into(), "pos".into()]),
 ///     Some(vec![("NM".into(), "i".into()), ("MD".into(), "Z".into())]),
 /// ).unwrap();
 /// assert_eq!(model.field_names(), vec!["qname", "pos"]);
@@ -59,16 +60,19 @@ pub struct Model {
 impl Model {
     /// Create a new alignment model.
     ///
-    /// - `fields`: standard SAM field names to include. `None` → all 12
-    ///   standard fields.
+    /// - `fields`: standard SAM field selection. `All` → all 12 standard
+    ///   fields. `Select(vec)` → specific fields. `Omit` → no fields.
     /// - `tag_defs`: tag definitions as `(name, type_code)` pairs. `None` →
     ///   no tags column. `Some(vec![])` → tags column with empty struct.
     pub fn new(
-        fields: Option<Vec<String>>,
+        fields: Select<String>,
         tag_defs: Option<Vec<(String, String)>>,
     ) -> crate::Result<Self> {
-        let field_names =
-            fields.unwrap_or_else(|| DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect());
+        let field_names = match fields {
+            Select::All => DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect(),
+            Select::Some(names) => names,
+            Select::Omit => Vec::new(),
+        };
 
         let mut parsed_fields = Vec::new();
         for name in &field_names {
@@ -96,7 +100,7 @@ impl Model {
 
     /// Create a model with all 12 default standard fields and no tags.
     pub fn default_fields() -> Self {
-        Self::new(None, None).expect("default fields are always valid")
+        Self::new(Select::All, None).expect("default fields are always valid")
     }
 
     fn build_schema(fields: &[Field], tag_defs: Option<&[TagDef]>) -> SchemaRef {
@@ -188,7 +192,7 @@ impl Model {
             None
         };
 
-        Self::new(Some(projected_fields), tag_defs)
+        Self::new(Select::Some(projected_fields), tag_defs)
     }
 }
 
@@ -271,6 +275,10 @@ impl FromStr for Model {
             }
         }
 
+        let fields = match fields {
+            Some(names) => Select::Some(names),
+            None => Select::All,
+        };
         Self::new(fields, tag_defs)
     }
 }
@@ -281,7 +289,7 @@ mod tests {
 
     #[test]
     fn test_default_model() {
-        let model = Model::new(None, None).unwrap();
+        let model = Model::new(Select::All, None).unwrap();
         assert_eq!(model.field_names().len(), 12);
         assert!(!model.has_tags());
         assert!(model.tag_defs().is_none());
@@ -291,13 +299,13 @@ mod tests {
     #[test]
     fn test_default_fields_constructor() {
         let model = Model::default_fields();
-        assert_eq!(model, Model::new(None, None).unwrap());
+        assert_eq!(model, Model::new(Select::All, None).unwrap());
     }
 
     #[test]
     fn test_custom_fields_no_tags() {
         let model = Model::new(
-            Some(vec!["qname".into(), "flag".into(), "pos".into()]),
+            Select::Some(vec!["qname".into(), "flag".into(), "pos".into()]),
             None,
         )
         .unwrap();
@@ -309,7 +317,7 @@ mod tests {
     #[test]
     fn test_fields_with_tags() {
         let model = Model::new(
-            Some(vec!["qname".into(), "pos".into()]),
+            Select::Some(vec!["qname".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into()), ("MD".into(), "Z".into())]),
         )
         .unwrap();
@@ -323,7 +331,7 @@ mod tests {
 
     #[test]
     fn test_tags_empty_defs_is_empty_struct() {
-        let model = Model::new(Some(vec!["qname".into()]), Some(vec![])).unwrap();
+        let model = Model::new(Select::Some(vec!["qname".into()]), Some(vec![])).unwrap();
         assert!(model.has_tags());
         assert!(model.tag_defs().unwrap().is_empty());
         assert_eq!(model.schema().fields().len(), 2);
@@ -336,7 +344,7 @@ mod tests {
 
     #[test]
     fn test_no_tags_when_tag_defs_none() {
-        let model = Model::new(Some(vec!["qname".into(), "pos".into()]), None).unwrap();
+        let model = Model::new(Select::Some(vec!["qname".into(), "pos".into()]), None).unwrap();
         assert!(!model.has_tags());
         assert!(model.tag_defs().is_none());
         assert_eq!(model.schema().fields().len(), 2);
@@ -344,26 +352,26 @@ mod tests {
 
     #[test]
     fn test_invalid_field() {
-        let result = Model::new(Some(vec!["invalid".into()]), None);
+        let result = Model::new(Select::Some(vec!["invalid".into()]), None);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_invalid_tag_name() {
-        let result = Model::new(None, Some(vec![("X".into(), "i".into())]));
+        let result = Model::new(Select::All, Some(vec![("X".into(), "i".into())]));
         assert!(result.is_err());
     }
 
     #[test]
     fn test_invalid_tag_type() {
-        let result = Model::new(None, Some(vec![("NM".into(), "Q".into())]));
+        let result = Model::new(Select::All, Some(vec![("NM".into(), "Q".into())]));
         assert!(result.is_err());
     }
 
     #[test]
     fn test_project() {
         let model = Model::new(
-            Some(vec!["qname".into(), "flag".into(), "pos".into()]),
+            Select::Some(vec!["qname".into(), "flag".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into())]),
         )
         .unwrap();
@@ -376,7 +384,7 @@ mod tests {
     #[test]
     fn test_project_with_tags() {
         let model = Model::new(
-            Some(vec!["qname".into(), "pos".into()]),
+            Select::Some(vec!["qname".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into())]),
         )
         .unwrap();
@@ -403,7 +411,7 @@ mod tests {
     #[test]
     fn test_display_custom_with_tags() {
         let model = Model::new(
-            Some(vec!["qname".into(), "pos".into()]),
+            Select::Some(vec!["qname".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into()), ("MD".into(), "Z".into())]),
         )
         .unwrap();
@@ -412,7 +420,7 @@ mod tests {
 
     #[test]
     fn test_display_tags_no_defs() {
-        let model = Model::new(Some(vec!["qname".into()]), Some(vec![])).unwrap();
+        let model = Model::new(Select::Some(vec!["qname".into()]), Some(vec![])).unwrap();
         assert_eq!(model.to_string(), "fields=qname;tags");
     }
 
@@ -425,7 +433,7 @@ mod tests {
     #[test]
     fn test_from_str_roundtrip() {
         let model = Model::new(
-            Some(vec!["qname".into(), "pos".into()]),
+            Select::Some(vec!["qname".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into()), ("MD".into(), "Z".into())]),
         )
         .unwrap();
@@ -444,7 +452,7 @@ mod tests {
 
     #[test]
     fn test_from_str_roundtrip_empty_tags() {
-        let model = Model::new(Some(vec!["qname".into()]), Some(vec![])).unwrap();
+        let model = Model::new(Select::Some(vec!["qname".into()]), Some(vec![])).unwrap();
         let s = model.to_string();
         let parsed: Model = s.parse().unwrap();
         assert_eq!(model, parsed);
@@ -453,7 +461,7 @@ mod tests {
     #[test]
     fn test_clone_eq() {
         let model = Model::new(
-            Some(vec!["qname".into()]),
+            Select::Some(vec!["qname".into()]),
             Some(vec![("NM".into(), "i".into())]),
         )
         .unwrap();
@@ -465,12 +473,12 @@ mod tests {
     fn test_schema_independence() {
         // Schema should not depend on any file header content.
         let m1 = Model::new(
-            Some(vec!["qname".into(), "rname".into(), "pos".into()]),
+            Select::Some(vec!["qname".into(), "rname".into(), "pos".into()]),
             None,
         )
         .unwrap();
         let m2 = Model::new(
-            Some(vec!["qname".into(), "rname".into(), "pos".into()]),
+            Select::Some(vec!["qname".into(), "rname".into(), "pos".into()]),
             None,
         )
         .unwrap();

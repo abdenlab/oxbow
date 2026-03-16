@@ -29,7 +29,7 @@ class BedFile(DataSource):
         bed_schema: BedSchemaLike = "bed3+",
         compressed: bool = False,
         *,
-        fields: list[str] | None = None,
+        fields: Literal["*"] | list[str] | None = "*",
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,

@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use arrow::datatypes::{DataType, Field as ArrowField, Schema, SchemaRef};
 
-use crate::OxbowError;
+use crate::{OxbowError, Select};
 use attribute::AttributeDef;
 use field::{Field, DEFAULT_FIELD_NAMES};
 
@@ -19,7 +19,8 @@ use field::{Field, DEFAULT_FIELD_NAMES};
 /// to materialize.
 ///
 /// - `fields` selects which standard GXF fields become Arrow columns.
-///   `None` → all 8 standard fields.
+///   `All` → all 8 standard fields. `Omit` → no fields. `Some(vec)` →
+///   specific fields.
 /// - `attr_defs` controls the attributes struct column independently.
 ///   `None` → no attributes column. `Some(vec![])` → empty struct column.
 ///   `Some(vec![...])` → struct column with the specified sub-fields.
@@ -30,15 +31,16 @@ use field::{Field, DEFAULT_FIELD_NAMES};
 ///
 /// ```
 /// use oxbow::gxf::model::Model;
+/// use oxbow::Select;
 ///
 /// // Default: all 8 standard fields, no attributes column.
-/// let model = Model::new(None, None).unwrap();
+/// let model = Model::new(Select::All, None).unwrap();
 /// assert_eq!(model.field_names().len(), 8);
 /// assert!(!model.has_attributes());
 ///
 /// // Custom: selected fields with attributes.
 /// let model = Model::new(
-///     Some(vec!["seqid".into(), "start".into(), "end".into()]),
+///     Select::Some(vec!["seqid".into(), "start".into(), "end".into()]),
 ///     Some(vec![("gene_id".into(), "String".into())]),
 /// ).unwrap();
 /// assert_eq!(model.field_names(), vec!["seqid", "start", "end"]);
@@ -57,16 +59,20 @@ pub struct Model {
 impl Model {
     /// Create a new GXF model.
     ///
-    /// - `fields`: standard GXF field names. `None` → all 8 standard fields.
+    /// - `fields`: standard GXF field selection. `All` → all 8 standard
+    ///   fields. `Some(vec)` → specific fields. `Omit` → no fields.
     /// - `attr_defs`: attribute definitions as `(name, type)` pairs. `None` →
     ///   no attributes column. `Some(vec![])` → attributes column with empty
     ///   struct.
     pub fn new(
-        fields: Option<Vec<String>>,
+        fields: Select<String>,
         attr_defs: Option<Vec<(String, String)>>,
     ) -> crate::Result<Self> {
-        let field_names =
-            fields.unwrap_or_else(|| DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect());
+        let field_names = match fields {
+            Select::All => DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect(),
+            Select::Some(names) => names,
+            Select::Omit => Vec::new(),
+        };
 
         let mut parsed_fields = Vec::new();
         for name in &field_names {
@@ -94,7 +100,7 @@ impl Model {
 
     /// Create a model with all 8 default standard fields and no attributes.
     pub fn default_fields() -> Self {
-        Self::new(None, None).expect("default fields are always valid")
+        Self::new(Select::All, None).expect("default fields are always valid")
     }
 
     fn build_schema(fields: &[Field], attr_defs: Option<&[AttributeDef]>) -> SchemaRef {
@@ -182,7 +188,7 @@ impl Model {
             None
         };
 
-        Self::new(Some(projected_fields), attr_defs)
+        Self::new(Select::Some(projected_fields), attr_defs)
     }
 }
 
@@ -201,7 +207,7 @@ mod tests {
 
     #[test]
     fn test_default_model() {
-        let model = Model::new(None, None).unwrap();
+        let model = Model::new(Select::All, None).unwrap();
         assert_eq!(model.field_names().len(), 8);
         assert!(!model.has_attributes());
         assert!(model.attr_defs().is_none());
@@ -211,13 +217,13 @@ mod tests {
     #[test]
     fn test_default_fields_constructor() {
         let model = Model::default_fields();
-        assert_eq!(model, Model::new(None, None).unwrap());
+        assert_eq!(model, Model::new(Select::All, None).unwrap());
     }
 
     #[test]
     fn test_custom_fields_no_attrs() {
         let model = Model::new(
-            Some(vec!["seqid".into(), "start".into(), "end".into()]),
+            Select::Some(vec!["seqid".into(), "start".into(), "end".into()]),
             None,
         )
         .unwrap();
@@ -229,7 +235,7 @@ mod tests {
     #[test]
     fn test_fields_with_attrs() {
         let model = Model::new(
-            Some(vec!["seqid".into(), "start".into()]),
+            Select::Some(vec!["seqid".into(), "start".into()]),
             Some(vec![("gene_id".into(), "String".into())]),
         )
         .unwrap();
@@ -242,7 +248,7 @@ mod tests {
 
     #[test]
     fn test_attrs_empty_defs_is_empty_struct() {
-        let model = Model::new(Some(vec!["seqid".into()]), Some(vec![])).unwrap();
+        let model = Model::new(Select::Some(vec!["seqid".into()]), Some(vec![])).unwrap();
         assert!(model.has_attributes());
         assert!(model.attr_defs().unwrap().is_empty());
         assert_eq!(model.schema().fields().len(), 2);
@@ -255,7 +261,7 @@ mod tests {
 
     #[test]
     fn test_no_attrs_when_attr_defs_none() {
-        let model = Model::new(Some(vec!["seqid".into(), "start".into()]), None).unwrap();
+        let model = Model::new(Select::Some(vec!["seqid".into(), "start".into()]), None).unwrap();
         assert!(!model.has_attributes());
         assert!(model.attr_defs().is_none());
         assert_eq!(model.schema().fields().len(), 2);
@@ -263,20 +269,23 @@ mod tests {
 
     #[test]
     fn test_invalid_field() {
-        let result = Model::new(Some(vec!["invalid".into()]), None);
+        let result = Model::new(Select::Some(vec!["invalid".into()]), None);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_invalid_attr_type() {
-        let result = Model::new(None, Some(vec![("gene_id".into(), "InvalidType".into())]));
+        let result = Model::new(
+            Select::All,
+            Some(vec![("gene_id".into(), "InvalidType".into())]),
+        );
         assert!(result.is_err());
     }
 
     #[test]
     fn test_attr_defs_to_tuple() {
         let model = Model::new(
-            None,
+            Select::All,
             Some(vec![
                 ("gene_id".into(), "String".into()),
                 ("tag".into(), "Array".into()),
@@ -301,7 +310,7 @@ mod tests {
     #[test]
     fn test_project() {
         let model = Model::new(
-            Some(vec!["seqid".into(), "start".into(), "end".into()]),
+            Select::Some(vec!["seqid".into(), "start".into(), "end".into()]),
             Some(vec![("gene_id".into(), "String".into())]),
         )
         .unwrap();
@@ -314,7 +323,7 @@ mod tests {
     #[test]
     fn test_project_with_attrs() {
         let model = Model::new(
-            Some(vec!["seqid".into(), "start".into()]),
+            Select::Some(vec!["seqid".into(), "start".into()]),
             Some(vec![("gene_id".into(), "String".into())]),
         )
         .unwrap();

@@ -8,7 +8,7 @@ use noodles::csi::BinningIndex;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 use crate::variant::model::{BatchBuilder, GenotypeBy, Model};
 use crate::variant::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
-use crate::OxbowError;
+use crate::{OxbowError, Select};
 
 /// A VCF scanner.
 ///
@@ -20,6 +20,7 @@ use crate::OxbowError;
 ///
 /// ```no_run
 /// use oxbow::variant::scanner::vcf::Scanner;
+/// use oxbow::Select;
 /// use std::fs::File;
 /// use std::io::BufReader;
 ///
@@ -27,7 +28,7 @@ use crate::OxbowError;
 /// let mut fmt_reader = noodles::vcf::io::Reader::new(inner);
 /// let header = fmt_reader.read_header().unwrap();
 ///
-/// let scanner = Scanner::new(header, None, None, None, None, None, None).unwrap();
+/// let scanner = Scanner::new(header, Select::All, Select::All, Select::All, Select::All, None, None).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -40,10 +41,10 @@ impl Scanner {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         header: noodles::vcf::Header,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
+        fields: Select<String>,
+        info_fields: Select<String>,
+        genotype_fields: Select<String>,
+        samples: Select<String>,
         genotype_by: Option<GenotypeBy>,
         unnest_samples: Option<bool>,
     ) -> crate::Result<Self> {

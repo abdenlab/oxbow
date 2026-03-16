@@ -100,7 +100,7 @@ fields=('name', 'sequence'):
         sequence:
         - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
 fields=('nonexistent-field',): 'Invalid field name: nonexistent-field'
-fields=None:
+fields=*:
     batch-00:
         description:
         - null
@@ -241,3 +241,24 @@ fields=None:
         - seq20
         sequence:
         - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+fields=None:
+    batch-00: {}
+    batch-01: {}
+    batch-02: {}
+    batch-03: {}
+    batch-04: {}
+    batch-05: {}
+    batch-06: {}
+    batch-07: {}
+    batch-08: {}
+    batch-09: {}
+    batch-10: {}
+    batch-11: {}
+    batch-12: {}
+    batch-13: {}
+    batch-14: {}
+    batch-15: {}
+    batch-16: {}
+    batch-17: {}
+    batch-18: {}
+    batch-19: {}

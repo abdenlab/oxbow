@@ -53,6 +53,7 @@ class TestVcfFile:
         "fields",
         [
             None,
+            "*",
             ("pos", "qual"),
             ("nonexistent-field",),
         ],
@@ -63,7 +64,7 @@ class TestVcfFile:
             fields=fields,
             genotype_fields=("GT",),
             info_fields=("DP",),
-            samples=("HG00096",),
+            samples=("NA12878i",),
         )
         batches = ox.VcfFile(*input.args, **input.kwargs).batches()
         try:
@@ -179,6 +180,7 @@ class TestBcfFile:
         "fields",
         [
             None,
+            "*",
             ("pos", "qual"),
             ("nonexistent-field",),
         ],

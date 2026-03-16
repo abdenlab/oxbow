@@ -10,6 +10,7 @@ use crate::alignment::model::BatchBuilder;
 use crate::alignment::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::alignment::AlignmentModel;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
+use crate::Select;
 
 /// A BAM scanner.
 ///
@@ -20,6 +21,7 @@ use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 ///
 /// ```no_run
 /// use oxbow::alignment::scanner::bam::Scanner;
+/// use oxbow::Select;
 /// use std::fs::File;
 /// use std::io::BufReader;
 ///
@@ -28,7 +30,7 @@ use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 /// let header = fmt_reader.read_header().unwrap();
 ///
 /// let tag_defs = Scanner::tag_defs(&mut fmt_reader, Some(1000)).unwrap();
-/// let scanner = Scanner::new(header, None, Some(tag_defs)).unwrap();
+/// let scanner = Scanner::new(header, Select::All, Some(tag_defs)).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -39,11 +41,11 @@ pub struct Scanner {
 impl Scanner {
     /// Creates a BAM scanner from a SAM header and schema parameters.
     ///
-    /// - `fields`: standard SAM field names. `None` → all 12 standard fields.
+    /// - `fields`: standard SAM field selection.
     /// - `tag_defs`: `None` → no tags column. `Some(vec![])` → empty struct.
     pub fn new(
         header: noodles::sam::Header,
-        fields: Option<Vec<String>>,
+        fields: Select<String>,
         tag_defs: Option<Vec<(String, String)>>,
     ) -> crate::Result<Self> {
         let model = AlignmentModel::new(fields, tag_defs)?;
@@ -295,7 +297,7 @@ mod tests {
     #[test]
     fn test_scan_with_multithreaded_reader() {
         let (header, fmt_reader) = mt_reader();
-        let scanner = Scanner::new(header, None, None).unwrap();
+        let scanner = Scanner::new(header, Select::All, None).unwrap();
         let mut batches = scanner.scan(fmt_reader, None, None, Some(10)).unwrap();
 
         let batch = batches.next().unwrap().unwrap();
@@ -306,7 +308,7 @@ mod tests {
     #[test]
     fn test_scan_query_with_multithreaded_reader() {
         let (header, fmt_reader) = mt_reader();
-        let scanner = Scanner::new(header, None, None).unwrap();
+        let scanner = Scanner::new(header, Select::All, None).unwrap();
 
         let index = noodles::bam::bai::fs::read("../fixtures/sample.bam.bai").unwrap();
 

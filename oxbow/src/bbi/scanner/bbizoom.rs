@@ -7,6 +7,7 @@ pub use super::BBIReader;
 use crate::bbi::model::zoom::BatchBuilder;
 use crate::bbi::model::zoom::Model;
 use crate::bbi::scanner::batch_iterator::zoom::{BBIZoomBatchIterator, BBIZoomQueryBatchIterator};
+use crate::Select;
 
 /// A scanner for the summary statistics from BBI file zoom level.
 ///
@@ -23,7 +24,8 @@ use crate::bbi::scanner::batch_iterator::zoom::{BBIZoomBatchIterator, BBIZoomQue
 /// let info = fmt_reader.info();
 /// let ref_names = info.chrom_info.iter().map(|c| c.name.clone()).collect();
 /// let zoom_levels: Vec<u32> = info.zoom_headers.iter().map(|h| h.reduction_level).collect();
-/// let scanner = Scanner::new(ref_names, zoom_levels[0], None).unwrap();
+/// use oxbow::Select;
+/// let scanner = Scanner::new(ref_names, zoom_levels[0], Select::All).unwrap();
 /// let batches = scanner.scan(BBIReader::BigWig(fmt_reader), None, None, Some(1000));
 pub struct Scanner {
     ref_names: Vec<String>,
@@ -36,7 +38,7 @@ impl Scanner {
     pub fn new(
         ref_names: Vec<String>,
         zoom_level: u32,
-        fields: Option<Vec<String>>,
+        fields: Select<String>,
     ) -> crate::Result<Self> {
         let model = Model::new(fields)?;
         Ok(Self {

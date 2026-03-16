@@ -70,3 +70,13 @@ pub mod util;
 pub mod variant;
 
 pub use error::{OxbowError, Result};
+
+#[derive(Debug, Clone)]
+pub enum Select<T> {
+    /// Select specific items explicitly
+    Some(Vec<T>),
+    /// Omit (explicitly empty)
+    Omit,
+    /// Select all items (wildcard)
+    All,
+}

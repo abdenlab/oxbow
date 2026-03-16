@@ -12,7 +12,7 @@ use bigtools::bed::autosql::parse::parse_autosql;
 use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
-use crate::util::{pyobject_to_bufreader, Reader};
+use crate::util::{pyobject_to_bufreader, resolve_fields, Reader};
 use oxbow::bbi::model::base::field::FieldDef;
 use oxbow::bbi::{BBIReader, BBIZoomScanner, BedSchema, BigBedScanner, BigWigScanner};
 use oxbow::util::batches_to_ipc;
@@ -43,12 +43,12 @@ pub struct PyBigWigScanner {
 impl PyBigWigScanner {
     #[new]
     #[pyo3(signature = (src, fields=None))]
-    fn new(py: Python, src: Py<PyAny>, fields: Option<Vec<String>>) -> PyResult<Self> {
+    fn new(py: Python, src: Py<PyAny>, fields: Option<Py<PyAny>>) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
-        let scanner = BigWigScanner::new(info, fields).map_err(to_py)?;
+        let scanner = BigWigScanner::new(info, resolve_fields(fields, py)?).map_err(to_py)?;
         Ok(Self {
             _src: src,
             reader,
@@ -104,7 +104,7 @@ impl PyBigWigScanner {
     fn get_zoom(
         &mut self,
         zoom_level: u32,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
     ) -> PyResult<PyBBIZoomScanner> {
         Python::attach(|py| {
             PyBBIZoomScanner::new(
@@ -231,7 +231,7 @@ impl PyBigBedScanner {
         py: Python,
         src: Py<PyAny>,
         schema: Option<Py<PyAny>>,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let mut fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
@@ -266,7 +266,8 @@ impl PyBigBedScanner {
         };
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
-        let scanner = BigBedScanner::new(bed_schema, info, fields).map_err(to_py)?;
+        let scanner =
+            BigBedScanner::new(bed_schema, info, resolve_fields(fields, py)?).map_err(to_py)?;
         let _schema: Option<String> = schema.as_ref().and_then(|s| s.extract::<String>(py).ok());
         Ok(Self {
             _src: src,
@@ -340,7 +341,7 @@ impl PyBigBedScanner {
     fn get_zoom(
         &mut self,
         zoom_level: u32,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
     ) -> PyResult<PyBBIZoomScanner> {
         Python::attach(|py| {
             PyBBIZoomScanner::new(
@@ -468,7 +469,7 @@ impl PyBBIZoomScanner {
         src: Py<PyAny>,
         bbi_type: PyBBIFileType,
         zoom_level: u32,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)
             .expect("Failed to convert Py<PyAny> to BufReader");
@@ -493,7 +494,9 @@ impl PyBBIZoomScanner {
                     )));
                 }
                 let reader = fmt_reader.into_inner();
-                let scanner = BBIZoomScanner::new(ref_names, zoom_level, fields).map_err(to_py)?;
+                let scanner =
+                    BBIZoomScanner::new(ref_names, zoom_level, resolve_fields(fields, py)?)
+                        .map_err(to_py)?;
                 Ok(Self {
                     src,
                     reader,
@@ -522,7 +525,9 @@ impl PyBBIZoomScanner {
                     )));
                 }
                 let reader = fmt_reader.into_inner();
-                let scanner = BBIZoomScanner::new(ref_names, zoom_level, fields).map_err(to_py)?;
+                let scanner =
+                    BBIZoomScanner::new(ref_names, zoom_level, resolve_fields(fields, py)?)
+                        .map_err(to_py)?;
                 Ok(Self {
                     src,
                     reader,
@@ -684,7 +689,7 @@ pub fn read_bigwig(
     py: Python,
     src: Py<PyAny>,
     region: Option<String>,
-    fields: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
 
@@ -696,7 +701,7 @@ pub fn read_bigwig(
         let fmt_reader = bigtools::BigWigRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigWigScanner::new(info, fields).map_err(to_py)?;
+        let scanner = BigWigScanner::new(info, resolve_fields(fields, py)?).map_err(to_py)?;
         let batches = scanner
             .scan_query(fmt_reader, region, None, None, None)
             .map_err(to_py)?;
@@ -705,7 +710,7 @@ pub fn read_bigwig(
         let fmt_reader = bigtools::BigWigRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigWigScanner::new(info, fields).map_err(to_py)?;
+        let scanner = BigWigScanner::new(info, resolve_fields(fields, py)?).map_err(to_py)?;
         let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
@@ -735,7 +740,7 @@ pub fn read_bigbed(
     src: Py<PyAny>,
     bed_schema: &str,
     region: Option<String>,
-    fields: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
 ) -> PyResult<Vec<u8>> {
     let bed_schema: BedSchema = bed_schema.parse().map_err(to_py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
@@ -748,7 +753,8 @@ pub fn read_bigbed(
         let fmt_reader = bigtools::BigBedRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigBedScanner::new(bed_schema, info, fields).map_err(to_py)?;
+        let scanner =
+            BigBedScanner::new(bed_schema, info, resolve_fields(fields, py)?).map_err(to_py)?;
         let batches = scanner
             .scan_query(fmt_reader, region, None, None, None)
             .map_err(to_py)?;
@@ -757,7 +763,8 @@ pub fn read_bigbed(
         let fmt_reader = bigtools::BigBedRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigBedScanner::new(bed_schema, info, fields).map_err(to_py)?;
+        let scanner =
+            BigBedScanner::new(bed_schema, info, resolve_fields(fields, py)?).map_err(to_py)?;
         let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };

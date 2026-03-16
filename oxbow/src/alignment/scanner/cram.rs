@@ -10,6 +10,7 @@ use crate::alignment::model::tag::TagScanner;
 use crate::alignment::model::BatchBuilder;
 use crate::alignment::AlignmentModel;
 use crate::batch::{Push, RecordBatchBuilder as _};
+use crate::Select;
 
 /// A CRAM scanner.
 ///
@@ -20,6 +21,7 @@ use crate::batch::{Push, RecordBatchBuilder as _};
 ///
 /// ```no_run
 /// use oxbow::alignment::scanner::cram::Scanner;
+/// use oxbow::Select;
 /// use std::fs::File;
 /// use noodles::fasta::io::indexed_reader::Builder as FastaIndexedReaderBuilder;
 /// use noodles::fasta::repository::adapters::IndexedReader as FastaIndexedReaderAdapter;
@@ -33,7 +35,7 @@ use crate::batch::{Push, RecordBatchBuilder as _};
 /// let header = fmt_reader.read_header().unwrap();
 ///
 /// let tag_defs = Scanner::tag_defs(&mut fmt_reader, &header, Some(1000)).unwrap();
-/// let scanner = Scanner::new(header, None, Some(tag_defs), repository).unwrap();
+/// let scanner = Scanner::new(header, Select::All, Some(tag_defs), repository).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -45,13 +47,13 @@ pub struct Scanner {
 impl Scanner {
     /// Creates a CRAM scanner from a SAM header and schema parameters.
     ///
-    /// - `fields`: standard SAM field names. `None` → all 12 standard fields.
+    /// - `fields`: standard SAM field selection.
     /// - `tag_defs`: `None` → no tags column. `Some(vec![])` → empty struct.
     ///
     /// The FASTA repository is stored and used by scan methods for decoding.
     pub fn new(
         header: noodles::sam::Header,
-        fields: Option<Vec<String>>,
+        fields: Select<String>,
         tag_defs: Option<Vec<(String, String)>>,
         repo: noodles::fasta::Repository,
     ) -> crate::Result<Self> {
