@@ -39,9 +39,9 @@ pub struct BatchBuilder {
     header: noodles::vcf::Header,
     info_defs: Vec<InfoDef>,
     genotype_defs: Vec<GenotypeDef>,
-    sample_names: Vec<String>,
     genotype_by: GenotypeBy,
-    unnest_samples: bool,
+    sample_names: Vec<String>,
+    samples_nested: bool,
     field_builders: IndexMap<Field, FieldBuilder>,
     info_builders: IndexMap<InfoDef, InfoBuilder>,
     genotype_builders: IndexMap<String, GenotypeDataBuilder>,
@@ -56,8 +56,8 @@ impl BatchBuilder {
         field_names: Select<String>,
         info_field_names: Select<String>,
         genotype_field_names: Select<String>,
-        sample_names: Select<String>,
         genotype_by: GenotypeBy,
+        sample_names: Select<String>,
         capacity: usize,
     ) -> crate::Result<Self> {
         let model = Model::from_header(
@@ -65,8 +65,8 @@ impl BatchBuilder {
             field_names,
             info_field_names,
             genotype_field_names,
-            sample_names,
             Some(genotype_by),
+            sample_names,
             None,
         )?;
         Self::from_model(&model, header, capacity)
@@ -131,9 +131,9 @@ impl BatchBuilder {
             header,
             info_defs,
             genotype_defs,
-            sample_names,
             genotype_by,
-            unnest_samples: model.unnest_samples(),
+            sample_names,
+            samples_nested: model.samples_nested(),
             field_builders,
             info_builders,
             genotype_builders,
@@ -205,7 +205,7 @@ impl RecordBatchBuilder for BatchBuilder {
                 }
             }
 
-            if self.unnest_samples {
+            if !self.samples_nested {
                 // Top-level columns
                 for (_, arr) in genotype_arrays {
                     columns.push(arr);
@@ -582,8 +582,8 @@ mod tests {
             Select::All,
             Select::All,
             Select::All,
-            Select::All,
             GenotypeBy::Sample,
+            Select::All,
             10,
         )
         .unwrap();
@@ -601,8 +601,8 @@ mod tests {
             Select::All,
             Select::All,
             Select::All,
-            Select::All,
             GenotypeBy::Sample,
+            Select::All,
             10,
         )
         .unwrap();
@@ -619,8 +619,8 @@ mod tests {
             Select::All,
             Select::All,
             Select::All,
-            Select::All,
             GenotypeBy::Sample,
+            Select::All,
             10,
         )
         .unwrap();
@@ -637,8 +637,8 @@ mod tests {
             Select::All,
             Select::All,
             Select::All,
-            Select::All,
             GenotypeBy::Sample,
+            Select::All,
             10,
         )
         .unwrap();
@@ -678,8 +678,8 @@ mod tests {
             Select::All,
             Select::All,
             Select::All,
-            Select::Omit,
             GenotypeBy::Sample,
+            Select::Omit,
             10,
         )
         .unwrap();

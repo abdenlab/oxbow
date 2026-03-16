@@ -28,7 +28,7 @@ use crate::{OxbowError, Select};
 /// let mut fmt_reader = noodles::vcf::io::Reader::new(inner);
 /// let header = fmt_reader.read_header().unwrap();
 ///
-/// let scanner = Scanner::new(header, Select::All, Select::All, Select::All, Select::All, None, None).unwrap();
+/// let scanner = Scanner::new(header, Select::All, Select::All, Select::All, None, Select::All, None).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -44,18 +44,18 @@ impl Scanner {
         fields: Select<String>,
         info_fields: Select<String>,
         genotype_fields: Select<String>,
-        samples: Select<String>,
         genotype_by: Option<GenotypeBy>,
-        unnest_samples: Option<bool>,
+        samples: Select<String>,
+        samples_nested: Option<bool>,
     ) -> crate::Result<Self> {
         let model = Model::from_header(
             &header,
             fields,
             info_fields,
             genotype_fields,
-            samples,
             genotype_by,
-            unnest_samples,
+            samples,
+            samples_nested,
         )?;
         Ok(Self { header, model })
     }
