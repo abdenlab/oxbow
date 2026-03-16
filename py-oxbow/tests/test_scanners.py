@@ -1,4 +1,3 @@
-import io
 import pickle
 
 import pyarrow as pa
@@ -1059,17 +1058,13 @@ class TestReadTabix:
     def test_explicit_index(self):
         table_inferred = _read_ipc(ox.read_tabix("data/sample.bed.gz", "chr1"))
         table_explicit = _read_ipc(
-            ox.read_tabix(
-                "data/sample.bed.gz", "chr1", index="data/sample.bed.gz.tbi"
-            )
+            ox.read_tabix("data/sample.bed.gz", "chr1", index="data/sample.bed.gz.tbi")
         )
         assert table_inferred.to_pydict() == table_explicit.to_pydict()
 
     def test_file_like_with_index(self):
         with open("data/sample.bed.gz", "rb") as f:
-            table = _read_ipc(
-                ox.read_tabix(f, "chr1", index="data/sample.bed.gz.tbi")
-            )
+            table = _read_ipc(ox.read_tabix(f, "chr1", index="data/sample.bed.gz.tbi"))
         assert table.num_rows > 0
 
     def test_missing_region_raises(self):
