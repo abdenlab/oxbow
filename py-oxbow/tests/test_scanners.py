@@ -9,7 +9,7 @@ from tests.utils import Input
 
 
 def _read_ipc(ipc_bytes):
-    return pa.ipc.open_stream(pa.BufferReader(ipc_bytes)).read_all()
+    return pa.ipc.open_file(pa.BufferReader(ipc_bytes)).read_all()
 
 
 class TestPySamScanner:
