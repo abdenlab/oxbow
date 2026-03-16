@@ -72,17 +72,11 @@ impl Scanner {
         columns: Option<Vec<String>>,
         capacity: usize,
     ) -> crate::Result<BatchBuilder> {
-        match columns {
-            None => BatchBuilder::new(self.model.bed_schema(), None, capacity),
-            Some(cols) => {
-                let projected = self.model.project(&cols)?;
-                BatchBuilder::new(
-                    projected.bed_schema(),
-                    Some(projected.field_names()),
-                    capacity,
-                )
-            }
-        }
+        let model = match columns {
+            None => self.model.clone(),
+            Some(cols) => self.model.project(&cols)?,
+        };
+        BatchBuilder::from_model(&model, capacity)
     }
 }
 

@@ -24,6 +24,11 @@ pub struct BatchBuilder {
 }
 
 impl BatchBuilder {
+    /// Creates a new `BatchBuilder` from a [`Model`].
+    pub fn from_model(model: &super::Model, capacity: usize) -> crate::Result<Self> {
+        Self::new(model.bed_schema(), Some(model.field_names()), capacity)
+    }
+
     /// Creates a new `BatchBuilder` for BED records.
     pub fn new(
         bed_schema: &BedSchema,
