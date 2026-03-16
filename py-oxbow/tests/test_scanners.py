@@ -1,3 +1,4 @@
+import io
 import pickle
 
 import pyarrow as pa
@@ -6,6 +7,10 @@ import pytest_manifest
 
 import oxbow.oxbow as ox
 from tests.utils import Input
+
+
+def _read_ipc(ipc_bytes):
+    return pa.ipc.open_stream(pa.BufferReader(ipc_bytes)).read_all()
 
 
 class TestPySamScanner:
@@ -1011,3 +1016,62 @@ class TestPyGtfScanner:
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         batch2 = reader.read_next_batch()
         assert batch.to_pydict() == batch2.to_pydict()
+
+
+class TestReadBamReferences:
+    def test_schema(self):
+        table = _read_ipc(ox.read_bam_references("data/sample.bam"))
+        assert table.schema.names == ["name", "length"]
+        assert pa.types.is_string(table.schema.field("name").type)
+        assert pa.types.is_uint32(table.schema.field("length").type)
+
+    def test_returns_references(self):
+        table = _read_ipc(ox.read_bam_references("data/sample.bam"))
+        assert table.num_rows > 0
+        assert "chr1" in table.column("name").to_pylist()
+
+    def test_file_like_object(self):
+        with open("data/sample.bam", "rb") as f:
+            table = _read_ipc(ox.read_bam_references(f))
+        assert table.num_rows > 0
+
+    def test_matches_path_result(self):
+        table_path = _read_ipc(ox.read_bam_references("data/sample.bam"))
+        with open("data/sample.bam", "rb") as f:
+            table_filelike = _read_ipc(ox.read_bam_references(f))
+        assert table_path.to_pydict() == table_filelike.to_pydict()
+
+
+class TestReadTabix:
+    def test_schema(self):
+        table = _read_ipc(ox.read_tabix("data/sample.bed.gz", "chr1"))
+        assert table.schema.names == ["chrom", "start", "end", "raw"]
+        assert pa.types.is_string(table.schema.field("chrom").type)
+        assert pa.types.is_int32(table.schema.field("start").type)
+        assert pa.types.is_int32(table.schema.field("end").type)
+        assert pa.types.is_string(table.schema.field("raw").type)
+
+    def test_returns_records_for_region(self):
+        table = _read_ipc(ox.read_tabix("data/sample.bed.gz", "chr1"))
+        assert table.num_rows > 0
+        assert all(c == "chr1" for c in table.column("chrom").to_pylist())
+
+    def test_explicit_index(self):
+        table_inferred = _read_ipc(ox.read_tabix("data/sample.bed.gz", "chr1"))
+        table_explicit = _read_ipc(
+            ox.read_tabix(
+                "data/sample.bed.gz", "chr1", index="data/sample.bed.gz.tbi"
+            )
+        )
+        assert table_inferred.to_pydict() == table_explicit.to_pydict()
+
+    def test_file_like_with_index(self):
+        with open("data/sample.bed.gz", "rb") as f:
+            table = _read_ipc(
+                ox.read_tabix(f, "chr1", index="data/sample.bed.gz.tbi")
+            )
+        assert table.num_rows > 0
+
+    def test_missing_region_raises(self):
+        with pytest.raises(ValueError):
+            ox.read_tabix("data/sample.bed.gz", "nonexistent_chrom")
