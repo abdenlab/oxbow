@@ -11,7 +11,9 @@ mod gxf;
 mod sequence;
 mod tabix;
 mod variant;
-use crate::alignment::{read_bam, read_bam_references, read_cram, read_sam, PyBamScanner, PyCramScanner, PySamScanner};
+use crate::alignment::{
+    read_bam, read_bam_references, read_cram, read_sam, PyBamScanner, PyCramScanner, PySamScanner,
+};
 use crate::bbi::{
     read_bigbed, read_bigwig, PyBBIFileType, PyBBIZoomScanner, PyBigBedScanner, PyBigWigScanner,
 };
