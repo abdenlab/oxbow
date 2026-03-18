@@ -31,8 +31,9 @@ use oxbow::util::index::IndexType;
 /// fields : str or list[str] or None, optional [default: "*"]
 ///     Standard SAM fields to include. ``"*"`` for all, ``None`` to omit,
 ///     or a list of field names.
-/// tag_defs : list[tuple[str, str]], optional
-///     Tag definitions. None means no tags column.
+/// tag_defs : list[tuple[str, str]], optional [default: None]
+///     Tag definitions for the ``"tags"`` struct column. ``None`` omits the
+///     tags column. Use the ``tag_defs()`` method to discover definitions.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PySamScanner {
     src: Py<PyAny>,
@@ -110,7 +111,7 @@ impl PySamScanner {
     ///
     /// The reader stream is reset to its original position after scanning.
     ///
-    /// Parametersuv
+    /// Parameters
     /// ----------
     /// scan_rows : int, optional [default: 1024]
     ///    The number of records to scan. If None, all records are scanned.
@@ -468,8 +469,9 @@ impl PySamScanner {
 /// fields : str or list[str] or None, optional [default: "*"]
 ///     Standard SAM fields to include. ``"*"`` for all, ``None`` to omit,
 ///     or a list of field names.
-/// tag_defs : list[tuple[str, str]], optional
-///     Tag definitions. None means no tags column.
+/// tag_defs : list[tuple[str, str]], optional [default: None]
+///     Tag definitions for the ``"tags"`` struct column. ``None`` omits the
+///     tags column. Use the ``tag_defs()`` method to discover definitions.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBamScanner {
     src: Py<PyAny>,
@@ -903,8 +905,9 @@ impl PyBamScanner {
 /// fields : str or list[str] or None, optional [default: "*"]
 ///     Standard SAM fields to include. ``"*"`` for all, ``None`` to omit,
 ///     or a list of field names.
-/// tag_defs : list[tuple[str, str]], optional
-///     Tag definitions. None means no tags column.
+/// tag_defs : list[tuple[str, str]], optional [default: None]
+///     Tag definitions for the ``"tags"`` struct column. ``None`` omits the
+///     tags column. Use the ``tag_defs()`` method to discover definitions.
 #[pyclass]
 pub struct PyCramScanner {
     src: Py<PyAny>,

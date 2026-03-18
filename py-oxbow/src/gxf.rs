@@ -29,8 +29,9 @@ use oxbow::util::index::IndexType;
 ///     Whether the source is BGZF-compressed.
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
-/// attribute_defs : list[tuple[str, str]], optional
-///     Definitions of attribute fields to project.
+/// attribute_defs : list[tuple[str, str]], optional [default: None]
+///     Definitions for the ``"attributes"`` struct column. ``None`` omits the
+///     attributes column. Use the ``attribute_defs()`` method to discover definitions.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyGtfScanner {
     src: Py<PyAny>,
@@ -344,8 +345,9 @@ impl PyGtfScanner {
 ///     Whether the source is BGZF-compressed.
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
-/// attribute_defs : list[tuple[str, str]], optional
-///     Definitions of attribute fields to project.
+/// attribute_defs : list[tuple[str, str]], optional [default: None]
+///     Definitions for the ``"attributes"`` struct column. ``None`` omits the
+///     attributes column. Use the ``attribute_defs()`` method to discover definitions.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyGffScanner {
     src: Py<PyAny>,

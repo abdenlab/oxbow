@@ -35,10 +35,13 @@ use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
 ///    How to project the genotype fields. If "sample", the columns
 ///    correspond to the samples. If "field", the columns correspond to
 ///    the genotype fields.
-/// samples : list[str], optional
-///    Names of the samples to include in the genotype fields.
+/// samples : list[str] or None, optional [default: None]
+///    Names of the samples to include in the genotype output. ``"*"`` for
+///    all samples, a list to select specific samples, or ``None`` to omit
+///    all sample genotype data.
 /// samples_nested : bool, optional [default: False]
-///   Whether to nest the sample-specific genotype fields under a "samples" struct column.
+///   Whether to nest sample genotype data under a single ``"samples"`` struct
+///   column.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyVcfScanner {
     src: Py<PyAny>,
@@ -400,10 +403,13 @@ impl PyVcfScanner {
 ///     How to project the genotype fields. If "sample", the columns
 ///     correspond to the samples. If "field", the columns correspond to
 ///     the genotype fields.
-/// samples : list[str], optional
-///    Names of the samples to include in the genotype fields.
+/// samples : list[str] or None, optional [default: None]
+///    Names of the samples to include in the genotype output. ``"*"`` for
+///    all samples, a list to select specific samples, or ``None`` to omit
+///    all sample genotype data.
 /// samples_nested : bool, optional [default: False]
-///   Whether to nest the sample-specific genotype fields under a "samples" struct column.
+///   Whether to nest sample genotype data under a single ``"samples"`` struct
+///   column.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBcfScanner {
     src: Py<PyAny>,
