@@ -27,6 +27,7 @@
       ~SamFile.to_ipc
       ~SamFile.to_pandas
       ~SamFile.to_polars
+      ~SamFile.with_tags
    
    
 

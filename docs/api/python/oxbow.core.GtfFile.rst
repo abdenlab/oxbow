@@ -27,6 +27,7 @@
       ~GtfFile.to_ipc
       ~GtfFile.to_pandas
       ~GtfFile.to_polars
+      ~GtfFile.with_attributes
    
    
 

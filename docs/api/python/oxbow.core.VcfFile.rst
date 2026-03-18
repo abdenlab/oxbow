@@ -27,6 +27,7 @@
       ~VcfFile.to_ipc
       ~VcfFile.to_pandas
       ~VcfFile.to_polars
+      ~VcfFile.with_samples
    
    
 

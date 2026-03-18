@@ -27,6 +27,7 @@
       ~BamFile.to_ipc
       ~BamFile.to_pandas
       ~BamFile.to_polars
+      ~BamFile.with_tags
    
    
 

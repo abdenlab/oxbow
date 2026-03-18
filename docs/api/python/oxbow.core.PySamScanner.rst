@@ -17,6 +17,7 @@
       ~PySamScanner.chrom_names
       ~PySamScanner.chrom_sizes
       ~PySamScanner.field_names
+      ~PySamScanner.model
       ~PySamScanner.scan
       ~PySamScanner.scan_byte_ranges
       ~PySamScanner.scan_query
