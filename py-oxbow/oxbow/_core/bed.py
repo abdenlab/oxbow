@@ -69,7 +69,7 @@ def from_bed(
     bed_schema: BedSchemaLike = "bed3+",
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
-    fields: list[str] | None = None,
+    fields: Literal["*"] | list[str] | None = "*",
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,

@@ -164,7 +164,7 @@ def from_bigbed(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     schema: str = "bed3+",
     *,
-    fields: list[str] | None = None,
+    fields: Literal["*"] | list[str] | None = "*",
     regions: str | list[str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BigBedFile:
@@ -215,7 +215,7 @@ def from_bigbed(
 def from_bigwig(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     *,
-    fields: list[str] | None = None,
+    fields: Literal["*"] | list[str] | None = "*",
     regions: str | list[str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BigWigFile:
