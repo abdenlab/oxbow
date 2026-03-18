@@ -51,6 +51,7 @@ class TestGtfFile:
         "fields",
         [
             None,
+            "*",
             ("seqid", "start", "end"),
             ("nonexistent-field",),
         ],

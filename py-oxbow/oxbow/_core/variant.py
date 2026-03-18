@@ -22,12 +22,12 @@ class VariantFile(DataSource):
         source: str | Callable[[], IO[bytes] | str],
         compressed: bool = False,
         *,
-        fields=None,
-        info_fields: list[str] | None = None,
-        samples: list[str] | None = None,
-        genotype_fields: list[str] | None = None,
+        fields: Literal["*"] | list[str] | None = "*",
+        info_fields: Literal["*"] | list[str] | None = "*",
+        genotype_fields: Literal["*"] | list[str] | None = "*",
         genotype_by: Literal["sample", "field"] = "sample",
-        unnest_samples: bool = True,
+        samples: Literal["*"] | list[str] | None = None,
+        samples_nested: bool = False,
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
@@ -42,10 +42,10 @@ class VariantFile(DataSource):
             compressed=compressed,
             fields=fields,
             info_fields=info_fields,
-            samples=samples,
             genotype_fields=genotype_fields,
             genotype_by=genotype_by,
-            unnest_samples=unnest_samples,
+            samples=samples,
+            samples_nested=samples_nested,
         )
 
     def _scan_query(self, scanner, region, columns, batch_size):
@@ -57,6 +57,53 @@ class VariantFile(DataSource):
         return type(self)(
             self._src,
             regions=regions,
+            index=self._index_src,
+            batch_size=self._batch_size,
+            **self._scanner_kwargs,
+        )
+
+    def with_samples(
+        self,
+        samples: Literal["*"] | list[str] | None = "*",
+        *,
+        genotype_fields: Literal["*"] | list[str] | None = "*",
+        group_by: Literal["sample", "field"] = "sample",
+    ) -> Self:
+        """
+        Return a new data source with sample genotype data nested under a
+        single ``"samples"`` struct column.
+
+        Parameters
+        ----------
+        samples : "*", list[str], or None, optional [default: "*"]
+            Names of samples to include in the genotype output. ``"*"``
+            includes all samples declared in the header. Pass a list to select
+            specific samples. ``None`` omits all sample genotype data.
+        genotype_fields : "*", list[str], or None, optional [default: "*"]
+            Genotype (aka FORMAT) fields to project for each sample. ``"*"``
+            includes all FORMAT fields declared in the header. Pass a list to
+            select specific fields. ``None`` omits all genotype fields.
+        group_by : Literal["sample", "field"], optional [default: "sample"]
+            Determines how genotype data is organized within the ``"samples"``
+            struct. If ``"sample"``, each sample name is a sub-column with
+            nested genotype fields. If ``"field"``, each genotype field is a
+            sub-column with nested sample values.
+
+        Returns
+        -------
+        Self
+            A new data source with sample genotype data nested under a single
+            ``"samples"`` struct column.
+        """
+        self._scanner_kwargs.update(
+            genotype_fields=genotype_fields,
+            genotype_by=group_by,
+            samples=samples,
+            samples_nested=True,
+        )
+        return type(self)(
+            self._src,
+            regions=self._regions,
             index=self._index_src,
             batch_size=self._batch_size,
             **self._scanner_kwargs,
@@ -100,18 +147,25 @@ def from_vcf(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
-    fields: list[str] | None = None,
-    info_fields: list[str] | None = None,
-    samples: list[str] | None = None,
-    genotype_fields: list[str] | None = None,
+    fields: Literal["*"] | list[str] | None = "*",
+    info_fields: Literal["*"] | list[str] | None = "*",
+    genotype_fields: Literal["*"] | list[str] | None = "*",
     genotype_by: Literal["sample", "field"] = "sample",
-    unnest_samples: bool = True,
+    samples: Literal["*"] | list[str] | None = None,
+    samples_nested: bool = False,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> VcfFile:
     """
     Create a VCF file data source.
+
+    .. versionchanged:: 0.7.0
+        The ``samples`` parameter now defaults to omitting sample genotype
+        data (``None``) instead of including all samples (``"*"``). To include
+        samples, pass a value to the ``samples`` parameter or use the
+        :meth:`~oxbow.core.VcfFile.with_samples()` method on the returned data
+        source.
 
     Parameters
     ----------
@@ -125,25 +179,28 @@ def from_vcf(
         regular GZIP. If None, the source bytestream is assumed to be
         uncompressed. For more customized decoding, provide a callable
         ``source`` instead.
-    fields : list[str], optional
-        Specific fixed fields to project. By default, all fixed fields are
-        included.
-    info_fields : list[str], optional [default: None]
-        INFO fields to project. These will be nested under an "info" column.
-        If None, all INFO fields declared in the header are included. To omit
-        all INFO fields, set ``info_fields=[]``.
-    samples : list[str], optional [default: None]
-        A subset of samples to include in the genotype output. If None, all
-        samples declared in the header are included. To omit all sample
-        genotype data, set ``samples=[]``.
-    genotype_fields : list[str], optional [default: None]
-        Genotype (aka "FORMAT") fields to project for each sample. If None, all
-        FORMAT fields declared in the header are included.
+    fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        Fixed fields to project. ``"*"`` includes all standard fields. Pass a
+        list to select specific fields. ``None`` omits all fixed fields.
+    info_fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        INFO fields to project, nested under an ``"info"`` column. ``"*"``
+        includes all INFO fields declared in the header. Pass a list to select
+        specific fields. ``None`` omits the info column entirely.
+    genotype_fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        Genotype (aka "FORMAT") fields to project for each sample. ``"*"``
+        includes all FORMAT fields declared in the header. Pass a list to select
+        specific fields. ``None`` omits the genotype fields.
     genotype_by : Literal["sample", "field"], optional [default: "sample"]
         Determines how genotype-specific data is organized. If "sample", each
         sample is provided as a separate column with nested FORMAT fields. If
         "field", each FORMAT field is provided as a separate column with nested
         sample name fields.
+    samples : ``"*"``, list[str], or None, optional [default: ``None``]
+        Samples to include in the genotype output. ``"*"`` includes all samples
+        declared in the header. Pass a list to select specific samples. ``None``
+        omits all sample genotype data.
+    samples_nested : bool, optional [default: False]
+        Whether to nest sample data under a single structured column.
     regions : str | list[str], optional
         One or more genomic regions to query. Only applicable if an associated
         index file is available.
@@ -178,10 +235,10 @@ def from_vcf(
         compressed=bgzf_compressed,
         fields=fields,
         info_fields=info_fields,
-        samples=samples,
         genotype_fields=genotype_fields,
         genotype_by=genotype_by,
-        unnest_samples=unnest_samples,
+        samples=samples,
+        samples_nested=samples_nested,
         regions=regions,
         index=index,
         batch_size=batch_size,
@@ -192,18 +249,25 @@ def from_bcf(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["bgzf", None] = "bgzf",
     *,
-    fields: list[str] | None = None,
-    info_fields: list[str] | None = None,
-    samples: list[str] | None = None,
-    genotype_fields: list[str] | None = None,
+    fields: Literal["*"] | list[str] | None = "*",
+    info_fields: Literal["*"] | list[str] | None = "*",
+    genotype_fields: Literal["*"] | list[str] | None = "*",
     genotype_by: Literal["sample", "field"] = "sample",
-    unnest_samples: bool = True,
+    samples: Literal["*"] | list[str] | None = None,
+    samples_nested: bool = False,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BcfFile:
     """
     Create a BCF file data source.
+
+    .. versionchanged:: 0.7.0
+        The ``samples`` parameter now defaults to omitting sample genotype
+        data (``None``) instead of including all samples (``"*"``). To include
+        samples, pass a value to the ``samples`` parameter or use the
+        :meth:`~oxbow.core.BcfFile.with_samples()` method on the returned data
+        source.
 
     Parameters
     ----------
@@ -215,25 +279,28 @@ def from_bcf(
         assumed to be BGZF-compressed. If None, the source is assumed to be
         uncompressed. For more custom decoding, provide a callable ``source``
         instead.
-    fields : list[str], optional
-        Specific fixed fields to project. By default, all fixed fields are
-        included.
-    info_fields : list[str], optional [default: None]
-        INFO fields to project. These will be nested under an "info" column.
-        If None, all INFO fields declared in the header are included. To omit
-        all INFO fields, set ``info_fields=[]``.
-    samples : list[str], optional [default: None]
-        A subset of samples to include in the genotype output. If None, all
-        samples declared in the header are included. To omit all sample
-        genotype data, set ``samples=[]``.
-    genotype_fields : list[str], optional [default: None]
-        Genotype (aka "FORMAT") fields to project for each sample. If None, all
-        FORMAT fields declared in the header are included.
+    fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        Fixed fields to project. ``"*"`` includes all standard fields. Pass a
+        list to select specific fields. ``None`` omits all fixed fields.
+    info_fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        INFO fields to project, nested under an ``"info"`` column. ``"*"``
+        includes all INFO fields declared in the header. Pass a list to select
+        specific fields. ``None`` omits the info column entirely.
+    genotype_fields : ``"*"``, list[str], or None, optional [default: ``"*"``]
+        Genotype (aka "FORMAT") fields to project for each sample. ``"*"``
+        includes all FORMAT fields declared in the header. Pass a list to select
+        specific fields. ``None`` omits the genotype fields.
     genotype_by : Literal["sample", "field"], optional [default: "sample"]
         Determines how genotype-specific data is organized. If "sample", each
         sample is provided as a separate column with nested FORMAT fields. If
         "field", each FORMAT field is provided as a separate column with nested
         sample name fields.
+    samples : ``"*"``, list[str], or None, optional [default: ``None``]
+        Samples to include in the genotype output. ``"*"`` includes all samples
+        declared in the header. Pass a list to select specific samples. ``None``
+        omits all sample genotype data.
+    samples_nested : bool, optional [default: False]
+        Whether to nest sample data under a single structured column.
     regions : str | list[str], optional
         One or more genomic regions to query. Only applicable if an associated
         index file is available.
@@ -268,10 +335,10 @@ def from_bcf(
         compressed=bgzf_compressed,
         fields=fields,
         info_fields=info_fields,
-        samples=samples,
         genotype_fields=genotype_fields,
         genotype_by=genotype_by,
-        unnest_samples=unnest_samples,
+        samples=samples,
+        samples_nested=samples_nested,
         regions=regions,
         index=index,
         batch_size=batch_size,

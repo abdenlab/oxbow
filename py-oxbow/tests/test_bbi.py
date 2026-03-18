@@ -47,6 +47,7 @@ class TestBigBedFile:
         "fields",
         [
             None,
+            "*",
             ("chrom", "start", "end"),
             ("nonexistent-field",),
         ],
@@ -150,6 +151,7 @@ class TestBigWigFile:
         "fields",
         [
             None,
+            "*",
             ("chrom", "start", "end"),
             ("nonexistent-field",),
         ],

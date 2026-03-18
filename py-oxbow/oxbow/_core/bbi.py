@@ -5,7 +5,7 @@ DataSource classes for BBI (BigWig and BigBed) formats and their zoom levels.
 from __future__ import annotations
 
 import pathlib
-from typing import IO, Callable
+from typing import IO, Callable, Literal
 
 try:
     from typing import Self
@@ -43,7 +43,7 @@ class BbiFile(DataSource):
         self,
         resolution: int,
         *,
-        fields: list[str] | None = None,
+        fields: Literal["*"] | list[str] | None = "*",
         regions: str | list[str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ) -> BbiZoom:
@@ -73,7 +73,7 @@ class BigBedFile(BbiFile):
         source: str | Callable[[], IO[bytes] | str],
         schema: str = "bed3+",
         *,
-        fields: list[str] | None = None,
+        fields: Literal["*"] | list[str] | None = "*",
         regions: str | list[str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
@@ -101,7 +101,7 @@ class BigWigFile(BbiFile):
         self,
         source: str | Callable[[], IO[bytes] | str],
         *,
-        fields: list[str] | None = None,
+        fields: Literal["*"] | list[str] | None = "*",
         regions: str | list[str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
@@ -136,7 +136,7 @@ class BbiZoom(DataSource):
         base: BbiFile,
         resolution: int,
         *,
-        fields: list[str] | None = None,
+        fields: Literal["*"] | list[str] | None = "*",
         regions: str | list[str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
@@ -164,7 +164,7 @@ def from_bigbed(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     schema: str = "bed3+",
     *,
-    fields: list[str] | None = None,
+    fields: Literal["*"] | list[str] | None = "*",
     regions: str | list[str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BigBedFile:
@@ -215,7 +215,7 @@ def from_bigbed(
 def from_bigwig(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     *,
-    fields: list[str] | None = None,
+    fields: Literal["*"] | list[str] | None = "*",
     regions: str | list[str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BigWigFile:

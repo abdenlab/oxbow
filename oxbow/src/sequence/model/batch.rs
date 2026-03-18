@@ -5,6 +5,7 @@ use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 
 use crate::batch::{Push, RecordBatchBuilder};
+use crate::Select;
 
 use super::field::Push as _;
 use super::field::{Field, FieldBuilder};
@@ -19,13 +20,13 @@ pub struct BatchBuilder {
 
 impl BatchBuilder {
     /// Creates a new `BatchBuilder` for FASTQ records.
-    pub fn new_fastq(fields: Option<Vec<String>>, capacity: usize) -> crate::Result<Self> {
+    pub fn new_fastq(fields: Select<String>, capacity: usize) -> crate::Result<Self> {
         let model = Model::new_fastq(fields)?;
         Self::from_model(&model, capacity)
     }
 
     /// Creates a new `BatchBuilder` for FASTA records.
-    pub fn new_fasta(fields: Option<Vec<String>>, capacity: usize) -> crate::Result<Self> {
+    pub fn new_fasta(fields: Select<String>, capacity: usize) -> crate::Result<Self> {
         let model = Model::new_fasta(fields)?;
         Self::from_model(&model, capacity)
     }
@@ -100,19 +101,19 @@ mod tests {
 
     #[test]
     fn test_new_fastq_with_default_fields() {
-        let batch_builder = BatchBuilder::new_fastq(None, 10).unwrap();
+        let batch_builder = BatchBuilder::new_fastq(Select::All, 10).unwrap();
         assert_eq!(batch_builder.schema().fields().len(), 4);
     }
 
     #[test]
     fn test_new_fasta_with_default_fields() {
-        let batch_builder = BatchBuilder::new_fasta(None, 10).unwrap();
+        let batch_builder = BatchBuilder::new_fasta(Select::All, 10).unwrap();
         assert_eq!(batch_builder.schema().fields().len(), 3);
     }
 
     #[test]
     fn test_schema() {
-        let batch_builder = BatchBuilder::new_fastq(None, 10).unwrap();
+        let batch_builder = BatchBuilder::new_fastq(Select::All, 10).unwrap();
         let schema = batch_builder.schema();
         assert_eq!(schema.fields().len(), 4);
         assert_eq!(schema.field(0).name(), "name");
@@ -122,7 +123,7 @@ mod tests {
     #[test]
     fn test_push_fasta_record() {
         let capacity = 10;
-        let mut batch_builder = BatchBuilder::new_fasta(None, capacity).unwrap();
+        let mut batch_builder = BatchBuilder::new_fasta(Select::All, capacity).unwrap();
 
         let record = noodles::fasta::Record::new(
             noodles::fasta::record::Definition::new(b"s0", Some(b"description".into())),
@@ -137,7 +138,7 @@ mod tests {
     #[test]
     fn test_push_fastq_record() {
         let capacity = 10;
-        let mut batch_builder = BatchBuilder::new_fastq(None, capacity).unwrap();
+        let mut batch_builder = BatchBuilder::new_fastq(Select::All, capacity).unwrap();
 
         let record = noodles::fastq::Record::new(
             noodles::fastq::record::Definition::new(b"s0", b""),
@@ -153,7 +154,7 @@ mod tests {
     #[test]
     fn test_finish_empty_batch() {
         let capacity = 10;
-        let mut batch_builder = BatchBuilder::new_fastq(None, capacity).unwrap();
+        let mut batch_builder = BatchBuilder::new_fastq(Select::All, capacity).unwrap();
 
         let record_batch = batch_builder.finish().unwrap();
         assert_eq!(record_batch.num_rows(), 0);

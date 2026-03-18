@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use arrow::datatypes::{Field as ArrowField, Schema, SchemaRef};
 
-use crate::OxbowError;
+use crate::{OxbowError, Select};
 use field::{Field, DEFAULT_FIELD_NAMES};
 
 pub struct BBIZoomRecord<'a> {
@@ -45,11 +45,12 @@ impl<'a> BBIZoomRecord<'a> {
 ///
 /// ```
 /// use oxbow::bbi::model::zoom::Model;
+/// use oxbow::Select;
 ///
-/// let model = Model::new(None).unwrap();
+/// let model = Model::new(Select::All).unwrap();
 /// assert_eq!(model.field_names().len(), 8);
 ///
-/// let model = Model::new(Some(vec!["chrom".into(), "start".into(), "end".into(), "sum".into()])).unwrap();
+/// let model = Model::new(Select::Some(vec!["chrom".into(), "start".into(), "end".into(), "sum".into()])).unwrap();
 /// assert_eq!(model.field_names().len(), 4);
 /// ```
 #[derive(Clone, Debug)]
@@ -62,9 +63,12 @@ impl Model {
     /// Create a new BBI zoom model.
     ///
     /// `fields`: field names. `None` → all 8 default fields.
-    pub fn new(fields: Option<Vec<String>>) -> crate::Result<Self> {
-        let field_names =
-            fields.unwrap_or_else(|| DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect());
+    pub fn new(fields: Select<String>) -> crate::Result<Self> {
+        let field_names = match fields {
+            Select::All => DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect(),
+            Select::Some(names) => names,
+            Select::Omit => Vec::new(),
+        };
 
         let mut parsed_fields = Vec::new();
         for name in &field_names {
@@ -130,7 +134,7 @@ impl Model {
             .map(|f| f.name().to_string())
             .collect();
 
-        Self::new(Some(projected))
+        Self::new(Select::Some(projected))
     }
 }
 
@@ -148,20 +152,25 @@ mod tests {
 
     #[test]
     fn test_defaults() {
-        let model = Model::new(None).unwrap();
+        let model = Model::new(Select::All).unwrap();
         assert_eq!(model.field_names().len(), 8);
         assert_eq!(model.schema().fields().len(), 8);
     }
 
     #[test]
     fn test_custom() {
-        let model = Model::new(Some(vec!["chrom".into(), "start".into(), "sum".into()])).unwrap();
+        let model = Model::new(Select::Some(vec![
+            "chrom".into(),
+            "start".into(),
+            "sum".into(),
+        ]))
+        .unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "start", "sum"]);
     }
 
     #[test]
     fn test_project() {
-        let model = Model::new(None).unwrap();
+        let model = Model::new(Select::All).unwrap();
         let projected = model
             .project(&["chrom".into(), "min".into(), "max".into()])
             .unwrap();
@@ -170,7 +179,7 @@ mod tests {
 
     #[test]
     fn test_invalid_field() {
-        let result = Model::new(Some(vec!["invalid".into()]));
+        let result = Model::new(Select::Some(vec!["invalid".into()]));
         assert!(result.is_err());
     }
 }

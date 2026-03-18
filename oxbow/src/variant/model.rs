@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use arrow::datatypes::{DataType, Field as ArrowField, Schema, SchemaRef};
 
-use crate::OxbowError;
+use crate::{OxbowError, Select};
 use field::{Field, DEFAULT_FIELD_NAMES};
 use genotype::GenotypeDef;
 use info::InfoDef;
@@ -27,9 +27,9 @@ use info::InfoDef;
 /// - `genotype_defs` + `samples` control per-sample/per-field genotype columns.
 ///   Both must be `Some` (and non-empty) to produce genotype columns.
 /// - `genotype_by` controls the layout: `Sample` (default) or `Field`.
-/// - `unnest_samples` controls whether genotype columns are top-level
-///   (`true`, default) or wrapped in a single `"samples"` struct column
-///   (`false`).
+/// - `samples_nested` controls whether genotype columns are wrapped in a
+///   single `"samples"` struct column (`true`) or are top-level (`false`,
+///   default).
 ///
 /// The model can produce an Arrow schema independently of any file header.
 /// Use `from_header()` to derive definitions from a VCF header.
@@ -38,34 +38,37 @@ pub struct Model {
     fields: Vec<Field>,
     info_defs: Option<Vec<InfoDef>>,
     genotype_defs: Option<Vec<GenotypeDef>>,
-    samples: Option<Vec<String>>,
     genotype_by: GenotypeBy,
-    unnest_samples: bool,
+    samples: Option<Vec<String>>,
+    samples_nested: bool,
     schema: SchemaRef,
 }
 
 impl Model {
     /// Create a new variant model from validated definitions.
     ///
-    /// - `fields`: standard VCF field names. `None` → all 7 standard fields.
+    /// - `fields`: standard VCF field selection. `All` → all 7 standard fields.
     /// - `info_defs`: validated INFO definitions. `None` → no info column.
     /// - `genotype_defs`: validated FORMAT definitions. `None` → no genotype columns.
     /// - `samples`: sample names. `None` → no genotype columns.
     /// - `genotype_by`: layout mode. Defaults to `GenotypeBy::Sample`.
-    /// - `unnest_samples`: if `true` (default), genotype columns are
-    ///   top-level. If `false`, they are wrapped in a single `"samples"`
-    ///   struct column.
+    /// - `samples_nested`: if `true`, genotype columns are wrapped in a
+    ///   single `"samples"` struct column. If `false` (default), they are
+    ///   top-level.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        fields: Option<Vec<String>>,
+        fields: Select<String>,
         info_defs: Option<Vec<InfoDef>>,
         genotype_defs: Option<Vec<GenotypeDef>>,
-        samples: Option<Vec<String>>,
         genotype_by: Option<GenotypeBy>,
-        unnest_samples: Option<bool>,
+        samples: Option<Vec<String>>,
+        samples_nested: Option<bool>,
     ) -> crate::Result<Self> {
-        let field_names =
-            fields.unwrap_or_else(|| DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect());
+        let field_names = match fields {
+            Select::All => DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect(),
+            Select::Some(names) => names,
+            Select::Omit => Vec::new(),
+        };
 
         let mut parsed_fields = Vec::new();
         for name in &field_names {
@@ -76,7 +79,7 @@ impl Model {
         }
 
         let genotype_by = genotype_by.unwrap_or(GenotypeBy::Sample);
-        let unnest_samples = unnest_samples.unwrap_or(true);
+        let samples_nested = samples_nested.unwrap_or(false);
 
         let schema = Self::build_schema(
             &parsed_fields,
@@ -84,93 +87,113 @@ impl Model {
             genotype_defs.as_deref(),
             samples.as_deref(),
             &genotype_by,
-            unnest_samples,
+            samples_nested,
         );
 
         Ok(Self {
             fields: parsed_fields,
             info_defs,
             genotype_defs,
-            samples,
             genotype_by,
-            unnest_samples,
+            samples,
+            samples_nested,
             schema,
         })
     }
 
     /// Create a model by deriving INFO and FORMAT definitions from a VCF header.
     ///
-    /// Explicit name lists filter which definitions are included.
-    /// `None` → include all definitions from the header.
+    /// - `fields`: standard VCF field selection. `All` → all 7 standard fields.
+    /// - `info_field_names`: `All` → all INFO from header. `Some(vec)` → filter
+    ///   by name. `Omit` → no info column.
+    /// - `genotype_field_names`: `All` → all FORMAT from header. `Some(vec)` →
+    ///   filter by name. `Omit` → no genotype columns.
+    /// - `samples`: `All` → all samples from header. `Some(vec)` → filter by
+    ///   name. `Omit` → no sample columns.
     #[allow(clippy::too_many_arguments)]
     pub fn from_header(
         header: &noodles::vcf::Header,
-        fields: Option<Vec<String>>,
-        info_field_names: Option<Vec<String>>,
-        genotype_field_names: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
+        fields: Select<String>,
+        info_field_names: Select<String>,
+        genotype_field_names: Select<String>,
         genotype_by: Option<GenotypeBy>,
-        unnest_samples: Option<bool>,
+        samples: Select<String>,
+        samples_nested: Option<bool>,
     ) -> crate::Result<Self> {
         // Derive info defs from header
-        let info_names: Vec<String> = info_field_names.unwrap_or_else(|| {
-            header
-                .infos()
-                .iter()
-                .map(|(name, _)| name.to_string())
-                .collect()
-        });
-        let info_defs: Vec<InfoDef> = info_names
-            .into_iter()
-            .filter_map(|name| {
-                let info = header.infos().get(&name)?;
-                Some(InfoDef::new(name, &info.number(), &info.ty()))
-            })
-            .collect();
+        // Omit → no info column. All/Some → info column present (even if empty struct).
+        let info_defs = match info_field_names {
+            Select::Omit => None,
+            sel => {
+                let names: Vec<String> = match sel {
+                    Select::All => header
+                        .infos()
+                        .iter()
+                        .map(|(name, _)| name.to_string())
+                        .collect(),
+                    Select::Some(names) => names,
+                    Select::Omit => unreachable!(),
+                };
+                let defs: Vec<InfoDef> = names
+                    .into_iter()
+                    .filter_map(|name| {
+                        let info = header.infos().get(&name)?;
+                        Some(InfoDef::new(name, &info.number(), &info.ty()))
+                    })
+                    .collect();
+                Some(defs)
+            }
+        };
 
         // Derive genotype defs from header
-        let gt_names: Vec<String> = genotype_field_names.unwrap_or_else(|| {
-            header
-                .formats()
-                .iter()
-                .map(|(name, _)| name.to_string())
-                .collect()
-        });
-        let genotype_defs: Vec<GenotypeDef> = gt_names
-            .into_iter()
-            .filter_map(|name| {
-                let format = header.formats().get(&name)?;
-                Some(GenotypeDef::new(name, &format.number(), &format.ty()))
-            })
-            .collect();
+        // Omit → deactivate genotype output. All/Some → genotype active (even if empty).
+        let genotype_defs = match genotype_field_names {
+            Select::Omit => None,
+            sel => {
+                let names: Vec<String> = match sel {
+                    Select::All => header
+                        .formats()
+                        .iter()
+                        .map(|(name, _)| name.to_string())
+                        .collect(),
+                    Select::Some(names) => names,
+                    Select::Omit => unreachable!(),
+                };
+                let defs: Vec<GenotypeDef> = names
+                    .into_iter()
+                    .filter_map(|name| {
+                        let format = header.formats().get(&name)?;
+                        Some(GenotypeDef::new(name, &format.number(), &format.ty()))
+                    })
+                    .collect();
+                Some(defs)
+            }
+        };
 
         // Derive sample names from header
-        let samples = samples.unwrap_or_else(|| header.sample_names().iter().cloned().collect());
-
-        // Wrap in Option: empty → None for info/genotype, Some for samples
-        let info_defs = if info_defs.is_empty() {
-            None
-        } else {
-            Some(info_defs)
-        };
-        let genotype_defs = if genotype_defs.is_empty() {
-            None
-        } else {
-            Some(genotype_defs)
-        };
-        let samples = if samples.is_empty() {
-            None
-        } else {
-            Some(samples)
+        // Omit → no sample output. All (with samples in header) / Some → sample output active.
+        // Select::All with no samples in header → None (nothing to include).
+        // Select::Some([]) → Some(vec![]) (column present, empty).
+        let samples = match samples {
+            Select::Omit => None,
+            Select::All => {
+                let s: Vec<String> = header.sample_names().iter().cloned().collect();
+                if s.is_empty() {
+                    None
+                } else {
+                    Some(s)
+                }
+            }
+            Select::Some(names) => Some(names),
         };
 
         Self::new(
             fields,
             info_defs,
             genotype_defs,
-            samples,
             genotype_by,
-            unnest_samples,
+            samples,
+            samples_nested,
         )
     }
 
@@ -180,7 +203,7 @@ impl Model {
         genotype_defs: Option<&[GenotypeDef]>,
         samples: Option<&[String]>,
         genotype_by: &GenotypeBy,
-        unnest_samples: bool,
+        samples_nested: bool,
     ) -> SchemaRef {
         let mut arrow_fields: Vec<ArrowField> =
             fields.iter().map(|f| f.get_arrow_field()).collect();
@@ -195,10 +218,9 @@ impl Model {
             ));
         }
 
-        // Genotype columns (require both samples and genotype_defs)
-        let samples = samples.unwrap_or(&[]);
-        let gt_defs = genotype_defs.unwrap_or(&[]);
-        if !samples.is_empty() && !gt_defs.is_empty() {
+        // Genotype columns: both samples and genotype_defs must be Some to activate.
+        // Some([]) produces empty struct content; None deactivates entirely.
+        if let (Some(samples), Some(gt_defs)) = (samples, genotype_defs) {
             let genotype_columns: Vec<ArrowField> = match genotype_by {
                 GenotypeBy::Sample => samples
                     .iter()
@@ -230,7 +252,7 @@ impl Model {
                     .collect(),
             };
 
-            if unnest_samples {
+            if !samples_nested {
                 arrow_fields.extend(genotype_columns);
             } else {
                 arrow_fields.push(ArrowField::new(
@@ -279,10 +301,10 @@ impl Model {
         &self.genotype_by
     }
 
-    /// Whether genotype columns are unnested (top-level) or wrapped in
-    /// a single `"samples"` struct column.
-    pub fn unnest_samples(&self) -> bool {
-        self.unnest_samples
+    /// Whether genotype columns are nested (wrapped in a `"samples"` struct
+    /// column) or top-level.
+    pub fn samples_nested(&self) -> bool {
+        self.samples_nested
     }
 
     /// The Arrow schema for this model.
@@ -333,7 +355,7 @@ impl Model {
         };
 
         // Genotype columns
-        let (genotype_defs, samples) = if !self.unnest_samples {
+        let (genotype_defs, samples) = if self.samples_nested {
             // Nested mode: "samples" is an atomic top-level column
             if columns.iter().any(|c| c.eq_ignore_ascii_case("samples")) {
                 (self.genotype_defs.clone(), self.samples.clone())
@@ -373,12 +395,12 @@ impl Model {
         };
 
         Self::new(
-            Some(projected_fields),
+            Select::Some(projected_fields),
             info_defs,
             genotype_defs,
-            samples,
             Some(self.genotype_by.clone()),
-            Some(self.unnest_samples),
+            samples,
+            Some(self.samples_nested),
         )
     }
 }
@@ -390,7 +412,7 @@ impl PartialEq for Model {
             && self.genotype_defs == other.genotype_defs
             && self.samples == other.samples
             && self.genotype_by == other.genotype_by
-            && self.unnest_samples == other.unnest_samples
+            && self.samples_nested == other.samples_nested
     }
 }
 
@@ -414,7 +436,7 @@ mod tests {
 
     #[test]
     fn test_default_model() {
-        let model = Model::new(None, None, None, None, None, None).unwrap();
+        let model = Model::new(Select::All, None, None, None, None, None).unwrap();
         assert_eq!(model.field_names().len(), 7);
         assert!(!model.has_info());
         assert!(model.genotype_defs().is_none());
@@ -425,7 +447,16 @@ mod tests {
     #[test]
     fn test_from_header() {
         let header = create_test_header();
-        let model = Model::from_header(&header, None, None, None, None, None, None).unwrap();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::All,
+            Select::All,
+            None,
+            Select::All,
+            None,
+        )
+        .unwrap();
         assert_eq!(model.field_names().len(), 7);
         assert!(model.has_info());
         assert_eq!(model.info_defs().unwrap().len(), 1);
@@ -440,11 +471,11 @@ mod tests {
         let header = create_test_header();
         let model = Model::from_header(
             &header,
-            Some(vec!["chrom".into(), "pos".into()]),
-            Some(vec!["DP".into()]),
-            Some(vec!["GT".into()]),
-            Some(vec!["sample1".into()]),
+            Select::Some(vec!["chrom".into(), "pos".into()]),
+            Select::Some(vec!["DP".into()]),
+            Select::Some(vec!["GT".into()]),
             None,
+            Select::Some(vec!["sample1".into()]),
             None,
         )
         .unwrap();
@@ -457,9 +488,29 @@ mod tests {
     }
 
     #[test]
+    fn test_from_header_omit() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Omit,
+            None,
+            Select::Omit,
+            None,
+        )
+        .unwrap();
+        assert_eq!(model.field_names().len(), 7);
+        assert!(!model.has_info());
+        assert!(model.genotype_defs().is_none());
+        assert!(model.samples().is_none());
+        assert_eq!(model.schema().fields().len(), 7);
+    }
+
+    #[test]
     fn test_no_info_no_genotype() {
         let model = Model::new(
-            Some(vec!["chrom".into(), "pos".into()]),
+            Select::Some(vec!["chrom".into(), "pos".into()]),
             None,
             None,
             None,
@@ -475,7 +526,16 @@ mod tests {
     #[test]
     fn test_project_drops_info() {
         let header = create_test_header();
-        let model = Model::from_header(&header, None, None, None, None, None, None).unwrap();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::All,
+            Select::All,
+            None,
+            Select::All,
+            None,
+        )
+        .unwrap();
         let projected = model.project(&["chrom".into(), "pos".into()]).unwrap();
         assert_eq!(projected.field_names(), vec!["chrom", "pos"]);
         assert!(!projected.has_info());
@@ -485,7 +545,16 @@ mod tests {
     #[test]
     fn test_project_keeps_info() {
         let header = create_test_header();
-        let model = Model::from_header(&header, None, None, None, None, None, None).unwrap();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::All,
+            Select::All,
+            None,
+            Select::All,
+            None,
+        )
+        .unwrap();
         let projected = model.project(&["chrom".into(), "info".into()]).unwrap();
         assert_eq!(projected.field_names(), vec!["chrom"]);
         assert!(projected.has_info());
@@ -494,7 +563,16 @@ mod tests {
     #[test]
     fn test_project_samples() {
         let header = create_test_header();
-        let model = Model::from_header(&header, None, None, None, None, None, None).unwrap();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::All,
+            Select::All,
+            None,
+            Select::All,
+            None,
+        )
+        .unwrap();
         let projected = model.project(&["chrom".into(), "sample1".into()]).unwrap();
         assert_eq!(projected.samples().unwrap(), &["sample1"]);
         assert!(projected.genotype_defs().is_some());
@@ -502,15 +580,31 @@ mod tests {
 
     #[test]
     fn test_invalid_field() {
-        let result = Model::new(Some(vec!["invalid".into()]), None, None, None, None, None);
+        let result = Model::new(
+            Select::Some(vec!["invalid".into()]),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
         assert!(result.is_err());
     }
 
     #[test]
     fn test_nested_samples() {
         let header = create_test_header();
-        let model = Model::from_header(&header, None, None, None, None, None, Some(false)).unwrap();
-        assert!(!model.unnest_samples());
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::All,
+            Select::All,
+            None,
+            Select::All,
+            Some(true),
+        )
+        .unwrap();
+        assert!(model.samples_nested());
         // 7 fields + info + 1 "samples" struct
         assert_eq!(model.schema().fields().len(), 9);
         let samples_field = model.schema().field_with_name("samples").unwrap();
@@ -527,7 +621,16 @@ mod tests {
     #[test]
     fn test_nested_samples_projection() {
         let header = create_test_header();
-        let model = Model::from_header(&header, None, None, None, None, None, Some(false)).unwrap();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::All,
+            Select::All,
+            None,
+            Select::All,
+            Some(true),
+        )
+        .unwrap();
         // "samples" is an atomic column in nested mode
         let projected = model.project(&["chrom".into(), "samples".into()]).unwrap();
         assert_eq!(projected.field_names(), vec!["chrom"]);
@@ -539,7 +642,16 @@ mod tests {
     #[test]
     fn test_nested_samples_excluded() {
         let header = create_test_header();
-        let model = Model::from_header(&header, None, None, None, None, None, Some(false)).unwrap();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::All,
+            Select::All,
+            None,
+            Select::All,
+            Some(true),
+        )
+        .unwrap();
         let projected = model.project(&["chrom".into(), "info".into()]).unwrap();
         assert!(projected.samples().is_none());
         assert!(projected.genotype_defs().is_none());
@@ -547,12 +659,180 @@ mod tests {
     }
 
     #[test]
-    fn test_unnest_samples_default() {
+    fn test_samples_nested_default() {
         let header = create_test_header();
-        // Default (unnest_samples = true) produces top-level sample columns
-        let model = Model::from_header(&header, None, None, None, None, None, None).unwrap();
-        assert!(model.unnest_samples());
+        // Default (samples_nested = false) produces top-level sample columns
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::All,
+            Select::All,
+            None,
+            Select::All,
+            None,
+        )
+        .unwrap();
+        assert!(!model.samples_nested());
         // 7 fields + info + 2 sample columns
         assert_eq!(model.schema().fields().len(), 10);
+    }
+
+    // --- Empty-select (Some([])) edge cases ---
+
+    #[test]
+    fn test_info_empty_select_produces_empty_struct_column() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Some(vec![]), // info present, empty
+            Select::Omit,
+            None,
+            Select::Omit,
+            None,
+        )
+        .unwrap();
+        assert!(model.has_info());
+        assert_eq!(model.info_defs().unwrap().len(), 0);
+        // 7 fields + empty info struct
+        assert_eq!(model.schema().fields().len(), 8);
+        let info_field = model.schema().field_with_name("info").unwrap();
+        match info_field.data_type() {
+            DataType::Struct(fields) => assert!(fields.is_empty()),
+            other => panic!("Expected empty Struct, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_info_omit_produces_no_column() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Omit,
+            None,
+            Select::Omit,
+            None,
+        )
+        .unwrap();
+        assert!(!model.has_info());
+        assert_eq!(model.schema().fields().len(), 7);
+    }
+
+    #[test]
+    fn test_genotype_empty_select_by_sample_produces_empty_struct_columns() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Some(vec![]), // genotype active, no fields
+            Some(GenotypeBy::Sample),
+            Select::Some(vec!["sample1".into()]),
+            None,
+        )
+        .unwrap();
+        assert!(model.genotype_defs().is_some());
+        assert_eq!(model.genotype_defs().unwrap().len(), 0);
+        // 7 fields + 1 sample column (empty struct)
+        assert_eq!(model.schema().fields().len(), 8);
+        let sample_field = model.schema().field_with_name("sample1").unwrap();
+        match sample_field.data_type() {
+            DataType::Struct(fields) => assert!(fields.is_empty()),
+            other => panic!("Expected empty Struct, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_genotype_empty_select_by_field_produces_no_columns() {
+        // by_field: columns are keyed by FORMAT field name; no fields → no columns
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Some(vec![]), // genotype active, no fields
+            Some(GenotypeBy::Field),
+            Select::Some(vec!["sample1".into()]),
+            None,
+        )
+        .unwrap();
+        assert_eq!(model.schema().fields().len(), 7);
+    }
+
+    #[test]
+    fn test_genotype_omit_deactivates_output_despite_samples() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Omit, // genotype deactivated
+            None,
+            Select::Some(vec!["sample1".into()]),
+            Some(true),
+        )
+        .unwrap();
+        assert!(model.genotype_defs().is_none());
+        assert_eq!(model.schema().fields().len(), 7);
+    }
+
+    #[test]
+    fn test_samples_empty_select_nested_produces_empty_struct_column() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Some(vec!["GT".into()]),
+            None,
+            Select::Some(vec![]), // samples active, none selected
+            Some(true),
+        )
+        .unwrap();
+        assert!(model.samples().is_some());
+        assert_eq!(model.samples().unwrap().len(), 0);
+        // 7 fields + "samples" struct (empty: no samples → no sub-fields)
+        assert_eq!(model.schema().fields().len(), 8);
+        let samples_field = model.schema().field_with_name("samples").unwrap();
+        match samples_field.data_type() {
+            DataType::Struct(fields) => assert!(fields.is_empty()),
+            other => panic!("Expected empty Struct, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_samples_empty_select_unnested_produces_no_columns() {
+        // unnested: columns are keyed by sample name; no samples → no columns
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Some(vec!["GT".into()]),
+            None,
+            Select::Some(vec![]), // samples active, none selected
+            Some(false),
+        )
+        .unwrap();
+        assert_eq!(model.schema().fields().len(), 7);
+    }
+
+    #[test]
+    fn test_samples_omit_deactivates_nested_column() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Some(vec!["GT".into()]),
+            None,
+            Select::Omit, // samples deactivated
+            Some(true),
+        )
+        .unwrap();
+        assert!(model.samples().is_none());
+        assert_eq!(model.schema().fields().len(), 7);
     }
 }

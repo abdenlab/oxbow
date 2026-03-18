@@ -10,7 +10,9 @@ use pyo3_arrow::PySchema;
 use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
-use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
+use crate::util::{
+    pyobject_to_bufreader, resolve_fields, resolve_index, PyVirtualPosition, Reader,
+};
 use oxbow::bed::{BedScanner, BedSchema, FieldDef, FieldType};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
@@ -106,11 +108,11 @@ impl PyBedScanner {
         src: Py<PyAny>,
         bed_schema: Py<PyAny>,
         compressed: bool,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let parsed_schema = resolve_bed_schema(py, &bed_schema)?;
-        let scanner = BedScanner::new(parsed_schema, fields).map_err(to_py)?;
+        let scanner = BedScanner::new(parsed_schema, resolve_fields(fields, py)?).map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -392,12 +394,12 @@ pub fn read_bed(
     bed_schema: Py<PyAny>,
     region: Option<String>,
     index: Option<Py<PyAny>>,
-    fields: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let bed_schema = resolve_bed_schema(py, &bed_schema)?;
-    let scanner = BedScanner::new(bed_schema, fields).map_err(to_py)?;
+    let scanner = BedScanner::new(bed_schema, resolve_fields(fields, py)?).map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
         let region = region

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin>=1.0,<2.0"]
+requires = ["maturin>=1.12,<2.0"]
 build-backend = "maturin"
 
 [project]
@@ -20,7 +20,7 @@ classifiers = [
 ]
 readme = "README.md"
 dependencies = [
-    "arro3-core>=0.4.6",
+    "arro3-core>=0.5.1",
     "polars>=1.36.0",
     "pandas>=2.2.3",
     "pyarrow>=19.0.1",

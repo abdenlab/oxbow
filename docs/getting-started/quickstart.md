@@ -103,7 +103,6 @@ import polars as pl
 ox.from_bam(
     "data/sample.bam", 
     fields=["rname", "pos", "end", "mapq"],
-    tag_defs=[],
 ).regions(
     "chr1"
 ).pl()
@@ -127,7 +126,7 @@ df = (
 df
 ```
 
-## Nested and complex fields
+## Nested and composite fields
 
 Oxbow can handle the complex field structures of genomics file formats because they can all be mapped to Arrow constructs like lists, arrays, and structs.
 
@@ -141,7 +140,7 @@ The htslib alignment formats, SAM and BAM, have optional fields called `tags` th
 df = (
     ox.from_bam(
         "data/sample.bam", 
-        fields=[],
+        fields=None,
         tag_defs=[('MD', 'Z'), ('NM', 'C')]
     )
     .regions("chr1")
@@ -153,18 +152,20 @@ df = (
 df
 ```
 
-By default, oxbow will scan an initial number of rows to discover tag definitions (determined by `tag_scan_rows`). Set `tag_defs=[]` to ignore tags entirely.
+By calling the `with_tags()` method, oxbow will scan an initial number of rows to discover tag definitions to add to the schema (determined by `scan_rows`).
 
 ```{code-cell} ipython3
 df = (
-    ox.from_bam(
-        "data/sample.bam", 
-        tag_defs=[],
-    )
+    ox.from_bam("data/sample.bam")
+    .with_tags()
     .regions("chr1")
     .pl()
 )
 df
+```
+
+```{code-cell} ipython3
+df['tags'].struct.unnest().head()
 ```
 
 ### GTF/GFF attributes
@@ -174,6 +175,7 @@ GTF/GFF attributes are analogous to SAM tags. For GTF, the type is always `"Stri
 ```{code-cell} ipython3
 df = (
     ox.from_gff("data/sample.gff")
+    .with_attributes()
     .pl()
 )
 df.head()
@@ -183,18 +185,22 @@ df.head()
 df['attributes'].struct.unnest().head()
 ```
 
+:::{important}
+As of oxbow v0.7, alignment file tag definitions and annotation file attribute definitions are no longer auto-discovered by default---this behavior is **opt-in**. Use the {py:meth}`~oxbow.core.BamFile.with_tags` or {py:meth}`~oxbow.core.GffFile.with_attributes` methods, respectively, to discover or specify tag/attribute definitions.
+:::
+
+
 ### VCF/BCF info fields
 
 For the htslib variant call formats, VCF and BCF, the subfields of the `INFO` field are defined in the VCF header, so they do not need to be discovered by sniffing rows and you do not need to specify types.
 
-By default, all info fields are parsed. You can project any subset or ignore them entirely using the `info_fields` argument.
+By default, all info fields are parsed (`info_fields="*"`). You can project any subset or ignore them entirely by setting the `info_fields` argument to `None`.
 
 ```{code-cell} ipython3
 (
     ox.from_vcf(
         "data/sample.vcf.gz",
-        info_fields=[],
-        samples=[],
+        info_fields=None,
     )
     .pl()
 ).head()
@@ -205,7 +211,6 @@ df = (
     ox.from_vcf(
         "data/sample.vcf.gz",
         info_fields=["TYPE", "snpeff.Effect", "snpeff.Gene_Name", "snpeff.Transcript_BioType"],
-        samples=[],
     )
     .pl()
 )
@@ -220,40 +225,70 @@ df.unnest("info").head()
 
 For the htslib variant call formats, each variant call record is associated with an arbitrary number of so-called `FORMAT` fields that provide genotype-related information for each sample. Like `INFO`, these fields are defined in the header.
 
-Using the `samples` and `genotype_fields` arguments, you can project any subset of samples as separate struct columns and project any subset of their associated genotype fields.
+Using the `samples` and `genotype_fields` arguments, you can project any subset of samples as separate struct columns and project any subset of their associated genotype fields. Use `samples="*"` to select all samples or a list to select a subset.
 
 ```{code-cell} ipython3
 df = ox.from_vcf(
     "data/sample.vcf.gz",
-    info_fields=[],
+    info_fields=None,
     samples=['NA12891', 'NA12892'],
 ).pl()
 df.head()
 ```
 
-Each sample column is essentially a sub-dataframe of genotype fields.
+Each sample column is essentially a sub-dataframe of that sample's genotype fields.
 
 ```{code-cell} ipython3
 df['NA12892'].struct.unnest().head()
 ```
 
-You can also customize _how_ sample genotype data are nested by using the `genotype_by` argument. By default (`genotype_by="sample"`), the columns are grouped first by sample name, then by genotype field name. By setting `genotype_by="field"`, you can swap the nesting order to group columns first by genotype field name, then by sample name.
+:::{important}
+As of oxbow v0.7, variant file sample columns are no longer projected by default---they are **opt-in**. We recommend using the {py:meth}`~oxbow.core.VcfFile.with_samples` API, below, to do this.
+:::
+
+The recommended approach to project sample genotype data is to use the `with_samples()` method. Declaring samples this way further nests all sample-related data in a single "samples" struct column for convenience.
 
 ```{code-cell} ipython3
-df = ox.from_vcf(
-    "data/sample.vcf.gz",
-    info_fields=[],
-    samples=['NA12891', 'NA12892'],
-    genotype_fields=['AD', 'DP', 'GQ', 'PL', 'TP'],
-    genotype_by="field",
+df = (
+    ox.from_vcf(
+        "data/sample.vcf.gz",
+        info_fields=None,
+    )
+    .with_samples()
+    .pl()
+)
+df.head()
+```
+
+```{code-cell} ipython3
+df.unnest("samples").head()
+```
+
+You can also customize _how_ sample genotype data are nested by using the `group_by` argument to `with_samples()`. By default (`group_by="sample"`), the columns are grouped first by sample name, then by genotype field name. By setting `group_by="field"`, you can swap the nesting order to group columns first by genotype field name, then by sample name.
+
+```{code-cell} ipython3
+df = (
+    ox.from_vcf(
+        "data/sample.vcf.gz",
+        info_fields=None,
+    )
+    .with_samples(
+        ['NA12891', 'NA12892'],
+        genotype_fields=['AD', 'DP', 'GQ', 'PL', 'TP'],
+        group_by="field",
+    )    
 ).pl()
 df.head()
+```
+
+```{code-cell} ipython3
+df.unnest("samples").head()
 ```
 
 In this case, each genotype field column is a data series containing the values of that field associated with each of the samples.
 
 ```{code-cell} ipython3
-df['DP'].struct.unnest().head()
+df.unnest("samples")['DP'].struct.unnest().head()
 ```
 
 ### BED schemas
@@ -274,14 +309,49 @@ ox.from_bed("data/sample.bed", bed_schema="bed9").pl().head()
 
 ### BigBed AutoSql
 
-Oxbow can also parse BigBed records that contain AutoSql definitions of the records.
+BigBed records natively store genomic coordinate fields and a flat string containing the "rest" of the data (equivalent to a `bed3+` schema).
 
 ```{code-cell} ipython3
 ox.from_bigbed("data/autosql-sample.bb").pl().head()
 ```
 
+If a BigBed file contains [AutoSql](https://genomewiki.ucsc.edu/index.php/AutoSql) definitions of its record fields and types, Oxbow can parse them.
+
 ```{code-cell} ipython3
 ox.from_bigbed("data/autosql-sample.bb", schema="autosql").pl().head()
+```
+
+### Custom BED schemas
+
+You can impose a custom parsing interpretation---field names and types (beyond the first three fields)---on a BED or BigBed file as long as the text values in those fields are compatible with the types you impose.
+
+Pass in a BED schema as a tuple of `(str, dict[str, str])`, representing 3-12 standard BED fields (`"bed{n}"`) + custom extended fields encoded as a dictionary of field name to type name. Types can be declared using C-style AutoSql names (`string`, `short`, `float`, `double`, etc.) or Rust integer shorthands (`i8`, `u8`, `i32`, `f32`, `f64`, etc.). Fixed and variable-length array types can be declared using `int[]`, `int[10]` (AutoSql style) or `[i32]`, `[i32; 10]` (Rust shorthand style).
+
+```{code-cell} ipython3
+(
+    ox.from_bigbed(
+        "data/autosql-sample.bb", 
+        schema=("bed4", {"score": "double", "strand": "string"})
+    )
+    .pl()
+    .head()
+)
+```
+
+```{code-cell} ipython3
+narrowpeak = (
+    "bed6",
+    {"fold_change": "f64", "-log10p": "f64", "-log10q": "f64", "relSummit": "i64"}
+)
+(
+    ox.from_bed(
+        "data/ENCFF758CQW.100.bed.gz", 
+        bed_schema=narrowpeak,
+        compression="gzip"
+    )
+    .pl()
+    .head()
+)
 ```
 
 ## Zoom levels

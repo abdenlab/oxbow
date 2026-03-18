@@ -27,6 +27,7 @@
       ~GffFile.to_ipc
       ~GffFile.to_pandas
       ~GffFile.to_polars
+      ~GffFile.with_attributes
    
    
 

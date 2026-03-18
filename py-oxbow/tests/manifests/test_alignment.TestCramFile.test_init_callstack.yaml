@@ -1,33 +1,21 @@
 CramFile("data/does-not-exist.cram"): |-
     ->  oxbow._core.alignment.CramFile.__init__("data/does-not-exist.cram")
-        ->  oxbow._core.alignment.AlignmentFile.__init__("data/does-not-exist.cram", compressed=False, fields=None, tag_defs=None, tag_scan_rows=1024, regions=None, index=None, batch_size=131072)
+        ->  oxbow._core.alignment.AlignmentFile.__init__("data/does-not-exist.cram", compressed=False, fields="*", tag_defs=None, regions=None, index=None, batch_size=131072)
             ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.cram", None, 131072)
             <-  None
-            ->  oxbow._core.base.DataSource._source
-            <-  'data/does-not-exist.cram'
-            ->  oxbow._core.alignment.CramFile._tag_discovery_kwargs()
-            <-  {'compressed': 'False', 'reference': 'None', 'reference_index': 'None'}
-        !!  FileNotFoundError("No such file or directory (os error 2)")
-    !!  FileNotFoundError("No such file or directory (os error 2)")
+        <-  None
+    <-  None
 CramFile("data/malformed.cram"): |-
     ->  oxbow._core.alignment.CramFile.__init__("data/malformed.cram")
-        ->  oxbow._core.alignment.AlignmentFile.__init__("data/malformed.cram", compressed=False, fields=None, tag_defs=None, tag_scan_rows=1024, regions=None, index=None, batch_size=131072)
+        ->  oxbow._core.alignment.AlignmentFile.__init__("data/malformed.cram", compressed=False, fields="*", tag_defs=None, regions=None, index=None, batch_size=131072)
             ->  oxbow._core.base.DataSource.__init__("data/malformed.cram", None, 131072)
             <-  None
-            ->  oxbow._core.base.DataSource._source
-            <-  'data/malformed.cram'
-            ->  oxbow._core.alignment.CramFile._tag_discovery_kwargs()
-            <-  {'compressed': 'False', 'reference': 'None', 'reference_index': 'None'}
         <-  None
     <-  None
 CramFile("data/sample.cram"): |-
     ->  oxbow._core.alignment.CramFile.__init__("data/sample.cram")
-        ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.cram", compressed=False, fields=None, tag_defs=None, tag_scan_rows=1024, regions=None, index=None, batch_size=131072)
+        ->  oxbow._core.alignment.AlignmentFile.__init__("data/sample.cram", compressed=False, fields="*", tag_defs=None, regions=None, index=None, batch_size=131072)
             ->  oxbow._core.base.DataSource.__init__("data/sample.cram", None, 131072)
             <-  None
-            ->  oxbow._core.base.DataSource._source
-            <-  'data/sample.cram'
-            ->  oxbow._core.alignment.CramFile._tag_discovery_kwargs()
-            <-  {'compressed': 'False', 'reference': 'None', 'reference_index': 'None'}
         <-  None
     <-  None

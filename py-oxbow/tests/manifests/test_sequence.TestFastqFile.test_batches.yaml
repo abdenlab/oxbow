@@ -43,7 +43,7 @@ fields=('name', 'sequence'):
         - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
         - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
 fields=('nonexistent-field',): 'Invalid field name: nonexistent-field'
-fields=None:
+fields=*:
     batch-00:
         description:
         - ''
@@ -129,3 +129,5 @@ fields=None:
         - CTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTA
         - GATCGATCGATCGATCGATCGATCGATCGATCGATCGAT
         - TACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+fields=None:
+    batch-00: {}

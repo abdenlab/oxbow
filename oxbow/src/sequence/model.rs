@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use arrow::datatypes::{Field as ArrowField, Schema, SchemaRef};
 
-use crate::OxbowError;
+use crate::{OxbowError, Select};
 use field::{Field, FASTA_DEFAULT_FIELD_NAMES, FASTQ_DEFAULT_FIELD_NAMES};
 
 /// A data model for sequence records (FASTA/FASTQ).
@@ -16,23 +16,25 @@ use field::{Field, FASTA_DEFAULT_FIELD_NAMES, FASTQ_DEFAULT_FIELD_NAMES};
 /// which fields to include.
 ///
 /// - `fields` selects which fields become Arrow columns.
-///   `None` → format-specific defaults (3 for FASTA, 4 for FASTQ).
+///   `All` → format-specific defaults (3 for FASTA, 4 for FASTQ).
+///   `Omit` → no fields. `Some(vec)` → specific fields.
 ///
 /// # Examples
 ///
 /// ```
 /// use oxbow::sequence::model::Model;
+/// use oxbow::Select;
 ///
 /// // FASTA defaults: name, description, sequence.
-/// let model = Model::new_fasta(None).unwrap();
+/// let model = Model::new_fasta(Select::All).unwrap();
 /// assert_eq!(model.field_names().len(), 3);
 ///
 /// // FASTQ defaults: name, description, sequence, quality.
-/// let model = Model::new_fastq(None).unwrap();
+/// let model = Model::new_fastq(Select::All).unwrap();
 /// assert_eq!(model.field_names().len(), 4);
 ///
 /// // Custom field selection.
-/// let model = Model::new_fastq(Some(vec!["name".into(), "sequence".into()])).unwrap();
+/// let model = Model::new_fastq(Select::Some(vec!["name".into(), "sequence".into()])).unwrap();
 /// assert_eq!(model.field_names(), vec!["name", "sequence"]);
 /// ```
 #[derive(Clone, Debug)]
@@ -44,24 +46,40 @@ pub struct Model {
 impl Model {
     /// Create a new FASTA model.
     ///
-    /// `fields`: field names. `None` → `["name", "description", "sequence"]`.
-    pub fn new_fasta(fields: Option<Vec<String>>) -> crate::Result<Self> {
-        let defaults = FASTA_DEFAULT_FIELD_NAMES
-            .iter()
-            .map(|&s| s.to_string())
-            .collect();
-        Self::new(fields.unwrap_or(defaults))
+    /// `fields`: `All` → `["name", "description", "sequence"]`. `Omit` → no
+    /// fields. `Some(vec)` → specific fields.
+    pub fn new_fasta(fields: Select<String>) -> crate::Result<Self> {
+        let defaults = || {
+            FASTA_DEFAULT_FIELD_NAMES
+                .iter()
+                .map(|&s| s.to_string())
+                .collect()
+        };
+        let field_names = match fields {
+            Select::All => defaults(),
+            Select::Some(names) => names,
+            Select::Omit => Vec::new(),
+        };
+        Self::new(field_names)
     }
 
     /// Create a new FASTQ model.
     ///
-    /// `fields`: field names. `None` → `["name", "description", "sequence", "quality"]`.
-    pub fn new_fastq(fields: Option<Vec<String>>) -> crate::Result<Self> {
-        let defaults = FASTQ_DEFAULT_FIELD_NAMES
-            .iter()
-            .map(|&s| s.to_string())
-            .collect();
-        Self::new(fields.unwrap_or(defaults))
+    /// `fields`: `All` → `["name", "description", "sequence", "quality"]`.
+    /// `Omit` → no fields. `Some(vec)` → specific fields.
+    pub fn new_fastq(fields: Select<String>) -> crate::Result<Self> {
+        let defaults = || {
+            FASTQ_DEFAULT_FIELD_NAMES
+                .iter()
+                .map(|&s| s.to_string())
+                .collect()
+        };
+        let field_names = match fields {
+            Select::All => defaults(),
+            Select::Some(names) => names,
+            Select::Omit => Vec::new(),
+        };
+        Self::new(field_names)
     }
 
     fn new(field_names: Vec<String>) -> crate::Result<Self> {
@@ -149,14 +167,14 @@ mod tests {
 
     #[test]
     fn test_fasta_defaults() {
-        let model = Model::new_fasta(None).unwrap();
+        let model = Model::new_fasta(Select::All).unwrap();
         assert_eq!(model.field_names(), vec!["name", "description", "sequence"]);
         assert_eq!(model.schema().fields().len(), 3);
     }
 
     #[test]
     fn test_fastq_defaults() {
-        let model = Model::new_fastq(None).unwrap();
+        let model = Model::new_fastq(Select::All).unwrap();
         assert_eq!(
             model.field_names(),
             vec!["name", "description", "sequence", "quality"]
@@ -166,27 +184,27 @@ mod tests {
 
     #[test]
     fn test_custom_fields() {
-        let model = Model::new_fastq(Some(vec!["name".into(), "sequence".into()])).unwrap();
+        let model = Model::new_fastq(Select::Some(vec!["name".into(), "sequence".into()])).unwrap();
         assert_eq!(model.field_names(), vec!["name", "sequence"]);
         assert_eq!(model.schema().fields().len(), 2);
     }
 
     #[test]
     fn test_invalid_field() {
-        let result = Model::new_fasta(Some(vec!["invalid".into()]));
+        let result = Model::new_fasta(Select::Some(vec!["invalid".into()]));
         assert!(result.is_err());
     }
 
     #[test]
     fn test_project() {
-        let model = Model::new_fastq(None).unwrap();
+        let model = Model::new_fastq(Select::All).unwrap();
         let projected = model.project(&["name".into(), "quality".into()]).unwrap();
         assert_eq!(projected.field_names(), vec!["name", "quality"]);
     }
 
     #[test]
     fn test_project_unknown() {
-        let model = Model::new_fasta(None).unwrap();
+        let model = Model::new_fasta(Select::All).unwrap();
         let result = model.project(&["nonexistent".into()]);
         assert!(result.is_err());
     }

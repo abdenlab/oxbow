@@ -610,6 +610,7 @@ impl GenotypeBuilder {
 pub struct SampleStructBuilder {
     genotype_defs: Vec<GenotypeDef>,
     builders: IndexMap<GenotypeDef, GenotypeBuilder>,
+    row_count: usize,
 }
 
 impl SampleStructBuilder {
@@ -627,6 +628,7 @@ impl SampleStructBuilder {
         Self {
             genotype_defs,
             builders,
+            row_count: 0,
         }
     }
 
@@ -654,10 +656,16 @@ impl SampleStructBuilder {
                 ))
             })?;
         }
+        self.row_count += 1;
         Ok(())
     }
 
     pub fn finish(&mut self) -> StructArray {
+        let row_count = self.row_count;
+        self.row_count = 0;
+        if self.builders.is_empty() {
+            return StructArray::new_empty_fields(row_count, None);
+        }
         let fields = self.get_arrow_fields().into_iter().map(Arc::new);
         let arrays: Vec<ArrayRef> = self
             .genotype_defs
@@ -678,6 +686,7 @@ impl SampleStructBuilder {
 pub struct SeriesStructBuilder {
     sample_names: Vec<String>,
     builders: IndexMap<String, GenotypeBuilder>,
+    row_count: usize,
 }
 
 impl SeriesStructBuilder {
@@ -697,6 +706,7 @@ impl SeriesStructBuilder {
         Self {
             sample_names,
             builders,
+            row_count: 0,
         }
     }
 
@@ -724,10 +734,16 @@ impl SeriesStructBuilder {
                 ))
             })?;
         }
+        self.row_count += 1;
         Ok(())
     }
 
     pub fn finish(&mut self) -> StructArray {
+        let row_count = self.row_count;
+        self.row_count = 0;
+        if self.builders.is_empty() {
+            return StructArray::new_empty_fields(row_count, None);
+        }
         let fields = self.get_arrow_fields().into_iter().map(Arc::new);
         let arrays: Vec<ArrayRef> = self
             .sample_names

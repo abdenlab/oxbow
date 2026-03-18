@@ -17,6 +17,7 @@
       ~PyCramScanner.chrom_names
       ~PyCramScanner.chrom_sizes
       ~PyCramScanner.field_names
+      ~PyCramScanner.model
       ~PyCramScanner.scan
       ~PyCramScanner.scan_query
       ~PyCramScanner.schema

@@ -1,2 +1,1 @@
-'Unknown columns: ["nonexistent-field"]. Available: ["chrom", "start", "end", "name",
-    "score", "strand", "thickStart", "thickEnd", "itemRgb"]'
+'Unknown columns: ["nonexistent-field"]. Available: []'

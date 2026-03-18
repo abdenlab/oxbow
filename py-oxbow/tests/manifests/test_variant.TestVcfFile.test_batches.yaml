@@ -1,3 +1,4 @@
 fields=('nonexistent-field',): 'Invalid field name: nonexistent-field'
-fields=('pos', 'qual'): 'External error: Sample not found: HG00096'
-fields=None: 'External error: Sample not found: HG00096'
+fields=('pos', 'qual'): 1
+fields=*: 1
+fields=None: 1

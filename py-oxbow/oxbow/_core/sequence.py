@@ -87,7 +87,7 @@ class FastaFile(SequenceFile):
         source: str | Callable[[], IO[bytes] | str],
         compressed: bool = False,
         *,
-        fields: list[str] | None = None,
+        fields: Literal["*"] | list[str] | None = "*",
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         gzi: str | Callable[[], IO[bytes]] | None = None,
@@ -112,7 +112,7 @@ class FastqFile(SequenceFile):
         source: str | Callable[[], IO[bytes] | str],
         compressed: bool = False,
         *,
-        fields: list[str] | None = None,
+        fields: Literal["*"] | list[str] | None = "*",
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
         super().__init__(
@@ -133,7 +133,7 @@ def from_fasta(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
-    fields: list[str] | None = None,
+    fields: Literal["*"] | list[str] | None = "*",
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     gzi: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
@@ -201,7 +201,7 @@ def from_fastq(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     compression: Literal["infer", "gzip", None] = "infer",
     *,
-    fields: list[str] | None = None,
+    fields: Literal["*"] | list[str] | None = "*",
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> FastqFile:
     """

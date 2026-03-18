@@ -7,6 +7,7 @@ use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 
 use crate::batch::{Push, RecordBatchBuilder};
+use crate::Select;
 
 use super::field::Push as _;
 pub use super::field::{FieldBuilder, FieldDef, FieldType};
@@ -25,7 +26,7 @@ impl BatchBuilder {
     /// Creates a new `BatchBuilder` for BigWig or BigBed records.
     pub fn new(
         bed_schema: BedSchema,
-        fields: Option<Vec<String>>,
+        fields: Select<String>,
         capacity: usize,
     ) -> crate::Result<Self> {
         let model = Model::new(bed_schema, fields)?;
@@ -244,7 +245,7 @@ mod tests {
     #[test]
     fn test_batch_builder_new() {
         let bed_schema = create_test_bedschema();
-        let model = Model::new(bed_schema, None).unwrap();
+        let model = Model::new(bed_schema, Select::All).unwrap();
         let builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         assert_eq!(builder.schema().fields().len(), 4);
@@ -254,7 +255,7 @@ mod tests {
     #[test]
     fn test_schema() {
         let bed_schema = create_test_bedschema();
-        let model = Model::new(bed_schema, None).unwrap();
+        let model = Model::new(bed_schema, Select::All).unwrap();
         let builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let schema = builder.schema();
@@ -269,7 +270,7 @@ mod tests {
     #[test]
     fn test_push_bigbed_record() {
         let schema = create_test_bedschema();
-        let model = Model::new(schema, None).unwrap();
+        let model = Model::new(schema, Select::All).unwrap();
         let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let record = BigBedRecord {
@@ -314,7 +315,7 @@ mod tests {
     #[test]
     fn test_push_bigwig_record() {
         let schema = create_test_bedschema();
-        let model = Model::new(schema, None).unwrap();
+        let model = Model::new(schema, Select::All).unwrap();
         let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let record = BigWigRecord {
@@ -368,7 +369,7 @@ mod tests {
     #[test]
     fn test_finish_empty_batch() {
         let schema = create_test_bedschema();
-        let model = Model::new(schema, None).unwrap();
+        let model = Model::new(schema, Select::All).unwrap();
         let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let batch = builder.finish().unwrap();
@@ -380,7 +381,7 @@ mod tests {
     fn test_bigbed_bed6_no_custom() {
         // bed6 with no custom fields — standard fields 4-6 are in rest
         let bed_schema: BedSchema = "bed6".parse().unwrap();
-        let model = Model::new(bed_schema, None).unwrap();
+        let model = Model::new(bed_schema, Select::All).unwrap();
         let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let record = BigBedRecord {
@@ -420,7 +421,11 @@ mod tests {
     fn test_bigbed_bed6_projected() {
         // bed6 projected to chrom + strand — strand is field 6, skipping name/score
         let bed_schema: BedSchema = "bed6".parse().unwrap();
-        let model = Model::new(bed_schema, Some(vec!["chrom".into(), "strand".into()])).unwrap();
+        let model = Model::new(
+            bed_schema,
+            Select::Some(vec!["chrom".into(), "strand".into()]),
+        )
+        .unwrap();
         let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let record = BigBedRecord {

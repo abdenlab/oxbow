@@ -1,5 +1,6 @@
 import cloudpickle
 import fsspec
+import pyarrow as pa
 import pytest
 from pytest_manifest import Manifest
 
@@ -53,6 +54,7 @@ class TestVcfFile:
         "fields",
         [
             None,
+            "*",
             ("pos", "qual"),
             ("nonexistent-field",),
         ],
@@ -63,7 +65,7 @@ class TestVcfFile:
             fields=fields,
             genotype_fields=("GT",),
             info_fields=("DP",),
-            samples=("HG00096",),
+            samples=("NA12878i",),
         )
         batches = ox.VcfFile(*input.args, **input.kwargs).batches()
         try:
@@ -128,6 +130,55 @@ class TestVcfFile:
         )
         file.pl()
 
+    @pytest.mark.parametrize("genotype_by", ["sample", "field"])
+    def test_samples_nested_false(self, genotype_by):
+        # Default: genotype columns are top-level (one column per sample or per field)
+        file = ox.VcfFile(
+            "data/sample.vcf",
+            samples=["NA12878i", "NA12891"],
+            genotype_fields=["GT"],
+            genotype_by=genotype_by,
+            samples_nested=False,
+        )
+        batch = pa.record_batch(next(file.batches()))
+        assert "samples" not in batch.schema.names
+        if genotype_by == "sample":
+            assert "NA12878i" in batch.schema.names
+            assert "NA12891" in batch.schema.names
+        else:
+            assert "GT" in batch.schema.names
+
+    @pytest.mark.parametrize("genotype_by", ["sample", "field"])
+    def test_samples_nested_true(self, genotype_by):
+        # Nested: all genotype data wrapped under a single "samples" struct column
+        file = ox.VcfFile(
+            "data/sample.vcf",
+            samples=["NA12878i", "NA12891"],
+            genotype_fields=["GT"],
+            genotype_by=genotype_by,
+            samples_nested=True,
+        )
+        batch = pa.record_batch(next(file.batches()))
+        assert "samples" in batch.schema.names
+        samples_type = batch.schema.field("samples").type
+        assert pa.types.is_struct(samples_type)
+        if genotype_by == "sample":
+            assert samples_type.get_field_index("NA12878i") >= 0
+            assert samples_type.get_field_index("NA12891") >= 0
+        else:
+            assert samples_type.get_field_index("GT") >= 0
+
+    def test_samples_nested_pickle_roundtrip(self):
+        file = ox.VcfFile(
+            "data/sample.vcf",
+            samples=["NA12878i"],
+            genotype_fields=["GT"],
+            samples_nested=True,
+        )
+        file2 = cloudpickle.loads(cloudpickle.dumps(file))
+        batch = pa.record_batch(next(file2.batches()))
+        assert "samples" in batch.schema.names
+
 
 class TestBcfFile:
     @pytest.mark.parametrize(
@@ -179,6 +230,7 @@ class TestBcfFile:
         "fields",
         [
             None,
+            "*",
             ("pos", "qual"),
             ("nonexistent-field",),
         ],
@@ -245,3 +297,53 @@ class TestBcfFile:
             regions=regions,
         )
         file.pl()
+
+    @pytest.mark.parametrize("genotype_by", ["sample", "field"])
+    def test_samples_nested_false(self, genotype_by):
+        file = ox.BcfFile(
+            "data/sample.bcf",
+            compressed=True,
+            samples=["HG00096", "HG00101"],
+            genotype_fields=["GT"],
+            genotype_by=genotype_by,
+            samples_nested=False,
+        )
+        batch = pa.record_batch(next(file.batches()))
+        assert "samples" not in batch.schema.names
+        if genotype_by == "sample":
+            assert "HG00096" in batch.schema.names
+            assert "HG00101" in batch.schema.names
+        else:
+            assert "GT" in batch.schema.names
+
+    @pytest.mark.parametrize("genotype_by", ["sample", "field"])
+    def test_samples_nested_true(self, genotype_by):
+        file = ox.BcfFile(
+            "data/sample.bcf",
+            compressed=True,
+            samples=["HG00096", "HG00101"],
+            genotype_fields=["GT"],
+            genotype_by=genotype_by,
+            samples_nested=True,
+        )
+        batch = pa.record_batch(next(file.batches()))
+        assert "samples" in batch.schema.names
+        samples_type = batch.schema.field("samples").type
+        assert pa.types.is_struct(samples_type)
+        if genotype_by == "sample":
+            assert samples_type.get_field_index("HG00096") >= 0
+            assert samples_type.get_field_index("HG00101") >= 0
+        else:
+            assert samples_type.get_field_index("GT") >= 0
+
+    def test_samples_nested_pickle_roundtrip(self):
+        file = ox.BcfFile(
+            "data/sample.bcf",
+            compressed=True,
+            samples=["HG00096"],
+            genotype_fields=["GT"],
+            samples_nested=True,
+        )
+        file2 = cloudpickle.loads(cloudpickle.dumps(file))
+        batch = pa.record_batch(next(file2.batches()))
+        assert "samples" in batch.schema.names

@@ -10,7 +10,9 @@ use pyo3_arrow::PySchema;
 use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
-use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
+use crate::util::{
+    pyobject_to_bufreader, resolve_fields, resolve_index, PyVirtualPosition, Reader,
+};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
 use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
@@ -29,12 +31,17 @@ use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
 ///    Names of the INFO fields to project.
 /// genotype_fields : list[str], optional
 ///    Names of the sample-specific genotype fields to project.
-/// samples : list[str], optional
-///    Names of the samples to include in the genotype fields.
 /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
 ///    How to project the genotype fields. If "sample", the columns
 ///    correspond to the samples. If "field", the columns correspond to
 ///    the genotype fields.
+/// samples : list[str] or None, optional [default: None]
+///    Names of the samples to include in the genotype output. ``"*"`` for
+///    all samples, a list to select specific samples, or ``None`` to omit
+///    all sample genotype data.
+/// samples_nested : bool, optional [default: False]
+///   Whether to nest sample genotype data under a single ``"samples"`` struct
+///   column.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyVcfScanner {
     src: Py<PyAny>,
@@ -46,18 +53,18 @@ pub struct PyVcfScanner {
 #[pymethods]
 impl PyVcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, unnest_samples=true))]
+    #[pyo3(signature = (src, compressed=false, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None,samples_nested=false))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
+        info_fields: Option<Py<PyAny>>,
+        genotype_fields: Option<Py<PyAny>>,
         genotype_by: Option<String>,
-        unnest_samples: bool,
+        samples: Option<Py<PyAny>>,
+        samples_nested: bool,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::vcf::io::Reader::new(reader);
@@ -66,12 +73,12 @@ impl PyVcfScanner {
         let gt_by = resolve_genotype_by(genotype_by)?;
         let scanner = VcfScanner::new(
             header,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
+            resolve_fields(fields, py)?,
+            resolve_fields(info_fields, py)?,
+            resolve_fields(genotype_fields, py)?,
             gt_by,
-            Some(unnest_samples),
+            resolve_fields(samples, py)?,
+            Some(samples_nested),
         )
         .map_err(to_py)?;
         Ok(Self {
@@ -107,7 +114,7 @@ impl PyVcfScanner {
             GenotypeBy::Field => "field",
         };
         kwargs.set_item("genotype_by", gt_by)?;
-        kwargs.set_item("unnest_samples", model.unnest_samples())?;
+        kwargs.set_item("samples_nested", model.samples_nested())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -392,12 +399,17 @@ impl PyVcfScanner {
 ///     Names of the INFO fields to project.
 /// genotype_fields : list[str], optional
 ///     Names of the sample-specific genotype fields to project.
-/// samples : list[str], optional
-///     Names of the samples to include in the genotype fields.
 /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
 ///     How to project the genotype fields. If "sample", the columns
 ///     correspond to the samples. If "field", the columns correspond to
 ///     the genotype fields.
+/// samples : list[str] or None, optional [default: None]
+///    Names of the samples to include in the genotype output. ``"*"`` for
+///    all samples, a list to select specific samples, or ``None`` to omit
+///    all sample genotype data.
+/// samples_nested : bool, optional [default: False]
+///   Whether to nest sample genotype data under a single ``"samples"`` struct
+///   column.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBcfScanner {
     src: Py<PyAny>,
@@ -409,18 +421,18 @@ pub struct PyBcfScanner {
 #[pymethods]
 impl PyBcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=true, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, unnest_samples=true))]
+    #[pyo3(signature = (src, compressed=true, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None, samples_nested=false))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
-        fields: Option<Vec<String>>,
-        info_fields: Option<Vec<String>>,
-        genotype_fields: Option<Vec<String>>,
-        samples: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
+        info_fields: Option<Py<PyAny>>,
+        genotype_fields: Option<Py<PyAny>>,
         genotype_by: Option<String>,
-        unnest_samples: bool,
+        samples: Option<Py<PyAny>>,
+        samples_nested: bool,
     ) -> PyResult<Self> {
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bcf::io::Reader::from(reader);
@@ -429,12 +441,12 @@ impl PyBcfScanner {
         let gt_by = resolve_genotype_by(genotype_by)?;
         let scanner = BcfScanner::new(
             header,
-            fields,
-            info_fields,
-            genotype_fields,
-            samples,
+            resolve_fields(fields, py)?,
+            resolve_fields(info_fields, py)?,
+            resolve_fields(genotype_fields, py)?,
             gt_by,
-            Some(unnest_samples),
+            resolve_fields(samples, py)?,
+            Some(samples_nested),
         )
         .map_err(to_py)?;
         Ok(Self {
@@ -470,7 +482,7 @@ impl PyBcfScanner {
             GenotypeBy::Field => "field",
         };
         kwargs.set_item("genotype_by", gt_by)?;
-        kwargs.set_item("unnest_samples", model.unnest_samples())?;
+        kwargs.set_item("samples_nested", model.samples_nested())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -768,12 +780,14 @@ fn resolve_genotype_by(genotype_by: Option<String>) -> PyResult<Option<GenotypeB
 ///     Names of the INFO fields to project.
 /// genotype_fields : list[str], optional
 ///     Names of the sample-specific genotype fields to project.
-/// samples : list[str], optional
-///     Names of the samples to include in the genotype fields.
 /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
 ///     How to project the genotype fields. If "sample", the columns
 ///     correspond to the samples. If "field", the columns correspond to
 ///     the genotype fields.
+/// samples : list[str], optional
+///     Names of the samples to include in the genotype fields.
+/// samples_nested : bool, optional [default: False]
+///     Whether to nest the sample-specific genotype fields under a "samples" struct column.
 /// compressed : bool, optional [default: False]
 ///     Whether the source is BGZF-compressed.
 ///
@@ -782,18 +796,19 @@ fn resolve_genotype_by(genotype_by: Option<String>) -> PyResult<Option<GenotypeB
 /// bytes
 ///     Arrow IPC
 #[pyfunction]
-#[pyo3(signature = (src, region=None, index=None, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, compressed=false))]
+#[pyo3(signature = (src, region=None, index=None, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None, samples_nested=false, compressed=false))]
 #[allow(clippy::too_many_arguments)]
 pub fn read_vcf(
     py: Python,
     src: Py<PyAny>,
     region: Option<String>,
     index: Option<Py<PyAny>>,
-    fields: Option<Vec<String>>,
-    info_fields: Option<Vec<String>>,
-    genotype_fields: Option<Vec<String>>,
-    samples: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
+    info_fields: Option<Py<PyAny>>,
+    genotype_fields: Option<Py<PyAny>>,
     genotype_by: Option<String>,
+    samples: Option<Py<PyAny>>,
+    samples_nested: bool,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
@@ -803,12 +818,12 @@ pub fn read_vcf(
     let genotype_by = resolve_genotype_by(genotype_by)?;
     let scanner = VcfScanner::new(
         header,
-        fields,
-        info_fields,
-        genotype_fields,
-        samples,
+        resolve_fields(fields, py)?,
+        resolve_fields(info_fields, py)?,
+        resolve_fields(genotype_fields, py)?,
         genotype_by,
-        None,
+        resolve_fields(samples, py)?,
+        Some(samples_nested),
     )
     .map_err(to_py)?;
 
@@ -865,12 +880,14 @@ pub fn read_vcf(
 ///     Names of the INFO fields to project.
 /// genotype_fields : list[str], optional
 ///     Names of the sample-specific genotype fields to project.
-/// samples : list[str], optional
-///     Names of the samples to include in the genotype fields.
 /// genotype_by : Literal["sample", "field"], optional [default: "sample"]
 ///     How to project the genotype fields. If "sample", the columns
 ///     correspond to the samples. If "field", the columns correspond to
 ///     the genotype fields.
+/// samples : list[str], optional
+///     Names of the samples to include in the genotype fields.
+/// samples_nested : bool, optional [default: False]
+///     Whether to nest the sample-specific genotype fields under a "samples" struct column.
 /// compressed : bool, optional [default: True]
 ///     Whether the source is BGZF-compressed.
 ///
@@ -879,18 +896,19 @@ pub fn read_vcf(
 /// bytes
 ///     Arrow IPC
 #[pyfunction]
-#[pyo3(signature = (src, region=None, index=None, fields=None, info_fields=None, genotype_fields=None, samples=None, genotype_by=None, compressed=true))]
+#[pyo3(signature = (src, region=None, index=None, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None, samples_nested=false, compressed=true))]
 #[allow(clippy::too_many_arguments)]
 pub fn read_bcf(
     py: Python,
     src: Py<PyAny>,
     region: Option<String>,
     index: Option<Py<PyAny>>,
-    fields: Option<Vec<String>>,
-    info_fields: Option<Vec<String>>,
-    genotype_fields: Option<Vec<String>>,
-    samples: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
+    info_fields: Option<Py<PyAny>>,
+    genotype_fields: Option<Py<PyAny>>,
     genotype_by: Option<String>,
+    samples: Option<Py<PyAny>>,
+    samples_nested: bool,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
@@ -900,12 +918,12 @@ pub fn read_bcf(
     let genotype_by = resolve_genotype_by(genotype_by)?;
     let scanner = BcfScanner::new(
         header,
-        fields,
-        info_fields,
-        genotype_fields,
-        samples,
+        resolve_fields(fields, py)?,
+        resolve_fields(info_fields, py)?,
+        resolve_fields(genotype_fields, py)?,
         genotype_by,
-        None,
+        resolve_fields(samples, py)?,
+        Some(samples_nested),
     )
     .map_err(to_py)?;
 

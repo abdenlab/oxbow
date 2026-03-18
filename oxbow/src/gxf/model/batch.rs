@@ -11,6 +11,7 @@ use crate::batch::{Push, RecordBatchBuilder};
 use crate::gxf::model::attribute::{AttributeBuilder, AttributeDef, AttributeValue};
 use crate::gxf::model::field::Push as _;
 use crate::gxf::model::field::{Field, FieldBuilder};
+use crate::Select;
 
 use super::Model;
 
@@ -26,10 +27,10 @@ pub struct BatchBuilder {
 impl BatchBuilder {
     /// Creates a new `BatchBuilder` for GTF/GFF records.
     ///
-    /// - `fields`: standard GXF field names. `None` → all 8 standard fields.
+    /// - `fields`: standard GXF field selection. `All` → all 8 standard fields.
     /// - `attr_defs`: `None` → no attributes column. `Some(vec![])` → empty struct.
     pub fn new(
-        fields: Option<Vec<String>>,
+        fields: Select<String>,
         attr_defs: Option<Vec<(String, String)>>,
         capacity: usize,
     ) -> crate::Result<Self> {
@@ -204,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_batch_builder_new() {
-        let field_names = Some(vec!["seqid".to_string(), "source".to_string()]);
+        let field_names = Select::Some(vec!["seqid".to_string(), "source".to_string()]);
         let attr_defs = Some(vec![("gene_id".to_string(), "String".to_string())]);
         let capacity = 10;
 
@@ -216,7 +217,7 @@ mod tests {
 
     #[test]
     fn test_schema() {
-        let field_names = Some(vec!["seqid".to_string(), "source".to_string()]);
+        let field_names = Select::Some(vec!["seqid".to_string(), "source".to_string()]);
         let attr_defs = Some(vec![("gene_id".to_string(), "String".to_string())]);
         let capacity = 10;
 
@@ -235,7 +236,7 @@ mod tests {
 
     #[test]
     fn test_push_gff_record() {
-        let field_names = Some(vec!["seqid".to_string(), "source".to_string()]);
+        let field_names = Select::Some(vec!["seqid".to_string(), "source".to_string()]);
         let attr_defs = Some(vec![("gene_id".to_string(), "String".to_string())]);
         let capacity = 10;
 
@@ -250,7 +251,7 @@ mod tests {
 
     #[test]
     fn test_push_gtf_record() {
-        let field_names = Some(vec!["seqid".to_string(), "source".to_string()]);
+        let field_names = Select::Some(vec!["seqid".to_string(), "source".to_string()]);
         let attr_defs = Some(vec![("gene_id".to_string(), "String".to_string())]);
         let capacity = 10;
 
@@ -265,7 +266,7 @@ mod tests {
 
     #[test]
     fn test_finish() {
-        let field_names = Some(vec!["seqid".to_string(), "source".to_string()]);
+        let field_names = Select::Some(vec!["seqid".to_string(), "source".to_string()]);
         let attr_defs = Some(vec![("gene_id".to_string(), "String".to_string())]);
         let capacity = 10;
 

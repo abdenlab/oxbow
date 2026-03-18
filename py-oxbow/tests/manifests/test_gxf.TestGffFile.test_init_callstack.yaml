@@ -2,20 +2,14 @@ GffFile("data/does-not-exist.gff"): |-
     ->  oxbow._core.gxf.GxfFile.__init__("data/does-not-exist.gff")
         ->  oxbow._core.base.DataSource.__init__("data/does-not-exist.gff", None, 131072)
         <-  None
-        ->  oxbow._core.base.DataSource._source
-        <-  'data/does-not-exist.gff'
-    !!  FileNotFoundError("No such file or directory (os error 2)")
+    <-  None
 GffFile("data/malformed.gff"): |-
     ->  oxbow._core.gxf.GxfFile.__init__("data/malformed.gff")
         ->  oxbow._core.base.DataSource.__init__("data/malformed.gff", None, 131072)
         <-  None
-        ->  oxbow._core.base.DataSource._source
-        <-  'data/malformed.gff'
-    !!  OSError("unexpected end of file")
+    <-  None
 GffFile("data/sample.gff"): |-
     ->  oxbow._core.gxf.GxfFile.__init__("data/sample.gff")
         ->  oxbow._core.base.DataSource.__init__("data/sample.gff", None, 131072)
         <-  None
-        ->  oxbow._core.base.DataSource._source
-        <-  'data/sample.gff'
     <-  None

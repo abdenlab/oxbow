@@ -10,7 +10,7 @@ use crate::bed::model::BedSchema;
 use crate::bed::model::Model;
 use crate::bed::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
-use crate::OxbowError;
+use crate::{OxbowError, Select};
 
 /// A BED scanner.
 ///
@@ -27,8 +27,9 @@ use crate::OxbowError;
 /// let inner = File::open("sample.bed").map(BufReader::new).unwrap();
 /// let mut fmt_reader = noodles::bed::io::Reader::new(inner);
 ///
+/// use oxbow::Select;
 /// let bed_schema = "bed6+3".parse().unwrap();
-/// let scanner = Scanner::new(bed_schema, None).unwrap();
+/// let scanner = Scanner::new(bed_schema, Select::All).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000)).unwrap();
 /// ```
 pub struct Scanner {
@@ -40,7 +41,7 @@ impl Scanner {
     ///
     /// - `bed_schema`: the parsing interpretation.
     /// - `fields`: column names to project. `None` → all fields from the schema.
-    pub fn new(bed_schema: BedSchema, fields: Option<Vec<String>>) -> crate::Result<Self> {
+    pub fn new(bed_schema: BedSchema, fields: Select<String>) -> crate::Result<Self> {
         let model = Model::new(bed_schema, fields)?;
         Ok(Self { model })
     }
@@ -71,17 +72,11 @@ impl Scanner {
         columns: Option<Vec<String>>,
         capacity: usize,
     ) -> crate::Result<BatchBuilder> {
-        match columns {
-            None => BatchBuilder::new(self.model.bed_schema(), None, capacity),
-            Some(cols) => {
-                let projected = self.model.project(&cols)?;
-                BatchBuilder::new(
-                    projected.bed_schema(),
-                    Some(projected.field_names()),
-                    capacity,
-                )
-            }
-        }
+        let model = match columns {
+            None => self.model.clone(),
+            Some(cols) => self.model.project(&cols)?,
+        };
+        BatchBuilder::from_model(&model, capacity)
     }
 }
 

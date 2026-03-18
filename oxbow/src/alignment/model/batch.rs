@@ -8,6 +8,7 @@ use indexmap::IndexMap;
 use noodles::sam::alignment::record::data::field::Tag;
 
 use crate::batch::{Push, RecordBatchBuilder};
+use crate::Select;
 
 use super::field::Push as _;
 use super::field::{Field, FieldBuilder};
@@ -27,11 +28,11 @@ pub struct BatchBuilder {
 impl BatchBuilder {
     /// Creates a new `BatchBuilder` for SAM/BAM records.
     ///
-    /// - `fields`: standard SAM field names. `None` → all 12 standard fields.
+    /// - `fields`: standard SAM field selection.
     /// - `tag_defs`: `None` → no tags column. `Some(vec![])` → empty struct.
     pub fn new(
         header: noodles::sam::Header,
-        fields: Option<Vec<String>>,
+        fields: Select<String>,
         tag_defs: Option<Vec<(String, String)>>,
         capacity: usize,
     ) -> crate::Result<Self> {
@@ -254,7 +255,7 @@ mod tests {
     #[test]
     fn test_batch_builder_new() {
         let header = noodles::sam::Header::default();
-        let fields = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let fields = Select::Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
         let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
         let capacity = 10;
 
@@ -267,7 +268,7 @@ mod tests {
     #[test]
     fn test_schema() {
         let header = noodles::sam::Header::default();
-        let fields = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let fields = Select::Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
         let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
         let capacity = 10;
 
@@ -286,7 +287,7 @@ mod tests {
     #[test]
     fn test_no_tags_when_tag_defs_none() {
         let header = noodles::sam::Header::default();
-        let fields = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let fields = Select::Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
         let capacity = 10;
 
         let batch_builder = BatchBuilder::new(header, fields, None, capacity).unwrap();
@@ -298,7 +299,7 @@ mod tests {
     #[test]
     fn test_from_model() {
         let model = Model::new(
-            Some(vec!["qname".into(), "pos".into()]),
+            Select::Some(vec!["qname".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into())]),
         )
         .unwrap();
@@ -312,7 +313,7 @@ mod tests {
     #[test]
     fn test_push_sam_record() {
         let header = noodles::sam::Header::default();
-        let fields = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let fields = Select::Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
         let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
         let capacity = 10;
 
@@ -326,7 +327,7 @@ mod tests {
     #[test]
     fn test_push_bam_record() {
         let header = noodles::sam::Header::default();
-        let fields = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let fields = Select::Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
         let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
         let capacity = 10;
 
@@ -340,7 +341,7 @@ mod tests {
     #[test]
     fn test_finish() {
         let header = noodles::sam::Header::default();
-        let fields = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let fields = Select::Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
         let tag_defs = Some(vec![("NM".to_string(), "i".to_string())]);
         let capacity = 10;
 
@@ -359,7 +360,7 @@ mod tests {
     #[test]
     fn test_finish_empty_tags() {
         let header = noodles::sam::Header::default();
-        let fields = Some(vec!["QNAME".to_string()]);
+        let fields = Select::Some(vec!["QNAME".to_string()]);
         let capacity = 10;
 
         let mut batch_builder = BatchBuilder::new(header, fields, Some(vec![]), capacity).unwrap();
@@ -374,7 +375,7 @@ mod tests {
     #[test]
     fn test_finish_no_tags() {
         let header = noodles::sam::Header::default();
-        let fields = Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
+        let fields = Select::Some(vec!["QNAME".to_string(), "FLAG".to_string()]);
         let capacity = 10;
 
         let mut batch_builder = BatchBuilder::new(header, fields, None, capacity).unwrap();

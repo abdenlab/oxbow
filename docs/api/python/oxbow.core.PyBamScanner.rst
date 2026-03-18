@@ -17,6 +17,7 @@
       ~PyBamScanner.chrom_names
       ~PyBamScanner.chrom_sizes
       ~PyBamScanner.field_names
+      ~PyBamScanner.model
       ~PyBamScanner.scan
       ~PyBamScanner.scan_byte_ranges
       ~PyBamScanner.scan_query

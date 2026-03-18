@@ -12,7 +12,9 @@ use pyo3_arrow::PySchema;
 use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
-use crate::util::{pyobject_to_bufreader, resolve_index, PyVirtualPosition, Reader};
+use crate::util::{
+    pyobject_to_bufreader, resolve_fields, resolve_index, PyVirtualPosition, Reader,
+};
 use oxbow::gxf::{GffScanner, GtfScanner};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
@@ -27,8 +29,9 @@ use oxbow::util::index::IndexType;
 ///     Whether the source is BGZF-compressed.
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
-/// attribute_defs : list[tuple[str, str]], optional
-///     Definitions of attribute fields to project.
+/// attribute_defs : list[tuple[str, str]], optional [default: None]
+///     Definitions for the ``"attributes"`` struct column. ``None`` omits the
+///     attributes column. Use the ``attribute_defs()`` method to discover definitions.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyGtfScanner {
     src: Py<PyAny>,
@@ -45,9 +48,10 @@ impl PyGtfScanner {
         py: Python,
         src: Py<PyAny>,
         compressed: Option<bool>,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
         attribute_defs: Option<Vec<(String, String)>>,
     ) -> PyResult<Self> {
+        let fields = resolve_fields(fields, py)?;
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let scanner = GtfScanner::new(None, fields, attribute_defs).map_err(to_py)?;
@@ -341,8 +345,9 @@ impl PyGtfScanner {
 ///     Whether the source is BGZF-compressed.
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
-/// attribute_defs : list[tuple[str, str]], optional
-///     Definitions of attribute fields to project.
+/// attribute_defs : list[tuple[str, str]], optional [default: None]
+///     Definitions for the ``"attributes"`` struct column. ``None`` omits the
+///     attributes column. Use the ``attribute_defs()`` method to discover definitions.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyGffScanner {
     src: Py<PyAny>,
@@ -359,9 +364,10 @@ impl PyGffScanner {
         py: Python,
         src: Py<PyAny>,
         compressed: Option<bool>,
-        fields: Option<Vec<String>>,
+        fields: Option<Py<PyAny>>,
         attribute_defs: Option<Vec<(String, String)>>,
     ) -> PyResult<Self> {
+        let fields = resolve_fields(fields, py)?;
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let scanner = GffScanner::new(None, fields, attribute_defs).map_err(to_py)?;
@@ -668,10 +674,11 @@ pub fn read_gtf(
     src: Py<PyAny>,
     region: Option<String>,
     index: Option<Py<PyAny>>,
-    fields: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
     attr_defs: Option<Vec<(String, String)>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
+    let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let scanner = GtfScanner::new(None, fields, attr_defs).map_err(to_py)?;
 
@@ -736,10 +743,11 @@ pub fn read_gff(
     src: Py<PyAny>,
     region: Option<String>,
     index: Option<Py<PyAny>>,
-    fields: Option<Vec<String>>,
+    fields: Option<Py<PyAny>>,
     attr_defs: Option<Vec<(String, String)>>,
     compressed: bool,
 ) -> PyResult<Vec<u8>> {
+    let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let scanner = GffScanner::new(None, fields, attr_defs).map_err(to_py)?;
 

@@ -27,6 +27,7 @@
       ~BcfFile.to_ipc
       ~BcfFile.to_pandas
       ~BcfFile.to_polars
+      ~BcfFile.with_samples
    
    
 

@@ -27,6 +27,7 @@
       ~CramFile.to_ipc
       ~CramFile.to_pandas
       ~CramFile.to_polars
+      ~CramFile.with_tags
    
    
 

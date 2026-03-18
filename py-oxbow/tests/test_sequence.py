@@ -52,6 +52,7 @@ class TestFastaFile:
         "fields",
         [
             None,
+            "*",
             ("name", "sequence"),
             ("nonexistent-field",),
         ],
@@ -213,6 +214,7 @@ class TestFastqFile:
         "fields",
         [
             None,
+            "*",
             ("name", "sequence"),
             ("nonexistent-field",),
         ],

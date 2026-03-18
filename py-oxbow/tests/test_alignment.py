@@ -48,7 +48,7 @@ class TestSamFile:
     @pytest.mark.parametrize(
         "fields",
         [
-            None,
+            "*",
             ["qname", "rname", "mapq"],
             ["qname", "rname", "foo"],
         ],
@@ -168,6 +168,10 @@ class TestBamFile:
         fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
 
         assert [f.count_rows() for f in fragments] == [4]
+
+    def test_malformed(self):
+        with pytest.raises(OSError):
+            next(ox.BamFile("data/malformed.bam", compressed=True).batches())
 
     def test_input_encodings(self):
         file = ox.BamFile("data/sample.bam", compressed=True, batch_size=3)
@@ -309,6 +313,21 @@ class TestCramFile:
         # Verify bases are resolved (not Ns)
         seqs = batch.column("seq").to_pylist()
         assert all("N" not in s for s in seqs if s is not None)
+
+    def test_with_tags(self):
+        file = ox.CramFile("data/sample.cram").with_tags()
+        assert len(file.tag_defs) > 0
+        batch = pa.record_batch(next(file.batches()))
+        assert "tags" in batch.schema.names
+
+    def test_with_tags_with_reference(self):
+        # Verifies that _tag_discovery_kwargs passes reference to the scanner
+        file = ox.CramFile(
+            "data/sample-ref.cram",
+            reference="data/sample-ref.fa",
+            reference_index="data/sample-ref.fa.fai",
+        ).with_tags()
+        assert isinstance(file.tag_defs, list)
 
     def test_with_reference_and_regions(self):
         file = ox.CramFile(

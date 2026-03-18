@@ -1,3 +1,53 @@
+fields=*:
+    batch-00:
+        cigar:
+        - 6M14N1I5M
+        - 6H5M
+        - 9M
+        end:
+        - 40
+        - 33
+        - 45
+        flag:
+        - 0
+        - 16
+        - 83
+        mapq:
+        - 30
+        - 30
+        - 30
+        pnext:
+        - null
+        - null
+        - 7
+        pos:
+        - 16
+        - 29
+        - 37
+        qname:
+        - r004
+        - r003
+        - r001
+        qual:
+        - null
+        - null
+        - null
+        rname:
+        - chr1
+        - chr1
+        - chr2
+        rnext:
+        - null
+        - null
+        - chr2
+        seq:
+        - ATAGCTCTCAGC
+        - TAGGC
+        - CAGCGCCAT
+        tlen:
+        - 0
+        - 0
+        - -39
 fields=None:
     batch-00:
         cigar:
