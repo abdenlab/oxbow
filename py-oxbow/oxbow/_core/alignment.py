@@ -48,7 +48,9 @@ class AlignmentFile(DataSource):
                 region=region, index=self._index, columns=columns, batch_size=batch_size
             )
 
-    def with_tags(self, tag_defs: list[tuple[str, str]] | None = None, *, scan_rows: int = 1024) -> Self:
+    def with_tags(
+        self, tag_defs: list[tuple[str, str]] | None = None, *, scan_rows: int = 1024
+    ) -> Self:
         """
         Return a new data source with the specified tag definitions.
 

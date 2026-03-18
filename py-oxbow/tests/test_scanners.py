@@ -339,7 +339,9 @@ class TestPyBcfScanner:
         scanner = ox.PyBcfScanner("data/sample.bcf", fields="*", **kwargs)
         schema = scanner.schema()
         stream = scanner.scan()
-        return pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema)).read_next_batch()
+        return pa.RecordBatchReader.from_stream(
+            data=stream, schema=pa.schema(schema)
+        ).read_next_batch()
 
     def test_info_omit_no_column(self):
         # info_fields=None → no "info" column
@@ -759,10 +761,14 @@ class TestPyVcfScanner:
         assert batch.to_pydict() == batch2.to_pydict()
 
     def _scan_batch(self, **kwargs):
-        scanner = ox.PyVcfScanner("data/sample.vcf", compressed=False, fields="*", **kwargs)
+        scanner = ox.PyVcfScanner(
+            "data/sample.vcf", compressed=False, fields="*", **kwargs
+        )
         schema = scanner.schema()
         stream = scanner.scan()
-        return pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema)).read_next_batch()
+        return pa.RecordBatchReader.from_stream(
+            data=stream, schema=pa.schema(schema)
+        ).read_next_batch()
 
     def test_info_omit_no_column(self):
         # info_fields=None → no "info" column

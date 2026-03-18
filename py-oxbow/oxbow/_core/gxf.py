@@ -43,7 +43,12 @@ class GxfFile(DataSource):
             region=region, index=self._index, columns=columns, batch_size=batch_size
         )
 
-    def with_attributes(self, attribute_defs: list[tuple[str, str]] | None = None, *, scan_rows: int = 1024) -> Self:
+    def with_attributes(
+        self,
+        attribute_defs: list[tuple[str, str]] | None = None,
+        *,
+        scan_rows: int = 1024,
+    ) -> Self:
         """
         Return a new data source with the specified attribute definitions.
 
