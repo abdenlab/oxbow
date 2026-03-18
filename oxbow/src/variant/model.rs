@@ -121,6 +121,7 @@ impl Model {
         samples_nested: Option<bool>,
     ) -> crate::Result<Self> {
         // Derive info defs from header
+        // Omit → no info column. All/Some → info column present (even if empty struct).
         let info_defs = match info_field_names {
             Select::Omit => None,
             sel => {
@@ -140,15 +141,12 @@ impl Model {
                         Some(InfoDef::new(name, &info.number(), &info.ty()))
                     })
                     .collect();
-                if defs.is_empty() {
-                    None
-                } else {
-                    Some(defs)
-                }
+                Some(defs)
             }
         };
 
         // Derive genotype defs from header
+        // Omit → deactivate genotype output. All/Some → genotype active (even if empty).
         let genotype_defs = match genotype_field_names {
             Select::Omit => None,
             sel => {
@@ -168,15 +166,14 @@ impl Model {
                         Some(GenotypeDef::new(name, &format.number(), &format.ty()))
                     })
                     .collect();
-                if defs.is_empty() {
-                    None
-                } else {
-                    Some(defs)
-                }
+                Some(defs)
             }
         };
 
         // Derive sample names from header
+        // Omit → no sample output. All (with samples in header) / Some → sample output active.
+        // Select::All with no samples in header → None (nothing to include).
+        // Select::Some([]) → Some(vec![]) (column present, empty).
         let samples = match samples {
             Select::Omit => None,
             Select::All => {
@@ -187,13 +184,7 @@ impl Model {
                     Some(s)
                 }
             }
-            Select::Some(names) => {
-                if names.is_empty() {
-                    None
-                } else {
-                    Some(names)
-                }
-            }
+            Select::Some(names) => Some(names),
         };
 
         Self::new(
@@ -227,10 +218,9 @@ impl Model {
             ));
         }
 
-        // Genotype columns (require both samples and genotype_defs)
-        let samples = samples.unwrap_or(&[]);
-        let gt_defs = genotype_defs.unwrap_or(&[]);
-        if !samples.is_empty() && !gt_defs.is_empty() {
+        // Genotype columns: both samples and genotype_defs must be Some to activate.
+        // Some([]) produces empty struct content; None deactivates entirely.
+        if let (Some(samples), Some(gt_defs)) = (samples, genotype_defs) {
             let genotype_columns: Vec<ArrowField> = match genotype_by {
                 GenotypeBy::Sample => samples
                     .iter()
@@ -685,5 +675,164 @@ mod tests {
         assert!(!model.samples_nested());
         // 7 fields + info + 2 sample columns
         assert_eq!(model.schema().fields().len(), 10);
+    }
+
+    // --- Empty-select (Some([])) edge cases ---
+
+    #[test]
+    fn test_info_empty_select_produces_empty_struct_column() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Some(vec![]), // info present, empty
+            Select::Omit,
+            None,
+            Select::Omit,
+            None,
+        )
+        .unwrap();
+        assert!(model.has_info());
+        assert_eq!(model.info_defs().unwrap().len(), 0);
+        // 7 fields + empty info struct
+        assert_eq!(model.schema().fields().len(), 8);
+        let info_field = model.schema().field_with_name("info").unwrap();
+        match info_field.data_type() {
+            DataType::Struct(fields) => assert!(fields.is_empty()),
+            other => panic!("Expected empty Struct, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_info_omit_produces_no_column() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Omit,
+            None,
+            Select::Omit,
+            None,
+        )
+        .unwrap();
+        assert!(!model.has_info());
+        assert_eq!(model.schema().fields().len(), 7);
+    }
+
+    #[test]
+    fn test_genotype_empty_select_by_sample_produces_empty_struct_columns() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Some(vec![]), // genotype active, no fields
+            Some(GenotypeBy::Sample),
+            Select::Some(vec!["sample1".into()]),
+            None,
+        )
+        .unwrap();
+        assert!(model.genotype_defs().is_some());
+        assert_eq!(model.genotype_defs().unwrap().len(), 0);
+        // 7 fields + 1 sample column (empty struct)
+        assert_eq!(model.schema().fields().len(), 8);
+        let sample_field = model.schema().field_with_name("sample1").unwrap();
+        match sample_field.data_type() {
+            DataType::Struct(fields) => assert!(fields.is_empty()),
+            other => panic!("Expected empty Struct, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_genotype_empty_select_by_field_produces_no_columns() {
+        // by_field: columns are keyed by FORMAT field name; no fields → no columns
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Some(vec![]), // genotype active, no fields
+            Some(GenotypeBy::Field),
+            Select::Some(vec!["sample1".into()]),
+            None,
+        )
+        .unwrap();
+        assert_eq!(model.schema().fields().len(), 7);
+    }
+
+    #[test]
+    fn test_genotype_omit_deactivates_output_despite_samples() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Omit, // genotype deactivated
+            None,
+            Select::Some(vec!["sample1".into()]),
+            Some(true),
+        )
+        .unwrap();
+        assert!(model.genotype_defs().is_none());
+        assert_eq!(model.schema().fields().len(), 7);
+    }
+
+    #[test]
+    fn test_samples_empty_select_nested_produces_empty_struct_column() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Some(vec!["GT".into()]),
+            None,
+            Select::Some(vec![]), // samples active, none selected
+            Some(true),
+        )
+        .unwrap();
+        assert!(model.samples().is_some());
+        assert_eq!(model.samples().unwrap().len(), 0);
+        // 7 fields + "samples" struct (empty: no samples → no sub-fields)
+        assert_eq!(model.schema().fields().len(), 8);
+        let samples_field = model.schema().field_with_name("samples").unwrap();
+        match samples_field.data_type() {
+            DataType::Struct(fields) => assert!(fields.is_empty()),
+            other => panic!("Expected empty Struct, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_samples_empty_select_unnested_produces_no_columns() {
+        // unnested: columns are keyed by sample name; no samples → no columns
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Some(vec!["GT".into()]),
+            None,
+            Select::Some(vec![]), // samples active, none selected
+            Some(false),
+        )
+        .unwrap();
+        assert_eq!(model.schema().fields().len(), 7);
+    }
+
+    #[test]
+    fn test_samples_omit_deactivates_nested_column() {
+        let header = create_test_header();
+        let model = Model::from_header(
+            &header,
+            Select::All,
+            Select::Omit,
+            Select::Some(vec!["GT".into()]),
+            None,
+            Select::Omit, // samples deactivated
+            Some(true),
+        )
+        .unwrap();
+        assert!(model.samples().is_none());
+        assert_eq!(model.schema().fields().len(), 7);
     }
 }

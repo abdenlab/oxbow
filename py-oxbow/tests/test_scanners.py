@@ -335,6 +335,75 @@ class TestPyBcfScanner:
         batch2 = reader.read_next_batch()
         assert batch.to_pydict() == batch2.to_pydict()
 
+    def _scan_batch(self, **kwargs):
+        scanner = ox.PyBcfScanner("data/sample.bcf", fields="*", **kwargs)
+        schema = scanner.schema()
+        stream = scanner.scan()
+        return pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema)).read_next_batch()
+
+    def test_info_omit_no_column(self):
+        # info_fields=None → no "info" column
+        batch = self._scan_batch(info_fields=None)
+        assert "info" not in batch.schema.names
+
+    def test_info_empty_select_empty_struct(self):
+        # info_fields=[] → "info" column present as empty struct
+        batch = self._scan_batch(info_fields=[])
+        assert "info" in batch.schema.names
+        assert pa.types.is_struct(batch.schema.field("info").type)
+        assert batch.schema.field("info").type.num_fields == 0
+
+    def test_genotype_omit_no_columns(self):
+        # genotype_fields=None with samples → no genotype columns
+        batch = self._scan_batch(
+            genotype_fields=None,
+            samples=["HG00096", "HG00101"],
+        )
+        assert "HG00096" not in batch.schema.names
+        assert "HG00101" not in batch.schema.names
+        assert "samples" not in batch.schema.names
+
+    def test_genotype_empty_by_sample_empty_struct_columns(self):
+        # genotype_fields=[] with samples, genotype_by="sample" → per-sample columns with empty struct
+        batch = self._scan_batch(
+            genotype_fields=[],
+            genotype_by="sample",
+            samples=["HG00096", "HG00101"],
+        )
+        assert "HG00096" in batch.schema.names
+        assert pa.types.is_struct(batch.schema.field("HG00096").type)
+        assert batch.schema.field("HG00096").type.num_fields == 0
+
+    def test_genotype_empty_by_field_no_columns(self):
+        # genotype_fields=[] with samples, genotype_by="field" → no genotype columns
+        batch = self._scan_batch(
+            genotype_fields=[],
+            genotype_by="field",
+            samples=["HG00096", "HG00101"],
+        )
+        assert "HG00096" not in batch.schema.names
+        assert "GT" not in batch.schema.names
+
+    def test_samples_empty_nested_empty_struct(self):
+        # samples=[] with genotype_fields, samples_nested=True → "samples" column with empty struct
+        batch = self._scan_batch(
+            genotype_fields=["GT"],
+            samples=[],
+            samples_nested=True,
+        )
+        assert "samples" in batch.schema.names
+        assert pa.types.is_struct(batch.schema.field("samples").type)
+        assert batch.schema.field("samples").type.num_fields == 0
+
+    def test_samples_omit_no_nested_column(self):
+        # samples=None with genotype_fields, samples_nested=True → no "samples" column
+        batch = self._scan_batch(
+            genotype_fields=["GT"],
+            samples=None,
+            samples_nested=True,
+        )
+        assert "samples" not in batch.schema.names
+
 
 class TestPyVcfScanner:
     def test_chrom_names(self, manifest: pytest_manifest.Manifest):
@@ -688,6 +757,75 @@ class TestPyVcfScanner:
         reader = pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema))
         batch2 = reader.read_next_batch()
         assert batch.to_pydict() == batch2.to_pydict()
+
+    def _scan_batch(self, **kwargs):
+        scanner = ox.PyVcfScanner("data/sample.vcf", compressed=False, fields="*", **kwargs)
+        schema = scanner.schema()
+        stream = scanner.scan()
+        return pa.RecordBatchReader.from_stream(data=stream, schema=pa.schema(schema)).read_next_batch()
+
+    def test_info_omit_no_column(self):
+        # info_fields=None → no "info" column
+        batch = self._scan_batch(info_fields=None)
+        assert "info" not in batch.schema.names
+
+    def test_info_empty_select_empty_struct(self):
+        # info_fields=[] → "info" column present as empty struct
+        batch = self._scan_batch(info_fields=[])
+        assert "info" in batch.schema.names
+        assert pa.types.is_struct(batch.schema.field("info").type)
+        assert batch.schema.field("info").type.num_fields == 0
+
+    def test_genotype_omit_no_columns(self):
+        # genotype_fields=None with samples → no genotype columns
+        batch = self._scan_batch(
+            genotype_fields=None,
+            samples=["NA12878i", "NA12891"],
+        )
+        assert "NA12878i" not in batch.schema.names
+        assert "NA12891" not in batch.schema.names
+        assert "samples" not in batch.schema.names
+
+    def test_genotype_empty_by_sample_empty_struct_columns(self):
+        # genotype_fields=[] with samples, genotype_by="sample" → per-sample columns with empty struct
+        batch = self._scan_batch(
+            genotype_fields=[],
+            genotype_by="sample",
+            samples=["NA12878i", "NA12891"],
+        )
+        assert "NA12878i" in batch.schema.names
+        assert pa.types.is_struct(batch.schema.field("NA12878i").type)
+        assert batch.schema.field("NA12878i").type.num_fields == 0
+
+    def test_genotype_empty_by_field_no_columns(self):
+        # genotype_fields=[] with samples, genotype_by="field" → no genotype columns
+        batch = self._scan_batch(
+            genotype_fields=[],
+            genotype_by="field",
+            samples=["NA12878i", "NA12891"],
+        )
+        assert "NA12878i" not in batch.schema.names
+        assert "GT" not in batch.schema.names
+
+    def test_samples_empty_nested_empty_struct(self):
+        # samples=[] with genotype_fields, samples_nested=True → "samples" column with empty struct
+        batch = self._scan_batch(
+            genotype_fields=["GT"],
+            samples=[],
+            samples_nested=True,
+        )
+        assert "samples" in batch.schema.names
+        assert pa.types.is_struct(batch.schema.field("samples").type)
+        assert batch.schema.field("samples").type.num_fields == 0
+
+    def test_samples_omit_no_nested_column(self):
+        # samples=None with genotype_fields, samples_nested=True → no "samples" column
+        batch = self._scan_batch(
+            genotype_fields=["GT"],
+            samples=None,
+            samples_nested=True,
+        )
+        assert "samples" not in batch.schema.names
 
 
 class TestPyFastaScanner:

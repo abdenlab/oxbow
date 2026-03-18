@@ -37,7 +37,8 @@ pub struct BatchBuilder {
     schema: SchemaRef,
     row_count: usize,
     header: noodles::vcf::Header,
-    info_defs: Vec<InfoDef>,
+    has_info: bool,
+    has_genotype: bool,
     genotype_defs: Vec<GenotypeDef>,
     genotype_by: GenotypeBy,
     sample_names: Vec<String>,
@@ -94,9 +95,11 @@ impl BatchBuilder {
             field_builders.insert(field.clone(), builder);
         }
 
-        let info_defs: Vec<InfoDef> = model.info_defs().unwrap_or(&[]).to_vec();
+        let has_info = model.info_defs().is_some();
+        let has_genotype = model.genotype_defs().is_some() && model.samples().is_some();
+
         let mut info_builders = IndexMap::new();
-        for def in &info_defs {
+        for def in model.info_defs().unwrap_or(&[]) {
             let builder = InfoBuilder::new(&def.ty);
             info_builders.insert(def.clone(), builder);
         }
@@ -129,7 +132,8 @@ impl BatchBuilder {
             schema: model.schema().clone(),
             row_count: 0,
             header,
-            info_defs,
+            has_info,
+            has_genotype,
             genotype_defs,
             genotype_by,
             sample_names,
@@ -157,23 +161,27 @@ impl RecordBatchBuilder for BatchBuilder {
             .map(|(_, builder)| builder.finish())
             .collect();
 
-        // info (optional)
-        if !self.info_defs.is_empty() {
-            let info_arrays: Vec<(FieldRef, ArrayRef)> = self
-                .info_builders
-                .iter_mut()
-                .map(|(def, builder)| {
-                    let arrow_field = def.get_arrow_field();
-                    let array_ref = builder.finish();
-                    (Arc::new(arrow_field), array_ref)
-                })
-                .collect();
-            let info = StructArray::from(info_arrays);
+        // info (optional): has_info=true even when info_defs is empty (→ empty struct)
+        if self.has_info {
+            let info = if self.info_builders.is_empty() {
+                StructArray::new_empty_fields(self.row_count, None)
+            } else {
+                let info_arrays: Vec<(FieldRef, ArrayRef)> = self
+                    .info_builders
+                    .iter_mut()
+                    .map(|(def, builder)| {
+                        let arrow_field = def.get_arrow_field();
+                        let array_ref = builder.finish();
+                        (Arc::new(arrow_field), array_ref)
+                    })
+                    .collect();
+                StructArray::from(info_arrays)
+            };
             columns.push(Arc::new(info));
         }
 
-        // genotype data (optional)
-        if !self.sample_names.is_empty() && !self.genotype_defs.is_empty() {
+        // genotype data (optional): has_genotype=true even when defs/samples are empty
+        if self.has_genotype {
             let mut genotype_arrays: Vec<(FieldRef, ArrayRef)> = Vec::new();
 
             match self.genotype_by {
@@ -211,8 +219,12 @@ impl RecordBatchBuilder for BatchBuilder {
                     columns.push(arr);
                 }
             } else {
-                // Wrap in a single "samples" struct
-                let samples_struct = StructArray::from(genotype_arrays);
+                // Wrap in a single "samples" struct (empty struct when no columns)
+                let samples_struct = if genotype_arrays.is_empty() {
+                    StructArray::new_empty_fields(self.row_count, None)
+                } else {
+                    StructArray::from(genotype_arrays)
+                };
                 columns.push(Arc::new(samples_struct));
             }
         }
@@ -252,7 +264,7 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
         }
 
         // info (optional)
-        if !self.info_defs.is_empty() {
+        if self.has_info {
             let info = record.info();
             let parsed = collect_info_fields(&info, &self.header);
             for (def, builder) in self.info_builders.iter_mut() {
@@ -274,7 +286,7 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
         }
 
         // genotype data (optional)
-        if !self.sample_names.is_empty() && !self.genotype_defs.is_empty() {
+        if self.has_genotype {
             let record_samples = record.samples();
             let keys: Vec<String> = self
                 .genotype_defs
@@ -388,7 +400,7 @@ impl Push<&noodles::bcf::Record> for BatchBuilder {
         }
 
         // info (optional)
-        if !self.info_defs.is_empty() {
+        if self.has_info {
             let info = record.info();
             let parsed = collect_info_fields(&info, &self.header);
             for (def, builder) in self.info_builders.iter_mut() {
@@ -407,7 +419,7 @@ impl Push<&noodles::bcf::Record> for BatchBuilder {
         }
 
         // genotype data (optional)
-        if !self.sample_names.is_empty() && !self.genotype_defs.is_empty() {
+        if self.has_genotype {
             let record_samples = record.samples()?;
             let keys: Vec<String> = self
                 .genotype_defs
