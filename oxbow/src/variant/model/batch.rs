@@ -372,15 +372,21 @@ impl Push<&noodles::vcf::Record> for BatchBuilder {
                                     .header
                                     .sample_names()
                                     .get_index_of(sample_name)
-                                    .unwrap();
+                                    .ok_or_else(|| {
+                                        OxbowError::not_found(format!(
+                                            "Sample not found: {}",
+                                            sample_name
+                                        ))
+                                    })?;
                                 let maybe_result = series.get(&self.header, i).flatten();
                                 let option = match maybe_result {
                                     Some(Ok(value)) => Some(value),
                                     _ => None,
                                 };
-                                (sample_name.clone(), option)
+                                Ok((sample_name.clone(), option))
                             })
-                            .collect::<IndexMap<String, Option<SampleFieldValue>>>();
+                            .collect::<crate::Result<IndexMap<String, Option<SampleFieldValue>>>>(
+                            )?;
 
                         builder.push(data)?;
                     }
@@ -519,15 +525,21 @@ impl Push<&noodles::bcf::Record> for BatchBuilder {
                                     .header
                                     .sample_names()
                                     .get_index_of(sample_name)
-                                    .unwrap();
+                                    .ok_or_else(|| {
+                                        OxbowError::not_found(format!(
+                                            "Sample not found: {}",
+                                            sample_name
+                                        ))
+                                    })?;
                                 let maybe_result = series.get(&self.header, i).unwrap();
                                 let option = match maybe_result {
                                     Some(Ok(value)) => Some(value),
                                     _ => None,
                                 };
-                                (sample_name.clone(), option)
+                                Ok((sample_name.clone(), option))
                             })
-                            .collect::<IndexMap<String, Option<SampleFieldValue>>>();
+                            .collect::<crate::Result<IndexMap<String, Option<SampleFieldValue>>>>(
+                            )?;
 
                         builder.push(data)?;
                     }
