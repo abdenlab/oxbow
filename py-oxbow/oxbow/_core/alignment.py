@@ -38,6 +38,9 @@ class AlignmentFile(DataSource):
             compressed=compressed, fields=fields, tag_defs=tag_defs
         )
 
+    def _tag_discovery_kwargs(self) -> dict:
+        return dict(compressed=self._scanner_kwargs["compressed"])
+
     def _scan_query(self, scanner, region, columns, batch_size):
         if region == "*":
             return scanner.scan_unmapped(
@@ -88,7 +91,7 @@ class AlignmentFile(DataSource):
         if tag_defs is None:
             scan_rows = scan_rows if scan_rows >= 0 else None
             discovered = self._scanner_type(
-                self._source, compressed=self._scanner_kwargs["compressed"]
+                self._source, **self._tag_discovery_kwargs()
             ).tag_defs(scan_rows)
             self._scanner_kwargs["tag_defs"] = discovered or []
 
@@ -121,7 +124,7 @@ class AlignmentFile(DataSource):
 
     @property
     def tag_defs(self) -> list[tuple[str, str]]:
-        """List of definitions for interpreting tag records."""
+        """List of definitions for interpreting tags."""
         return self._scanner_kwargs["tag_defs"]
 
 
@@ -293,7 +296,7 @@ def from_bam(
         One or more genomic regions to query. Only applicable if an associated
         index file is available.
     index : str, pathlib.Path, or Callable, optional
-        An optional index file associated with the SAM file. If ``source`` is a
+        An optional index file associated with the BAM file. If ``source`` is a
         URI or path, is BGZF-compressed, and the index file shares the same
         name with a ".tbi" or ".csi" extension, the index file is automatically
         detected.

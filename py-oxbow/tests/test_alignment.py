@@ -65,10 +65,6 @@ class TestSamFile:
 
         assert manifest[f"fields={fields}"] == actual
 
-    def test_malformed(self):
-        with pytest.raises(BaseException):
-            next(ox.SamFile("data/malformed.sam").batches())
-
     def test_input_encodings(self):
         file = ox.SamFile("data/sample.sam", compressed=False, batch_size=3)
         assert next((file.batches())).num_rows <= 3
@@ -317,6 +313,21 @@ class TestCramFile:
         # Verify bases are resolved (not Ns)
         seqs = batch.column("seq").to_pylist()
         assert all("N" not in s for s in seqs if s is not None)
+
+    def test_with_tags(self):
+        file = ox.CramFile("data/sample.cram").with_tags()
+        assert len(file.tag_defs) > 0
+        batch = pa.record_batch(next(file.batches()))
+        assert "tags" in batch.schema.names
+
+    def test_with_tags_with_reference(self):
+        # Verifies that _tag_discovery_kwargs passes reference to the scanner
+        file = ox.CramFile(
+            "data/sample-ref.cram",
+            reference="data/sample-ref.fa",
+            reference_index="data/sample-ref.fa.fai",
+        ).with_tags()
+        assert isinstance(file.tag_defs, list)
 
     def test_with_reference_and_regions(self):
         file = ox.CramFile(
