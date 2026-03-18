@@ -26,7 +26,7 @@ class VariantFile(DataSource):
         info_fields: Literal["*"] | list[str] | None = "*",
         genotype_fields: Literal["*"] | list[str] | None = "*",
         genotype_by: Literal["sample", "field"] = "sample",
-        samples: Literal["*"] | list[str] | None = "*",
+        samples: Literal["*"] | list[str] | None = None,
         samples_nested: bool = False,
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
@@ -57,6 +57,53 @@ class VariantFile(DataSource):
         return type(self)(
             self._src,
             regions=regions,
+            index=self._index_src,
+            batch_size=self._batch_size,
+            **self._scanner_kwargs,
+        )
+
+    def with_samples(
+        self,
+        samples: Literal["*"] | list[str] | None = "*",
+        *,
+        genotype_fields: Literal["*"] | list[str] | None = "*",
+        group_by: Literal["sample", "field"] = "sample",
+    ) -> Self:
+        """
+        Return a new data source with sample genotype data nested under a
+        single ``"samples"`` struct column.
+
+        Parameters
+        ----------
+        samples : "*", list[str], or None, optional [default: "*"]
+            Names of samples to include in the genotype output. ``"*"``
+            includes all samples declared in the header. Pass a list to select
+            specific samples. ``None`` omits all sample genotype data.
+        genotype_fields : "*", list[str], or None, optional [default: "*"]
+            Genotype (aka FORMAT) fields to project for each sample. ``"*"``
+            includes all FORMAT fields declared in the header. Pass a list to
+            select specific fields. ``None`` omits all genotype fields.
+        group_by : Literal["sample", "field"], optional [default: "sample"]
+            Determines how genotype data is organized within the ``"samples"``
+            struct. If ``"sample"``, each sample name is a sub-column with
+            nested genotype fields. If ``"field"``, each genotype field is a
+            sub-column with nested sample values.
+
+        Returns
+        -------
+        Self
+            A new data source with sample genotype data nested under a single
+            ``"samples"`` struct column.
+        """
+        self._scanner_kwargs.update(
+            genotype_fields=genotype_fields,
+            genotype_by=group_by,
+            samples=samples,
+            samples_nested=True,
+        )
+        return type(self)(
+            self._src,
+            regions=self._regions,
             index=self._index_src,
             batch_size=self._batch_size,
             **self._scanner_kwargs,
@@ -104,7 +151,7 @@ def from_vcf(
     info_fields: Literal["*"] | list[str] | None = "*",
     genotype_fields: Literal["*"] | list[str] | None = "*",
     genotype_by: Literal["sample", "field"] = "sample",
-    samples: Literal["*"] | list[str] | None = "*",
+    samples: Literal["*"] | list[str] | None = None,
     samples_nested: bool = False,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
@@ -112,6 +159,13 @@ def from_vcf(
 ) -> VcfFile:
     """
     Create a VCF file data source.
+
+    .. versionchanged:: 0.7.0
+        The ``samples`` parameter now defaults to omitting sample genotype
+        data (``None``) instead of including all samples (``"*"``). To include
+        samples, pass a value to the ``samples`` parameter or use the
+        :meth:`~oxbow.core.VcfFile.with_samples()` method on the returned data
+        source.
 
     Parameters
     ----------
@@ -141,7 +195,7 @@ def from_vcf(
         sample is provided as a separate column with nested FORMAT fields. If
         "field", each FORMAT field is provided as a separate column with nested
         sample name fields.
-    samples : ``"*"``, list[str], or None, optional [default: ``"*"``]
+    samples : ``"*"``, list[str], or None, optional [default: ``None``]
         Samples to include in the genotype output. ``"*"`` includes all samples
         declared in the header. Pass a list to select specific samples. ``None``
         omits all sample genotype data.
@@ -199,7 +253,7 @@ def from_bcf(
     info_fields: Literal["*"] | list[str] | None = "*",
     genotype_fields: Literal["*"] | list[str] | None = "*",
     genotype_by: Literal["sample", "field"] = "sample",
-    samples: Literal["*"] | list[str] | None = "*",
+    samples: Literal["*"] | list[str] | None = None,
     samples_nested: bool = False,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
@@ -207,6 +261,13 @@ def from_bcf(
 ) -> BcfFile:
     """
     Create a BCF file data source.
+
+    .. versionchanged:: 0.7.0
+        The ``samples`` parameter now defaults to omitting sample genotype
+        data (``None``) instead of including all samples (``"*"``). To include
+        samples, pass a value to the ``samples`` parameter or use the
+        :meth:`~oxbow.core.BcfFile.with_samples()` method on the returned data
+        source.
 
     Parameters
     ----------
@@ -234,7 +295,7 @@ def from_bcf(
         sample is provided as a separate column with nested FORMAT fields. If
         "field", each FORMAT field is provided as a separate column with nested
         sample name fields.
-    samples : ``"*"``, list[str], or None, optional [default: ``"*"``]
+    samples : ``"*"``, list[str], or None, optional [default: ``None``]
         Samples to include in the genotype output. ``"*"`` includes all samples
         declared in the header. Pass a list to select specific samples. ``None``
         omits all sample genotype data.

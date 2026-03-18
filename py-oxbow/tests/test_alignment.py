@@ -65,6 +65,10 @@ class TestSamFile:
 
         assert manifest[f"fields={fields}"] == actual
 
+    def test_malformed(self):
+        with pytest.raises(BaseException):
+            next(ox.SamFile("data/malformed.sam").batches())
+
     def test_input_encodings(self):
         file = ox.SamFile("data/sample.sam", compressed=False, batch_size=3)
         assert next((file.batches())).num_rows <= 3
@@ -168,6 +172,10 @@ class TestBamFile:
         fragments = cloudpickle.loads(cloudpickle.dumps(fragments))
 
         assert [f.count_rows() for f in fragments] == [4]
+
+    def test_malformed(self):
+        with pytest.raises(OSError):
+            next(ox.BamFile("data/malformed.bam", compressed=True).batches())
 
     def test_input_encodings(self):
         file = ox.BamFile("data/sample.bam", compressed=True, batch_size=3)

@@ -24,7 +24,6 @@ class AlignmentFile(DataSource):
         *,
         fields: Literal["*"] | list[str] | None = "*",
         tag_defs: list[tuple[str, str]] | None = None,
-        tag_scan_rows: int = 1024,
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
@@ -38,15 +37,6 @@ class AlignmentFile(DataSource):
         self._scanner_kwargs = dict(
             compressed=compressed, fields=fields, tag_defs=tag_defs
         )
-        if tag_defs is None:
-            discovered = self._scanner_type(
-                self._source, **self._tag_discovery_kwargs()
-            ).tag_defs(tag_scan_rows)
-            self._scanner_kwargs["tag_defs"] = discovered or None
-
-    def _tag_discovery_kwargs(self) -> dict:
-        """Extra kwargs passed to the scanner used for tag discovery."""
-        return dict(compressed=self._scanner_kwargs.get("compressed", False))
 
     def _scan_query(self, scanner, region, columns, batch_size):
         if region == "*":
@@ -57,6 +47,56 @@ class AlignmentFile(DataSource):
             return scanner.scan_query(
                 region=region, index=self._index, columns=columns, batch_size=batch_size
             )
+
+    def with_tags(self, tag_defs: list[tuple[str, str]] | None = None, *, scan_rows: int = 1024) -> Self:
+        """
+        Return a new data source with the specified tag definitions.
+
+        Parameters
+        ----------
+        tag_defs : list[tuple[str, str]] or None, optional [default: None]
+            Definitions for tags to project. These will be nested in a "tags"
+            column. If None (default), tag definitions are discovered by
+            scanning records in the file, which is controlled by the
+            ``scan_rows`` parameter.
+        scan_rows : int, optional [default: 1024]
+            Number of rows to scan for tag discovery if tag_defs is None. Set
+            to -1 to scan the entire file, which may be slow for large files.
+
+        Returns
+        -------
+        Self
+            A new data source with the specified tag definitions.
+
+        Notes
+        -----
+        Tag definitions take the form of a list of (tag_name, tag_type) tuples,
+        where tag_name is a 2-character string and tag_type is a
+        single-character type code as defined in the SAM specification.
+
+        Type codes:
+
+            - A: Printable character
+            - i: Signed integer
+            - f: Floating point number
+            - Z: String
+            - H: Hex string
+            - B: Array (comma-separated values with type code prefix, e.g., "i,1,2,3")
+        """
+        if tag_defs is None:
+            scan_rows = scan_rows if scan_rows >= 0 else None
+            discovered = self._scanner_type(
+                self._source, compressed=self._scanner_kwargs["compressed"]
+            ).tag_defs(scan_rows)
+            self._scanner_kwargs["tag_defs"] = discovered or []
+
+        return type(self)(
+            self._src,
+            regions=self._regions,
+            index=self._index_src,
+            batch_size=self._batch_size,
+            **self._scanner_kwargs,
+        )
 
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
@@ -101,7 +141,6 @@ class CramFile(AlignmentFile):
         *,
         fields: Literal["*"] | list[str] | None = "*",
         tag_defs: list[tuple[str, str]] | None = None,
-        tag_scan_rows: int = 1024,
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         reference: str | Callable[[], IO[bytes] | str] | None = None,
@@ -115,7 +154,6 @@ class CramFile(AlignmentFile):
             compressed=compressed,
             fields=fields,
             tag_defs=tag_defs,
-            tag_scan_rows=tag_scan_rows,
             regions=regions,
             index=index,
             batch_size=batch_size,
@@ -137,13 +175,20 @@ def from_sam(
     *,
     fields: Literal["*"] | list[str] | None = "*",
     tag_defs: list[tuple[str, str]] | None = None,
-    tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> SamFile:
     """
     Create a SAM file data source.
+
+    .. versionchanged:: 0.7.0
+        The ``tag_scan_rows`` parameter was removed and tag definitions are no
+        longer discovered by default. The ``tag_defs`` parameter now defaults
+        to omitting tag definitions (``None``). To perform tag discovery,
+        use the :meth:`~oxbow.core.SamFile.with_tags()` method on the returned
+        data source, which accepts a ``scan_rows`` parameter to control how
+        many records are scanned.
 
     Parameters
     ----------
@@ -157,16 +202,13 @@ def from_sam(
         regular GZIP. If None, the source bytestream is assumed to be
         uncompressed. For more customized decoding, provide a callable
         ``source`` instead.
-    fields : list[str], optional
+    fields : list[str] or "*", optional [default: "*"]
         Standard SAM fields to include. By default, all standard fields are
         included.
     tag_defs : list[tuple[str, str]], optional [default: None]
         Definitions for tags to project. These will be nested in a "tags"
-        column. If None, tag definitions are discovered by scanning records in
-        the file, which is controlled by the ``tag_scan_rows`` parameter. To
-        omit tags entirely, set ``tag_defs=[]``.
-    tag_scan_rows : int, optional [default: 1024]
-        Number of rows to scan for tag definitions.
+        column. If None, tag definitions are omitted. To discover tag
+        definitions, use the ``with_tags()`` method on the returned data source.
     regions : str | list[str], optional
         One or more genomic regions to query. Only applicable if an associated
         index file is available.
@@ -201,7 +243,6 @@ def from_sam(
         compressed=bgzf_compressed,
         fields=fields,
         tag_defs=tag_defs,
-        tag_scan_rows=tag_scan_rows,
         regions=regions,
         index=index,
         batch_size=batch_size,
@@ -214,13 +255,20 @@ def from_bam(
     *,
     fields: Literal["*"] | list[str] | None = "*",
     tag_defs: list[tuple[str, str]] | None = None,
-    tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BamFile:
     """
     Create a BAM file data source.
+
+    .. versionchanged:: 0.7.0
+        The ``tag_scan_rows`` parameter was removed and tag definitions are no
+        longer discovered by default. The ``tag_defs`` parameter now defaults
+        to omitting tag definitions (``None``). To perform tag discovery,
+        use the :meth:`~oxbow.core.BamFile.with_tags()` method on the returned
+        data source, which accepts a ``scan_rows`` parameter to control how
+        many records are scanned.
 
     Parameters
     ----------
@@ -232,16 +280,13 @@ def from_bam(
         assumed to be BGZF-compressed. If None, the source is assumed to be
         uncompressed. For more custom decoding, provide a callable ``source``
         instead.
-    fields : list[str], optional
+    fields : list[str] or "*", optional [default: "*"]
         Standard SAM fields to include. By default, all standard fields are
         included.
     tag_defs : list[tuple[str, str]], optional [default: None]
         Definitions for tags to project. These will be nested in a "tags"
-        column. If None, tag definitions are discovered by scanning records in
-        the file, which is controlled by the ``tag_scan_rows`` parameter. To
-        omit tags entirely, set ``tag_defs=[]``.
-    tag_scan_rows : int, optional [default: 1024]
-        Number of rows to scan for tag definitions.
+        column. If None, tag definitions are omitted. To discover tag
+        definitions, use the ``with_tags()`` method on the returned data source.
     regions : str | list[str], optional
         One or more genomic regions to query. Only applicable if an associated
         index file is available.
@@ -275,7 +320,6 @@ def from_bam(
         compressed=bgzf_compressed,
         fields=fields,
         tag_defs=tag_defs,
-        tag_scan_rows=tag_scan_rows,
         regions=regions,
         index=index,
         batch_size=batch_size,
@@ -287,7 +331,6 @@ def from_cram(
     *,
     fields: Literal["*"] | list[str] | None = "*",
     tag_defs: list[tuple[str, str]] | None = None,
-    tag_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     reference: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
@@ -297,21 +340,26 @@ def from_cram(
     """
     Create a CRAM file data source.
 
+    .. versionchanged:: 0.7.0
+        The ``tag_scan_rows`` parameter was removed and tag definitions are no
+        longer discovered by default. The ``tag_defs`` parameter now defaults
+        to omitting tag definitions (``None``). To perform tag discovery,
+        use the :meth:`~oxbow.core.CramFile.with_tags()` method on the returned
+        data source, which accepts a ``scan_rows`` parameter to control how
+        many records are scanned.
+
     Parameters
     ----------
     source : str, pathlib.Path, or Callable
         The URI or path to the CRAM file, or a callable that opens the file
         as a file-like object.
-    fields : list[str], optional
+    fields : list[str] or "*", optional [default: "*"]
         Standard SAM fields to include. By default, all standard fields are
         included.
     tag_defs : list[tuple[str, str]], optional [default: None]
         Definitions for tags to project. These will be nested in a "tags"
-        column. If None, tag definitions are discovered by scanning records in
-        the file, which is controlled by the ``tag_scan_rows`` parameter. To
-        omit tags entirely, set ``tag_defs=[]``.
-    tag_scan_rows : int, optional [default: 1024]
-        Number of rows to scan for tag definitions.
+        column. If None, tag definitions are omitted. To discover tag
+        definitions, use the ``with_tags()`` method on the returned data source.
     regions : str | list[str], optional
         One or more genomic regions to query. Only applicable if an associated
         index file is available.
@@ -350,7 +398,6 @@ def from_cram(
         source=source,
         fields=fields,
         tag_defs=tag_defs,
-        tag_scan_rows=tag_scan_rows,
         regions=regions,
         index=index,
         reference=reference,

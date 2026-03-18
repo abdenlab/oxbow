@@ -1,9 +1,5 @@
 fields=None:
-    batch-00:
-        tags:
-        -   cF: 3
-        -   cF: 3
-        -   cF: 3
+    batch-00: {}
 fields=['qname', 'rname', 'foo']: 'Invalid field name: foo'
 fields=['qname', 'rname', 'mapq']:
     batch-00:
@@ -19,7 +15,3 @@ fields=['qname', 'rname', 'mapq']:
         - chr1
         - chr1
         - chr2
-        tags:
-        -   cF: 3
-        -   cF: 3
-        -   cF: 3

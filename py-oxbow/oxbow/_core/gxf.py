@@ -24,7 +24,6 @@ class GxfFile(DataSource):
         *,
         fields: Literal["*"] | list[str] | None = "*",
         attribute_defs: list[tuple[str, str]] | None = None,
-        attribute_scan_rows: int = 1024,
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
@@ -38,15 +37,56 @@ class GxfFile(DataSource):
         self._scanner_kwargs = dict(
             compressed=compressed, fields=fields, attribute_defs=attribute_defs
         )
-        if attribute_defs is None:
-            discovered = self._scanner_type(
-                self._source, compressed=compressed
-            ).attribute_defs(attribute_scan_rows)
-            self._scanner_kwargs["attribute_defs"] = discovered or None
 
     def _scan_query(self, scanner, region, columns, batch_size):
         return scanner.scan_query(
             region=region, index=self._index, columns=columns, batch_size=batch_size
+        )
+
+    def with_attributes(self, attribute_defs: list[tuple[str, str]] | None = None, *, scan_rows: int = 1024) -> Self:
+        """
+        Return a new data source with the specified attribute definitions.
+
+        Parameters
+        ----------
+        attribute_defs : list[tuple[str, str]] or None, optional [default: None]
+            Definitions for attributes to project. These will be nested in an
+            "attributes" column. If None (default), attribute definitions are
+            discovered by scanning records in the file, which is controlled by
+            the ``scan_rows`` parameter.
+        scan_rows : int, optional [default: 1024]
+            Number of rows to scan for attribute discovery if attribute_defs is
+            None. Set to -1 to scan the entire file, which may be slow for
+            large files.
+
+        Returns
+        -------
+        Self
+            A new data source with the specified attribute definitions.
+
+        Notes
+        -----
+        Attribute definitions are tuples of (name, type), where type is a string
+        indicating how to interpret the attribute values.
+
+        Attribute types:
+
+            - "String": a string value
+            - "Array": a comma-separated list of values
+        """
+        if attribute_defs is None:
+            scan_rows = scan_rows if scan_rows >= 0 else None
+            discovered = self._scanner_type(
+                self._source, compressed=self._scanner_kwargs["compressed"]
+            ).attribute_defs(scan_rows)
+            self._scanner_kwargs["attribute_defs"] = discovered or []
+
+        return type(self)(
+            self._src,
+            regions=self._regions,
+            index=self._index_src,
+            batch_size=self._batch_size,
+            **self._scanner_kwargs,
         )
 
     def regions(self, regions: str | list[str]) -> Self:
@@ -78,13 +118,21 @@ def from_gtf(
     *,
     fields: Literal["*"] | list[str] | None = "*",
     attribute_defs: list[tuple[str, str]] | None = None,
-    attribute_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> GtfFile:
     """
     Create a GTF file data source.
+
+    .. versionchanged:: 0.7.0
+        The ``attribute_scan_rows`` parameter was removed and attribute
+        definitions are no longer discovered by default. The ``attribute_defs``
+        parameter now defaults to omitting attribute definitions (``None``).
+        To perform attribute discovery, use the
+        :meth:`~oxbow.core.GtfFile.with_attributes()` method on the returned
+        data source, which accepts a ``scan_rows`` parameter to control how
+        many records are scanned.
 
     Parameters
     ----------
@@ -98,17 +146,14 @@ def from_gtf(
         regular GZIP. If None, the source bytestream is assumed to be
         uncompressed. For more customized decoding, provide a callable
         ``source`` instead.
-    fields : list[str], optional
+    fields : list[str] or "*", optional [default: "*"]
         Specific fixed fields to project. By default, all fixed fields are
         included.
     attribute_defs : list[tuple[str, str]], optional [default: None]
         Definitions for variable attribute fields to project. These will be
         nested in an "attributes" column. If None, attribute definitions are
-        discovered by scanning records in the file, which is controlled by the
-        ``attribute_scan_rows`` parameter. To omit attributes entirely,
-        set ``attribute_defs=[]``.
-    attribute_scan_rows : int, optional [default: 1024]
-        Number of rows to scan for attribute definitions.
+        omitted. To discover attribute definitions, use the
+        ``with_attributes()`` method on the returned data source.
     regions : str | list[str], optional
         One or more genomic regions to query. Only applicable if an associated
         index file is available.
@@ -140,7 +185,6 @@ def from_gtf(
         compressed=bgzf_compressed,
         fields=fields,
         attribute_defs=attribute_defs,
-        attribute_scan_rows=attribute_scan_rows,
         regions=regions,
         index=index,
         batch_size=batch_size,
@@ -153,13 +197,21 @@ def from_gff(
     *,
     fields: Literal["*"] | list[str] | None = "*",
     attribute_defs: list[tuple[str, str]] | None = None,
-    attribute_scan_rows: int = 1024,
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> GffFile:
     """
     Create a GFF3 file data source.
+
+    .. versionchanged:: 0.7.0
+        The ``attribute_scan_rows`` parameter was removed and attribute
+        definitions are no longer discovered by default. The ``attribute_defs``
+        parameter now defaults to omitting attribute definitions (``None``).
+        To perform attribute discovery, use the
+        :meth:`~oxbow.core.GffFile.with_attributes()` method on the returned
+        data source, which accepts a ``scan_rows`` parameter to control how
+        many records are scanned.
 
     Parameters
     ----------
@@ -173,22 +225,19 @@ def from_gff(
         regular GZIP. If None, the source bytestream is assumed to be
         uncompressed. For more customized decoding, provide a callable
         ``source`` instead.
-    fields : list[str], optional
+    fields : list[str] or "*", optional [default: "*"]
         Specific fixed fields to project. By default, all fixed fields are
         included.
     attribute_defs : list[tuple[str, str]], optional [default: None]
         Definitions for variable attribute fields to project. These will be
         nested in an "attributes" column. If None, attribute definitions are
-        discovered by scanning records in the file, which is controlled by the
-        ``attribute_scan_rows`` parameter. To omit attributes entirely,
-        set ``attribute_defs=[]``.
-    attribute_scan_rows : int, optional [default: 1024]
-        Number of rows to scan for attribute definitions.
+        omitted. To discover attribute definitions, use the
+        ``with_attributes()`` method on the returned data source.
     regions : str | list[str], optional
         One or more genomic regions to query. Only applicable if an associated
         index file is available.
     index : str, pathlib.Path, or Callable, optional
-        An optional index file associated with the GTF file. If ``source`` is a
+        An optional index file associated with the GFF file. If ``source`` is a
         URI or path, is BGZF-compressed, and the index file shares the same
         name with a ".tbi" or ".csi" extension, the index file is automatically
         detected.
@@ -217,6 +266,5 @@ def from_gff(
         compressed=bgzf_compressed,
         regions=regions,
         attribute_defs=attribute_defs,
-        attribute_scan_rows=attribute_scan_rows,
         batch_size=batch_size,
     )
