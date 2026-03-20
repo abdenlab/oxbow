@@ -125,12 +125,13 @@ impl Scanner {
     pub fn scan_query<R: Read + Seek + Send + 'static>(
         &self,
         reader: BBIReader<R>,
-        region: noodles::core::Region,
+        region: crate::Region,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
+        let region = region.to_noodles()?;
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         match reader {
             BBIReader::BigWig(reader) => {

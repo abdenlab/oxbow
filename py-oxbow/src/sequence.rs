@@ -7,16 +7,14 @@ use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
-use flate2::read::MultiGzDecoder;
-use noodles::bgzf::gzi::io::Reader as GziReader;
-use noodles::bgzf::io::IndexedReader as IndexedBgzfReader;
-use noodles::core::Region;
-
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{
     pyobject_to_bufreader, resolve_coord_system, resolve_faidx, resolve_fields, PyVirtualPosition,
     Reader,
 };
+use flate2::read::MultiGzDecoder;
+use noodles::bgzf::gzi::io::Reader as GziReader;
+use noodles::bgzf::io::IndexedReader as IndexedBgzfReader;
 use oxbow::sequence::{FastaScanner, FastqScanner};
 use oxbow::util::batches_to_ipc;
 
@@ -352,13 +350,12 @@ impl PyFastaScanner {
         let index = resolve_faidx(py, &self.src, index)?;
         let reader = self.reader.clone();
 
-        let regions: Vec<Region> = regions
+        let coord_system = self.scanner.model().coord_system();
+        let regions: Vec<oxbow::Region> = regions
             .into_iter()
-            .map(|s| {
-                s.parse::<Region>()
-                    .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|s| oxbow::Region::parse(&s, coord_system))
+            .collect::<oxbow::Result<Vec<_>>>()
+            .map_err(to_py)?;
 
         if self.compressed {
             let gzi_source = match gzi {
@@ -467,13 +464,11 @@ pub fn read_fasta(
 
     let ipc = if let Some(regions) = regions {
         let index = resolve_faidx(py, &src, index)?;
-        let regions: Vec<Region> = regions
+        let regions: Vec<oxbow::Region> = regions
             .into_iter()
-            .map(|s| {
-                s.parse::<Region>()
-                    .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|s| oxbow::Region::parse(&s, oxbow::CoordSystem::OneClosed))
+            .collect::<oxbow::Result<Vec<_>>>()
+            .map_err(to_py)?;
         if compressed {
             let gzi_source = match gzi {
                 Some(gzi) => pyobject_to_bufreader(py, gzi.clone_ref(py), false)?,

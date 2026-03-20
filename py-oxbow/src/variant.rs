@@ -7,8 +7,6 @@ use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
-use noodles::core::Region;
-
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{
     pyobject_to_bufreader, resolve_coord_system, resolve_fields, resolve_index, PyVirtualPosition,
@@ -337,9 +335,8 @@ impl PyVcfScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
@@ -709,9 +706,8 @@ impl PyBcfScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
@@ -839,9 +835,7 @@ pub fn read_vcf(
     .map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region = oxbow::Region::parse(&region, oxbow::CoordSystem::OneClosed).map_err(to_py)?;
 
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
@@ -940,9 +934,7 @@ pub fn read_bcf(
     .map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region = oxbow::Region::parse(&region, oxbow::CoordSystem::OneClosed).map_err(to_py)?;
 
         match reader {
             Reader::BgzfFile(bgzf_reader) => {

@@ -4,7 +4,7 @@ use extendr_api::prelude::*;
 
 use flate2::bufread::MultiGzDecoder;
 use noodles::bgzf::io::IndexedReader as IndexedBgzfReader;
-use noodles::core::Region;
+use oxbow::Region;
 
 use oxbow::alignment::{BamScanner, CramScanner, SamScanner};
 use oxbow::bbi::{BigBedScanner, BigWigScanner};
@@ -74,7 +74,7 @@ fn read_fasta_impl(
             noodles::fasta::fai::fs::read(index_path).expect("Could not read FASTA index file.");
         let regions: Vec<Region> = regions
             .into_iter()
-            .map(|s| s.parse::<Region>().unwrap())
+            .map(|s| Region::parse(&s, CoordSystem::OneClosed).unwrap())
             .collect();
         if compressed {
             let gzi_path = gzi.unwrap_or(format!("{}.gzi", path));
@@ -120,7 +120,7 @@ pub fn read_sam_impl(
     let ipc = if let Some(region) = region {
         let index_path = index.unwrap_or(format!("{}.tbi", path));
         let index = noodles::tabix::fs::read(index_path).expect("Could not read TBI index file.");
-        let region = region.parse::<Region>().unwrap();
+        let region = Region::parse(&region, CoordSystem::OneClosed).unwrap();
         let bgzf_reader = noodles::bgzf::io::Reader::new(reader);
         let mut fmt_reader = noodles::sam::io::Reader::new(bgzf_reader);
         let header = fmt_reader.read_header().unwrap();
@@ -194,7 +194,7 @@ pub fn read_bam_impl(
         let index_path = index.unwrap_or(format!("{}.bai", path));
         let index =
             noodles::bam::bai::fs::read(index_path).expect("Could not read BAI index file.");
-        let region = region.parse::<Region>().unwrap();
+        let region = Region::parse(&region, CoordSystem::OneClosed).unwrap();
         let bgzf_reader = noodles::bgzf::io::Reader::new(reader);
         let mut fmt_reader = noodles::bam::io::Reader::from(bgzf_reader);
         let header = fmt_reader.read_header().unwrap();
@@ -286,7 +286,7 @@ pub fn read_cram_impl(
         let index_path = index.unwrap_or(format!("{}.crai", path));
         let index =
             noodles::cram::crai::fs::read(index_path).expect("Could not read CRAI index file.");
-        let region = region.parse::<Region>().unwrap();
+        let region = Region::parse(&region, CoordSystem::OneClosed).unwrap();
         let mut fmt_reader = noodles::cram::io::reader::Builder::default()
             .set_reference_sequence_repository(repo.clone())
             .build_from_reader(reader);
@@ -354,7 +354,7 @@ pub fn read_vcf_impl(
     let ipc = if let Some(region) = region {
         let index_path = index.unwrap_or(format!("{}.tbi", path));
         let index = noodles::tabix::fs::read(index_path).expect("Could not read TBI index file.");
-        let region = region.parse::<Region>().unwrap();
+        let region = Region::parse(&region, CoordSystem::OneClosed).unwrap();
         let bgzf_reader = noodles::bgzf::io::Reader::new(reader);
         let mut fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
         let header = fmt_reader.read_header().unwrap();
@@ -438,7 +438,7 @@ pub fn read_bcf_impl(
     let ipc = if let Some(region) = region {
         let index_path = index.unwrap_or(format!("{}.csi", path));
         let index = noodles::csi::fs::read(index_path).expect("Could not read CSI index file.");
-        let region = region.parse::<Region>().unwrap();
+        let region = Region::parse(&region, CoordSystem::OneClosed).unwrap();
         let bgzf_reader = noodles::bgzf::io::Reader::new(reader);
         let mut fmt_reader = noodles::bcf::io::Reader::from(bgzf_reader);
         let header = fmt_reader.read_header().unwrap();
@@ -513,7 +513,7 @@ pub fn read_gtf_impl(
     let ipc = if let Some(region) = region {
         let index_path = index.unwrap_or(format!("{}.tbi", path));
         let index = noodles::tabix::fs::read(index_path).expect("Could not read TBI index file.");
-        let region = region.parse::<Region>().unwrap();
+        let region = Region::parse(&region, CoordSystem::OneClosed).unwrap();
         let bgzf_reader = noodles::bgzf::io::Reader::new(reader);
         let mut fmt_reader = noodles::gtf::io::Reader::new(bgzf_reader);
         let attr_defs = GtfScanner::attribute_defs(&mut fmt_reader, scan_rows).unwrap();
@@ -583,7 +583,7 @@ pub fn read_gff_impl(
     let ipc = if let Some(region) = region {
         let index_path = index.unwrap_or(format!("{}.tbi", path));
         let index = noodles::tabix::fs::read(index_path).expect("Could not read TBI index file.");
-        let region = region.parse::<Region>().unwrap();
+        let region = Region::parse(&region, CoordSystem::OneClosed).unwrap();
         let bgzf_reader = noodles::bgzf::io::Reader::new(reader);
         let mut fmt_reader = noodles::gff::io::Reader::new(bgzf_reader);
         let attr_defs = GffScanner::attribute_defs(&mut fmt_reader, scan_rows).unwrap();
@@ -659,7 +659,7 @@ pub fn read_bed_impl(
     let ipc = if let Some(region) = region {
         let index_path = index.unwrap_or(format!("{}.tbi", path));
         let index = noodles::tabix::fs::read(index_path).expect("Could not read TBI index file.");
-        let region = region.parse::<Region>().unwrap();
+        let region = Region::parse(&region, CoordSystem::ZeroHalfOpen).unwrap();
         let bgzf_reader = noodles::bgzf::io::Reader::new(reader);
         let fmt_reader = noodles::bed::io::Reader::new(bgzf_reader);
         let batches = scanner
@@ -692,7 +692,7 @@ pub fn read_bigwig_impl(
         .unwrap();
 
     let ipc = if let Some(region) = region {
-        let region = region.parse::<Region>().unwrap();
+        let region = Region::parse(&region, CoordSystem::ZeroHalfOpen).unwrap();
         let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
         let info = fmt_reader.info().clone();
         let scanner =
@@ -727,7 +727,7 @@ pub fn read_bigbed_impl(
         .unwrap();
 
     let ipc = if let Some(region) = region {
-        let region = region.parse::<Region>().unwrap();
+        let region = Region::parse(&region, CoordSystem::ZeroHalfOpen).unwrap();
         let fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
         let info = fmt_reader.info().clone();
         let scanner = BigBedScanner::new(

@@ -210,13 +210,14 @@ impl Scanner {
     pub fn scan_query<R: Read + Seek>(
         &self,
         fmt_reader: noodles::cram::io::Reader<R>,
-        region: noodles::core::Region,
+        region: crate::Region,
         index: noodles::cram::crai::Index,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
+        let region = region.to_noodles()?;
         let interval = region.interval();
 
         let batch_builder = self.build_batch_builder(columns, batch_size)?;

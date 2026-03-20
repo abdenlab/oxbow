@@ -175,13 +175,14 @@ impl Scanner {
     pub fn scan_query<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
         fmt_reader: noodles::bam::io::Reader<R>,
-        region: noodles::core::Region,
+        region: crate::Region,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
+        let region = region.to_noodles()?;
         let interval = region.interval();
 
         let batch_builder = self.build_batch_builder(columns, batch_size)?;

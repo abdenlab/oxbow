@@ -8,11 +8,9 @@ use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
-use bigtools::bed::autosql::parse::parse_autosql;
-use noodles::core::Region;
-
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{pyobject_to_bufreader, resolve_coord_system, resolve_fields, Reader};
+use bigtools::bed::autosql::parse::parse_autosql;
 use oxbow::bbi::model::base::field::FieldDef;
 use oxbow::bbi::{BBIReader, BBIZoomScanner, BedSchema, BigBedScanner, BigWigScanner};
 use oxbow::util::batches_to_ipc;
@@ -199,9 +197,8 @@ impl PyBigWigScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         let reader = self.reader.clone();
         let info = self.scanner.info().clone();
@@ -445,9 +442,8 @@ impl PyBigBedScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         let reader = self.reader.clone();
         let info = self.scanner.info().clone();
@@ -675,9 +671,8 @@ impl PyBBIZoomScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         self.reader.seek(std::io::SeekFrom::Start(0)).unwrap();
         let reader = self.reader.clone();
@@ -728,9 +723,8 @@ pub fn read_bigwig(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, oxbow::CoordSystem::ZeroHalfOpen).map_err(to_py)?;
 
         let fmt_reader = bigtools::BigWigRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
@@ -784,9 +778,8 @@ pub fn read_bigbed(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, oxbow::CoordSystem::ZeroHalfOpen).map_err(to_py)?;
 
         let fmt_reader = bigtools::BigBedRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;

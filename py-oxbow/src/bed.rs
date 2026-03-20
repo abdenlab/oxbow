@@ -7,8 +7,6 @@ use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
-use noodles::core::Region;
-
 use crate::error::{err_on_unwind, to_py};
 use crate::util::resolve_coord_system;
 use crate::util::{
@@ -325,9 +323,8 @@ impl PyBedScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
@@ -417,9 +414,8 @@ pub fn read_bed(
     .map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, oxbow::CoordSystem::ZeroHalfOpen).map_err(to_py)?;
 
         match reader {
             Reader::BgzfFile(bgzf_reader) => {

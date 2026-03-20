@@ -2,7 +2,6 @@ use std::io::{BufRead, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema;
-use noodles::core::Region;
 
 use crate::sequence::model::BatchBuilder;
 use crate::sequence::model::Model;
@@ -18,10 +17,9 @@ use crate::{CoordSystem, Select};
 ///
 /// ```no_run
 /// use oxbow::sequence::scanner::fasta::Scanner;
-/// use oxbow::{CoordSystem, Select};
+/// use oxbow::{CoordSystem, Region, Select};
 /// use std::fs::File;
 /// use std::io::BufReader;
-/// use noodles::core::Region;
 ///
 /// let inner = File::open("sample.fa").map(BufReader::new).unwrap();
 /// let fmt_reader = noodles::fasta::io::Reader::new(inner);
@@ -106,12 +104,16 @@ impl Scanner {
     pub fn scan_query<R: BufRead + Seek>(
         &self,
         fmt_reader: noodles::fasta::io::Reader<R>,
-        regions: Vec<Region>,
+        regions: Vec<crate::Region>,
         index: noodles::fasta::fai::Index,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
     ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
+        let regions: Vec<noodles::core::Region> = regions
+            .iter()
+            .map(|r| r.to_noodles())
+            .collect::<crate::Result<Vec<_>>>()?;
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter =
             QueryBatchIterator::new(fmt_reader, index, regions, batch_builder, batch_size);
@@ -177,7 +179,7 @@ mod tests {
 
         let scanner = Scanner::new(Select::All, CoordSystem::OneClosed).unwrap();
         let regions = ["seq1:1-4", "seq2:1-4", "seq3:1-4"];
-        let regions: Vec<Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
+        let regions: Vec<crate::Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
         let mut batch_iter = scanner
             .scan_query(fmt_reader, regions, index, None, Some(2))
             .unwrap();

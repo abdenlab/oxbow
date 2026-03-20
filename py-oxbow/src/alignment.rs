@@ -8,14 +8,12 @@ use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
-use noodles::bgzf::io::Seek as _;
-use noodles::core::Region;
-
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{
     pyobject_to_bufreader, resolve_coord_system, resolve_cram_index, resolve_fasta_repository,
     resolve_fields, resolve_index, PyVirtualPosition, Reader,
 };
+use noodles::bgzf::io::Seek as _;
 use oxbow::alignment::{BamScanner, CramScanner, SamScanner};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
@@ -334,9 +332,8 @@ impl PySamScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
@@ -781,9 +778,8 @@ impl PyBamScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
@@ -1135,9 +1131,8 @@ impl PyCramScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
         let index = resolve_cram_index(py, &self.src, index)?;
 
         match self.reader.clone() {
@@ -1201,9 +1196,7 @@ pub fn read_sam(
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region = oxbow::Region::parse(&region, oxbow::CoordSystem::OneClosed).map_err(to_py)?;
 
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
@@ -1274,9 +1267,7 @@ pub fn read_bam(
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region = oxbow::Region::parse(&region, oxbow::CoordSystem::OneClosed).map_err(to_py)?;
 
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
@@ -1348,9 +1339,7 @@ pub fn read_cram(
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region = oxbow::Region::parse(&region, oxbow::CoordSystem::OneClosed).map_err(to_py)?;
 
         match reader {
             Reader::File(reader) => {

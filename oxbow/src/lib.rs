@@ -63,71 +63,15 @@ pub mod alignment;
 pub mod batch;
 pub mod bbi;
 pub mod bed;
+pub mod coords;
 pub mod error;
 pub mod gxf;
 pub mod sequence;
 pub mod util;
 pub mod variant;
 
+pub use coords::{CoordSystem, Region};
 pub use error::{OxbowError, Result};
-
-/// Genomic coordinate system.
-///
-/// The notation `XY` encodes the base of the start coordinate (`X`) and the
-/// base of the end coordinate (`Y`):
-///
-/// - `"11"` — 1-based start, 1-based end (closed; SAM/VCF/GFF convention)
-/// - `"01"` — 0-based start, 1-based end (half-open; BED/BBI convention)
-///
-/// End coordinates are numerically identical in both systems; only start
-/// positions differ. Use [`CoordSystem::start_offset_from`] to get the
-/// additive offset needed to convert a start value from one system to another.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum CoordSystem {
-    /// 1-based start, closed end.
-    OneClosed,
-    /// 0-based start, half-open end.
-    ZeroHalfOpen,
-}
-
-impl CoordSystem {
-    /// Returns the additive offset to apply to a start coordinate when
-    /// converting from `source_cs` to `self`.
-    ///
-    /// - `OneClosed` → `ZeroHalfOpen`: `-1`
-    /// - `ZeroHalfOpen` → `OneClosed`: `+1`
-    /// - same → same: `0`
-    pub fn start_offset_from(self, source_cs: CoordSystem) -> i32 {
-        match (source_cs, self) {
-            (CoordSystem::OneClosed, CoordSystem::ZeroHalfOpen) => -1,
-            (CoordSystem::ZeroHalfOpen, CoordSystem::OneClosed) => 1,
-            _ => 0,
-        }
-    }
-}
-
-impl std::fmt::Display for CoordSystem {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CoordSystem::OneClosed => write!(f, "11"),
-            CoordSystem::ZeroHalfOpen => write!(f, "01"),
-        }
-    }
-}
-
-impl std::str::FromStr for CoordSystem {
-    type Err = OxbowError;
-
-    fn from_str(s: &str) -> Result<Self> {
-        match s {
-            "11" => Ok(CoordSystem::OneClosed),
-            "01" => Ok(CoordSystem::ZeroHalfOpen),
-            other => Err(OxbowError::invalid_input(format!(
-                "invalid coordinate system '{other}'; expected \"01\" or \"11\""
-            ))),
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub enum Select<T> {
