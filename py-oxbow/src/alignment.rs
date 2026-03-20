@@ -13,12 +13,13 @@ use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{
-    pyobject_to_bufreader, resolve_cram_index, resolve_fasta_repository, resolve_fields,
-    resolve_index, PyVirtualPosition, Reader,
+    pyobject_to_bufreader, resolve_coord_system, resolve_cram_index, resolve_fasta_repository,
+    resolve_fields, resolve_index, PyVirtualPosition, Reader,
 };
 use oxbow::alignment::{BamScanner, CramScanner, SamScanner};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
+use oxbow::CoordSystem;
 
 /// A SAM file scanner.
 ///
@@ -45,20 +46,28 @@ pub struct PySamScanner {
 #[pymethods]
 impl PySamScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None, tag_defs=None))]
+    #[pyo3(signature = (src, compressed=false, fields=None, tag_defs=None, coords=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
         fields: Option<Py<PyAny>>,
         tag_defs: Option<Vec<(String, String)>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
         let fields = resolve_fields(fields, py)?;
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::sam::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let scanner = SamScanner::new(header, fields, tag_defs).map_err(to_py)?;
+        let scanner = SamScanner::new(
+            header,
+            fields,
+            tag_defs,
+            coord_system.unwrap_or(CoordSystem::OneClosed),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -84,6 +93,7 @@ impl PySamScanner {
                 .collect::<Vec<_>>();
             kwargs.set_item("tag_defs", tag_defs_raw)?;
         }
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -483,20 +493,28 @@ pub struct PyBamScanner {
 #[pymethods]
 impl PyBamScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=true, fields=None, tag_defs=None))]
+    #[pyo3(signature = (src, compressed=true, fields=None, tag_defs=None, coords=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
         fields: Option<Py<PyAny>>,
         tag_defs: Option<Vec<(String, String)>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
         let fields = resolve_fields(fields, py)?;
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bam::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
         let reader = fmt_reader.into_inner();
-        let scanner = BamScanner::new(header, fields, tag_defs).map_err(to_py)?;
+        let scanner = BamScanner::new(
+            header,
+            fields,
+            tag_defs,
+            coord_system.unwrap_or(CoordSystem::OneClosed),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -522,6 +540,7 @@ impl PyBamScanner {
                 .collect::<Vec<_>>();
             kwargs.set_item("tag_defs", tag_defs_raw)?;
         }
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -921,7 +940,8 @@ pub struct PyCramScanner {
 impl PyCramScanner {
     #[new]
     #[allow(unused_variables)]
-    #[pyo3(signature = (src, compressed=None, fields=None, tag_defs=None, reference=None, reference_index=None))]
+    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (src, compressed=None, fields=None, tag_defs=None, reference=None, reference_index=None, coords=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
@@ -930,8 +950,10 @@ impl PyCramScanner {
         tag_defs: Option<Vec<(String, String)>>,
         reference: Option<Py<PyAny>>,
         reference_index: Option<Py<PyAny>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
         let fields = resolve_fields(fields, py)?;
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let mut fmt_reader = noodles::cram::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
@@ -941,7 +963,14 @@ impl PyCramScanner {
             reference.as_ref().map(|r| r.clone_ref(py)),
             reference_index.as_ref().map(|r| r.clone_ref(py)),
         )?;
-        let scanner = CramScanner::new(header, fields, tag_defs, repo).map_err(to_py)?;
+        let scanner = CramScanner::new(
+            header,
+            fields,
+            tag_defs,
+            repo,
+            coord_system.unwrap_or(CoordSystem::OneClosed),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -970,6 +999,7 @@ impl PyCramScanner {
         if let Some(ref reference_index) = self.reference_index {
             kwargs.set_item("reference_index", reference_index)?;
         }
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -1166,7 +1196,8 @@ pub fn read_sam(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let mut fmt_reader = noodles::sam::io::Reader::new(reader);
     let header = fmt_reader.read_header()?;
-    let scanner = SamScanner::new(header, fields, tag_defs).map_err(to_py)?;
+    let scanner =
+        SamScanner::new(header, fields, tag_defs, CoordSystem::OneClosed).map_err(to_py)?;
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
@@ -1238,7 +1269,8 @@ pub fn read_bam(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let mut fmt_reader = noodles::bam::io::Reader::from(reader);
     let header = fmt_reader.read_header()?;
-    let scanner = BamScanner::new(header, fields, tag_defs).map_err(to_py)?;
+    let scanner =
+        BamScanner::new(header, fields, tag_defs, CoordSystem::OneClosed).map_err(to_py)?;
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {
@@ -1311,7 +1343,8 @@ pub fn read_cram(
     let mut fmt_reader = noodles::cram::io::Reader::new(reader);
     let header = fmt_reader.read_header()?;
     let repo = resolve_fasta_repository(py, reference, reference_index)?;
-    let scanner = CramScanner::new(header, fields, tag_defs, repo).map_err(to_py)?;
+    let scanner =
+        CramScanner::new(header, fields, tag_defs, repo, CoordSystem::OneClosed).map_err(to_py)?;
     let reader = fmt_reader.into_inner();
 
     let ipc = if let Some(region) = region {

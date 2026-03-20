@@ -116,11 +116,11 @@ pub enum FieldBuilder {
     Qname(GenericStringBuilder<i32>),
     Flag(UInt16Builder),
     Rname(StringDictionaryBuilder<Int32Type>),
-    Pos(Int32Builder),
+    Pos(Int32Builder, i32),
     Mapq(UInt8Builder),
     Cigar(GenericStringBuilder<i32>),
     Rnext(StringDictionaryBuilder<Int32Type>),
-    Pnext(Int32Builder),
+    Pnext(Int32Builder, i32),
     Tlen(Int32Builder),
     Seq(GenericStringBuilder<i32>),
     Qual(GenericStringBuilder<i32>),
@@ -138,15 +138,29 @@ impl FieldBuilder {
             Field::Qname => Self::Qname(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::Flag => Self::Flag(UInt16Builder::with_capacity(capacity)),
             Field::Rname => Self::Rname(StringDictionaryBuilder::<Int32Type>::new()),
-            Field::Pos => Self::Pos(Int32Builder::with_capacity(capacity)),
+            Field::Pos => Self::Pos(Int32Builder::with_capacity(capacity), 0),
             Field::Mapq => Self::Mapq(UInt8Builder::with_capacity(capacity)),
             Field::Cigar => Self::Cigar(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::Rnext => Self::Rnext(StringDictionaryBuilder::<Int32Type>::new()),
-            Field::Pnext => Self::Pnext(Int32Builder::with_capacity(capacity)),
+            Field::Pnext => Self::Pnext(Int32Builder::with_capacity(capacity), 0),
             Field::Tlen => Self::Tlen(Int32Builder::with_capacity(capacity)),
             Field::Seq => Self::Seq(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::Qual => Self::Qual(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::End => Self::End(Int32Builder::with_capacity(capacity)),
+        }
+    }
+
+    /// Sets the coordinate offset for start position fields (`pos`, `pnext`).
+    ///
+    /// The offset is added to start coordinates when appending records, converting
+    /// from the source coordinate system to the output coordinate system. Use
+    /// [`CoordSystem::start_offset_from`][crate::CoordSystem::start_offset_from] to
+    /// compute this value. Has no effect on other field variants.
+    pub fn with_coord_offset(self, offset: i32) -> Self {
+        match self {
+            Self::Pos(b, _) => Self::Pos(b, offset),
+            Self::Pnext(b, _) => Self::Pnext(b, offset),
+            other => other,
         }
     }
 
@@ -186,14 +200,14 @@ impl FieldBuilder {
                 let array = reset_dictarray_builder(builder);
                 Arc::new(array)
             }
-            Self::Pos(builder) => Arc::new(builder.finish()),
+            Self::Pos(builder, _) => Arc::new(builder.finish()),
             Self::Mapq(builder) => Arc::new(builder.finish()),
             Self::Cigar(builder) => Arc::new(builder.finish()),
             Self::Rnext(builder) => {
                 let array = reset_dictarray_builder(builder);
                 Arc::new(array)
             }
-            Self::Pnext(builder) => Arc::new(builder.finish()),
+            Self::Pnext(builder, _) => Arc::new(builder.finish()),
             Self::Tlen(builder) => Arc::new(builder.finish()),
             Self::Seq(builder) => Arc::new(builder.finish()),
             Self::Qual(builder) => Arc::new(builder.finish()),
@@ -226,10 +240,10 @@ impl Push<&noodles::sam::Record> for FieldBuilder {
                     .and_then(|result| result.ok().map(|(name, _)| name.to_string()));
                 builder.append_option(rname);
             }
-            Self::Pos(builder) => {
+            Self::Pos(builder, offset) => {
                 let start = record
                     .alignment_start()
-                    .and_then(|result| result.ok().map(|pos| pos.get() as i32));
+                    .and_then(|result| result.ok().map(|pos| pos.get() as i32 + *offset));
                 builder.append_option(start);
             }
             Self::Mapq(builder) => {
@@ -247,10 +261,10 @@ impl Push<&noodles::sam::Record> for FieldBuilder {
                     .and_then(|result| result.ok().map(|(name, _)| name.to_string()));
                 builder.append_option(rnext);
             }
-            Self::Pnext(builder) => {
+            Self::Pnext(builder, offset) => {
                 let start = record
                     .mate_alignment_start()
-                    .and_then(|result| result.ok().map(|pos| pos.get() as i32));
+                    .and_then(|result| result.ok().map(|pos| pos.get() as i32 + *offset));
                 builder.append_option(start);
             }
             Self::Tlen(builder) => {
@@ -294,10 +308,10 @@ impl Push<&noodles::bam::Record> for FieldBuilder {
                     .and_then(|result| result.ok().map(|(name, _)| name.to_string()));
                 builder.append_option(rname);
             }
-            Self::Pos(builder) => {
+            Self::Pos(builder, offset) => {
                 let start = record
                     .alignment_start()
-                    .and_then(|result| result.ok().map(|pos| pos.get() as i32));
+                    .and_then(|result| result.ok().map(|pos| pos.get() as i32 + *offset));
                 builder.append_option(start);
             }
             Self::Mapq(builder) => {
@@ -312,10 +326,10 @@ impl Push<&noodles::bam::Record> for FieldBuilder {
                     .and_then(|result| result.ok().map(|(name, _)| name.to_string()));
                 builder.append_option(rnext);
             }
-            Self::Pnext(builder) => {
+            Self::Pnext(builder, offset) => {
                 let start = record
                     .mate_alignment_start()
-                    .and_then(|result| result.ok().map(|pos| pos.get() as i32));
+                    .and_then(|result| result.ok().map(|pos| pos.get() as i32 + *offset));
                 builder.append_option(start);
             }
             Self::Tlen(builder) => {
@@ -359,8 +373,10 @@ impl Push<&noodles::sam::alignment::RecordBuf> for FieldBuilder {
                     .and_then(|result| result.ok().map(|(name, _)| String::from_utf8_lossy(name)));
                 builder.append_option(rname);
             }
-            Self::Pos(builder) => {
-                let start = record.alignment_start().map(|pos| pos.get() as i32);
+            Self::Pos(builder, offset) => {
+                let start = record
+                    .alignment_start()
+                    .map(|pos| pos.get() as i32 + *offset);
                 builder.append_option(start);
             }
             Self::Mapq(builder) => {
@@ -375,8 +391,10 @@ impl Push<&noodles::sam::alignment::RecordBuf> for FieldBuilder {
                     .and_then(|result| result.ok().map(|(name, _)| String::from_utf8_lossy(name)));
                 builder.append_option(rnext);
             }
-            Self::Pnext(builder) => {
-                let start = record.mate_alignment_start().map(|pos| pos.get() as i32);
+            Self::Pnext(builder, offset) => {
+                let start = record
+                    .mate_alignment_start()
+                    .map(|pos| pos.get() as i32 + *offset);
                 builder.append_option(start);
             }
             Self::Tlen(builder) => {

@@ -14,7 +14,8 @@ use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{
-    pyobject_to_bufreader, resolve_faidx, resolve_fields, PyVirtualPosition, Reader,
+    pyobject_to_bufreader, resolve_coord_system, resolve_faidx, resolve_fields, PyVirtualPosition,
+    Reader,
 };
 use oxbow::sequence::{FastaScanner, FastqScanner};
 use oxbow::util::batches_to_ipc;
@@ -224,16 +225,22 @@ pub struct PyFastaScanner {
 #[pymethods]
 impl PyFastaScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None))]
+    #[pyo3(signature = (src, compressed=false, fields=None, coords=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
         fields: Option<Py<PyAny>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
         let fields = resolve_fields(fields, py)?;
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
-        let scanner = FastaScanner::new(fields).map_err(to_py)?;
+        let scanner = FastaScanner::new(
+            fields,
+            coord_system.unwrap_or(oxbow::CoordSystem::OneClosed),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -250,6 +257,7 @@ impl PyFastaScanner {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
         kwargs.set_item("fields", self.scanner.model().field_names())?;
+        kwargs.set_item("coords", self.scanner.model().coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -455,7 +463,7 @@ pub fn read_fasta(
 ) -> PyResult<Vec<u8>> {
     let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let scanner = FastaScanner::new(fields).map_err(to_py)?;
+    let scanner = FastaScanner::new(fields, oxbow::CoordSystem::OneClosed).map_err(to_py)?;
 
     let ipc = if let Some(regions) = regions {
         let index = resolve_faidx(py, &src, index)?;

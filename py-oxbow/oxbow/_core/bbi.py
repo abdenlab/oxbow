@@ -74,6 +74,7 @@ class BigBedFile(BbiFile):
         schema: str = "bed3+",
         *,
         fields: Literal["*"] | list[str] | None = "*",
+        coords: Literal["01", "11"] = "01",
         regions: str | list[str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
@@ -83,7 +84,7 @@ class BigBedFile(BbiFile):
             regions = [regions]
         self._regions = regions
 
-        self._scanner_kwargs = dict(schema=schema, fields=fields)
+        self._scanner_kwargs = dict(schema=schema, fields=fields, coords=coords)
 
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
@@ -102,6 +103,7 @@ class BigWigFile(BbiFile):
         source: str | Callable[[], IO[bytes] | str],
         *,
         fields: Literal["*"] | list[str] | None = "*",
+        coords: Literal["01", "11"] = "01",
         regions: str | list[str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ):
@@ -111,7 +113,7 @@ class BigWigFile(BbiFile):
             regions = [regions]
         self._regions = regions
 
-        self._scanner_kwargs = dict(fields=fields)
+        self._scanner_kwargs = dict(fields=fields, coords=coords)
 
     def regions(self, regions: str | list[str]) -> Self:
         return type(self)(
@@ -165,6 +167,7 @@ def from_bigbed(
     schema: str = "bed3+",
     *,
     fields: Literal["*"] | list[str] | None = "*",
+    coords: Literal["01", "11"] = "01",
     regions: str | list[str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BigBedFile:
@@ -207,6 +210,7 @@ def from_bigbed(
         source=source,
         schema=schema,
         fields=fields,
+        coords=coords,
         regions=regions,
         batch_size=batch_size,
     )
@@ -216,6 +220,7 @@ def from_bigwig(
     source: str | pathlib.Path | Callable[[], IO[bytes] | str],
     *,
     fields: Literal["*"] | list[str] | None = "*",
+    coords: Literal["01", "11"] = "01",
     regions: str | list[str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> BigWigFile:
@@ -251,6 +256,7 @@ def from_bigwig(
     return BigWigFile(
         source=source,
         fields=fields,
+        coords=coords,
         regions=regions,
         batch_size=batch_size,
     )

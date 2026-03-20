@@ -8,7 +8,7 @@ use crate::bbi::model::base::BatchBuilder;
 use crate::bbi::model::base::BedSchema;
 use crate::bbi::model::base::Model;
 use crate::bbi::scanner::batch_iterator::base::{BigBedBatchIterator, BigBedQueryBatchIterator};
-use crate::Select;
+use crate::{CoordSystem, Select};
 
 /// A BigBed scanner.
 ///
@@ -24,7 +24,8 @@ use crate::Select;
 /// let info = fmt_reader.info();
 ///
 /// use oxbow::Select;
-/// let scanner = Scanner::new("bed12".parse().unwrap(), info.clone(), Select::All).unwrap();
+/// use oxbow::CoordSystem;
+/// let scanner = Scanner::new("bed12".parse().unwrap(), info.clone(), Select::All, CoordSystem::ZeroHalfOpen).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 pub struct Scanner {
     model: Model,
@@ -37,8 +38,9 @@ impl Scanner {
         bed_schema: BedSchema,
         info: bigtools::BBIFileInfo,
         fields: Select<String>,
+        coord_system: CoordSystem,
     ) -> crate::Result<Self> {
-        let model = Model::new(bed_schema, fields)?;
+        let model = Model::new(bed_schema, fields, coord_system)?;
         Ok(Self { model, info })
     }
 

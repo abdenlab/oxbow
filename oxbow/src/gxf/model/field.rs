@@ -81,7 +81,7 @@ pub enum FieldBuilder {
     SeqId(GenericStringBuilder<i32>),
     Source(GenericStringBuilder<i32>),
     Type(GenericStringBuilder<i32>),
-    Start(Int32Builder),
+    Start(Int32Builder, i32),
     End(Int32Builder),
     Score(Float32Builder),
     Strand(GenericStringBuilder<i32>),
@@ -101,7 +101,7 @@ impl FieldBuilder {
                 Self::Source(GenericStringBuilder::<i32>::with_capacity(capacity, 1024))
             }
             Field::Type => Self::Type(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
-            Field::Start => Self::Start(Int32Builder::with_capacity(capacity)),
+            Field::Start => Self::Start(Int32Builder::with_capacity(capacity), 0),
             Field::End => Self::End(Int32Builder::with_capacity(capacity)),
             Field::Score => Self::Score(Float32Builder::with_capacity(capacity)),
             Field::Strand => {
@@ -111,12 +111,22 @@ impl FieldBuilder {
         }
     }
 
+    /// Sets the coordinate offset for the start position field.
+    ///
+    /// Has no effect on other field variants.
+    pub fn with_coord_offset(self, offset: i32) -> Self {
+        match self {
+            Self::Start(b, _) => Self::Start(b, offset),
+            other => other,
+        }
+    }
+
     pub fn finish(&mut self) -> ArrayRef {
         match self {
             Self::SeqId(builder) => Arc::new(builder.finish()),
             Self::Source(builder) => Arc::new(builder.finish()),
             Self::Type(builder) => Arc::new(builder.finish()),
-            Self::Start(builder) => Arc::new(builder.finish()),
+            Self::Start(builder, _) => Arc::new(builder.finish()),
             Self::End(builder) => Arc::new(builder.finish()),
             Self::Score(builder) => Arc::new(builder.finish()),
             Self::Strand(builder) => Arc::new(builder.finish()),
@@ -145,8 +155,11 @@ impl<'a> Push<&'a noodles::gff::Record<'a>> for FieldBuilder {
                 let ty = record.ty().to_string();
                 builder.append_value(ty);
             }
-            Self::Start(builder) => {
-                let start = record.start().ok().map(|pos| usize::from(pos) as i32);
+            Self::Start(builder, offset) => {
+                let start = record
+                    .start()
+                    .ok()
+                    .map(|pos| usize::from(pos) as i32 + *offset);
                 builder.append_option(start);
             }
             Self::End(builder) => {
@@ -195,8 +208,11 @@ impl<'a> Push<&'a noodles::gtf::Record<'a>> for FieldBuilder {
                 let ty = record.ty().to_string();
                 builder.append_value(ty);
             }
-            Self::Start(builder) => {
-                let start = record.start().ok().map(|pos| usize::from(pos) as i32);
+            Self::Start(builder, offset) => {
+                let start = record
+                    .start()
+                    .ok()
+                    .map(|pos| usize::from(pos) as i32 + *offset);
                 builder.append_option(start);
             }
             Self::End(builder) => {

@@ -8,7 +8,7 @@ use crate::bbi::model::base::BatchBuilder;
 use crate::bbi::model::base::BedSchema;
 use crate::bbi::model::base::Model;
 use crate::bbi::scanner::batch_iterator::base::{BigWigBatchIterator, BigWigQueryBatchIterator};
-use crate::Select;
+use crate::{CoordSystem, Select};
 
 /// A BigWig scanner.
 ///
@@ -23,7 +23,8 @@ use crate::Select;
 /// let info = fmt_reader.info();
 ///
 /// use oxbow::Select;
-/// let scanner = Scanner::new(info.clone(), Select::All).unwrap();
+/// use oxbow::CoordSystem;
+/// let scanner = Scanner::new(info.clone(), Select::All, CoordSystem::ZeroHalfOpen).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -33,9 +34,13 @@ pub struct Scanner {
 
 impl Scanner {
     /// Creates a BigWig scanner from BBI file info and optional field names.
-    pub fn new(info: bigtools::BBIFileInfo, fields: Select<String>) -> crate::Result<Self> {
+    pub fn new(
+        info: bigtools::BBIFileInfo,
+        fields: Select<String>,
+        coord_system: CoordSystem,
+    ) -> crate::Result<Self> {
         let bed_schema: BedSchema = "bedGraph".parse().unwrap();
-        let model = Model::new(bed_schema, fields)?;
+        let model = Model::new(bed_schema, fields, coord_system)?;
         Ok(Self { model, info })
     }
 

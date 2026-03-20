@@ -11,11 +11,13 @@ use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{
-    pyobject_to_bufreader, resolve_fields, resolve_index, PyVirtualPosition, Reader,
+    pyobject_to_bufreader, resolve_coord_system, resolve_fields, resolve_index, PyVirtualPosition,
+    Reader,
 };
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
 use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
+use oxbow::CoordSystem;
 
 /// A VCF file scanner.
 ///
@@ -53,7 +55,7 @@ pub struct PyVcfScanner {
 #[pymethods]
 impl PyVcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None,samples_nested=false))]
+    #[pyo3(signature = (src, compressed=false, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None, samples_nested=false, coords=None))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python,
@@ -65,7 +67,9 @@ impl PyVcfScanner {
         genotype_by: Option<String>,
         samples: Option<Py<PyAny>>,
         samples_nested: bool,
+        coords: Option<String>,
     ) -> PyResult<Self> {
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::vcf::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
@@ -79,6 +83,7 @@ impl PyVcfScanner {
             gt_by,
             resolve_fields(samples, py)?,
             Some(samples_nested),
+            coord_system.unwrap_or(CoordSystem::OneClosed),
         )
         .map_err(to_py)?;
         Ok(Self {
@@ -115,6 +120,7 @@ impl PyVcfScanner {
         };
         kwargs.set_item("genotype_by", gt_by)?;
         kwargs.set_item("samples_nested", model.samples_nested())?;
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -421,7 +427,7 @@ pub struct PyBcfScanner {
 #[pymethods]
 impl PyBcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=true, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None, samples_nested=false))]
+    #[pyo3(signature = (src, compressed=true, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None, samples_nested=false, coords=None))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python,
@@ -433,7 +439,9 @@ impl PyBcfScanner {
         genotype_by: Option<String>,
         samples: Option<Py<PyAny>>,
         samples_nested: bool,
+        coords: Option<String>,
     ) -> PyResult<Self> {
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bcf::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
@@ -447,6 +455,7 @@ impl PyBcfScanner {
             gt_by,
             resolve_fields(samples, py)?,
             Some(samples_nested),
+            coord_system.unwrap_or(CoordSystem::OneClosed),
         )
         .map_err(to_py)?;
         Ok(Self {
@@ -483,6 +492,7 @@ impl PyBcfScanner {
         };
         kwargs.set_item("genotype_by", gt_by)?;
         kwargs.set_item("samples_nested", model.samples_nested())?;
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -824,6 +834,7 @@ pub fn read_vcf(
         genotype_by,
         resolve_fields(samples, py)?,
         Some(samples_nested),
+        CoordSystem::OneClosed,
     )
     .map_err(to_py)?;
 
@@ -924,6 +935,7 @@ pub fn read_bcf(
         genotype_by,
         resolve_fields(samples, py)?,
         Some(samples_nested),
+        CoordSystem::OneClosed,
     )
     .map_err(to_py)?;
 

@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use arrow::datatypes::{DataType, Field as ArrowField, Schema, SchemaRef};
 
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Select};
 use attribute::AttributeDef;
 use field::{Field, DEFAULT_FIELD_NAMES};
 
@@ -24,6 +24,9 @@ use field::{Field, DEFAULT_FIELD_NAMES};
 /// - `attr_defs` controls the attributes struct column independently.
 ///   `None` → no attributes column. `Some(vec![])` → empty struct column.
 ///   `Some(vec![...])` → struct column with the specified sub-fields.
+/// - `coord_system` controls the coordinate system representation of the
+///   output. The default is 1-based closed, which is the standard for GFF/GTF
+///   files. Practically, this only affects start position values.
 ///
 /// The model can produce an Arrow schema independently of any file content.
 ///
@@ -31,10 +34,10 @@ use field::{Field, DEFAULT_FIELD_NAMES};
 ///
 /// ```
 /// use oxbow::gxf::model::Model;
-/// use oxbow::Select;
+/// use oxbow::{CoordSystem, Select};
 ///
 /// // Default: all 8 standard fields, no attributes column.
-/// let model = Model::new(Select::All, None).unwrap();
+/// let model = Model::new(Select::All, None, CoordSystem::OneClosed).unwrap();
 /// assert_eq!(model.field_names().len(), 8);
 /// assert!(!model.has_attributes());
 ///
@@ -42,6 +45,7 @@ use field::{Field, DEFAULT_FIELD_NAMES};
 /// let model = Model::new(
 ///     Select::Some(vec!["seqid".into(), "start".into(), "end".into()]),
 ///     Some(vec![("gene_id".into(), "String".into())]),
+///     CoordSystem::OneClosed,
 /// ).unwrap();
 /// assert_eq!(model.field_names(), vec!["seqid", "start", "end"]);
 /// assert!(model.has_attributes());
@@ -53,6 +57,7 @@ use field::{Field, DEFAULT_FIELD_NAMES};
 pub struct Model {
     fields: Vec<Field>,
     attr_defs: Option<Vec<AttributeDef>>,
+    coord_system: CoordSystem,
     schema: SchemaRef,
 }
 
@@ -67,6 +72,7 @@ impl Model {
     pub fn new(
         fields: Select<String>,
         attr_defs: Option<Vec<(String, String)>>,
+        coord_system: CoordSystem,
     ) -> crate::Result<Self> {
         let field_names = match fields {
             Select::All => DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect(),
@@ -94,13 +100,9 @@ impl Model {
         Ok(Self {
             fields: parsed_fields,
             attr_defs,
+            coord_system,
             schema,
         })
-    }
-
-    /// Create a model with all 8 default standard fields and no attributes.
-    pub fn default_fields() -> Self {
-        Self::new(Select::All, None).expect("default fields are always valid")
     }
 
     fn build_schema(fields: &[Field], attr_defs: Option<&[AttributeDef]>) -> SchemaRef {
@@ -137,6 +139,11 @@ impl Model {
     /// Whether the attributes struct column is included.
     pub fn has_attributes(&self) -> bool {
         self.attr_defs.is_some()
+    }
+
+    /// The output coordinate system for the start position column.
+    pub fn coord_system(&self) -> CoordSystem {
+        self.coord_system
     }
 
     /// The Arrow schema for this model.
@@ -188,13 +195,22 @@ impl Model {
             None
         };
 
-        Self::new(Select::Some(projected_fields), attr_defs)
+        Self::new(Select::Some(projected_fields), attr_defs, self.coord_system)
+    }
+}
+
+impl Default for Model {
+    fn default() -> Self {
+        Self::new(Select::All, None, CoordSystem::OneClosed)
+            .expect("default fields are always valid")
     }
 }
 
 impl PartialEq for Model {
     fn eq(&self, other: &Self) -> bool {
-        self.fields == other.fields && self.attr_defs == other.attr_defs
+        self.fields == other.fields
+            && self.attr_defs == other.attr_defs
+            && self.coord_system == other.coord_system
     }
 }
 
@@ -207,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_default_model() {
-        let model = Model::new(Select::All, None).unwrap();
+        let model = Model::new(Select::All, None, CoordSystem::OneClosed).unwrap();
         assert_eq!(model.field_names().len(), 8);
         assert!(!model.has_attributes());
         assert!(model.attr_defs().is_none());
@@ -216,8 +232,11 @@ mod tests {
 
     #[test]
     fn test_default_fields_constructor() {
-        let model = Model::default_fields();
-        assert_eq!(model, Model::new(Select::All, None).unwrap());
+        let model = Model::default();
+        assert_eq!(
+            model,
+            Model::new(Select::All, None, CoordSystem::OneClosed).unwrap()
+        );
     }
 
     #[test]
@@ -225,6 +244,7 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["seqid".into(), "start".into(), "end".into()]),
             None,
+            CoordSystem::OneClosed,
         )
         .unwrap();
         assert_eq!(model.field_names(), vec!["seqid", "start", "end"]);
@@ -237,6 +257,7 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["seqid".into(), "start".into()]),
             Some(vec![("gene_id".into(), "String".into())]),
+            CoordSystem::OneClosed,
         )
         .unwrap();
         assert_eq!(model.field_names(), vec!["seqid", "start"]);
@@ -248,7 +269,12 @@ mod tests {
 
     #[test]
     fn test_attrs_empty_defs_is_empty_struct() {
-        let model = Model::new(Select::Some(vec!["seqid".into()]), Some(vec![])).unwrap();
+        let model = Model::new(
+            Select::Some(vec!["seqid".into()]),
+            Some(vec![]),
+            CoordSystem::OneClosed,
+        )
+        .unwrap();
         assert!(model.has_attributes());
         assert!(model.attr_defs().unwrap().is_empty());
         assert_eq!(model.schema().fields().len(), 2);
@@ -261,7 +287,12 @@ mod tests {
 
     #[test]
     fn test_no_attrs_when_attr_defs_none() {
-        let model = Model::new(Select::Some(vec!["seqid".into(), "start".into()]), None).unwrap();
+        let model = Model::new(
+            Select::Some(vec!["seqid".into(), "start".into()]),
+            None,
+            CoordSystem::OneClosed,
+        )
+        .unwrap();
         assert!(!model.has_attributes());
         assert!(model.attr_defs().is_none());
         assert_eq!(model.schema().fields().len(), 2);
@@ -269,7 +300,11 @@ mod tests {
 
     #[test]
     fn test_invalid_field() {
-        let result = Model::new(Select::Some(vec!["invalid".into()]), None);
+        let result = Model::new(
+            Select::Some(vec!["invalid".into()]),
+            None,
+            CoordSystem::OneClosed,
+        );
         assert!(result.is_err());
     }
 
@@ -278,6 +313,7 @@ mod tests {
         let result = Model::new(
             Select::All,
             Some(vec![("gene_id".into(), "InvalidType".into())]),
+            CoordSystem::OneClosed,
         );
         assert!(result.is_err());
     }
@@ -290,6 +326,7 @@ mod tests {
                 ("gene_id".into(), "String".into()),
                 ("tag".into(), "Array".into()),
             ]),
+            CoordSystem::OneClosed,
         )
         .unwrap();
         let tuples: Vec<_> = model
@@ -312,6 +349,7 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["seqid".into(), "start".into(), "end".into()]),
             Some(vec![("gene_id".into(), "String".into())]),
+            CoordSystem::OneClosed,
         )
         .unwrap();
 
@@ -325,6 +363,7 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["seqid".into(), "start".into()]),
             Some(vec![("gene_id".into(), "String".into())]),
+            CoordSystem::OneClosed,
         )
         .unwrap();
 
@@ -338,7 +377,7 @@ mod tests {
 
     #[test]
     fn test_project_unknown_column() {
-        let model = Model::default_fields();
+        let model = Model::default();
         let result = model.project(&["nonexistent".into()]);
         assert!(result.is_err());
     }

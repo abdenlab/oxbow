@@ -5,7 +5,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyString};
 
-use oxbow::Select;
+use oxbow::{CoordSystem, Select};
 
 use noodles::bgzf::gzi::Index as GzIndex;
 use noodles::bgzf::io::Seek as BgzfSeek;
@@ -406,5 +406,15 @@ pub fn resolve_fields(fields: Option<Py<PyAny>>, py: Python) -> PyResult<Select<
                 "fields must be '*', None, or a list of field names",
             ))
         }
+    }
+}
+
+pub fn resolve_coord_system(coords: Option<String>) -> PyResult<Option<CoordSystem>> {
+    match coords {
+        None => Ok(None),
+        Some(s) => s
+            .parse::<CoordSystem>()
+            .map(Some)
+            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string())),
     }
 }

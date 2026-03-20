@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Select};
 
 use arrow::array::{ArrayRef, StructArray};
 use arrow::datatypes::{Field as ArrowField, FieldRef, SchemaRef};
@@ -14,6 +14,9 @@ use noodles::vcf::variant::record::samples::Sample;
 use noodles::vcf::variant::record::samples::Series;
 
 use crate::batch::{Push, RecordBatchBuilder};
+
+/// The coordinate system in which noodles returns variant positions.
+const SOURCE_CS: CoordSystem = CoordSystem::OneClosed;
 
 use super::field::Push as _;
 use super::field::{Field, FieldBuilder};
@@ -69,6 +72,7 @@ impl BatchBuilder {
             Some(genotype_by),
             sample_names,
             None,
+            CoordSystem::OneClosed,
         )?;
         Self::from_model(&model, header, capacity)
     }
@@ -85,11 +89,16 @@ impl BatchBuilder {
             .map(|(name, _)| name.to_string())
             .collect();
 
+        let coord_offset = model.coord_system().start_offset_from(SOURCE_CS);
+
         let mut field_builders = IndexMap::new();
         for field in model.fields() {
             let builder = match field {
                 Field::Chrom => FieldBuilder::with_refs(field.clone(), capacity, &ref_names)
                     .map_err(|e| crate::OxbowError::invalid_data(e.to_string()))?,
+                Field::Pos => {
+                    FieldBuilder::new(field.clone(), capacity).with_coord_offset(coord_offset)
+                }
                 _ => FieldBuilder::new(field.clone(), capacity),
             };
             field_builders.insert(field.clone(), builder);

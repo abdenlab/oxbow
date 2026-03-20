@@ -24,6 +24,7 @@ class AlignmentFile(DataSource):
         *,
         fields: Literal["*"] | list[str] | None = "*",
         tag_defs: list[tuple[str, str]] | None = None,
+        coords: Literal["01", "11"] = "11",
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
@@ -35,7 +36,7 @@ class AlignmentFile(DataSource):
         self._regions = regions
 
         self._scanner_kwargs = dict(
-            compressed=compressed, fields=fields, tag_defs=tag_defs
+            compressed=compressed, fields=fields, tag_defs=tag_defs, coords=coords
         )
 
     def _tag_discovery_kwargs(self) -> dict:
@@ -146,6 +147,7 @@ class CramFile(AlignmentFile):
         *,
         fields: Literal["*"] | list[str] | None = "*",
         tag_defs: list[tuple[str, str]] | None = None,
+        coords: Literal["01", "11"] = "11",
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         reference: str | Callable[[], IO[bytes] | str] | None = None,
@@ -159,6 +161,7 @@ class CramFile(AlignmentFile):
             compressed=compressed,
             fields=fields,
             tag_defs=tag_defs,
+            coords=coords,
             regions=regions,
             index=index,
             batch_size=batch_size,
@@ -180,6 +183,7 @@ def from_sam(
     *,
     fields: Literal["*"] | list[str] | None = "*",
     tag_defs: list[tuple[str, str]] | None = None,
+    coords: Literal["01", "11"] = "11",
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
@@ -248,6 +252,7 @@ def from_sam(
         compressed=bgzf_compressed,
         fields=fields,
         tag_defs=tag_defs,
+        coords=coords,
         regions=regions,
         index=index,
         batch_size=batch_size,
@@ -260,6 +265,7 @@ def from_bam(
     *,
     fields: Literal["*"] | list[str] | None = "*",
     tag_defs: list[tuple[str, str]] | None = None,
+    coords: Literal["01", "11"] = "11",
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
@@ -325,6 +331,7 @@ def from_bam(
         compressed=bgzf_compressed,
         fields=fields,
         tag_defs=tag_defs,
+        coords=coords,
         regions=regions,
         index=index,
         batch_size=batch_size,
@@ -336,6 +343,7 @@ def from_cram(
     *,
     fields: Literal["*"] | list[str] | None = "*",
     tag_defs: list[tuple[str, str]] | None = None,
+    coords: Literal["01", "11"] = "11",
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     reference: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
@@ -403,6 +411,7 @@ def from_cram(
         source=source,
         fields=fields,
         tag_defs=tag_defs,
+        coords=coords,
         regions=regions,
         index=index,
         reference=reference,

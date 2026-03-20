@@ -10,12 +10,14 @@ use pyo3_arrow::PySchema;
 use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
+use crate::util::resolve_coord_system;
 use crate::util::{
     pyobject_to_bufreader, resolve_fields, resolve_index, PyVirtualPosition, Reader,
 };
 use oxbow::bed::{BedScanner, BedSchema, FieldDef, FieldType};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
+use oxbow::CoordSystem;
 
 /// Extract custom field definitions from a Python list or dict.
 fn extract_custom_defs(obj: &Bound<'_, PyAny>) -> PyResult<Vec<FieldDef>> {
@@ -102,17 +104,24 @@ pub struct PyBedScanner {
 #[pymethods]
 impl PyBedScanner {
     #[new]
-    #[pyo3(signature = (src, bed_schema, compressed=false, fields=None))]
+    #[pyo3(signature = (src, bed_schema, compressed=false, fields=None, coords=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
         bed_schema: Py<PyAny>,
         compressed: bool,
         fields: Option<Py<PyAny>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let parsed_schema = resolve_bed_schema(py, &bed_schema)?;
-        let scanner = BedScanner::new(parsed_schema, resolve_fields(fields, py)?).map_err(to_py)?;
+        let scanner = BedScanner::new(
+            parsed_schema,
+            resolve_fields(fields, py)?,
+            coord_system.unwrap_or(CoordSystem::ZeroHalfOpen),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -134,6 +143,7 @@ impl PyBedScanner {
         let kwargs = PyDict::new(py);
         kwargs.set_item("compressed", self.compressed)?;
         kwargs.set_item("fields", model.field_names())?;
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -399,7 +409,12 @@ pub fn read_bed(
 ) -> PyResult<Vec<u8>> {
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
     let bed_schema = resolve_bed_schema(py, &bed_schema)?;
-    let scanner = BedScanner::new(bed_schema, resolve_fields(fields, py)?).map_err(to_py)?;
+    let scanner = BedScanner::new(
+        bed_schema,
+        resolve_fields(fields, py)?,
+        CoordSystem::ZeroHalfOpen,
+    )
+    .map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
         let region = region

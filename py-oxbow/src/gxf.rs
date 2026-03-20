@@ -13,11 +13,13 @@ use noodles::core::Region;
 
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{
-    pyobject_to_bufreader, resolve_fields, resolve_index, PyVirtualPosition, Reader,
+    pyobject_to_bufreader, resolve_coord_system, resolve_fields, resolve_index, PyVirtualPosition,
+    Reader,
 };
 use oxbow::gxf::{GffScanner, GtfScanner};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
+use oxbow::CoordSystem;
 
 /// A GTF file scanner.
 ///
@@ -43,18 +45,26 @@ pub struct PyGtfScanner {
 #[pymethods]
 impl PyGtfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None, attribute_defs=None))]
+    #[pyo3(signature = (src, compressed=false, fields=None, attribute_defs=None, coords=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
         compressed: Option<bool>,
         fields: Option<Py<PyAny>>,
         attribute_defs: Option<Vec<(String, String)>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
         let fields = resolve_fields(fields, py)?;
+        let coord_system = resolve_coord_system(coords)?;
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-        let scanner = GtfScanner::new(None, fields, attribute_defs).map_err(to_py)?;
+        let scanner = GtfScanner::new(
+            None,
+            fields,
+            attribute_defs,
+            coord_system.unwrap_or(CoordSystem::OneClosed),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -76,6 +86,7 @@ impl PyGtfScanner {
             let attr_defs: Vec<_> = defs.iter().map(|d| d.to_tuple()).collect();
             kwargs.set_item("attribute_defs", attr_defs)?;
         }
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -359,18 +370,26 @@ pub struct PyGffScanner {
 #[pymethods]
 impl PyGffScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None, attribute_defs=None))]
+    #[pyo3(signature = (src, compressed=false, fields=None, attribute_defs=None, coords=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
         compressed: Option<bool>,
         fields: Option<Py<PyAny>>,
         attribute_defs: Option<Vec<(String, String)>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
         let fields = resolve_fields(fields, py)?;
+        let coord_system = resolve_coord_system(coords)?;
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-        let scanner = GffScanner::new(None, fields, attribute_defs).map_err(to_py)?;
+        let scanner = GffScanner::new(
+            None,
+            fields,
+            attribute_defs,
+            coord_system.unwrap_or(CoordSystem::OneClosed),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -392,6 +411,7 @@ impl PyGffScanner {
             let attr_defs: Vec<_> = defs.iter().map(|d| d.to_tuple()).collect();
             kwargs.set_item("attribute_defs", attr_defs)?;
         }
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -680,7 +700,8 @@ pub fn read_gtf(
 ) -> PyResult<Vec<u8>> {
     let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let scanner = GtfScanner::new(None, fields, attr_defs).map_err(to_py)?;
+    let scanner =
+        GtfScanner::new(None, fields, attr_defs, CoordSystem::OneClosed).map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
         let region = region
@@ -749,7 +770,8 @@ pub fn read_gff(
 ) -> PyResult<Vec<u8>> {
     let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let scanner = GffScanner::new(None, fields, attr_defs).map_err(to_py)?;
+    let scanner =
+        GffScanner::new(None, fields, attr_defs, CoordSystem::OneClosed).map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
         let region = region

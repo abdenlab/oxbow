@@ -6,7 +6,7 @@ use std::sync::Arc;
 use arrow::datatypes::{Field as ArrowField, Schema, SchemaRef};
 
 pub use crate::bed::model::schema::BedSchema;
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Select};
 pub use batch::BatchBuilder;
 use field::{bed_standard_fields, FieldDef};
 
@@ -65,6 +65,7 @@ fn bed_schema_field_defs(bed_schema: &BedSchema) -> Vec<FieldDef> {
 pub struct Model {
     bed_schema: BedSchema,
     fields: Vec<FieldDef>,
+    coord_system: CoordSystem,
     schema: SchemaRef,
 }
 
@@ -73,7 +74,11 @@ impl Model {
     ///
     /// - `bed_schema`: the parsing interpretation.
     /// - `fields`: column names to project. `None` → all fields from the schema.
-    pub fn new(bed_schema: BedSchema, fields: Select<String>) -> crate::Result<Self> {
+    pub fn new(
+        bed_schema: BedSchema,
+        fields: Select<String>,
+        coord_system: CoordSystem,
+    ) -> crate::Result<Self> {
         let all_defs = bed_schema_field_defs(&bed_schema);
         let projected = match fields {
             Select::All => all_defs,
@@ -103,6 +108,7 @@ impl Model {
         Ok(Self {
             bed_schema,
             fields: projected,
+            coord_system,
             schema,
         })
     }
@@ -121,6 +127,10 @@ impl Model {
 
     pub fn field_names(&self) -> Vec<String> {
         self.fields.iter().map(|d| d.name.clone()).collect()
+    }
+
+    pub fn coord_system(&self) -> CoordSystem {
+        self.coord_system
     }
 
     pub fn schema(&self) -> &SchemaRef {
@@ -156,7 +166,11 @@ impl Model {
             .map(|d| d.name.clone())
             .collect();
 
-        Self::new(self.bed_schema.clone(), Select::Some(projected))
+        Self::new(
+            self.bed_schema.clone(),
+            Select::Some(projected),
+            self.coord_system,
+        )
     }
 }
 
@@ -169,7 +183,7 @@ mod tests {
     #[test]
     fn test_bedgraph_model() {
         let bed_schema = BedSchema::new_bedgraph().unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "start", "end", "value"]);
         // BBI uses UInt32 for positions (AutoSql types)
         assert_eq!(model.schema().field(1).data_type(), &DataType::UInt32);
@@ -179,7 +193,7 @@ mod tests {
     #[test]
     fn test_bed6_model() {
         let bed_schema: BedSchema = "bed6".parse().unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         assert_eq!(model.field_names().len(), 6);
         assert_eq!(model.schema().field(1).data_type(), &DataType::UInt32);
     }
@@ -187,7 +201,7 @@ mod tests {
     #[test]
     fn test_bed6_projection() {
         let bed_schema: BedSchema = "bed6".parse().unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         let projected = model.project(&["chrom".into(), "strand".into()]).unwrap();
         assert_eq!(projected.field_names(), vec!["chrom", "strand"]);
     }
@@ -196,7 +210,7 @@ mod tests {
     fn test_custom_fields() {
         let defs = vec![FieldDef::new("extra".into(), FieldType::Float)];
         let bed_schema = BedSchema::new(3, Some(defs)).unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "start", "end", "extra"]);
         assert_eq!(model.schema().field(3).data_type(), &DataType::Float32);
     }
@@ -209,7 +223,7 @@ mod tests {
             FieldDef::new("c".into(), FieldType::String),
         ];
         let bed_schema = BedSchema::new(3, Some(defs)).unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         let projected = model.project(&["chrom".into(), "c".into()]).unwrap();
         assert_eq!(projected.field_names(), vec!["chrom", "c"]);
     }

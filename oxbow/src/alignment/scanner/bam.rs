@@ -10,7 +10,7 @@ use crate::alignment::model::BatchBuilder;
 use crate::alignment::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::alignment::AlignmentModel;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
-use crate::Select;
+use crate::{CoordSystem, Select};
 
 /// A BAM scanner.
 ///
@@ -30,7 +30,8 @@ use crate::Select;
 /// let header = fmt_reader.read_header().unwrap();
 ///
 /// let tag_defs = Scanner::tag_defs(&mut fmt_reader, Some(1000)).unwrap();
-/// let scanner = Scanner::new(header, Select::All, Some(tag_defs)).unwrap();
+/// use oxbow::CoordSystem;
+/// let scanner = Scanner::new(header, Select::All, Some(tag_defs), CoordSystem::OneClosed).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -43,12 +44,14 @@ impl Scanner {
     ///
     /// - `fields`: standard SAM field selection.
     /// - `tag_defs`: `None` → no tags column. `Some(vec![])` → empty struct.
+    /// - `coord_system`: output coordinate system. `None` → 1-based closed.
     pub fn new(
         header: noodles::sam::Header,
         fields: Select<String>,
         tag_defs: Option<Vec<(String, String)>>,
+        coord_system: CoordSystem,
     ) -> crate::Result<Self> {
-        let model = AlignmentModel::new(fields, tag_defs)?;
+        let model = AlignmentModel::new(fields, tag_defs, coord_system)?;
         Ok(Self { header, model })
     }
 
@@ -297,7 +300,7 @@ mod tests {
     #[test]
     fn test_scan_with_multithreaded_reader() {
         let (header, fmt_reader) = mt_reader();
-        let scanner = Scanner::new(header, Select::All, None).unwrap();
+        let scanner = Scanner::new(header, Select::All, None, CoordSystem::OneClosed).unwrap();
         let mut batches = scanner.scan(fmt_reader, None, None, Some(10)).unwrap();
 
         let batch = batches.next().unwrap().unwrap();
@@ -308,7 +311,7 @@ mod tests {
     #[test]
     fn test_scan_query_with_multithreaded_reader() {
         let (header, fmt_reader) = mt_reader();
-        let scanner = Scanner::new(header, Select::All, None).unwrap();
+        let scanner = Scanner::new(header, Select::All, None, CoordSystem::OneClosed).unwrap();
 
         let index = noodles::bam::bai::fs::read("../fixtures/sample.bam.bai").unwrap();
 

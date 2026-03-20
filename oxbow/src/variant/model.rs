@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use arrow::datatypes::{DataType, Field as ArrowField, Schema, SchemaRef};
 
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Select};
 use field::{Field, DEFAULT_FIELD_NAMES};
 use genotype::GenotypeDef;
 use info::InfoDef;
@@ -30,6 +30,7 @@ use info::InfoDef;
 /// - `samples_nested` controls whether genotype columns are wrapped in a
 ///   single `"samples"` struct column (`true`) or are top-level (`false`,
 ///   default).
+/// - `coord_system` controls the coordinate system representation of the output.
 ///
 /// The model can produce an Arrow schema independently of any file header.
 /// Use `from_header()` to derive definitions from a VCF header.
@@ -41,6 +42,7 @@ pub struct Model {
     genotype_by: GenotypeBy,
     samples: Option<Vec<String>>,
     samples_nested: bool,
+    coord_system: CoordSystem,
     schema: SchemaRef,
 }
 
@@ -55,6 +57,7 @@ impl Model {
     /// - `samples_nested`: if `true`, genotype columns are wrapped in a
     ///   single `"samples"` struct column. If `false` (default), they are
     ///   top-level.
+    /// - `coord_system`: coordinate system for position column.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         fields: Select<String>,
@@ -63,6 +66,7 @@ impl Model {
         genotype_by: Option<GenotypeBy>,
         samples: Option<Vec<String>>,
         samples_nested: Option<bool>,
+        coord_system: CoordSystem,
     ) -> crate::Result<Self> {
         let field_names = match fields {
             Select::All => DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect(),
@@ -97,6 +101,7 @@ impl Model {
             genotype_by,
             samples,
             samples_nested,
+            coord_system,
             schema,
         })
     }
@@ -119,6 +124,7 @@ impl Model {
         genotype_by: Option<GenotypeBy>,
         samples: Select<String>,
         samples_nested: Option<bool>,
+        coord_system: CoordSystem,
     ) -> crate::Result<Self> {
         // Derive info defs from header
         // Omit → no info column. All/Some → info column present (even if empty struct).
@@ -194,6 +200,7 @@ impl Model {
             genotype_by,
             samples,
             samples_nested,
+            coord_system,
         )
     }
 
@@ -307,6 +314,11 @@ impl Model {
         self.samples_nested
     }
 
+    /// The output coordinate system for the position column.
+    pub fn coord_system(&self) -> CoordSystem {
+        self.coord_system
+    }
+
     /// The Arrow schema for this model.
     pub fn schema(&self) -> &SchemaRef {
         &self.schema
@@ -401,6 +413,7 @@ impl Model {
             Some(self.genotype_by.clone()),
             samples,
             Some(self.samples_nested),
+            self.coord_system,
         )
     }
 }
@@ -413,6 +426,7 @@ impl PartialEq for Model {
             && self.samples == other.samples
             && self.genotype_by == other.genotype_by
             && self.samples_nested == other.samples_nested
+            && self.coord_system == other.coord_system
     }
 }
 
@@ -423,6 +437,8 @@ mod tests {
     use super::*;
     use noodles::vcf::header::record::value::map::{Contig, Format, Info, Map};
     use noodles::vcf::Header;
+
+    const CS: CoordSystem = CoordSystem::OneClosed;
 
     fn create_test_header() -> Header {
         Header::builder()
@@ -436,7 +452,7 @@ mod tests {
 
     #[test]
     fn test_default_model() {
-        let model = Model::new(Select::All, None, None, None, None, None).unwrap();
+        let model = Model::new(Select::All, None, None, None, None, None, CS).unwrap();
         assert_eq!(model.field_names().len(), 7);
         assert!(!model.has_info());
         assert!(model.genotype_defs().is_none());
@@ -455,6 +471,7 @@ mod tests {
             None,
             Select::All,
             None,
+            CS,
         )
         .unwrap();
         assert_eq!(model.field_names().len(), 7);
@@ -477,6 +494,7 @@ mod tests {
             None,
             Select::Some(vec!["sample1".into()]),
             None,
+            CS,
         )
         .unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "pos"]);
@@ -498,6 +516,7 @@ mod tests {
             None,
             Select::Omit,
             None,
+            CS,
         )
         .unwrap();
         assert_eq!(model.field_names().len(), 7);
@@ -516,6 +535,7 @@ mod tests {
             None,
             None,
             None,
+            CS,
         )
         .unwrap();
         assert!(!model.has_info());
@@ -534,6 +554,7 @@ mod tests {
             None,
             Select::All,
             None,
+            CS,
         )
         .unwrap();
         let projected = model.project(&["chrom".into(), "pos".into()]).unwrap();
@@ -553,6 +574,7 @@ mod tests {
             None,
             Select::All,
             None,
+            CS,
         )
         .unwrap();
         let projected = model.project(&["chrom".into(), "info".into()]).unwrap();
@@ -571,6 +593,7 @@ mod tests {
             None,
             Select::All,
             None,
+            CS,
         )
         .unwrap();
         let projected = model.project(&["chrom".into(), "sample1".into()]).unwrap();
@@ -587,6 +610,7 @@ mod tests {
             None,
             None,
             None,
+            CS,
         );
         assert!(result.is_err());
     }
@@ -602,6 +626,7 @@ mod tests {
             None,
             Select::All,
             Some(true),
+            CS,
         )
         .unwrap();
         assert!(model.samples_nested());
@@ -629,6 +654,7 @@ mod tests {
             None,
             Select::All,
             Some(true),
+            CS,
         )
         .unwrap();
         // "samples" is an atomic column in nested mode
@@ -650,6 +676,7 @@ mod tests {
             None,
             Select::All,
             Some(true),
+            CS,
         )
         .unwrap();
         let projected = model.project(&["chrom".into(), "info".into()]).unwrap();
@@ -670,6 +697,7 @@ mod tests {
             None,
             Select::All,
             None,
+            CS,
         )
         .unwrap();
         assert!(!model.samples_nested());
@@ -690,6 +718,7 @@ mod tests {
             None,
             Select::Omit,
             None,
+            CS,
         )
         .unwrap();
         assert!(model.has_info());
@@ -714,6 +743,7 @@ mod tests {
             None,
             Select::Omit,
             None,
+            CS,
         )
         .unwrap();
         assert!(!model.has_info());
@@ -731,6 +761,7 @@ mod tests {
             Some(GenotypeBy::Sample),
             Select::Some(vec!["sample1".into()]),
             None,
+            CS,
         )
         .unwrap();
         assert!(model.genotype_defs().is_some());
@@ -756,6 +787,7 @@ mod tests {
             Some(GenotypeBy::Field),
             Select::Some(vec!["sample1".into()]),
             None,
+            CS,
         )
         .unwrap();
         assert_eq!(model.schema().fields().len(), 7);
@@ -772,6 +804,7 @@ mod tests {
             None,
             Select::Some(vec!["sample1".into()]),
             Some(true),
+            CS,
         )
         .unwrap();
         assert!(model.genotype_defs().is_none());
@@ -789,6 +822,7 @@ mod tests {
             None,
             Select::Some(vec![]), // samples active, none selected
             Some(true),
+            CS,
         )
         .unwrap();
         assert!(model.samples().is_some());
@@ -814,6 +848,7 @@ mod tests {
             None,
             Select::Some(vec![]), // samples active, none selected
             Some(false),
+            CS,
         )
         .unwrap();
         assert_eq!(model.schema().fields().len(), 7);
@@ -830,6 +865,7 @@ mod tests {
             None,
             Select::Omit, // samples deactivated
             Some(true),
+            CS,
         )
         .unwrap();
         assert!(model.samples().is_none());

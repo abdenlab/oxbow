@@ -30,6 +30,7 @@ class BedFile(DataSource):
         compressed: bool = False,
         *,
         fields: Literal["*"] | list[str] | None = "*",
+        coords: Literal["01", "11"] = "01",
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
@@ -44,6 +45,7 @@ class BedFile(DataSource):
             bed_schema=bed_schema,
             compressed=compressed,
             fields=fields,
+            coords=coords,
         )
 
     def _scan_query(self, scanner, region, columns, batch_size):
@@ -70,6 +72,7 @@ def from_bed(
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: Literal["*"] | list[str] | None = "*",
+    coords: Literal["01", "11"] = "01",
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
@@ -130,6 +133,7 @@ def from_bed(
         bed_schema=bed_schema,
         compressed=bgzf_compressed,
         fields=fields,
+        coords=coords,
         regions=regions,
         index=index,
         batch_size=batch_size,

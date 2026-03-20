@@ -8,7 +8,7 @@ use noodles::csi::BinningIndex;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 use crate::variant::model::{BatchBuilder, GenotypeBy, Model};
 use crate::variant::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Select};
 
 /// A VCF scanner.
 ///
@@ -28,7 +28,8 @@ use crate::{OxbowError, Select};
 /// let mut fmt_reader = noodles::vcf::io::Reader::new(inner);
 /// let header = fmt_reader.read_header().unwrap();
 ///
-/// let scanner = Scanner::new(header, Select::All, Select::All, Select::All, None, Select::All, None).unwrap();
+/// use oxbow::CoordSystem;
+/// let scanner = Scanner::new(header, Select::All, Select::All, Select::All, None, Select::All, None, CoordSystem::OneClosed).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -47,6 +48,7 @@ impl Scanner {
         genotype_by: Option<GenotypeBy>,
         samples: Select<String>,
         samples_nested: Option<bool>,
+        coord_system: CoordSystem,
     ) -> crate::Result<Self> {
         let model = Model::from_header(
             &header,
@@ -56,6 +58,7 @@ impl Scanner {
             genotype_by,
             samples,
             samples_nested,
+            coord_system,
         )?;
         Ok(Self { header, model })
     }

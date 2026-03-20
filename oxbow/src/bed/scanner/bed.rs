@@ -10,7 +10,7 @@ use crate::bed::model::BedSchema;
 use crate::bed::model::Model;
 use crate::bed::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Select};
 
 /// A BED scanner.
 ///
@@ -29,7 +29,8 @@ use crate::{OxbowError, Select};
 ///
 /// use oxbow::Select;
 /// let bed_schema = "bed6+3".parse().unwrap();
-/// let scanner = Scanner::new(bed_schema, Select::All).unwrap();
+/// use oxbow::CoordSystem;
+/// let scanner = Scanner::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000)).unwrap();
 /// ```
 pub struct Scanner {
@@ -41,8 +42,12 @@ impl Scanner {
     ///
     /// - `bed_schema`: the parsing interpretation.
     /// - `fields`: column names to project. `None` → all fields from the schema.
-    pub fn new(bed_schema: BedSchema, fields: Select<String>) -> crate::Result<Self> {
-        let model = Model::new(bed_schema, fields)?;
+    pub fn new(
+        bed_schema: BedSchema,
+        fields: Select<String>,
+        coord_system: CoordSystem,
+    ) -> crate::Result<Self> {
+        let model = Model::new(bed_schema, fields, coord_system)?;
         Ok(Self { model })
     }
 

@@ -8,9 +8,16 @@ use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 
 use crate::batch::{Push, RecordBatchBuilder};
+use crate::{CoordSystem, Select};
 
 use super::field::Push as _;
 use super::field::{Field, FieldBuilder};
+use super::Model;
+
+/// The coordinate system in which noodles returns BED start positions.
+/// noodles converts 0-based BED file values to 1-based `Position`, so the
+/// source is always 1-based closed.
+const SOURCE_CS: CoordSystem = CoordSystem::OneClosed;
 use super::field_def::{FieldBuilder as GenericFieldBuilder, FieldDef, Push as GenericPush};
 use super::schema::BedSchema;
 
@@ -18,65 +25,45 @@ use super::schema::BedSchema;
 pub struct BatchBuilder {
     schema: SchemaRef,
     row_count: usize,
+    _coord_offset: i32,
     bed_schema: BedSchema,
     standard_field_builders: IndexMap<Field, FieldBuilder>,
     custom_field_builders: IndexMap<FieldDef, GenericFieldBuilder>,
 }
 
 impl BatchBuilder {
-    /// Creates a new `BatchBuilder` from a [`Model`].
-    pub fn from_model(model: &super::Model, capacity: usize) -> crate::Result<Self> {
-        Self::new(model.bed_schema(), Some(model.field_names()), capacity)
-    }
-
-    /// Creates a new `BatchBuilder` for BED records.
     pub fn new(
-        bed_schema: &BedSchema,
-        field_names: Option<Vec<String>>,
+        bed_schema: BedSchema,
+        fields: Select<String>,
         capacity: usize,
     ) -> crate::Result<Self> {
-        // All the standard and custom field definitions for the given BED schema.
-        let standard_field_names = bed_schema.standard_field_names();
-        let custom_field_defs = bed_schema.custom_fields();
+        let model = Model::new(bed_schema, fields, CoordSystem::ZeroHalfOpen)?;
+        Self::from_model(&model, capacity)
+    }
 
-        // Determine the projected fields and create builders.
+    /// Creates a new `BatchBuilder` from a [`Model`].
+    pub fn from_model(model: &Model, capacity: usize) -> crate::Result<Self> {
+        let bed_schema = model.bed_schema().clone();
+        let custom_field_defs = bed_schema.custom_fields();
+        let coord_offset = model.coord_system().start_offset_from(SOURCE_CS);
+
         let mut projected_standard_fields = Vec::new();
         let mut projected_custom_defs = Vec::new();
         let mut standard_field_builders = IndexMap::new();
         let mut custom_field_builders = IndexMap::new();
-        match &field_names {
-            Some(projection) => {
-                for name in projection {
-                    if let Some(def) = custom_field_defs.iter().find(|d| &d.name == name) {
-                        projected_custom_defs.push(def.clone());
-                        let builder = GenericFieldBuilder::new(&def.ty, capacity)?;
-                        custom_field_builders.insert(def.clone(), builder);
-                    } else {
-                        let field = Field::from_str(name)?;
-                        projected_standard_fields.push(field.clone());
-                        let builder = FieldBuilder::new(field.clone(), capacity);
-                        standard_field_builders.insert(field.clone(), builder);
-                    }
-                }
+        for name in &model.field_names() {
+            if let Some(def) = custom_field_defs.iter().find(|d| &d.name == name) {
+                projected_custom_defs.push(def.clone());
+                let builder = GenericFieldBuilder::new(&def.ty, capacity)?;
+                custom_field_builders.insert(def.clone(), builder);
+            } else {
+                let field = Field::from_str(name)?;
+                projected_standard_fields.push(field.clone());
+                let builder =
+                    FieldBuilder::new(field.clone(), capacity).with_coord_offset(coord_offset);
+                standard_field_builders.insert(field.clone(), builder);
             }
-            None => {
-                projected_standard_fields.extend(
-                    standard_field_names
-                        .into_iter()
-                        .map(|name| Field::from_str(&name))
-                        .collect::<Result<Vec<_>, _>>()?,
-                );
-                for field in &projected_standard_fields {
-                    let builder = FieldBuilder::new(field.clone(), capacity);
-                    standard_field_builders.insert(field.clone(), builder);
-                }
-                for def in custom_field_defs {
-                    projected_custom_defs.push(def.clone());
-                    let builder = GenericFieldBuilder::new(&def.ty, capacity)?;
-                    custom_field_builders.insert(def.clone(), builder);
-                }
-            }
-        };
+        }
 
         // Build schema once
         let mut arrow_fields: Vec<arrow::datatypes::Field> = projected_standard_fields
@@ -91,6 +78,7 @@ impl BatchBuilder {
         Ok(Self {
             schema,
             row_count: 0,
+            _coord_offset: coord_offset,
             bed_schema: bed_schema.clone(),
             standard_field_builders,
             custom_field_builders,
@@ -205,7 +193,7 @@ mod tests {
     #[test]
     fn test_batch_builder_new() {
         let bed_schema = BedSchema::new_from_nm(3, Some(2)).unwrap();
-        let batch_builder = BatchBuilder::new(&bed_schema, None, 10).unwrap();
+        let batch_builder = BatchBuilder::new(bed_schema, Select::All, 10).unwrap();
 
         assert_eq!(batch_builder.schema().fields().len(), 5);
     }
@@ -213,7 +201,7 @@ mod tests {
     #[test]
     fn test_push_bed_record() {
         let bed_schema = BedSchema::new_from_nm(3, Some(2)).unwrap();
-        let mut batch_builder = BatchBuilder::new(&bed_schema, None, 10).unwrap();
+        let mut batch_builder = BatchBuilder::new(bed_schema, Select::All, 10).unwrap();
 
         let record = create_bed_record();
         let result = batch_builder.push(&record);
@@ -225,7 +213,7 @@ mod tests {
         let record = create_bed_record();
 
         let bed_schema = BedSchema::new_from_nm(3, Some(0)).unwrap();
-        let mut batch_builder = BatchBuilder::new(&bed_schema, None, 10).unwrap();
+        let mut batch_builder = BatchBuilder::new(bed_schema, Select::All, 10).unwrap();
         batch_builder.push(&record).unwrap();
         let record_batch = batch_builder.finish();
         assert!(record_batch.is_ok());
@@ -246,7 +234,7 @@ mod tests {
             .as_any()
             .downcast_ref::<Int64Array>()
             .unwrap();
-        assert_eq!(start_array.value(0), 101);
+        assert_eq!(start_array.value(0), 100);
 
         let end_array = record_batch
             .column(2)
@@ -259,7 +247,7 @@ mod tests {
     #[test]
     fn test_finish_bedn_plus_m() {
         let bed_schema = BedSchema::new_from_nm(3, Some(2)).unwrap();
-        let mut batch_builder = BatchBuilder::new(&bed_schema, None, 10).unwrap();
+        let mut batch_builder = BatchBuilder::new(bed_schema, Select::All, 10).unwrap();
 
         let record = create_bed_record();
         batch_builder.push(&record).unwrap();
@@ -282,7 +270,7 @@ mod tests {
             .as_any()
             .downcast_ref::<Int64Array>()
             .unwrap();
-        assert_eq!(start_array.value(0), 101);
+        assert_eq!(start_array.value(0), 100);
 
         let end_array = record_batch
             .column(2)
@@ -319,7 +307,7 @@ mod tests {
         let record = create_bed_record();
 
         let bed_schema = BedSchema::new_from_nm(3, None).unwrap();
-        let mut batch_builder = BatchBuilder::new(&bed_schema, None, 10).unwrap();
+        let mut batch_builder = BatchBuilder::new(bed_schema, Select::All, 10).unwrap();
         batch_builder.push(&record).unwrap();
         let record_batch = batch_builder.finish();
         assert!(record_batch.is_ok());
@@ -340,7 +328,7 @@ mod tests {
             .as_any()
             .downcast_ref::<Int64Array>()
             .unwrap();
-        assert_eq!(start_array.value(0), 101);
+        assert_eq!(start_array.value(0), 100);
 
         let end_array = record_batch
             .column(2)
