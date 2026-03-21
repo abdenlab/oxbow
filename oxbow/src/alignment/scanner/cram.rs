@@ -10,7 +10,7 @@ use crate::alignment::model::tag::TagScanner;
 use crate::alignment::model::BatchBuilder;
 use crate::alignment::AlignmentModel;
 use crate::batch::{Push, RecordBatchBuilder as _};
-use crate::{CoordSystem, Select};
+use crate::{CoordSystem, Region, Select};
 
 /// A CRAM scanner.
 ///
@@ -50,7 +50,7 @@ impl Scanner {
     ///
     /// - `fields`: standard SAM field selection.
     /// - `tag_defs`: `None` → no tags column. `Some(vec![])` → empty struct.
-    /// - `coord_system`: output coordinate system. `None` → 1-based closed.
+    /// - `coord_system`: output coordinate system for position columns.
     ///
     /// The FASTA repository is stored and used by scan methods for decoding.
     pub fn new(
@@ -210,7 +210,7 @@ impl Scanner {
     pub fn scan_query<R: Read + Seek>(
         &self,
         fmt_reader: noodles::cram::io::Reader<R>,
-        region: crate::Region,
+        region: Region,
         index: noodles::cram::crai::Index,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,

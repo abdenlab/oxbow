@@ -31,6 +31,9 @@ pub enum PyBBIFileType {
 ///     The path to the BigWig file or a file-like object.
 /// fields : list[str], optional
 ///     Names of the fields to include in the schema.
+/// coords : Literal["01", "11"], optional [default: "01"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigWigScanner {
     _src: Py<PyAny>,
@@ -176,7 +179,8 @@ impl PyBigWigScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// columns : list[str], optional
     ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
@@ -226,6 +230,9 @@ impl PyBigWigScanner {
 ///     records, if it exists.
 /// fields : list[str], optional
 ///     Names of the fields to include in the schema.
+/// coords : Literal["01", "11"], optional [default: "01"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigBedScanner {
     _src: Py<PyAny>,
@@ -421,7 +428,8 @@ impl PyBigBedScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// columns : list[str], optional
     ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
@@ -470,6 +478,9 @@ impl PyBigBedScanner {
 ///     The zoom level resolution in bp.
 /// fields : list[str], optional
 ///     Names of the fields to include in the schema.
+/// coords : Literal["01", "11"], optional [default: "01"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBBIZoomScanner {
     src: Py<PyAny>,
@@ -650,7 +661,8 @@ impl PyBBIZoomScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// columns : list[str], optional
     ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
@@ -705,6 +717,9 @@ impl PyBBIZoomScanner {
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 ///
@@ -758,6 +773,9 @@ pub fn read_bigwig(
 ///     The path to the source file or a file-like object.
 /// bed_schema : str
 ///     The BED schema to use for parsing BigBed records.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 ///

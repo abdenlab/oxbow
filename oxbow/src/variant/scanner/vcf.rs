@@ -8,7 +8,7 @@ use noodles::csi::BinningIndex;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 use crate::variant::model::{BatchBuilder, GenotypeBy, Model};
 use crate::variant::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
-use crate::{CoordSystem, OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Region, Select};
 
 /// A VCF scanner.
 ///
@@ -39,6 +39,15 @@ pub struct Scanner {
 
 impl Scanner {
     /// Creates a VCF scanner from a VCF header and schema parameters.
+    ///
+    /// - `header`: the VCF header, used for schema inference and validation.
+    /// - `fields`: standard SAM field selection.
+    /// - `info_fields`: INFO field selection.
+    /// - `genotype_fields`: FORMAT field selection.
+    /// - `genotype_by`: how to group genotype fields and samples.
+    /// - `samples`: sample selection for genotype fields.
+    /// - `samples_nested`: whether to nest sample-genotype columns under a single samples column.
+    /// - `coord_system`: output coordinate system for position columns.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         header: noodles::vcf::Header,
@@ -205,7 +214,7 @@ impl Scanner {
     pub fn scan_query<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
         fmt_reader: noodles::vcf::io::Reader<R>,
-        region: crate::Region,
+        region: Region,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,

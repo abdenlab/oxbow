@@ -7,7 +7,7 @@ pub use super::BBIReader;
 use crate::bbi::model::zoom::BatchBuilder;
 use crate::bbi::model::zoom::Model;
 use crate::bbi::scanner::batch_iterator::zoom::{BBIZoomBatchIterator, BBIZoomQueryBatchIterator};
-use crate::{CoordSystem, Select};
+use crate::{CoordSystem, Region, Select};
 
 /// A scanner for the summary statistics from BBI file zoom level.
 ///
@@ -35,6 +35,11 @@ pub struct Scanner {
 
 impl Scanner {
     /// Creates a BBI zoom level scanner.
+    ///
+    /// - `ref_names`: the reference sequence names in the BBI file.
+    /// - `zoom_level`: the zoom level to read from.
+    /// - `fields`: column names to project.
+    /// - `coord_system`: output coordinate system for position columns.
     pub fn new(
         ref_names: Vec<String>,
         zoom_level: u32,
@@ -125,7 +130,7 @@ impl Scanner {
     pub fn scan_query<R: Read + Seek + Send + 'static>(
         &self,
         reader: BBIReader<R>,
-        region: crate::Region,
+        region: Region,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,

@@ -12,7 +12,7 @@ use crate::gxf::model::BatchBuilder;
 use crate::gxf::model::Model;
 use crate::gxf::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
-use crate::{CoordSystem, OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Region, Select};
 
 /// A GFF scanner.
 ///
@@ -46,6 +46,7 @@ impl Scanner {
     ///
     /// - `fields`: standard GXF field selection. `All` → all 8 standard fields.
     /// - `attr_defs`: `None` → no attributes column. `Some(vec![])` → empty struct.
+    /// - `coord_system`: output coordinate system for position columns.
     pub fn new(
         header: Option<binning_index::index::Header>,
         fields: Select<String>,
@@ -168,7 +169,7 @@ impl Scanner {
     pub fn scan_query<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
         fmt_reader: noodles::gff::io::Reader<R>,
-        region: crate::Region,
+        region: Region,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,

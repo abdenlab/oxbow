@@ -33,6 +33,9 @@ use oxbow::CoordSystem;
 /// tag_defs : list[tuple[str, str]], optional [default: None]
 ///     Tag definitions for the ``"tags"`` struct column. ``None`` omits the
 ///     tags column. Use the ``tag_defs()`` method to discover definitions.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PySamScanner {
     src: Py<PyAny>,
@@ -305,7 +308,8 @@ impl PySamScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
@@ -479,6 +483,9 @@ impl PySamScanner {
 /// tag_defs : list[tuple[str, str]], optional [default: None]
 ///     Tag definitions for the ``"tags"`` struct column. ``None`` omits the
 ///     tags column. Use the ``tag_defs()`` method to discover definitions.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBamScanner {
     src: Py<PyAny>,
@@ -751,7 +758,8 @@ impl PyBamScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
@@ -923,6 +931,9 @@ impl PyBamScanner {
 /// tag_defs : list[tuple[str, str]], optional [default: None]
 ///     Tag definitions for the ``"tags"`` struct column. ``None`` omits the
 ///     tags column. Use the ``tag_defs()`` method to discover definitions.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass]
 pub struct PyCramScanner {
     src: Py<PyAny>,
@@ -1104,7 +1115,8 @@ impl PyCramScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
@@ -1165,6 +1177,9 @@ impl PyCramScanner {
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : str or list[str] or None, optional
 ///     Standard SAM fields to project.
 /// tag_defs : list[tuple[str, str]], optional
@@ -1236,6 +1251,9 @@ pub fn read_sam(
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : str or list[str] or None, optional
 ///     Standard SAM fields to project.
 /// tag_defs : list[tuple[str, str]], optional
@@ -1307,6 +1325,9 @@ pub fn read_bam(
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : str or list[str] or None, optional
 ///     Standard SAM fields to project.
 /// tag_defs : list[tuple[str, str]], optional

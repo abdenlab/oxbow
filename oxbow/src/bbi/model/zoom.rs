@@ -40,6 +40,8 @@ impl<'a> BBIZoomRecord<'a> {
 ///
 /// Fixed schema: 8 fields (chrom, start, end, bases_covered, min, max,
 /// sum, sum_squares). The `fields` parameter projects which to include.
+/// The `coord_system` parameter controls the coordinate system to return the
+/// positions in.
 ///
 /// # Examples
 ///

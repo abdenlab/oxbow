@@ -42,6 +42,9 @@ use oxbow::CoordSystem;
 /// samples_nested : bool, optional [default: False]
 ///   Whether to nest sample genotype data under a single ``"samples"`` struct
 ///   column.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyVcfScanner {
     src: Py<PyAny>,
@@ -308,7 +311,8 @@ impl PyVcfScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
@@ -413,6 +417,9 @@ impl PyVcfScanner {
 /// samples_nested : bool, optional [default: False]
 ///   Whether to nest sample genotype data under a single ``"samples"`` struct
 ///   column.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBcfScanner {
     src: Py<PyAny>,
@@ -679,7 +686,8 @@ impl PyBcfScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
@@ -776,8 +784,9 @@ fn resolve_genotype_by(genotype_by: Option<String>) -> PyResult<Option<GenotypeB
 /// ----------
 /// src: str or file-like
 ///     The path to the VCF file or a file-like object.
-/// region : str, optional
-///     Genomic region in the format "chr:start-end".
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// index : path or file-like, optional
 ///     The index file to use for querying the region.
 /// fields : list[str], optional
@@ -875,8 +884,9 @@ pub fn read_vcf(
 /// ----------
 /// src: str or file-like
 ///     The path to the BCF file or a file-like object.
-/// region : str, optional
-///     Genomic region in the format "chr:start-end".
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// index : path or file-like, optional
 ///     The index file to use for querying the region.
 /// fields : list[str], optional

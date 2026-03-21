@@ -212,6 +212,9 @@ impl PyFastqScanner {
 ///     Whether the source is BGZF-compressed.
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for interpreting query ranges. "01" for 0-based
+///    half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyFastaScanner {
     src: Py<PyAny>,
@@ -324,7 +327,8 @@ impl PyFastaScanner {
     /// Parameters
     /// ----------
     /// regions : list[str]
-    ///     Genomic ranges in the format "chr:start-end".
+    ///     Genomic ranges in the format "chr:start-end", "chr:[start,end]" or
+    ///     "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The FAI index file.
     /// gzi : path or file-like, optional
@@ -433,7 +437,8 @@ pub fn read_fastq(
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
 /// regions : list[str], optional
-///     Genomic ranges in the format "chr:start-end".
+///     Genomic ranges in the format "chr:start-end", "chr:[start,end]" or
+///     "chr:[start,end)".
 /// index : path or file-like, optional
 ///     The FAI index file.
 /// gzi : path or file-like, optional

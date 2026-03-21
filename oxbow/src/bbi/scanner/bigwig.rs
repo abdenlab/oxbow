@@ -8,7 +8,7 @@ use crate::bbi::model::base::BatchBuilder;
 use crate::bbi::model::base::BedSchema;
 use crate::bbi::model::base::Model;
 use crate::bbi::scanner::batch_iterator::base::{BigWigBatchIterator, BigWigQueryBatchIterator};
-use crate::{CoordSystem, Select};
+use crate::{CoordSystem, Region, Select};
 
 /// A BigWig scanner.
 ///
@@ -34,6 +34,10 @@ pub struct Scanner {
 
 impl Scanner {
     /// Creates a BigWig scanner from BBI file info and optional field names.
+    ///
+    /// - `info`: the BBI file info.
+    /// - `fields`: column names to project.
+    /// - `coord_system`: output coordinate system for position columns.
     pub fn new(
         info: bigtools::BBIFileInfo,
         fields: Select<String>,
@@ -130,7 +134,7 @@ impl Scanner {
     pub fn scan_query<R: Read + Seek + Send + 'static>(
         &self,
         fmt_reader: BigWigRead<R>,
-        region: crate::Region,
+        region: Region,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,

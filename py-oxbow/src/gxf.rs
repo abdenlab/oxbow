@@ -32,6 +32,9 @@ use oxbow::CoordSystem;
 /// attribute_defs : list[tuple[str, str]], optional [default: None]
 ///     Definitions for the ``"attributes"`` struct column. ``None`` omits the
 ///     attributes column. Use the ``attribute_defs()`` method to discover definitions.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyGtfScanner {
     src: Py<PyAny>,
@@ -267,7 +270,8 @@ impl PyGtfScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region.
     /// columns : list[str], optional
@@ -356,6 +360,9 @@ impl PyGtfScanner {
 /// attribute_defs : list[tuple[str, str]], optional [default: None]
 ///     Definitions for the ``"attributes"`` struct column. ``None`` omits the
 ///     attributes column. Use the ``attribute_defs()`` method to discover definitions.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyGffScanner {
     src: Py<PyAny>,
@@ -590,7 +597,8 @@ impl PyGffScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region.
     /// columns : list[str], optional
@@ -672,6 +680,9 @@ impl PyGffScanner {
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 /// attr_defs : list[tuple[str, str]], optional
@@ -740,6 +751,9 @@ pub fn read_gtf(
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 /// attr_defs : list[tuple[str, str]], optional

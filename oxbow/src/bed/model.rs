@@ -25,6 +25,9 @@ use field::Field;
 /// Uses BED-specific Arrow types for standard fields (e.g., Int64 for
 /// positions) and FieldDef types for custom fields.
 ///
+/// `coord_system` controls the coordinate system to return the positions in.
+/// The default is 0-based half-open (BED convention).
+///
 /// # Examples
 ///
 /// ```

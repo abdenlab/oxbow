@@ -61,6 +61,9 @@ fn bed_schema_field_defs(bed_schema: &BedSchema) -> Vec<FieldDef> {
 ///
 /// Wraps a [`BedSchema`] with field projection, using AutoSql-based Arrow
 /// types (e.g., UInt32 for positions) rather than BED's noodles-based types.
+///
+/// `coord_system` controls the coordinate system to return the positions in.
+/// The default is 0-based half-open (BED/BBI convention).
 #[derive(Clone, Debug)]
 pub struct Model {
     bed_schema: BedSchema,

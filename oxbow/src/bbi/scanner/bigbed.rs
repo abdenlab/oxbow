@@ -8,7 +8,7 @@ use crate::bbi::model::base::BatchBuilder;
 use crate::bbi::model::base::BedSchema;
 use crate::bbi::model::base::Model;
 use crate::bbi::scanner::batch_iterator::base::{BigBedBatchIterator, BigBedQueryBatchIterator};
-use crate::{CoordSystem, Select};
+use crate::{CoordSystem, Region, Select};
 
 /// A BigBed scanner.
 ///
@@ -34,6 +34,11 @@ pub struct Scanner {
 
 impl Scanner {
     /// Creates a BigBed scanner from a BED schema, BBI file info, and optional field names.
+    ///
+    /// - `bed_schema`: the parsing interpretation.
+    /// - `info`: the BBI file info.
+    /// - `fields`: column names to project.
+    /// - `coord_system`: output coordinate system for position columns.
     pub fn new(
         bed_schema: BedSchema,
         info: bigtools::BBIFileInfo,
@@ -130,7 +135,7 @@ impl Scanner {
     pub fn scan_query<R: Read + Seek + Send + 'static>(
         &self,
         fmt_reader: BigBedRead<R>,
-        region: crate::Region,
+        region: Region,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,

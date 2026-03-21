@@ -6,7 +6,7 @@ use arrow::datatypes::Schema;
 use crate::sequence::model::BatchBuilder;
 use crate::sequence::model::Model;
 use crate::sequence::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
-use crate::{CoordSystem, Select};
+use crate::{CoordSystem, Region, Select};
 
 /// A FASTA scanner.
 ///
@@ -37,7 +37,8 @@ pub struct Scanner {
 impl Scanner {
     /// Creates a FASTA scanner from schema parameters.
     ///
-    /// `fields`: `All` → `["name", "description", "sequence"]`.
+    /// - `fields`: `All` → `["name", "description", "sequence"]`.
+    /// - `coord_system`: coordinate system for query region interpretation.
     pub fn new(fields: Select<String>, coord_system: CoordSystem) -> crate::Result<Self> {
         let model = Model::new_fasta(fields, coord_system)?;
         Ok(Self { model })
@@ -104,7 +105,7 @@ impl Scanner {
     pub fn scan_query<R: BufRead + Seek>(
         &self,
         fmt_reader: noodles::fasta::io::Reader<R>,
-        regions: Vec<crate::Region>,
+        regions: Vec<Region>,
         index: noodles::fasta::fai::Index,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,

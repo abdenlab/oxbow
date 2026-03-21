@@ -18,6 +18,9 @@ use field::{Field, FASTA_DEFAULT_FIELD_NAMES, FASTQ_DEFAULT_FIELD_NAMES};
 /// - `fields` selects which fields become Arrow columns.
 ///   `All` → format-specific defaults (3 for FASTA, 4 for FASTQ).
 ///   `Omit` → no fields. `Some(vec)` → specific fields.
+/// - `coord_system` can be used to define how ambiguous input query region
+///   strings should be interpreted. There are no position columns in sequence
+///   output.
 ///
 /// # Examples
 ///

@@ -10,7 +10,7 @@ use crate::bed::model::BedSchema;
 use crate::bed::model::Model;
 use crate::bed::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
-use crate::{CoordSystem, OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Region, Select};
 
 /// A BED scanner.
 ///
@@ -41,7 +41,8 @@ impl Scanner {
     /// Creates a BED scanner from a BED schema and optional field projection.
     ///
     /// - `bed_schema`: the parsing interpretation.
-    /// - `fields`: column names to project. `None` → all fields from the schema.
+    /// - `fields`: column names to project.
+    /// - `coord_system`: output coordinate system for position columns.
     pub fn new(
         bed_schema: BedSchema,
         fields: Select<String>,
@@ -113,7 +114,7 @@ impl Scanner {
     pub fn scan_query<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
         fmt_reader: noodles::bed::io::Reader<3, R>,
-        region: crate::Region,
+        region: Region,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,

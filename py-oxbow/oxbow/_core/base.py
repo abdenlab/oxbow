@@ -144,6 +144,15 @@ class DataSource:
         Returns
         -------
         DataSource
+
+        Notes
+        -----
+        Genomic range strings can be in the following formats:
+
+        - UCSC-style ``"chr:start-end"``: intepreted using the coordinate
+          system of the data source.
+        - Bracket-style ``"chr:[start,end]"``: explicitly 1-based, end-inclusive.
+        - Bracket-style ``"chr:[start,end)"``: explicitly 0-based, end-exclusive.
         """
         ...
 

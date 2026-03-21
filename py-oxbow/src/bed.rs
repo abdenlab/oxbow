@@ -91,6 +91,9 @@ pub fn resolve_bed_schema(py: Python, obj: &Py<PyAny>) -> PyResult<BedSchema> {
 ///     Whether the source is BGZF-compressed.
 /// fields : list[str], optional
 ///     Names of the BED fields to include in the schema.
+/// coords : Literal["01", "11"], optional [default: "01"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBedScanner {
     src: Py<PyAny>,
@@ -296,7 +299,8 @@ impl PyBedScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
@@ -384,6 +388,9 @@ impl PyBedScanner {
 ///     The path to the source file or a file-like object.
 /// bed_schema : str, list[tuple[str, str]], or dict[str, str]
 ///     The BED schema.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : list[str], optional
 ///     Names of the fields to project.
 /// compressed : bool, optional [default: False]

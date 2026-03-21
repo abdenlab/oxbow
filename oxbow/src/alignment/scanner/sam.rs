@@ -10,7 +10,7 @@ use crate::alignment::model::BatchBuilder;
 use crate::alignment::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::alignment::AlignmentModel;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
-use crate::{CoordSystem, Select};
+use crate::{CoordSystem, Region, Select};
 
 /// A SAM scanner.
 ///
@@ -44,7 +44,7 @@ impl Scanner {
     ///
     /// - `fields`: standard SAM field selection.
     /// - `tag_defs`: `None` → no tags column. `Some(vec![])` → empty struct.
-    /// - `coord_system`: output coordinate system. `None` → 1-based closed.
+    /// - `coord_system`: output coordinate system for position columns.
     pub fn new(
         header: noodles::sam::Header,
         fields: Select<String>,
@@ -175,7 +175,7 @@ impl Scanner {
     pub fn scan_query<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
         fmt_reader: noodles::sam::io::Reader<R>,
-        region: crate::Region,
+        region: Region,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
