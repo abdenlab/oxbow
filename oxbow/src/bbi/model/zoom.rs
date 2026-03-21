@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use arrow::datatypes::{Field as ArrowField, Schema, SchemaRef};
 
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Select};
 use field::{Field, DEFAULT_FIELD_NAMES};
 
 pub struct BBIZoomRecord<'a> {
@@ -40,22 +40,25 @@ impl<'a> BBIZoomRecord<'a> {
 ///
 /// Fixed schema: 8 fields (chrom, start, end, bases_covered, min, max,
 /// sum, sum_squares). The `fields` parameter projects which to include.
+/// The `coord_system` parameter controls the coordinate system to return the
+/// positions in.
 ///
 /// # Examples
 ///
 /// ```
 /// use oxbow::bbi::model::zoom::Model;
-/// use oxbow::Select;
+/// use oxbow::{CoordSystem, Select};
 ///
-/// let model = Model::new(Select::All).unwrap();
+/// let model = Model::new(Select::All, CoordSystem::ZeroHalfOpen).unwrap();
 /// assert_eq!(model.field_names().len(), 8);
 ///
-/// let model = Model::new(Select::Some(vec!["chrom".into(), "start".into(), "end".into(), "sum".into()])).unwrap();
+/// let model = Model::new(Select::Some(vec!["chrom".into(), "start".into(), "end".into(), "sum".into()]), CoordSystem::ZeroHalfOpen).unwrap();
 /// assert_eq!(model.field_names().len(), 4);
 /// ```
 #[derive(Clone, Debug)]
 pub struct Model {
     fields: Vec<Field>,
+    coord_system: CoordSystem,
     schema: SchemaRef,
 }
 
@@ -63,7 +66,7 @@ impl Model {
     /// Create a new BBI zoom model.
     ///
     /// `fields`: field names. `None` → all 8 default fields.
-    pub fn new(fields: Select<String>) -> crate::Result<Self> {
+    pub fn new(fields: Select<String>, coord_system: CoordSystem) -> crate::Result<Self> {
         let field_names = match fields {
             Select::All => DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect(),
             Select::Some(names) => names,
@@ -84,6 +87,7 @@ impl Model {
 
         Ok(Self {
             fields: parsed_fields,
+            coord_system,
             schema,
         })
     }
@@ -96,6 +100,11 @@ impl Model {
     /// The field names.
     pub fn field_names(&self) -> Vec<String> {
         self.fields.iter().map(|f| f.name().to_string()).collect()
+    }
+
+    /// The output coordinate system.
+    pub fn coord_system(&self) -> CoordSystem {
+        self.coord_system
     }
 
     /// The Arrow schema.
@@ -134,13 +143,13 @@ impl Model {
             .map(|f| f.name().to_string())
             .collect();
 
-        Self::new(Select::Some(projected))
+        Self::new(Select::Some(projected), self.coord_system)
     }
 }
 
 impl PartialEq for Model {
     fn eq(&self, other: &Self) -> bool {
-        self.fields == other.fields
+        self.fields == other.fields && self.coord_system == other.coord_system
     }
 }
 
@@ -152,25 +161,24 @@ mod tests {
 
     #[test]
     fn test_defaults() {
-        let model = Model::new(Select::All).unwrap();
+        let model = Model::new(Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         assert_eq!(model.field_names().len(), 8);
         assert_eq!(model.schema().fields().len(), 8);
     }
 
     #[test]
     fn test_custom() {
-        let model = Model::new(Select::Some(vec![
-            "chrom".into(),
-            "start".into(),
-            "sum".into(),
-        ]))
+        let model = Model::new(
+            Select::Some(vec!["chrom".into(), "start".into(), "sum".into()]),
+            CoordSystem::ZeroHalfOpen,
+        )
         .unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "start", "sum"]);
     }
 
     #[test]
     fn test_project() {
-        let model = Model::new(Select::All).unwrap();
+        let model = Model::new(Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         let projected = model
             .project(&["chrom".into(), "min".into(), "max".into()])
             .unwrap();
@@ -179,7 +187,10 @@ mod tests {
 
     #[test]
     fn test_invalid_field() {
-        let result = Model::new(Select::Some(vec!["invalid".into()]));
+        let result = Model::new(
+            Select::Some(vec!["invalid".into()]),
+            CoordSystem::ZeroHalfOpen,
+        );
         assert!(result.is_err());
     }
 }

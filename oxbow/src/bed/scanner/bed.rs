@@ -10,7 +10,7 @@ use crate::bed::model::BedSchema;
 use crate::bed::model::Model;
 use crate::bed::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Region, Select};
 
 /// A BED scanner.
 ///
@@ -29,7 +29,8 @@ use crate::{OxbowError, Select};
 ///
 /// use oxbow::Select;
 /// let bed_schema = "bed6+3".parse().unwrap();
-/// let scanner = Scanner::new(bed_schema, Select::All).unwrap();
+/// use oxbow::CoordSystem;
+/// let scanner = Scanner::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000)).unwrap();
 /// ```
 pub struct Scanner {
@@ -40,9 +41,14 @@ impl Scanner {
     /// Creates a BED scanner from a BED schema and optional field projection.
     ///
     /// - `bed_schema`: the parsing interpretation.
-    /// - `fields`: column names to project. `None` → all fields from the schema.
-    pub fn new(bed_schema: BedSchema, fields: Select<String>) -> crate::Result<Self> {
-        let model = Model::new(bed_schema, fields)?;
+    /// - `fields`: column names to project.
+    /// - `coord_system`: output coordinate system for position columns.
+    pub fn new(
+        bed_schema: BedSchema,
+        fields: Select<String>,
+        coord_system: CoordSystem,
+    ) -> crate::Result<Self> {
+        let model = Model::new(bed_schema, fields, coord_system)?;
         Ok(Self { model })
     }
 
@@ -108,13 +114,14 @@ impl Scanner {
     pub fn scan_query<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
         fmt_reader: noodles::bed::io::Reader<3, R>,
-        region: noodles::core::Region,
+        region: Region,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
+        let region = region.to_noodles()?;
         let reference_sequence_name = region.name().to_string();
         let interval = region.interval();
 

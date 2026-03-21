@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use arrow::datatypes::{Field as ArrowField, Schema, SchemaRef};
 
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Select};
 use field::Field;
 
 /// A data model for BED records.
@@ -25,26 +25,30 @@ use field::Field;
 /// Uses BED-specific Arrow types for standard fields (e.g., Int64 for
 /// positions) and FieldDef types for custom fields.
 ///
+/// `coord_system` controls the coordinate system to return the positions in.
+/// The default is 0-based half-open (BED convention).
+///
 /// # Examples
 ///
 /// ```
 /// use oxbow::bed::model::{Model, BedSchema};
-/// use oxbow::Select;
+/// use oxbow::{CoordSystem, Select};
 ///
 /// // BED6 with all fields.
 /// let bed_schema: BedSchema = "bed6".parse().unwrap();
-/// let model = Model::new(bed_schema, Select::All).unwrap();
+/// let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
 /// assert_eq!(model.field_names().len(), 6);
 ///
 /// // BED6 projected to 3 fields.
 /// let bed_schema: BedSchema = "bed6".parse().unwrap();
-/// let model = Model::new(bed_schema, Select::Some(vec!["chrom".into(), "start".into(), "end".into()])).unwrap();
+/// let model = Model::new(bed_schema, Select::Some(vec!["chrom".into(), "start".into(), "end".into()]), CoordSystem::ZeroHalfOpen).unwrap();
 /// assert_eq!(model.field_names().len(), 3);
 /// ```
 #[derive(Clone, Debug)]
 pub struct Model {
     bed_schema: BedSchema,
     field_names: Vec<String>,
+    coord_system: CoordSystem,
     schema: SchemaRef,
 }
 
@@ -53,7 +57,11 @@ impl Model {
     ///
     /// - `bed_schema`: the parsing interpretation.
     /// - `fields`: column names to project. `None` → all fields from the schema.
-    pub fn new(bed_schema: BedSchema, fields: Select<String>) -> crate::Result<Self> {
+    pub fn new(
+        bed_schema: BedSchema,
+        fields: Select<String>,
+        coord_system: CoordSystem,
+    ) -> crate::Result<Self> {
         let available_names = bed_schema.field_names();
         let projected_names = match fields {
             Select::All => available_names.clone(),
@@ -98,6 +106,7 @@ impl Model {
         Ok(Self {
             bed_schema,
             field_names: projected_names,
+            coord_system,
             schema,
         })
     }
@@ -110,6 +119,11 @@ impl Model {
     /// The projected field names.
     pub fn field_names(&self) -> Vec<String> {
         self.field_names.clone()
+    }
+
+    /// The output coordinate system for the start position column.
+    pub fn coord_system(&self) -> CoordSystem {
+        self.coord_system
     }
 
     /// The Arrow schema for the projected fields.
@@ -148,13 +162,19 @@ impl Model {
             .cloned()
             .collect();
 
-        Self::new(self.bed_schema.clone(), Select::Some(projected))
+        Self::new(
+            self.bed_schema.clone(),
+            Select::Some(projected),
+            self.coord_system,
+        )
     }
 }
 
 impl PartialEq for Model {
     fn eq(&self, other: &Self) -> bool {
-        self.bed_schema == other.bed_schema && self.field_names == other.field_names
+        self.bed_schema == other.bed_schema
+            && self.field_names == other.field_names
+            && self.coord_system == other.coord_system
     }
 }
 
@@ -167,7 +187,7 @@ mod tests {
     #[test]
     fn test_bed6_all_fields() {
         let bed_schema: BedSchema = "bed6".parse().unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         assert_eq!(model.field_names().len(), 6);
         assert_eq!(model.schema().fields().len(), 6);
     }
@@ -178,6 +198,7 @@ mod tests {
         let model = Model::new(
             bed_schema,
             Select::Some(vec!["chrom".into(), "start".into(), "end".into()]),
+            CoordSystem::ZeroHalfOpen,
         )
         .unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "start", "end"]);
@@ -187,14 +208,14 @@ mod tests {
     #[test]
     fn test_bed3_plus() {
         let bed_schema: BedSchema = "bed3+".parse().unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "start", "end", "rest"]);
     }
 
     #[test]
     fn test_bedgraph() {
         let bed_schema = BedSchema::new_bedgraph().unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "start", "end", "value"]);
     }
 
@@ -205,7 +226,7 @@ mod tests {
             FieldDef::new("pValue".into(), FieldType::Float),
         ];
         let bed_schema = BedSchema::new(3, Some(defs)).unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         assert_eq!(
             model.field_names(),
             vec!["chrom", "start", "end", "signalValue", "pValue"]
@@ -215,7 +236,7 @@ mod tests {
     #[test]
     fn test_project() {
         let bed_schema: BedSchema = "bed6+3".parse().unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         let projected = model
             .project(&["chrom".into(), "end".into(), "BED6+1".into()])
             .unwrap();
@@ -225,7 +246,7 @@ mod tests {
     #[test]
     fn test_project_unknown() {
         let bed_schema: BedSchema = "bed3".parse().unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         let result = model.project(&["nonexistent".into()]);
         assert!(result.is_err());
     }
@@ -233,15 +254,23 @@ mod tests {
     #[test]
     fn test_invalid_field_name() {
         let bed_schema: BedSchema = "bed3".parse().unwrap();
-        let result = Model::new(bed_schema, Select::Some(vec!["nonexistent".into()]));
+        let result = Model::new(
+            bed_schema,
+            Select::Some(vec!["nonexistent".into()]),
+            CoordSystem::ZeroHalfOpen,
+        );
         assert!(result.is_err());
     }
 
     #[test]
     fn test_bed3_projected_subset() {
         let bed_schema: BedSchema = "bed3".parse().unwrap();
-        let model =
-            Model::new(bed_schema, Select::Some(vec!["chrom".into(), "end".into()])).unwrap();
+        let model = Model::new(
+            bed_schema,
+            Select::Some(vec!["chrom".into(), "end".into()]),
+            CoordSystem::ZeroHalfOpen,
+        )
+        .unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "end"]);
     }
 
@@ -251,6 +280,7 @@ mod tests {
         let model = Model::new(
             bed_schema,
             Select::Some(vec!["chrom".into(), "strand".into(), "itemRgb".into()]),
+            CoordSystem::ZeroHalfOpen,
         )
         .unwrap();
         assert_eq!(model.field_names(), vec!["chrom", "strand", "itemRgb"]);
@@ -264,7 +294,7 @@ mod tests {
             FieldDef::new("extra2".into(), FieldType::String),
         ];
         let bed_schema = BedSchema::new(12, Some(defs)).unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         assert_eq!(model.field_names().len(), 14);
 
         let projected = model
@@ -281,7 +311,7 @@ mod tests {
         use arrow::datatypes::DataType;
 
         let bed_schema = BedSchema::new_bedgraph().unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         // Standard fields use BED types (Int64 for positions)
         assert_eq!(model.schema().field(1).data_type(), &DataType::Int64);
         // Custom "value" field uses FieldDef type (Float32)

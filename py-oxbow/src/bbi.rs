@@ -8,14 +8,13 @@ use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
-use bigtools::bed::autosql::parse::parse_autosql;
-use noodles::core::Region;
-
 use crate::error::{err_on_unwind, to_py};
-use crate::util::{pyobject_to_bufreader, resolve_fields, Reader};
+use crate::util::{pyobject_to_bufreader, resolve_coord_system, resolve_fields, Reader};
+use bigtools::bed::autosql::parse::parse_autosql;
 use oxbow::bbi::model::base::field::FieldDef;
 use oxbow::bbi::{BBIReader, BBIZoomScanner, BedSchema, BigBedScanner, BigWigScanner};
 use oxbow::util::batches_to_ipc;
+use oxbow::CoordSystem;
 
 #[pyclass(eq, eq_int, from_py_object, module = "oxbow.oxbow")]
 #[derive(Clone, PartialEq)]
@@ -32,6 +31,9 @@ pub enum PyBBIFileType {
 ///     The path to the BigWig file or a file-like object.
 /// fields : list[str], optional
 ///     Names of the fields to include in the schema.
+/// coords : Literal["01", "11"], optional [default: "01"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigWigScanner {
     _src: Py<PyAny>,
@@ -42,13 +44,24 @@ pub struct PyBigWigScanner {
 #[pymethods]
 impl PyBigWigScanner {
     #[new]
-    #[pyo3(signature = (src, fields=None))]
-    fn new(py: Python, src: Py<PyAny>, fields: Option<Py<PyAny>>) -> PyResult<Self> {
+    #[pyo3(signature = (src, fields=None, coords=None))]
+    fn new(
+        py: Python,
+        src: Py<PyAny>,
+        fields: Option<Py<PyAny>>,
+        coords: Option<String>,
+    ) -> PyResult<Self> {
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let fmt_reader = bigtools::BigWigRead::open(reader).unwrap();
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
-        let scanner = BigWigScanner::new(info, resolve_fields(fields, py)?).map_err(to_py)?;
+        let scanner = BigWigScanner::new(
+            info,
+            resolve_fields(fields, py)?,
+            coord_system.unwrap_or(CoordSystem::ZeroHalfOpen),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             _src: src,
             reader,
@@ -64,6 +77,7 @@ impl PyBigWigScanner {
         let args = (self._src.clone_ref(py),);
         let kwargs = PyDict::new(py);
         kwargs.set_item("fields", self.scanner.model().field_names())?;
+        kwargs.set_item("coords", self.scanner.model().coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -113,6 +127,7 @@ impl PyBigWigScanner {
                 PyBBIFileType::BigWig,
                 zoom_level,
                 fields,
+                Some(self.scanner.model().coord_system().to_string()),
             )
         })
     }
@@ -164,7 +179,8 @@ impl PyBigWigScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// columns : list[str], optional
     ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
@@ -185,9 +201,8 @@ impl PyBigWigScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         let reader = self.reader.clone();
         let info = self.scanner.info().clone();
@@ -215,6 +230,9 @@ impl PyBigWigScanner {
 ///     records, if it exists.
 /// fields : list[str], optional
 ///     Names of the fields to include in the schema.
+/// coords : Literal["01", "11"], optional [default: "01"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBigBedScanner {
     _src: Py<PyAny>,
@@ -226,13 +244,15 @@ pub struct PyBigBedScanner {
 #[pymethods]
 impl PyBigBedScanner {
     #[new]
-    #[pyo3(signature = (src, schema=None, fields=None))]
+    #[pyo3(signature = (src, schema=None, fields=None, coords=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
         schema: Option<Py<PyAny>>,
         fields: Option<Py<PyAny>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
         let mut fmt_reader = bigtools::BigBedRead::open(reader).unwrap();
         let bed_schema = match &schema {
@@ -266,8 +286,13 @@ impl PyBigBedScanner {
         };
         let info = fmt_reader.info().clone();
         let reader = fmt_reader.into_inner();
-        let scanner =
-            BigBedScanner::new(bed_schema, info, resolve_fields(fields, py)?).map_err(to_py)?;
+        let scanner = BigBedScanner::new(
+            bed_schema,
+            info,
+            resolve_fields(fields, py)?,
+            coord_system.unwrap_or(CoordSystem::ZeroHalfOpen),
+        )
+        .map_err(to_py)?;
         let _schema: Option<String> = schema.as_ref().and_then(|s| s.extract::<String>(py).ok());
         Ok(Self {
             _src: src,
@@ -288,6 +313,7 @@ impl PyBigBedScanner {
         );
         let kwargs = PyDict::new(py);
         kwargs.set_item("fields", self.scanner.model().field_names())?;
+        kwargs.set_item("coords", self.scanner.model().coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -350,6 +376,7 @@ impl PyBigBedScanner {
                 PyBBIFileType::BigBed,
                 zoom_level,
                 fields,
+                Some(self.scanner.model().coord_system().to_string()),
             )
         })
     }
@@ -401,7 +428,8 @@ impl PyBigBedScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// columns : list[str], optional
     ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
@@ -422,9 +450,8 @@ impl PyBigBedScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         let reader = self.reader.clone();
         let info = self.scanner.info().clone();
@@ -451,6 +478,9 @@ impl PyBigBedScanner {
 ///     The zoom level resolution in bp.
 /// fields : list[str], optional
 ///     Names of the fields to include in the schema.
+/// coords : Literal["01", "11"], optional [default: "01"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBBIZoomScanner {
     src: Py<PyAny>,
@@ -463,14 +493,16 @@ pub struct PyBBIZoomScanner {
 #[pymethods]
 impl PyBBIZoomScanner {
     #[new]
-    #[pyo3(signature = (src, bbi_type, zoom_level, fields=None))]
+    #[pyo3(signature = (src, bbi_type, zoom_level, fields=None, coords=None))]
     pub fn new(
         py: Python,
         src: Py<PyAny>,
         bbi_type: PyBBIFileType,
         zoom_level: u32,
         fields: Option<Py<PyAny>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)
             .expect("Failed to convert Py<PyAny> to BufReader");
         match bbi_type {
@@ -494,9 +526,13 @@ impl PyBBIZoomScanner {
                     )));
                 }
                 let reader = fmt_reader.into_inner();
-                let scanner =
-                    BBIZoomScanner::new(ref_names, zoom_level, resolve_fields(fields, py)?)
-                        .map_err(to_py)?;
+                let scanner = BBIZoomScanner::new(
+                    ref_names,
+                    zoom_level,
+                    resolve_fields(fields, py)?,
+                    coord_system.unwrap_or(CoordSystem::ZeroHalfOpen),
+                )
+                .map_err(to_py)?;
                 Ok(Self {
                     src,
                     reader,
@@ -525,9 +561,13 @@ impl PyBBIZoomScanner {
                     )));
                 }
                 let reader = fmt_reader.into_inner();
-                let scanner =
-                    BBIZoomScanner::new(ref_names, zoom_level, resolve_fields(fields, py)?)
-                        .map_err(to_py)?;
+                let scanner = BBIZoomScanner::new(
+                    ref_names,
+                    zoom_level,
+                    resolve_fields(fields, py)?,
+                    coord_system.unwrap_or(CoordSystem::ZeroHalfOpen),
+                )
+                .map_err(to_py)?;
                 Ok(Self {
                     src,
                     reader,
@@ -551,6 +591,7 @@ impl PyBBIZoomScanner {
         );
         let kwargs = PyDict::new(py);
         kwargs.set_item("fields", self.scanner.field_names())?;
+        kwargs.set_item("coords", self.scanner.model().coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -620,7 +661,8 @@ impl PyBBIZoomScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// columns : list[str], optional
     ///     Names of the columns to project.
     /// batch_size : int, optional [default: 1024]
@@ -641,9 +683,8 @@ impl PyBBIZoomScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         self.reader.seek(std::io::SeekFrom::Start(0)).unwrap();
         let reader = self.reader.clone();
@@ -676,6 +717,9 @@ impl PyBBIZoomScanner {
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 ///
@@ -694,14 +738,15 @@ pub fn read_bigwig(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, oxbow::CoordSystem::ZeroHalfOpen).map_err(to_py)?;
 
         let fmt_reader = bigtools::BigWigRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigWigScanner::new(info, resolve_fields(fields, py)?).map_err(to_py)?;
+        let scanner =
+            BigWigScanner::new(info, resolve_fields(fields, py)?, CoordSystem::ZeroHalfOpen)
+                .map_err(to_py)?;
         let batches = scanner
             .scan_query(fmt_reader, region, None, None, None)
             .map_err(to_py)?;
@@ -710,7 +755,9 @@ pub fn read_bigwig(
         let fmt_reader = bigtools::BigWigRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner = BigWigScanner::new(info, resolve_fields(fields, py)?).map_err(to_py)?;
+        let scanner =
+            BigWigScanner::new(info, resolve_fields(fields, py)?, CoordSystem::ZeroHalfOpen)
+                .map_err(to_py)?;
         let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };
@@ -726,6 +773,9 @@ pub fn read_bigwig(
 ///     The path to the source file or a file-like object.
 /// bed_schema : str
 ///     The BED schema to use for parsing BigBed records.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 ///
@@ -746,15 +796,19 @@ pub fn read_bigbed(
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, oxbow::CoordSystem::ZeroHalfOpen).map_err(to_py)?;
 
         let fmt_reader = bigtools::BigBedRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner =
-            BigBedScanner::new(bed_schema, info, resolve_fields(fields, py)?).map_err(to_py)?;
+        let scanner = BigBedScanner::new(
+            bed_schema,
+            info,
+            resolve_fields(fields, py)?,
+            CoordSystem::ZeroHalfOpen,
+        )
+        .map_err(to_py)?;
         let batches = scanner
             .scan_query(fmt_reader, region, None, None, None)
             .map_err(to_py)?;
@@ -763,8 +817,13 @@ pub fn read_bigbed(
         let fmt_reader = bigtools::BigBedRead::open(reader)
             .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
         let info = fmt_reader.info().clone();
-        let scanner =
-            BigBedScanner::new(bed_schema, info, resolve_fields(fields, py)?).map_err(to_py)?;
+        let scanner = BigBedScanner::new(
+            bed_schema,
+            info,
+            resolve_fields(fields, py)?,
+            CoordSystem::ZeroHalfOpen,
+        )
+        .map_err(to_py)?;
         let batches = scanner.scan(fmt_reader, None, None, None).map_err(to_py)?;
         batches_to_ipc(batches)
     };

@@ -120,7 +120,7 @@ impl FromStr for Field {
 /// A builder for an Arrow array (column) corresponding to a BED field.
 pub enum FieldBuilder {
     Chrom(GenericStringBuilder<i32>),
-    Start(Int64Builder),
+    Start(Int64Builder, i64),
     End(Int64Builder),
     Name(GenericStringBuilder<i32>),
     Score(UInt16Builder),
@@ -144,7 +144,7 @@ impl FieldBuilder {
     pub fn new(field: Field, capacity: usize) -> Self {
         match field {
             Field::Chrom => Self::Chrom(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
-            Field::Start => Self::Start(Int64Builder::with_capacity(capacity)),
+            Field::Start => Self::Start(Int64Builder::with_capacity(capacity), 0),
             Field::End => Self::End(Int64Builder::with_capacity(capacity)),
             Field::Name => Self::Name(GenericStringBuilder::<i32>::with_capacity(capacity, 1024)),
             Field::Score => Self::Score(UInt16Builder::with_capacity(capacity)),
@@ -176,10 +176,18 @@ impl FieldBuilder {
         }
     }
 
+    /// Sets the coordinate offset for the start position field.
+    pub fn with_coord_offset(self, offset: i32) -> Self {
+        match self {
+            Self::Start(b, _) => Self::Start(b, offset as i64),
+            other => other,
+        }
+    }
+
     pub fn finish(&mut self) -> arrow::array::ArrayRef {
         match self {
             Self::Chrom(builder) => Arc::new(builder.finish()),
-            Self::Start(builder) => Arc::new(builder.finish()),
+            Self::Start(builder, _) => Arc::new(builder.finish()),
             Self::End(builder) => Arc::new(builder.finish()),
             Self::Name(builder) => Arc::new(builder.finish()),
             Self::Score(builder) => Arc::new(builder.finish()),
@@ -210,8 +218,11 @@ impl Push<&noodles::bed::Record<3>> for FieldBuilder {
             Self::Chrom(builder) => {
                 builder.append_value(record.reference_sequence_name().to_string());
             }
-            Self::Start(builder) => {
-                let start = record.feature_start().ok().map(|pos| pos.get() as i64);
+            Self::Start(builder, offset) => {
+                let start = record
+                    .feature_start()
+                    .ok()
+                    .map(|pos| pos.get() as i64 + *offset);
                 builder.append_option(start);
             }
             Self::End(builder) => {

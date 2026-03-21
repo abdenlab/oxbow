@@ -7,7 +7,11 @@ use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 
 use crate::batch::{Push, RecordBatchBuilder};
-use crate::Select;
+use crate::{CoordSystem, Select};
+
+/// The coordinate system in which bigtools returns BBI positions.
+/// bigtools provides raw 0-based coordinates from the file.
+const SOURCE_CS: CoordSystem = CoordSystem::ZeroHalfOpen;
 
 use super::field::Push as _;
 pub use super::field::{FieldBuilder, FieldDef, FieldType};
@@ -17,6 +21,7 @@ pub use super::{BedSchema, BigBedRecord, BigWigRecord, Model};
 pub struct BatchBuilder {
     schema: SchemaRef,
     row_count: usize,
+    coord_offset: i32,
     bed_schema: BedSchema,
     bed_schema_field_defs: Vec<FieldDef>,
     builders: IndexMap<FieldDef, FieldBuilder>,
@@ -29,7 +34,7 @@ impl BatchBuilder {
         fields: Select<String>,
         capacity: usize,
     ) -> crate::Result<Self> {
-        let model = Model::new(bed_schema, fields)?;
+        let model = Model::new(bed_schema, fields, CoordSystem::ZeroHalfOpen)?;
         Self::from_model(&model, capacity)
     }
 
@@ -44,6 +49,7 @@ impl BatchBuilder {
         Ok(Self {
             schema: model.schema().clone(),
             row_count: 0,
+            coord_offset: model.coord_system().start_offset_from(SOURCE_CS),
             bed_schema: model.bed_schema().clone(),
             bed_schema_field_defs: model.bed_schema_field_defs(),
             builders,
@@ -104,7 +110,8 @@ impl Push<&BigBedRecord<'_>> for BatchBuilder {
             if let Some(builder) = self.builders.get_mut(def) {
                 match builder {
                     FieldBuilder::Uint(b) => {
-                        b.append_value(record.start);
+                        let adjusted = (record.start as i64 + self.coord_offset as i64) as u32;
+                        b.append_value(adjusted);
                     }
                     _ => {
                         return Err(crate::OxbowError::invalid_data(
@@ -186,7 +193,8 @@ impl Push<&BigWigRecord<'_>> for BatchBuilder {
             if let Some(builder) = self.builders.get_mut(def) {
                 match builder {
                     FieldBuilder::Uint(b) => {
-                        b.append_value(record.start);
+                        let adjusted = (record.start as i64 + self.coord_offset as i64) as u32;
+                        b.append_value(adjusted);
                     }
                     _ => {
                         return Err(crate::OxbowError::invalid_data(
@@ -245,7 +253,7 @@ mod tests {
     #[test]
     fn test_batch_builder_new() {
         let bed_schema = create_test_bedschema();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         let builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         assert_eq!(builder.schema().fields().len(), 4);
@@ -255,7 +263,7 @@ mod tests {
     #[test]
     fn test_schema() {
         let bed_schema = create_test_bedschema();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         let builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let schema = builder.schema();
@@ -270,7 +278,7 @@ mod tests {
     #[test]
     fn test_push_bigbed_record() {
         let schema = create_test_bedschema();
-        let model = Model::new(schema, Select::All).unwrap();
+        let model = Model::new(schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let record = BigBedRecord {
@@ -315,7 +323,7 @@ mod tests {
     #[test]
     fn test_push_bigwig_record() {
         let schema = create_test_bedschema();
-        let model = Model::new(schema, Select::All).unwrap();
+        let model = Model::new(schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let record = BigWigRecord {
@@ -369,7 +377,7 @@ mod tests {
     #[test]
     fn test_finish_empty_batch() {
         let schema = create_test_bedschema();
-        let model = Model::new(schema, Select::All).unwrap();
+        let model = Model::new(schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let batch = builder.finish().unwrap();
@@ -381,7 +389,7 @@ mod tests {
     fn test_bigbed_bed6_no_custom() {
         // bed6 with no custom fields — standard fields 4-6 are in rest
         let bed_schema: BedSchema = "bed6".parse().unwrap();
-        let model = Model::new(bed_schema, Select::All).unwrap();
+        let model = Model::new(bed_schema, Select::All, CoordSystem::ZeroHalfOpen).unwrap();
         let mut builder = BatchBuilder::from_model(&model, 10).unwrap();
 
         let record = BigBedRecord {
@@ -424,6 +432,7 @@ mod tests {
         let model = Model::new(
             bed_schema,
             Select::Some(vec!["chrom".into(), "strand".into()]),
+            CoordSystem::ZeroHalfOpen,
         )
         .unwrap();
         let mut builder = BatchBuilder::from_model(&model, 10).unwrap();

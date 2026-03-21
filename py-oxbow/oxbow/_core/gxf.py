@@ -24,6 +24,7 @@ class GxfFile(DataSource):
         *,
         fields: Literal["*"] | list[str] | None = "*",
         attribute_defs: list[tuple[str, str]] | None = None,
+        coords: Literal["01", "11"] = "11",
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
@@ -35,7 +36,10 @@ class GxfFile(DataSource):
         self._regions = regions
 
         self._scanner_kwargs = dict(
-            compressed=compressed, fields=fields, attribute_defs=attribute_defs
+            compressed=compressed,
+            fields=fields,
+            attribute_defs=attribute_defs,
+            coords=coords,
         )
 
     def _scan_query(self, scanner, region, columns, batch_size):
@@ -123,6 +127,7 @@ def from_gtf(
     *,
     fields: Literal["*"] | list[str] | None = "*",
     attribute_defs: list[tuple[str, str]] | None = None,
+    coords: Literal["01", "11"] = "11",
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
@@ -190,6 +195,7 @@ def from_gtf(
         compressed=bgzf_compressed,
         fields=fields,
         attribute_defs=attribute_defs,
+        coords=coords,
         regions=regions,
         index=index,
         batch_size=batch_size,
@@ -202,6 +208,7 @@ def from_gff(
     *,
     fields: Literal["*"] | list[str] | None = "*",
     attribute_defs: list[tuple[str, str]] | None = None,
+    coords: Literal["01", "11"] = "11",
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,

@@ -7,6 +7,10 @@ use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 
 use crate::batch::{Push, RecordBatchBuilder};
+use crate::CoordSystem;
+
+/// The coordinate system in which bigtools returns BBI positions.
+const SOURCE_CS: CoordSystem = CoordSystem::ZeroHalfOpen;
 
 use super::field::{Field, FieldBuilder, DEFAULT_FIELD_NAMES};
 use super::BBIZoomRecord;
@@ -15,6 +19,7 @@ use super::BBIZoomRecord;
 pub struct BatchBuilder {
     schema: SchemaRef,
     row_count: usize,
+    coord_offset: i32,
     fields: Vec<Field>,
     field_builders: IndexMap<Field, FieldBuilder>,
 }
@@ -24,6 +29,7 @@ impl BatchBuilder {
     pub fn new(
         ref_names: &[String],
         field_names: Option<Vec<String>>,
+        coord_system: CoordSystem,
         capacity: usize,
     ) -> crate::Result<Self> {
         let default_field_names: Vec<String> = DEFAULT_FIELD_NAMES
@@ -49,6 +55,7 @@ impl BatchBuilder {
         Ok(Self {
             schema,
             row_count: 0,
+            coord_offset: coord_system.start_offset_from(SOURCE_CS),
             fields,
             field_builders,
         })
@@ -89,7 +96,10 @@ impl Push<&BBIZoomRecord<'_>> for BatchBuilder {
         for (_, builder) in &mut self.field_builders {
             match builder {
                 FieldBuilder::Chrom(builder) => builder.append_value(record.chrom),
-                FieldBuilder::Start(builder) => builder.append_value(record.start),
+                FieldBuilder::Start(builder) => {
+                    let adjusted = (record.start as i64 + self.coord_offset as i64) as u32;
+                    builder.append_value(adjusted);
+                }
                 FieldBuilder::End(builder) => builder.append_value(record.end),
                 FieldBuilder::BasesCovered(builder) => builder.append_value(record.bases_covered),
                 FieldBuilder::Min(builder) => builder.append_value(record.min),
@@ -119,7 +129,8 @@ mod tests {
         ]);
         let capacity = 10;
 
-        let builder = BatchBuilder::new(&ref_names, field_names, capacity);
+        let builder =
+            BatchBuilder::new(&ref_names, field_names, CoordSystem::ZeroHalfOpen, capacity);
         assert!(builder.is_ok());
 
         let builder = builder.unwrap();
@@ -137,7 +148,9 @@ mod tests {
         ]);
         let capacity = 10;
 
-        let builder = BatchBuilder::new(&ref_names, field_names, capacity).unwrap();
+        let builder =
+            BatchBuilder::new(&ref_names, field_names, CoordSystem::ZeroHalfOpen, capacity)
+                .unwrap();
         let schema = builder.schema();
 
         assert_eq!(schema.fields().len(), 3);
@@ -156,7 +169,9 @@ mod tests {
         ]);
         let capacity = 10;
 
-        let mut builder = BatchBuilder::new(&ref_names, field_names, capacity).unwrap();
+        let mut builder =
+            BatchBuilder::new(&ref_names, field_names, CoordSystem::ZeroHalfOpen, capacity)
+                .unwrap();
 
         let record = BBIZoomRecord {
             chrom: "chr1",
@@ -182,7 +197,9 @@ mod tests {
         ]);
         let capacity = 10;
 
-        let mut builder = BatchBuilder::new(&ref_names, field_names, capacity).unwrap();
+        let mut builder =
+            BatchBuilder::new(&ref_names, field_names, CoordSystem::ZeroHalfOpen, capacity)
+                .unwrap();
 
         let record1 = BBIZoomRecord {
             chrom: "chr1",

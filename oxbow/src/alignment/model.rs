@@ -10,21 +10,24 @@ use std::sync::Arc;
 
 use arrow::datatypes::{DataType, Field as ArrowField, Schema, SchemaRef};
 
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Select};
 use field::{Field, DEFAULT_FIELD_NAMES};
 use tag::TagDef;
 
 /// A data model for alignment records (SAM/BAM/CRAM).
 ///
 /// Encapsulates the schema-defining parameters for an alignment projection:
-/// which standard fields to include and which auxiliary tags (with their
-/// types) to materialize.
+/// which standard fields to include, which auxiliary tags (with their
+/// types) to materialize, and the output coordinate system.
 ///
 /// - `fields` selects which standard SAM fields become Arrow columns.
 ///   `None` → all 12 standard fields.
 /// - `tag_defs` controls the tags struct column independently.
 ///   `None` → no tags column. `Some(vec![])` → empty struct column.
 ///   `Some(vec![...])` → struct column with the specified sub-fields.
+/// - `coord_system` controls the coordinate system of position columns
+///   (`pos`, `pnext`). `None` → 1-based closed (`"11"`), the SAM convention.
+///   End coordinates are not affected.
 ///
 /// The model can produce an Arrow schema independently of any file header.
 ///
@@ -32,17 +35,19 @@ use tag::TagDef;
 ///
 /// ```
 /// use oxbow::alignment::model::Model;
-/// use oxbow::Select;
+/// use oxbow::{CoordSystem, Select};
 ///
-/// // Default: all 12 standard fields, no tags column.
-/// let model = Model::new(Select::All, None).unwrap();
+/// // Default: all 12 standard fields, no tags column, 1-based coordinates.
+/// let model = Model::new(Select::All, None, CoordSystem::OneClosed).unwrap();
 /// assert_eq!(model.field_names().len(), 12);
 /// assert!(!model.has_tags());
+/// assert_eq!(model.coord_system(), CoordSystem::OneClosed);
 ///
-/// // Custom: selected fields with tags.
+/// // Custom: selected fields with tags, 0-based coordinates.
 /// let model = Model::new(
 ///     Select::Some(vec!["qname".into(), "pos".into()]),
 ///     Some(vec![("NM".into(), "i".into()), ("MD".into(), "Z".into())]),
+///     CoordSystem::ZeroHalfOpen,
 /// ).unwrap();
 /// assert_eq!(model.field_names(), vec!["qname", "pos"]);
 /// assert!(model.has_tags());
@@ -54,6 +59,7 @@ use tag::TagDef;
 pub struct Model {
     fields: Vec<Field>,
     tag_defs: Option<Vec<TagDef>>,
+    coord_system: CoordSystem,
     schema: SchemaRef,
 }
 
@@ -64,9 +70,13 @@ impl Model {
     ///   fields. `Select(vec)` → specific fields. `Omit` → no fields.
     /// - `tag_defs`: tag definitions as `(name, type_code)` pairs. `None` →
     ///   no tags column. `Some(vec![])` → tags column with empty struct.
+    /// - `coord_system`: output coordinate system for position columns
+    ///   (`pos`, `pnext`). `None` defaults to [`CoordSystem::OneClosed`]
+    ///   (1-based, matching the SAM convention).
     pub fn new(
         fields: Select<String>,
         tag_defs: Option<Vec<(String, String)>>,
+        coord_system: CoordSystem,
     ) -> crate::Result<Self> {
         let field_names = match fields {
             Select::All => DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect(),
@@ -89,18 +99,13 @@ impl Model {
                     .collect::<crate::Result<Vec<_>>>()
             })
             .transpose()?;
-
         let schema = Self::build_schema(&parsed_fields, tag_defs.as_deref());
         Ok(Self {
             fields: parsed_fields,
             tag_defs,
+            coord_system,
             schema,
         })
-    }
-
-    /// Create a model with all 12 default standard fields and no tags.
-    pub fn default_fields() -> Self {
-        Self::new(Select::All, None).expect("default fields are always valid")
     }
 
     fn build_schema(fields: &[Field], tag_defs: Option<&[TagDef]>) -> SchemaRef {
@@ -137,6 +142,11 @@ impl Model {
     /// Whether the tags struct column is included.
     pub fn has_tags(&self) -> bool {
         self.tag_defs.is_some()
+    }
+
+    /// The output coordinate system for position columns.
+    pub fn coord_system(&self) -> CoordSystem {
+        self.coord_system
     }
 
     /// The Arrow schema for this model.
@@ -192,13 +202,22 @@ impl Model {
             None
         };
 
-        Self::new(Select::Some(projected_fields), tag_defs)
+        Self::new(Select::Some(projected_fields), tag_defs, self.coord_system)
+    }
+}
+
+impl Default for Model {
+    fn default() -> Self {
+        Self::new(Select::All, None, CoordSystem::OneClosed)
+            .expect("default fields are always valid")
     }
 }
 
 impl PartialEq for Model {
     fn eq(&self, other: &Self) -> bool {
-        self.fields == other.fields && self.tag_defs == other.tag_defs
+        self.fields == other.fields
+            && self.tag_defs == other.tag_defs
+            && self.coord_system == other.coord_system
     }
 }
 
@@ -225,6 +244,10 @@ impl fmt::Display for Model {
             }
         }
 
+        if self.coord_system != CoordSystem::OneClosed {
+            write!(f, ";coords={}", self.coord_system)?;
+        }
+
         Ok(())
     }
 }
@@ -235,6 +258,7 @@ impl FromStr for Model {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut fields: Option<Vec<String>> = None;
         let mut tag_defs: Option<Vec<(String, String)>> = None;
+        let mut coord_system: Option<CoordSystem> = None;
 
         for part in s.split(';') {
             let part = part.trim();
@@ -267,6 +291,8 @@ impl FromStr for Model {
                     })
                     .collect();
                 tag_defs = Some(defs?);
+            } else if let Some(value) = part.strip_prefix("coords=") {
+                coord_system = Some(value.parse()?);
             } else {
                 return Err(OxbowError::invalid_input(format!(
                     "Invalid Model segment: '{}'",
@@ -279,7 +305,11 @@ impl FromStr for Model {
             Some(names) => Select::Some(names),
             None => Select::All,
         };
-        Self::new(fields, tag_defs)
+        Self::new(
+            fields,
+            tag_defs,
+            coord_system.unwrap_or(CoordSystem::OneClosed),
+        )
     }
 }
 
@@ -287,19 +317,22 @@ impl FromStr for Model {
 mod tests {
     use super::*;
 
+    const CS: CoordSystem = CoordSystem::OneClosed;
+
     #[test]
     fn test_default_model() {
-        let model = Model::new(Select::All, None).unwrap();
+        let model = Model::new(Select::All, None, CS).unwrap();
         assert_eq!(model.field_names().len(), 12);
         assert!(!model.has_tags());
         assert!(model.tag_defs().is_none());
         assert_eq!(model.schema().fields().len(), 12);
+        assert_eq!(model.coord_system(), CoordSystem::OneClosed);
     }
 
     #[test]
     fn test_default_fields_constructor() {
-        let model = Model::default_fields();
-        assert_eq!(model, Model::new(Select::All, None).unwrap());
+        let model = Model::default();
+        assert_eq!(model, Model::new(Select::All, None, CS).unwrap());
     }
 
     #[test]
@@ -307,6 +340,7 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["qname".into(), "flag".into(), "pos".into()]),
             None,
+            CS,
         )
         .unwrap();
         assert_eq!(model.field_names(), vec!["qname", "flag", "pos"]);
@@ -319,6 +353,7 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["qname".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into()), ("MD".into(), "Z".into())]),
+            CS,
         )
         .unwrap();
         assert_eq!(model.field_names(), vec!["qname", "pos"]);
@@ -331,7 +366,7 @@ mod tests {
 
     #[test]
     fn test_tags_empty_defs_is_empty_struct() {
-        let model = Model::new(Select::Some(vec!["qname".into()]), Some(vec![])).unwrap();
+        let model = Model::new(Select::Some(vec!["qname".into()]), Some(vec![]), CS).unwrap();
         assert!(model.has_tags());
         assert!(model.tag_defs().unwrap().is_empty());
         assert_eq!(model.schema().fields().len(), 2);
@@ -344,7 +379,7 @@ mod tests {
 
     #[test]
     fn test_no_tags_when_tag_defs_none() {
-        let model = Model::new(Select::Some(vec!["qname".into(), "pos".into()]), None).unwrap();
+        let model = Model::new(Select::Some(vec!["qname".into(), "pos".into()]), None, CS).unwrap();
         assert!(!model.has_tags());
         assert!(model.tag_defs().is_none());
         assert_eq!(model.schema().fields().len(), 2);
@@ -352,19 +387,19 @@ mod tests {
 
     #[test]
     fn test_invalid_field() {
-        let result = Model::new(Select::Some(vec!["invalid".into()]), None);
+        let result = Model::new(Select::Some(vec!["invalid".into()]), None, CS);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_invalid_tag_name() {
-        let result = Model::new(Select::All, Some(vec![("X".into(), "i".into())]));
+        let result = Model::new(Select::All, Some(vec![("X".into(), "i".into())]), CS);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_invalid_tag_type() {
-        let result = Model::new(Select::All, Some(vec![("NM".into(), "Q".into())]));
+        let result = Model::new(Select::All, Some(vec![("NM".into(), "Q".into())]), CS);
         assert!(result.is_err());
     }
 
@@ -373,6 +408,7 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["qname".into(), "flag".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into())]),
+            CS,
         )
         .unwrap();
 
@@ -386,6 +422,7 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["qname".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into())]),
+            CS,
         )
         .unwrap();
 
@@ -397,14 +434,26 @@ mod tests {
 
     #[test]
     fn test_project_unknown_column() {
-        let model = Model::default_fields();
+        let model = Model::default();
         let result = model.project(&["nonexistent".into()]);
         assert!(result.is_err());
     }
 
     #[test]
+    fn test_project_propagates_coord_system() {
+        let model = Model::new(
+            Select::Some(vec!["qname".into(), "pos".into()]),
+            None,
+            CoordSystem::ZeroHalfOpen,
+        )
+        .unwrap();
+        let projected = model.project(&["pos".into()]).unwrap();
+        assert_eq!(projected.coord_system(), CoordSystem::ZeroHalfOpen);
+    }
+
+    #[test]
     fn test_display_defaults() {
-        let model = Model::default_fields();
+        let model = Model::default();
         assert_eq!(model.to_string(), "fields=*");
     }
 
@@ -413,21 +462,45 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["qname".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into()), ("MD".into(), "Z".into())]),
+            CS,
         )
         .unwrap();
         assert_eq!(model.to_string(), "fields=qname,pos;tags=NM:i,MD:Z");
     }
 
     #[test]
+    fn test_display_zero_half_open() {
+        let model = Model::new(
+            Select::Some(vec!["qname".into(), "pos".into()]),
+            None,
+            CoordSystem::ZeroHalfOpen,
+        )
+        .unwrap();
+        assert_eq!(model.to_string(), "fields=qname,pos;coords=01");
+    }
+
+    #[test]
+    fn test_display_one_closed_omitted() {
+        // OneClosed is the default; should not be emitted.
+        let model = Model::new(
+            Select::Some(vec!["pos".into()]),
+            None,
+            CoordSystem::OneClosed,
+        )
+        .unwrap();
+        assert_eq!(model.to_string(), "fields=pos");
+    }
+
+    #[test]
     fn test_display_tags_no_defs() {
-        let model = Model::new(Select::Some(vec!["qname".into()]), Some(vec![])).unwrap();
+        let model = Model::new(Select::Some(vec!["qname".into()]), Some(vec![]), CS).unwrap();
         assert_eq!(model.to_string(), "fields=qname;tags");
     }
 
     #[test]
     fn test_from_str_defaults() {
         let model: Model = "fields=*".parse().unwrap();
-        assert_eq!(model, Model::default_fields());
+        assert_eq!(model, Model::default());
     }
 
     #[test]
@@ -435,6 +508,7 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["qname".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into()), ("MD".into(), "Z".into())]),
+            CS,
         )
         .unwrap();
         let s = model.to_string();
@@ -444,7 +518,7 @@ mod tests {
 
     #[test]
     fn test_from_str_roundtrip_defaults() {
-        let model = Model::default_fields();
+        let model = Model::default();
         let s = model.to_string();
         let parsed: Model = s.parse().unwrap();
         assert_eq!(model, parsed);
@@ -452,10 +526,24 @@ mod tests {
 
     #[test]
     fn test_from_str_roundtrip_empty_tags() {
-        let model = Model::new(Select::Some(vec!["qname".into()]), Some(vec![])).unwrap();
+        let model = Model::new(Select::Some(vec!["qname".into()]), Some(vec![]), CS).unwrap();
         let s = model.to_string();
         let parsed: Model = s.parse().unwrap();
         assert_eq!(model, parsed);
+    }
+
+    #[test]
+    fn test_from_str_roundtrip_coord_system() {
+        let model = Model::new(
+            Select::Some(vec!["qname".into(), "pos".into()]),
+            None,
+            CoordSystem::ZeroHalfOpen,
+        )
+        .unwrap();
+        let s = model.to_string();
+        let parsed: Model = s.parse().unwrap();
+        assert_eq!(model, parsed);
+        assert_eq!(parsed.coord_system(), CoordSystem::ZeroHalfOpen);
     }
 
     #[test]
@@ -463,6 +551,7 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["qname".into()]),
             Some(vec![("NM".into(), "i".into())]),
+            CS,
         )
         .unwrap();
         let cloned = model.clone();
@@ -475,11 +564,13 @@ mod tests {
         let m1 = Model::new(
             Select::Some(vec!["qname".into(), "rname".into(), "pos".into()]),
             None,
+            CS,
         )
         .unwrap();
         let m2 = Model::new(
             Select::Some(vec!["qname".into(), "rname".into(), "pos".into()]),
             None,
+            CS,
         )
         .unwrap();
         assert_eq!(m1.schema().as_ref(), m2.schema().as_ref());

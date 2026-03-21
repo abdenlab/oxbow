@@ -8,7 +8,7 @@ use noodles::csi::BinningIndex;
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 use crate::variant::model::{BatchBuilder, GenotypeBy, Model};
 use crate::variant::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Region, Select};
 
 /// A BCF scanner.
 ///
@@ -28,7 +28,8 @@ use crate::{OxbowError, Select};
 /// let mut fmt_reader = noodles::bcf::io::Reader::new(inner);
 /// let header = fmt_reader.read_header().unwrap();
 ///
-/// let scanner = Scanner::new(header, Select::All, Select::All, Select::All, None, Select::All, None).unwrap();
+/// use oxbow::CoordSystem;
+/// let scanner = Scanner::new(header, Select::All, Select::All, Select::All, None, Select::All, None, CoordSystem::OneClosed).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -38,6 +39,15 @@ pub struct Scanner {
 
 impl Scanner {
     /// Creates a BCF scanner from a VCF header and schema parameters.
+    ///
+    /// - `header`: the VCF header, used for schema inference and validation.
+    /// - `fields`: standard SAM field selection.
+    /// - `info_fields`: INFO field selection.
+    /// - `genotype_fields`: FORMAT field selection.
+    /// - `genotype_by`: how to group genotype fields and samples.
+    /// - `samples`: sample selection for genotype fields.
+    /// - `samples_nested`: whether to nest sample-genotype columns under a single samples column.
+    /// - `coord_system`: output coordinate system for position columns.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         header: noodles::vcf::Header,
@@ -47,6 +57,7 @@ impl Scanner {
         genotype_by: Option<GenotypeBy>,
         samples: Select<String>,
         samples_nested: Option<bool>,
+        coord_system: CoordSystem,
     ) -> crate::Result<Self> {
         let model = Model::from_header(
             &header,
@@ -56,6 +67,7 @@ impl Scanner {
             genotype_by,
             samples,
             samples_nested,
+            coord_system,
         )?;
         Ok(Self { header, model })
     }
@@ -202,13 +214,14 @@ impl Scanner {
     pub fn scan_query<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
         fmt_reader: noodles::bcf::io::Reader<R>,
-        region: noodles::core::Region,
+        region: Region,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
+        let region = region.to_noodles()?;
         let reference_sequence_name = region.name().to_string();
         let interval = region.interval();
 

@@ -63,12 +63,14 @@ pub mod alignment;
 pub mod batch;
 pub mod bbi;
 pub mod bed;
+pub mod coords;
 pub mod error;
 pub mod gxf;
 pub mod sequence;
 pub mod util;
 pub mod variant;
 
+pub use coords::{CoordSystem, Region};
 pub use error::{OxbowError, Result};
 
 #[derive(Debug, Clone)]

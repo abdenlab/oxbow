@@ -88,6 +88,7 @@ class FastaFile(SequenceFile):
         compressed: bool = False,
         *,
         fields: Literal["*"] | list[str] | None = "*",
+        coords: Literal["01", "11"] = "11",
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         gzi: str | Callable[[], IO[bytes]] | None = None,
@@ -102,6 +103,7 @@ class FastaFile(SequenceFile):
             gzi=gzi,
             batch_size=batch_size,
         )
+        self._scanner_kwargs["coords"] = coords
 
 
 class FastqFile(SequenceFile):
@@ -134,6 +136,7 @@ def from_fasta(
     compression: Literal["infer", "bgzf", "gzip", None] = "infer",
     *,
     fields: Literal["*"] | list[str] | None = "*",
+    coords: Literal["01", "11"] = "11",
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     gzi: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
@@ -190,6 +193,7 @@ def from_fasta(
         source=source,
         compressed=bgzf_compressed,
         fields=fields,
+        coords=coords,
         regions=regions,
         index=index,
         gzi=gzi,

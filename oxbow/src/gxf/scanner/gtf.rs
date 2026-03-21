@@ -12,7 +12,7 @@ use crate::gxf::model::BatchBuilder;
 use crate::gxf::model::Model;
 use crate::gxf::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Region, Select};
 
 /// A GTF scanner.
 ///
@@ -32,7 +32,8 @@ use crate::{OxbowError, Select};
 /// let mut fmt_reader = noodles::gtf::io::Reader::new(inner);
 ///
 /// let attr_defs = Scanner::attribute_defs(&mut fmt_reader, Some(1000)).unwrap();
-/// let scanner = Scanner::new(None, Select::All, Some(attr_defs)).unwrap();
+/// use oxbow::CoordSystem;
+/// let scanner = Scanner::new(None, Select::All, Some(attr_defs), CoordSystem::OneClosed).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -45,12 +46,14 @@ impl Scanner {
     ///
     /// - `fields`: standard GXF field selection. `All` → all 8 standard fields.
     /// - `attr_defs`: `None` → no attributes column. `Some(vec![])` → empty struct.
+    /// - `coord_system`: output coordinate system for position columns.
     pub fn new(
         header: Option<binning_index::index::Header>,
         fields: Select<String>,
         attr_defs: Option<Vec<(String, String)>>,
+        coord_system: CoordSystem,
     ) -> crate::Result<Self> {
-        let model = Model::new(fields, attr_defs)?;
+        let model = Model::new(fields, attr_defs, coord_system)?;
         Ok(Self { header, model })
     }
 
@@ -166,13 +169,14 @@ impl Scanner {
     pub fn scan_query<R: noodles::bgzf::io::BufRead + noodles::bgzf::io::Seek>(
         &self,
         fmt_reader: noodles::gtf::io::Reader<R>,
-        region: noodles::core::Region,
+        region: Region,
         index: impl BinningIndex,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
+        let region = region.to_noodles()?;
         let reference_sequence_name = region.name().to_string();
         let interval = region.interval();
 

@@ -9,15 +9,15 @@ use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
-use noodles::core::Region;
-
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{
-    pyobject_to_bufreader, resolve_fields, resolve_index, PyVirtualPosition, Reader,
+    pyobject_to_bufreader, resolve_coord_system, resolve_fields, resolve_index, PyVirtualPosition,
+    Reader,
 };
 use oxbow::gxf::{GffScanner, GtfScanner};
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
+use oxbow::CoordSystem;
 
 /// A GTF file scanner.
 ///
@@ -32,6 +32,9 @@ use oxbow::util::index::IndexType;
 /// attribute_defs : list[tuple[str, str]], optional [default: None]
 ///     Definitions for the ``"attributes"`` struct column. ``None`` omits the
 ///     attributes column. Use the ``attribute_defs()`` method to discover definitions.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyGtfScanner {
     src: Py<PyAny>,
@@ -43,18 +46,26 @@ pub struct PyGtfScanner {
 #[pymethods]
 impl PyGtfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None, attribute_defs=None))]
+    #[pyo3(signature = (src, compressed=false, fields=None, attribute_defs=None, coords=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
         compressed: Option<bool>,
         fields: Option<Py<PyAny>>,
         attribute_defs: Option<Vec<(String, String)>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
         let fields = resolve_fields(fields, py)?;
+        let coord_system = resolve_coord_system(coords)?;
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-        let scanner = GtfScanner::new(None, fields, attribute_defs).map_err(to_py)?;
+        let scanner = GtfScanner::new(
+            None,
+            fields,
+            attribute_defs,
+            coord_system.unwrap_or(CoordSystem::OneClosed),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -76,6 +87,7 @@ impl PyGtfScanner {
             let attr_defs: Vec<_> = defs.iter().map(|d| d.to_tuple()).collect();
             kwargs.set_item("attribute_defs", attr_defs)?;
         }
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -258,7 +270,8 @@ impl PyGtfScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region.
     /// columns : list[str], optional
@@ -281,9 +294,8 @@ impl PyGtfScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
@@ -348,6 +360,9 @@ impl PyGtfScanner {
 /// attribute_defs : list[tuple[str, str]], optional [default: None]
 ///     Definitions for the ``"attributes"`` struct column. ``None`` omits the
 ///     attributes column. Use the ``attribute_defs()`` method to discover definitions.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyGffScanner {
     src: Py<PyAny>,
@@ -359,18 +374,26 @@ pub struct PyGffScanner {
 #[pymethods]
 impl PyGffScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None, attribute_defs=None))]
+    #[pyo3(signature = (src, compressed=false, fields=None, attribute_defs=None, coords=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
         compressed: Option<bool>,
         fields: Option<Py<PyAny>>,
         attribute_defs: Option<Vec<(String, String)>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
         let fields = resolve_fields(fields, py)?;
+        let coord_system = resolve_coord_system(coords)?;
         let compressed = compressed.unwrap_or(false);
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-        let scanner = GffScanner::new(None, fields, attribute_defs).map_err(to_py)?;
+        let scanner = GffScanner::new(
+            None,
+            fields,
+            attribute_defs,
+            coord_system.unwrap_or(CoordSystem::OneClosed),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -392,6 +415,7 @@ impl PyGffScanner {
             let attr_defs: Vec<_> = defs.iter().map(|d| d.to_tuple()).collect();
             kwargs.set_item("attribute_defs", attr_defs)?;
         }
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -573,7 +597,8 @@ impl PyGffScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region.
     /// columns : list[str], optional
@@ -596,9 +621,8 @@ impl PyGffScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
@@ -656,6 +680,9 @@ impl PyGffScanner {
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 /// attr_defs : list[tuple[str, str]], optional
@@ -680,12 +707,11 @@ pub fn read_gtf(
 ) -> PyResult<Vec<u8>> {
     let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let scanner = GtfScanner::new(None, fields, attr_defs).map_err(to_py)?;
+    let scanner =
+        GtfScanner::new(None, fields, attr_defs, CoordSystem::OneClosed).map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region = oxbow::Region::parse(&region, oxbow::CoordSystem::OneClosed).map_err(to_py)?;
 
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
@@ -725,6 +751,9 @@ pub fn read_gtf(
 /// ----------
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
 /// attr_defs : list[tuple[str, str]], optional
@@ -749,12 +778,11 @@ pub fn read_gff(
 ) -> PyResult<Vec<u8>> {
     let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let scanner = GffScanner::new(None, fields, attr_defs).map_err(to_py)?;
+    let scanner =
+        GffScanner::new(None, fields, attr_defs, CoordSystem::OneClosed).map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region = oxbow::Region::parse(&region, oxbow::CoordSystem::OneClosed).map_err(to_py)?;
 
         match reader {
             Reader::BgzfFile(bgzf_reader) => {

@@ -7,7 +7,7 @@ pub use super::BBIReader;
 use crate::bbi::model::zoom::BatchBuilder;
 use crate::bbi::model::zoom::Model;
 use crate::bbi::scanner::batch_iterator::zoom::{BBIZoomBatchIterator, BBIZoomQueryBatchIterator};
-use crate::Select;
+use crate::{CoordSystem, Region, Select};
 
 /// A scanner for the summary statistics from BBI file zoom level.
 ///
@@ -24,8 +24,8 @@ use crate::Select;
 /// let info = fmt_reader.info();
 /// let ref_names = info.chrom_info.iter().map(|c| c.name.clone()).collect();
 /// let zoom_levels: Vec<u32> = info.zoom_headers.iter().map(|h| h.reduction_level).collect();
-/// use oxbow::Select;
-/// let scanner = Scanner::new(ref_names, zoom_levels[0], Select::All).unwrap();
+/// use oxbow::{CoordSystem, Select};
+/// let scanner = Scanner::new(ref_names, zoom_levels[0], Select::All, CoordSystem::ZeroHalfOpen).unwrap();
 /// let batches = scanner.scan(BBIReader::BigWig(fmt_reader), None, None, Some(1000));
 pub struct Scanner {
     ref_names: Vec<String>,
@@ -35,12 +35,18 @@ pub struct Scanner {
 
 impl Scanner {
     /// Creates a BBI zoom level scanner.
+    ///
+    /// - `ref_names`: the reference sequence names in the BBI file.
+    /// - `zoom_level`: the zoom level to read from.
+    /// - `fields`: column names to project.
+    /// - `coord_system`: output coordinate system for position columns.
     pub fn new(
         ref_names: Vec<String>,
         zoom_level: u32,
         fields: Select<String>,
+        coord_system: CoordSystem,
     ) -> crate::Result<Self> {
-        let model = Model::new(fields)?;
+        let model = Model::new(fields, coord_system)?;
         Ok(Self {
             ref_names,
             zoom_level,
@@ -69,11 +75,17 @@ impl Scanner {
         columns: Option<Vec<String>>,
         capacity: usize,
     ) -> crate::Result<BatchBuilder> {
+        let cs = self.model.coord_system();
         match columns {
-            None => BatchBuilder::new(&self.ref_names, Some(self.model.field_names()), capacity),
+            None => BatchBuilder::new(
+                &self.ref_names,
+                Some(self.model.field_names()),
+                cs,
+                capacity,
+            ),
             Some(cols) => {
                 let projected = self.model.project(&cols)?;
-                BatchBuilder::new(&self.ref_names, Some(projected.field_names()), capacity)
+                BatchBuilder::new(&self.ref_names, Some(projected.field_names()), cs, capacity)
             }
         }
     }
@@ -118,12 +130,13 @@ impl Scanner {
     pub fn scan_query<R: Read + Seek + Send + 'static>(
         &self,
         reader: BBIReader<R>,
-        region: noodles::core::Region,
+        region: Region,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
+        let region = region.to_noodles()?;
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         match reader {
             BBIReader::BigWig(reader) => {

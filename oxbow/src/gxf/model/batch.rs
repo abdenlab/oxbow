@@ -11,11 +11,14 @@ use crate::batch::{Push, RecordBatchBuilder};
 use crate::gxf::model::attribute::{AttributeBuilder, AttributeDef, AttributeValue};
 use crate::gxf::model::field::Push as _;
 use crate::gxf::model::field::{Field, FieldBuilder};
-use crate::Select;
+use crate::{CoordSystem, Select};
+
+/// The coordinate system in which noodles returns GTF/GFF positions.
+const SOURCE_CS: CoordSystem = CoordSystem::OneClosed;
 
 use super::Model;
 
-/// A builder for an Arrow record batch of GXF (GTF/GFF) features.
+/// A builder for an Arrow record batch of GTF/GFF (GXF) features.
 pub struct BatchBuilder {
     schema: SchemaRef,
     row_count: usize,
@@ -34,15 +37,22 @@ impl BatchBuilder {
         attr_defs: Option<Vec<(String, String)>>,
         capacity: usize,
     ) -> crate::Result<Self> {
-        let model = Model::new(fields, attr_defs)?;
+        let model = Model::new(fields, attr_defs, CoordSystem::OneClosed)?;
         Self::from_model(&model, capacity)
     }
 
     /// Creates a new `BatchBuilder` from a [`Model`].
     pub fn from_model(model: &Model, capacity: usize) -> crate::Result<Self> {
+        let coord_offset = model.coord_system().start_offset_from(SOURCE_CS);
+
         let mut field_builders = IndexMap::new();
         for field in model.fields() {
-            let builder = FieldBuilder::new(field.clone(), capacity);
+            let builder = match field {
+                Field::Start => {
+                    FieldBuilder::new(field.clone(), capacity).with_coord_offset(coord_offset)
+                }
+                _ => FieldBuilder::new(field.clone(), capacity),
+            };
             field_builders.insert(field.clone(), builder);
         }
 

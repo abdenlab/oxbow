@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use arrow::datatypes::{Field as ArrowField, Schema, SchemaRef};
 
-use crate::{OxbowError, Select};
+use crate::{CoordSystem, OxbowError, Select};
 use field::{Field, FASTA_DEFAULT_FIELD_NAMES, FASTQ_DEFAULT_FIELD_NAMES};
 
 /// A data model for sequence records (FASTA/FASTQ).
@@ -18,15 +18,18 @@ use field::{Field, FASTA_DEFAULT_FIELD_NAMES, FASTQ_DEFAULT_FIELD_NAMES};
 /// - `fields` selects which fields become Arrow columns.
 ///   `All` → format-specific defaults (3 for FASTA, 4 for FASTQ).
 ///   `Omit` → no fields. `Some(vec)` → specific fields.
+/// - `coord_system` can be used to define how ambiguous input query region
+///   strings should be interpreted. There are no position columns in sequence
+///   output.
 ///
 /// # Examples
 ///
 /// ```
 /// use oxbow::sequence::model::Model;
-/// use oxbow::Select;
+/// use oxbow::{CoordSystem, Select};
 ///
 /// // FASTA defaults: name, description, sequence.
-/// let model = Model::new_fasta(Select::All).unwrap();
+/// let model = Model::new_fasta(Select::All, CoordSystem::OneClosed).unwrap();
 /// assert_eq!(model.field_names().len(), 3);
 ///
 /// // FASTQ defaults: name, description, sequence, quality.
@@ -40,6 +43,7 @@ use field::{Field, FASTA_DEFAULT_FIELD_NAMES, FASTQ_DEFAULT_FIELD_NAMES};
 #[derive(Clone, Debug)]
 pub struct Model {
     fields: Vec<Field>,
+    coord_system: CoordSystem,
     schema: SchemaRef,
 }
 
@@ -48,7 +52,7 @@ impl Model {
     ///
     /// `fields`: `All` → `["name", "description", "sequence"]`. `Omit` → no
     /// fields. `Some(vec)` → specific fields.
-    pub fn new_fasta(fields: Select<String>) -> crate::Result<Self> {
+    pub fn new_fasta(fields: Select<String>, coord_system: CoordSystem) -> crate::Result<Self> {
         let defaults = || {
             FASTA_DEFAULT_FIELD_NAMES
                 .iter()
@@ -60,7 +64,7 @@ impl Model {
             Select::Some(names) => names,
             Select::Omit => Vec::new(),
         };
-        Self::new(field_names)
+        Self::new(field_names, coord_system)
     }
 
     /// Create a new FASTQ model.
@@ -79,10 +83,10 @@ impl Model {
             Select::Some(names) => names,
             Select::Omit => Vec::new(),
         };
-        Self::new(field_names)
+        Self::new(field_names, CoordSystem::OneClosed)
     }
 
-    fn new(field_names: Vec<String>) -> crate::Result<Self> {
+    fn new(field_names: Vec<String>, coord_system: CoordSystem) -> crate::Result<Self> {
         let mut parsed_fields = Vec::new();
         for name in &field_names {
             let field: Field = name
@@ -97,6 +101,7 @@ impl Model {
 
         Ok(Self {
             fields: parsed_fields,
+            coord_system,
             schema,
         })
     }
@@ -109,6 +114,11 @@ impl Model {
     /// The field names.
     pub fn field_names(&self) -> Vec<String> {
         self.fields.iter().map(|f| f.name().to_string()).collect()
+    }
+
+    /// The output coordinate system for query regions.
+    pub fn coord_system(&self) -> CoordSystem {
+        self.coord_system
     }
 
     /// The Arrow schema for this model.
@@ -149,13 +159,13 @@ impl Model {
             .map(|f| f.name().to_string())
             .collect();
 
-        Self::new(projected)
+        Self::new(projected, self.coord_system)
     }
 }
 
 impl PartialEq for Model {
     fn eq(&self, other: &Self) -> bool {
-        self.fields == other.fields
+        self.fields == other.fields && self.coord_system == other.coord_system
     }
 }
 
@@ -167,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_fasta_defaults() {
-        let model = Model::new_fasta(Select::All).unwrap();
+        let model = Model::new_fasta(Select::All, CoordSystem::OneClosed).unwrap();
         assert_eq!(model.field_names(), vec!["name", "description", "sequence"]);
         assert_eq!(model.schema().fields().len(), 3);
     }
@@ -191,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_invalid_field() {
-        let result = Model::new_fasta(Select::Some(vec!["invalid".into()]));
+        let result = Model::new_fasta(Select::Some(vec!["invalid".into()]), CoordSystem::OneClosed);
         assert!(result.is_err());
     }
 
@@ -204,7 +214,7 @@ mod tests {
 
     #[test]
     fn test_project_unknown() {
-        let model = Model::new_fasta(Select::All).unwrap();
+        let model = Model::new_fasta(Select::All, CoordSystem::OneClosed).unwrap();
         let result = model.project(&["nonexistent".into()]);
         assert!(result.is_err());
     }

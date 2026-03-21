@@ -28,6 +28,7 @@ class VariantFile(DataSource):
         genotype_by: Literal["sample", "field"] = "sample",
         samples: Literal["*"] | list[str] | None = None,
         samples_nested: bool = False,
+        coords: Literal["01", "11"] = "11",
         regions: str | list[str] | None = None,
         index: str | Callable[[], IO[bytes] | str] | None = None,
         batch_size: int = DEFAULT_BATCH_SIZE,
@@ -46,6 +47,7 @@ class VariantFile(DataSource):
             genotype_by=genotype_by,
             samples=samples,
             samples_nested=samples_nested,
+            coords=coords,
         )
 
     def _scan_query(self, scanner, region, columns, batch_size):
@@ -153,6 +155,7 @@ def from_vcf(
     genotype_by: Literal["sample", "field"] = "sample",
     samples: Literal["*"] | list[str] | None = None,
     samples_nested: bool = False,
+    coords: Literal["01", "11"] = "11",
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
@@ -239,6 +242,7 @@ def from_vcf(
         genotype_by=genotype_by,
         samples=samples,
         samples_nested=samples_nested,
+        coords=coords,
         regions=regions,
         index=index,
         batch_size=batch_size,
@@ -255,6 +259,7 @@ def from_bcf(
     genotype_by: Literal["sample", "field"] = "sample",
     samples: Literal["*"] | list[str] | None = None,
     samples_nested: bool = False,
+    coords: Literal["01", "11"] = "11",
     regions: str | list[str] | None = None,
     index: str | pathlib.Path | Callable[[], IO[bytes] | str] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
@@ -339,6 +344,7 @@ def from_bcf(
         genotype_by=genotype_by,
         samples=samples,
         samples_nested=samples_nested,
+        coords=coords,
         regions=regions,
         index=index,
         batch_size=batch_size,

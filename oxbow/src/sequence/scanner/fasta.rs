@@ -2,12 +2,11 @@ use std::io::{BufRead, Seek};
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema;
-use noodles::core::Region;
 
 use crate::sequence::model::BatchBuilder;
 use crate::sequence::model::Model;
 use crate::sequence::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
-use crate::Select;
+use crate::{CoordSystem, Region, Select};
 
 /// A FASTA scanner.
 ///
@@ -18,16 +17,15 @@ use crate::Select;
 ///
 /// ```no_run
 /// use oxbow::sequence::scanner::fasta::Scanner;
-/// use oxbow::Select;
+/// use oxbow::{CoordSystem, Region, Select};
 /// use std::fs::File;
 /// use std::io::BufReader;
-/// use noodles::core::Region;
 ///
 /// let inner = File::open("sample.fa").map(BufReader::new).unwrap();
 /// let fmt_reader = noodles::fasta::io::Reader::new(inner);
 /// let index = noodles::fasta::fai::fs::read("sample.fa.fai").unwrap();
 ///
-/// let scanner = Scanner::new(Select::All).unwrap();
+/// let scanner = Scanner::new(Select::All, CoordSystem::OneClosed).unwrap();
 /// let regions = vec!["chr1:1-1000", "chr1:1001-2000"];
 /// let regions: Vec<Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
 /// let batches = scanner.scan_query(fmt_reader, regions, index, None, Some(2));
@@ -39,9 +37,10 @@ pub struct Scanner {
 impl Scanner {
     /// Creates a FASTA scanner from schema parameters.
     ///
-    /// `fields`: `All` → `["name", "description", "sequence"]`.
-    pub fn new(fields: Select<String>) -> crate::Result<Self> {
-        let model = Model::new_fasta(fields)?;
+    /// - `fields`: `All` → `["name", "description", "sequence"]`.
+    /// - `coord_system`: coordinate system for query region interpretation.
+    pub fn new(fields: Select<String>, coord_system: CoordSystem) -> crate::Result<Self> {
+        let model = Model::new_fasta(fields, coord_system)?;
         Ok(Self { model })
     }
 
@@ -112,6 +111,10 @@ impl Scanner {
         batch_size: Option<usize>,
     ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
+        let regions: Vec<noodles::core::Region> = regions
+            .iter()
+            .map(|r| r.to_noodles())
+            .collect::<crate::Result<Vec<_>>>()?;
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter =
             QueryBatchIterator::new(fmt_reader, index, regions, batch_builder, batch_size);
@@ -127,7 +130,7 @@ mod tests {
 
     #[test]
     fn test_scanner_default() {
-        let scanner = Scanner::new(Select::All).unwrap();
+        let scanner = Scanner::new(Select::All, CoordSystem::OneClosed).unwrap();
         assert_eq!(
             scanner.field_names(),
             vec!["name", "description", "sequence"]
@@ -136,12 +139,12 @@ mod tests {
 
     #[test]
     fn test_scanner_schema() {
-        let scanner = Scanner::new(Select::All).unwrap();
+        let scanner = Scanner::new(Select::All, CoordSystem::OneClosed).unwrap();
         assert_eq!(scanner.schema().fields().len(), 3);
-        let scanner = Scanner::new(Select::Some(vec![
-            "name".to_string(),
-            "sequence".to_string(),
-        ]))
+        let scanner = Scanner::new(
+            Select::Some(vec!["name".to_string(), "sequence".to_string()]),
+            CoordSystem::OneClosed,
+        )
         .unwrap();
         assert_eq!(scanner.schema().fields().len(), 2);
     }
@@ -153,7 +156,7 @@ mod tests {
         let reader = BufReader::new(file);
         let fmt_reader = noodles::fasta::io::Reader::new(reader);
 
-        let scanner = Scanner::new(Select::All).unwrap();
+        let scanner = Scanner::new(Select::All, CoordSystem::OneClosed).unwrap();
         let mut batch_iter = scanner.scan(fmt_reader, None, Some(2), Some(10)).unwrap();
 
         let batch = batch_iter.next().unwrap().unwrap();
@@ -175,9 +178,9 @@ mod tests {
             fai::Record::new("seq3", 12, 24, 13, 13),
         ]);
 
-        let scanner = Scanner::new(Select::All).unwrap();
+        let scanner = Scanner::new(Select::All, CoordSystem::OneClosed).unwrap();
         let regions = ["seq1:1-4", "seq2:1-4", "seq3:1-4"];
-        let regions: Vec<Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
+        let regions: Vec<crate::Region> = regions.iter().map(|s| s.parse().unwrap()).collect();
         let mut batch_iter = scanner
             .scan_query(fmt_reader, regions, index, None, Some(2))
             .unwrap();

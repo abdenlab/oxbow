@@ -8,7 +8,12 @@ use indexmap::IndexMap;
 use noodles::sam::alignment::record::data::field::Tag;
 
 use crate::batch::{Push, RecordBatchBuilder};
-use crate::Select;
+use crate::{CoordSystem, Select};
+
+/// The coordinate system in which noodles returns alignment start positions.
+/// `noodles::core::Position::get()` is always 1-based regardless of the underlying
+/// format, so all alignment batch builders share this source coordinate system.
+const SOURCE_CS: CoordSystem = CoordSystem::OneClosed;
 
 use super::field::Push as _;
 use super::field::{Field, FieldBuilder};
@@ -36,7 +41,7 @@ impl BatchBuilder {
         tag_defs: Option<Vec<(String, String)>>,
         capacity: usize,
     ) -> crate::Result<Self> {
-        let model = Model::new(fields, tag_defs)?;
+        let model = Model::new(fields, tag_defs, CoordSystem::OneClosed)?;
         Self::from_model(&model, header, capacity)
     }
 
@@ -52,12 +57,17 @@ impl BatchBuilder {
             .map(|(name, _)| name.to_string())
             .collect();
 
+        let coord_offset = model.coord_system().start_offset_from(SOURCE_CS);
+
         let mut field_builders = IndexMap::new();
         for field in model.fields() {
             let builder = match field {
                 Field::Rname | Field::Rnext => {
                     FieldBuilder::with_refs(field.clone(), capacity, &ref_names)
                         .map_err(|e| crate::OxbowError::invalid_data(e.to_string()))?
+                }
+                Field::Pos | Field::Pnext => {
+                    FieldBuilder::new(field.clone(), capacity).with_coord_offset(coord_offset)
                 }
                 _ => FieldBuilder::new(field.clone(), capacity),
             };
@@ -301,6 +311,7 @@ mod tests {
         let model = Model::new(
             Select::Some(vec!["qname".into(), "pos".into()]),
             Some(vec![("NM".into(), "i".into())]),
+            CoordSystem::OneClosed,
         )
         .unwrap();
         let header = noodles::sam::Header::default();

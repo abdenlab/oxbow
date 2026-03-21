@@ -7,15 +7,14 @@ use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
+use crate::error::{err_on_unwind, to_py};
+use crate::util::{
+    pyobject_to_bufreader, resolve_coord_system, resolve_faidx, resolve_fields, PyVirtualPosition,
+    Reader,
+};
 use flate2::read::MultiGzDecoder;
 use noodles::bgzf::gzi::io::Reader as GziReader;
 use noodles::bgzf::io::IndexedReader as IndexedBgzfReader;
-use noodles::core::Region;
-
-use crate::error::{err_on_unwind, to_py};
-use crate::util::{
-    pyobject_to_bufreader, resolve_faidx, resolve_fields, PyVirtualPosition, Reader,
-};
 use oxbow::sequence::{FastaScanner, FastqScanner};
 use oxbow::util::batches_to_ipc;
 
@@ -213,6 +212,9 @@ impl PyFastqScanner {
 ///     Whether the source is BGZF-compressed.
 /// fields : list[str], optional
 ///     Names of the fixed fields to project.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for interpreting query ranges. "01" for 0-based
+///    half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyFastaScanner {
     src: Py<PyAny>,
@@ -224,16 +226,22 @@ pub struct PyFastaScanner {
 #[pymethods]
 impl PyFastaScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None))]
+    #[pyo3(signature = (src, compressed=false, fields=None, coords=None))]
     fn new(
         py: Python,
         src: Py<PyAny>,
         compressed: bool,
         fields: Option<Py<PyAny>>,
+        coords: Option<String>,
     ) -> PyResult<Self> {
         let fields = resolve_fields(fields, py)?;
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), false)?;
-        let scanner = FastaScanner::new(fields).map_err(to_py)?;
+        let scanner = FastaScanner::new(
+            fields,
+            coord_system.unwrap_or(oxbow::CoordSystem::OneClosed),
+        )
+        .map_err(to_py)?;
         Ok(Self {
             src,
             reader,
@@ -250,6 +258,7 @@ impl PyFastaScanner {
         let args = (self.src.clone_ref(py), self.compressed.into_py_any(py)?);
         let kwargs = PyDict::new(py);
         kwargs.set_item("fields", self.scanner.model().field_names())?;
+        kwargs.set_item("coords", self.scanner.model().coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -318,7 +327,8 @@ impl PyFastaScanner {
     /// Parameters
     /// ----------
     /// regions : list[str]
-    ///     Genomic ranges in the format "chr:start-end".
+    ///     Genomic ranges in the format "chr:start-end", "chr:[start,end]" or
+    ///     "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The FAI index file.
     /// gzi : path or file-like, optional
@@ -344,13 +354,12 @@ impl PyFastaScanner {
         let index = resolve_faidx(py, &self.src, index)?;
         let reader = self.reader.clone();
 
-        let regions: Vec<Region> = regions
+        let coord_system = self.scanner.model().coord_system();
+        let regions: Vec<oxbow::Region> = regions
             .into_iter()
-            .map(|s| {
-                s.parse::<Region>()
-                    .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|s| oxbow::Region::parse(&s, coord_system))
+            .collect::<oxbow::Result<Vec<_>>>()
+            .map_err(to_py)?;
 
         if self.compressed {
             let gzi_source = match gzi {
@@ -428,7 +437,8 @@ pub fn read_fastq(
 /// src : str or file-like
 ///     The path to the source file or a file-like object.
 /// regions : list[str], optional
-///     Genomic ranges in the format "chr:start-end".
+///     Genomic ranges in the format "chr:start-end", "chr:[start,end]" or
+///     "chr:[start,end)".
 /// index : path or file-like, optional
 ///     The FAI index file.
 /// gzi : path or file-like, optional
@@ -455,17 +465,15 @@ pub fn read_fasta(
 ) -> PyResult<Vec<u8>> {
     let fields = resolve_fields(fields, py)?;
     let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
-    let scanner = FastaScanner::new(fields).map_err(to_py)?;
+    let scanner = FastaScanner::new(fields, oxbow::CoordSystem::OneClosed).map_err(to_py)?;
 
     let ipc = if let Some(regions) = regions {
         let index = resolve_faidx(py, &src, index)?;
-        let regions: Vec<Region> = regions
+        let regions: Vec<oxbow::Region> = regions
             .into_iter()
-            .map(|s| {
-                s.parse::<Region>()
-                    .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|s| oxbow::Region::parse(&s, oxbow::CoordSystem::OneClosed))
+            .collect::<oxbow::Result<Vec<_>>>()
+            .map_err(to_py)?;
         if compressed {
             let gzi_source = match gzi {
                 Some(gzi) => pyobject_to_bufreader(py, gzi.clone_ref(py), false)?,

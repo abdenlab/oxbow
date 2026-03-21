@@ -7,15 +7,15 @@ use pyo3::IntoPyObjectExt;
 use pyo3_arrow::PyRecordBatchReader;
 use pyo3_arrow::PySchema;
 
-use noodles::core::Region;
-
 use crate::error::{err_on_unwind, to_py};
 use crate::util::{
-    pyobject_to_bufreader, resolve_fields, resolve_index, PyVirtualPosition, Reader,
+    pyobject_to_bufreader, resolve_coord_system, resolve_fields, resolve_index, PyVirtualPosition,
+    Reader,
 };
 use oxbow::util::batches_to_ipc;
 use oxbow::util::index::IndexType;
 use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
+use oxbow::CoordSystem;
 
 /// A VCF file scanner.
 ///
@@ -42,6 +42,9 @@ use oxbow::variant::{BcfScanner, GenotypeBy, VcfScanner};
 /// samples_nested : bool, optional [default: False]
 ///   Whether to nest sample genotype data under a single ``"samples"`` struct
 ///   column.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyVcfScanner {
     src: Py<PyAny>,
@@ -53,7 +56,7 @@ pub struct PyVcfScanner {
 #[pymethods]
 impl PyVcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=false, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None,samples_nested=false))]
+    #[pyo3(signature = (src, compressed=false, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None, samples_nested=false, coords=None))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python,
@@ -65,7 +68,9 @@ impl PyVcfScanner {
         genotype_by: Option<String>,
         samples: Option<Py<PyAny>>,
         samples_nested: bool,
+        coords: Option<String>,
     ) -> PyResult<Self> {
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::vcf::io::Reader::new(reader);
         let header = fmt_reader.read_header()?;
@@ -79,6 +84,7 @@ impl PyVcfScanner {
             gt_by,
             resolve_fields(samples, py)?,
             Some(samples_nested),
+            coord_system.unwrap_or(CoordSystem::OneClosed),
         )
         .map_err(to_py)?;
         Ok(Self {
@@ -115,6 +121,7 @@ impl PyVcfScanner {
         };
         kwargs.set_item("genotype_by", gt_by)?;
         kwargs.set_item("samples_nested", model.samples_nested())?;
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -304,7 +311,8 @@ impl PyVcfScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
@@ -331,9 +339,8 @@ impl PyVcfScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
                 let fmt_reader = noodles::vcf::io::Reader::new(bgzf_reader);
@@ -410,6 +417,9 @@ impl PyVcfScanner {
 /// samples_nested : bool, optional [default: False]
 ///   Whether to nest sample genotype data under a single ``"samples"`` struct
 ///   column.
+/// coords : Literal["01", "11"], optional [default: "11"]
+///    Coordinate system for returning positions and interpreting query ranges.
+///    "01" for 0-based half-open, "11" for 1-based closed.
 #[pyclass(module = "oxbow.oxbow")]
 pub struct PyBcfScanner {
     src: Py<PyAny>,
@@ -421,7 +431,7 @@ pub struct PyBcfScanner {
 #[pymethods]
 impl PyBcfScanner {
     #[new]
-    #[pyo3(signature = (src, compressed=true, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None, samples_nested=false))]
+    #[pyo3(signature = (src, compressed=true, fields=None, info_fields=None, genotype_fields=None, genotype_by=None, samples=None, samples_nested=false, coords=None))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python,
@@ -433,7 +443,9 @@ impl PyBcfScanner {
         genotype_by: Option<String>,
         samples: Option<Py<PyAny>>,
         samples_nested: bool,
+        coords: Option<String>,
     ) -> PyResult<Self> {
+        let coord_system = resolve_coord_system(coords)?;
         let reader = pyobject_to_bufreader(py, src.clone_ref(py), compressed)?;
         let mut fmt_reader = noodles::bcf::io::Reader::from(reader);
         let header = fmt_reader.read_header()?;
@@ -447,6 +459,7 @@ impl PyBcfScanner {
             gt_by,
             resolve_fields(samples, py)?,
             Some(samples_nested),
+            coord_system.unwrap_or(CoordSystem::OneClosed),
         )
         .map_err(to_py)?;
         Ok(Self {
@@ -483,6 +496,7 @@ impl PyBcfScanner {
         };
         kwargs.set_item("genotype_by", gt_by)?;
         kwargs.set_item("samples_nested", model.samples_nested())?;
+        kwargs.set_item("coords", model.coord_system().to_string())?;
         Ok((args.into_py_any(py)?, kwargs.into_py_any(py)?))
     }
 
@@ -672,7 +686,8 @@ impl PyBcfScanner {
     /// Parameters
     /// ----------
     /// region : str
-    ///     Genomic region in the format "chr:start-end".
+    ///     Genomic range string in the format "chr:start-end",
+    ///     "chr:[start,end]" or "chr:[start,end)".
     /// index : path or file-like, optional
     ///     The index file to use for querying the region. If None and the
     ///     source was provided as a path, we will attempt to load the index
@@ -699,9 +714,8 @@ impl PyBcfScanner {
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> PyResult<PyRecordBatchReader> {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region =
+            oxbow::Region::parse(&region, self.scanner.model().coord_system()).map_err(to_py)?;
 
         match self.reader.clone() {
             Reader::BgzfFile(bgzf_reader) => {
@@ -770,8 +784,9 @@ fn resolve_genotype_by(genotype_by: Option<String>) -> PyResult<Option<GenotypeB
 /// ----------
 /// src: str or file-like
 ///     The path to the VCF file or a file-like object.
-/// region : str, optional
-///     Genomic region in the format "chr:start-end".
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// index : path or file-like, optional
 ///     The index file to use for querying the region.
 /// fields : list[str], optional
@@ -824,13 +839,12 @@ pub fn read_vcf(
         genotype_by,
         resolve_fields(samples, py)?,
         Some(samples_nested),
+        CoordSystem::OneClosed,
     )
     .map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region = oxbow::Region::parse(&region, oxbow::CoordSystem::OneClosed).map_err(to_py)?;
 
         match reader {
             Reader::BgzfFile(bgzf_reader) => {
@@ -870,8 +884,9 @@ pub fn read_vcf(
 /// ----------
 /// src: str or file-like
 ///     The path to the BCF file or a file-like object.
-/// region : str, optional
-///     Genomic region in the format "chr:start-end".
+/// region : str
+///     Genomic range string in the format "chr:start-end",
+///     "chr:[start,end]" or "chr:[start,end)".
 /// index : path or file-like, optional
 ///     The index file to use for querying the region.
 /// fields : list[str], optional
@@ -924,13 +939,12 @@ pub fn read_bcf(
         genotype_by,
         resolve_fields(samples, py)?,
         Some(samples_nested),
+        CoordSystem::OneClosed,
     )
     .map_err(to_py)?;
 
     let ipc = if let Some(region) = region {
-        let region = region
-            .parse::<Region>()
-            .map_err(|e| PyErr::new::<PyValueError, _>(e.to_string()))?;
+        let region = oxbow::Region::parse(&region, oxbow::CoordSystem::OneClosed).map_err(to_py)?;
 
         match reader {
             Reader::BgzfFile(bgzf_reader) => {

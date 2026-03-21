@@ -5,7 +5,7 @@ use arrow::record_batch::{RecordBatch, RecordBatchOptions};
 use indexmap::IndexMap;
 
 use crate::batch::{Push, RecordBatchBuilder};
-use crate::Select;
+use crate::{CoordSystem, Select};
 
 use super::field::Push as _;
 use super::field::{Field, FieldBuilder};
@@ -27,7 +27,7 @@ impl BatchBuilder {
 
     /// Creates a new `BatchBuilder` for FASTA records.
     pub fn new_fasta(fields: Select<String>, capacity: usize) -> crate::Result<Self> {
-        let model = Model::new_fasta(fields)?;
+        let model = Model::new_fasta(fields, CoordSystem::OneClosed)?;
         Self::from_model(&model, capacity)
     }
 

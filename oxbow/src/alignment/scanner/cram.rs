@@ -10,7 +10,7 @@ use crate::alignment::model::tag::TagScanner;
 use crate::alignment::model::BatchBuilder;
 use crate::alignment::AlignmentModel;
 use crate::batch::{Push, RecordBatchBuilder as _};
-use crate::Select;
+use crate::{CoordSystem, Region, Select};
 
 /// A CRAM scanner.
 ///
@@ -35,7 +35,8 @@ use crate::Select;
 /// let header = fmt_reader.read_header().unwrap();
 ///
 /// let tag_defs = Scanner::tag_defs(&mut fmt_reader, &header, Some(1000)).unwrap();
-/// let scanner = Scanner::new(header, Select::All, Some(tag_defs), repository).unwrap();
+/// use oxbow::CoordSystem;
+/// let scanner = Scanner::new(header, Select::All, Some(tag_defs), repository, CoordSystem::OneClosed).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -49,6 +50,7 @@ impl Scanner {
     ///
     /// - `fields`: standard SAM field selection.
     /// - `tag_defs`: `None` → no tags column. `Some(vec![])` → empty struct.
+    /// - `coord_system`: output coordinate system for position columns.
     ///
     /// The FASTA repository is stored and used by scan methods for decoding.
     pub fn new(
@@ -56,8 +58,9 @@ impl Scanner {
         fields: Select<String>,
         tag_defs: Option<Vec<(String, String)>>,
         repo: noodles::fasta::Repository,
+        coord_system: CoordSystem,
     ) -> crate::Result<Self> {
-        let model = AlignmentModel::new(fields, tag_defs)?;
+        let model = AlignmentModel::new(fields, tag_defs, coord_system)?;
         Ok(Self {
             header,
             model,
@@ -207,13 +210,14 @@ impl Scanner {
     pub fn scan_query<R: Read + Seek>(
         &self,
         fmt_reader: noodles::cram::io::Reader<R>,
-        region: noodles::core::Region,
+        region: Region,
         index: noodles::cram::crai::Index,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
+        let region = region.to_noodles()?;
         let interval = region.interval();
 
         let batch_builder = self.build_batch_builder(columns, batch_size)?;

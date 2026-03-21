@@ -92,7 +92,7 @@ impl FromStr for Field {
 /// Builds an Arrow array (column) corresponding to a variant standard field.
 pub enum FieldBuilder {
     Chrom(StringDictionaryBuilder<Int32Type>),
-    Pos(Int32Builder),
+    Pos(Int32Builder, i32),
     Id(ListBuilder<GenericStringBuilder<i32>>),
     Ref(GenericStringBuilder<i32>),
     Alt(ListBuilder<GenericStringBuilder<i32>>),
@@ -104,7 +104,7 @@ impl FieldBuilder {
     pub fn new(field: Field, capacity: usize) -> Self {
         match field {
             Field::Chrom => Self::Chrom(StringDictionaryBuilder::<Int32Type>::new()),
-            Field::Pos => Self::Pos(Int32Builder::with_capacity(capacity)),
+            Field::Pos => Self::Pos(Int32Builder::with_capacity(capacity), 0),
             Field::Id => Self::Id(ListBuilder::with_capacity(
                 GenericStringBuilder::new(),
                 capacity,
@@ -119,6 +119,16 @@ impl FieldBuilder {
                 GenericStringBuilder::new(),
                 capacity,
             )),
+        }
+    }
+
+    /// Sets the coordinate offset for the position field (`pos`).
+    ///
+    /// Has no effect on other field variants.
+    pub fn with_coord_offset(self, offset: i32) -> Self {
+        match self {
+            Self::Pos(b, _) => Self::Pos(b, offset),
+            other => other,
         }
     }
 
@@ -150,7 +160,7 @@ impl FieldBuilder {
                 let array = reset_dictarray_builder(builder);
                 Arc::new(array)
             }
-            Self::Pos(builder) => Arc::new(builder.finish()),
+            Self::Pos(builder, _) => Arc::new(builder.finish()),
             Self::Id(builder) => Arc::new(builder.finish()),
             Self::Ref(builder) => Arc::new(builder.finish()),
             Self::Alt(builder) => Arc::new(builder.finish()),
@@ -176,13 +186,13 @@ impl Push<&noodles::vcf::Record> for FieldBuilder {
                 let rname = record.reference_sequence_name();
                 builder.append_value(rname);
             }
-            Self::Pos(builder) => {
+            Self::Pos(builder, offset) => {
                 builder.append_option(
                     record
                         .variant_start()
                         .transpose()
                         .unwrap_or(None)
-                        .map(|x| x.get() as i32),
+                        .map(|x| x.get() as i32 + *offset),
                 );
             }
             Self::Id(builder) => {
@@ -268,13 +278,13 @@ impl Push<&noodles::bcf::Record> for FieldBuilder {
                     .map(|(name, _)| name.to_string());
                 builder.append_option(rname);
             }
-            Self::Pos(builder) => {
+            Self::Pos(builder, offset) => {
                 builder.append_option(
                     record
                         .variant_start()
                         .transpose()
                         .unwrap_or(None)
-                        .map(|x| x.get() as i32),
+                        .map(|x| x.get() as i32 + *offset),
                 );
             }
             Self::Id(builder) => {

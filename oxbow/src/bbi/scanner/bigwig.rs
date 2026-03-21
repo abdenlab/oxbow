@@ -8,7 +8,7 @@ use crate::bbi::model::base::BatchBuilder;
 use crate::bbi::model::base::BedSchema;
 use crate::bbi::model::base::Model;
 use crate::bbi::scanner::batch_iterator::base::{BigWigBatchIterator, BigWigQueryBatchIterator};
-use crate::Select;
+use crate::{CoordSystem, Region, Select};
 
 /// A BigWig scanner.
 ///
@@ -23,7 +23,8 @@ use crate::Select;
 /// let info = fmt_reader.info();
 ///
 /// use oxbow::Select;
-/// let scanner = Scanner::new(info.clone(), Select::All).unwrap();
+/// use oxbow::CoordSystem;
+/// let scanner = Scanner::new(info.clone(), Select::All, CoordSystem::ZeroHalfOpen).unwrap();
 /// let batches = scanner.scan(fmt_reader, None, None, Some(1000));
 /// ```
 pub struct Scanner {
@@ -33,9 +34,17 @@ pub struct Scanner {
 
 impl Scanner {
     /// Creates a BigWig scanner from BBI file info and optional field names.
-    pub fn new(info: bigtools::BBIFileInfo, fields: Select<String>) -> crate::Result<Self> {
+    ///
+    /// - `info`: the BBI file info.
+    /// - `fields`: column names to project.
+    /// - `coord_system`: output coordinate system for position columns.
+    pub fn new(
+        info: bigtools::BBIFileInfo,
+        fields: Select<String>,
+        coord_system: CoordSystem,
+    ) -> crate::Result<Self> {
         let bed_schema: BedSchema = "bedGraph".parse().unwrap();
-        let model = Model::new(bed_schema, fields)?;
+        let model = Model::new(bed_schema, fields, coord_system)?;
         Ok(Self { model, info })
     }
 
@@ -125,12 +134,13 @@ impl Scanner {
     pub fn scan_query<R: Read + Seek + Send + 'static>(
         &self,
         fmt_reader: BigWigRead<R>,
-        region: noodles::core::Region,
+        region: Region,
         columns: Option<Vec<String>>,
         batch_size: Option<usize>,
         limit: Option<usize>,
     ) -> crate::Result<impl RecordBatchReader> {
         let batch_size = batch_size.unwrap_or(1024);
+        let region = region.to_noodles()?;
         let batch_builder = self.build_batch_builder(columns, batch_size)?;
         let batch_iter =
             BigWigQueryBatchIterator::new(fmt_reader, region, batch_builder, batch_size, limit);
