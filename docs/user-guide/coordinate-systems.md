@@ -1,14 +1,14 @@
 # Coordinate conventions
 
-In practice, there are two commonly used conventions for the numerical representation of genomic intervals by their bounding base coordinates and the semantics of their inclusion or exclusion. These conventions are often informally referred to as "coordinate systems". Mixing the two is one of the most common sources of off-by-one bugs in bioinformatics pipelines because genomic file formats and tools use or expect different conventions.
+In practice, there are two commonly used conventions for the representation of genomic intervals by the numerical coordinates of their bounding bases and the semantics of inclusion or exclusion. These conventions are often informally referred to as coordinate "systems". Mixing conventions is one of the most common sources of off-by-one bugs in bioinformatics because genomic file formats and tools use or expect different conventions.
 
-Oxbow lets you pick the coordinate convention for the **output** in Arrow batches and lets you specify the interpretation of **input** query ranges, independently of the format on disk.
+Oxbow lets you control the coordinate convention for the **output** in Arrow batches and lets you specify the interpretation of **input** query ranges, independently of the format on disk.
 
 ## Notation
 
 SAM, VCF, and GFF use **1-based, fully-closed** intervals; BED, BigBed, and BigWig use **0-based, half-open** intervals. To make matters worse, some binary formats like BAM and BCF use 0-based representations internally while most tools surface those values as 1-based (but some don't). 
 
-A helpful observation is that, numerically, the two conventions differ only in the encoding of the `start` coordinate. Although it can be conceptually misleading, a very useful mnemonic terminology for distinguishing them is **0-based start, 1-based end** and **1-based start, 1-based end**.
+A helpful observation is that, numerically, the two conventions differ only in the encoding of the `start` coordinate. While conceptually muddled, a very useful _mnemonic_ terminology for distinguishing them is **"0-based start, 1-based end"** and **"1-based start, 1-based end"**.
 
 Oxbow uses a compact two-character notation for coordinate conventions based on the mnemonic terminology, where the first character is the base of the start coordinate and the second is the "base" of the end coordinate:
 
@@ -19,7 +19,7 @@ Oxbow uses a compact two-character notation for coordinate conventions based on 
 
 <small>† as returned by htslib-based tools and by noodles</small>
 
-Each format defaults to its own native convention, so by default Oxbow does not change anything. You only need to think about coordinate systems if you want output that differs from the format's native convention — for example, normalizing every source to `"01"` before joining alignment records against BED features.
+Oxbow defaults to each format's native convention, so you only need to think about coordinate conventions if you want output that differs from the format's native convention — for example, normalizing every source to `"01"` before joining alignment records against BED features.
 
 ## 1. Output via the `coords` argument
 
@@ -45,13 +45,13 @@ ds = ox.from_bed("data/sample.bed")
 ds = ox.from_bed("data/sample.bed", coords="11")
 ```
 
-Only the **start** column changes; end coordinates are the same in either system.
+Only the **start** column changes; end coordinates are the same in either convention.
 
 ## 2. Input via region queries
 
 Representations of query regions also need to be interpreted according to a convention. Oxbow accepts two notations: implicit UCSC-style notation and explicit bracket notation.
 
-### UCSC-style notation: use DataSource's convention
+### Implicit notation: use the DataSource's convention
 
 Familiar `chr1:10000-20000` style, with optional `,` or `_` thousands separators:
 
@@ -61,9 +61,9 @@ ds.regions("chr1:10_000-20_000")
 ds.regions("chr1")               # whole chromosome
 ```
 
-This notation is **ambiguous** — `chr1:10000-20000` could mean either convention depending on context — so Oxbow needs to know which one you meant. The rule is:
+This notation is **ambiguous** — `chr1:10000-20000` could mean either convention depending on context. An oxbow DataSource interprets an implicit region string according to **its own `coords` setting**. 
 
-An oxbow DataSource interprets the region according to **its own `coords` setting**. So `from_bam("...", coords="01").regions("chr1:10000-20000")` treats the region as 0-based half-open, matching the output it will produce.
+So `from_bam("...", coords="01").regions("chr1:10000-20000")` treats the region as 0-based half-open, matching the output it will produce.
 
 ### Bracket notation: explicit, self-describing
 
