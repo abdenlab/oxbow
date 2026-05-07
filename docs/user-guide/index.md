@@ -9,6 +9,7 @@ This section is still under construction.
 :maxdepth: 2
 
 matrix
+coordinate-systems
 examples/index
 ```
 
