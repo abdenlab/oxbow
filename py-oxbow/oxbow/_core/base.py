@@ -3,7 +3,7 @@ from __future__ import annotations
 import pathlib
 import warnings
 from abc import abstractmethod
-from typing import IO, Any, Callable, Generator, Literal
+from typing import IO, TYPE_CHECKING, Any, Callable, Generator, Literal, overload
 
 try:
     from typing import Self
@@ -20,6 +20,10 @@ from oxbow._pyarrow import (
     BatchReaderDataset,
     BatchReaderFragment,
 )
+
+if TYPE_CHECKING:
+    import pandas as pd
+    import polars as pl
 
 
 class DataSource:
@@ -226,7 +230,7 @@ class DataSource:
         """
         return BatchReaderDataset(self.fragments())
 
-    def to_pandas(self):
+    def to_pandas(self) -> "pd.DataFrame":
         """
         Convert the dataset to a Pandas DataFrame.
 
@@ -239,7 +243,12 @@ class DataSource:
 
     pd = to_pandas
 
-    def to_polars(self, lazy=False):
+    @overload
+    def to_polars(self, lazy: Literal[True]) -> "pl.LazyFrame": ...
+    @overload
+    def to_polars(self, lazy: Literal[False] = ...) -> "pl.DataFrame": ...
+
+    def to_polars(self, lazy: bool = False) -> "pl.DataFrame | pl.LazyFrame":
         """
         Convert the data source to a Polars DataFrame or LazyFrame.
 
