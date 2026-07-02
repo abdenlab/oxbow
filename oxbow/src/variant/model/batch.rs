@@ -24,8 +24,9 @@ use super::genotype::{GenotypeDef, SampleStructBuilder, SeriesStructBuilder};
 use super::info::{InfoBuilder, InfoDef};
 use super::Model;
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
 pub enum GenotypeBy {
+    #[default]
     Sample,
     Field,
 }
@@ -641,7 +642,7 @@ mod tests {
         .unwrap();
 
         let schema = batch_builder.schema();
-        assert!(schema.fields().len() > 0);
+        assert!(!schema.fields().is_empty());
     }
 
     #[test]

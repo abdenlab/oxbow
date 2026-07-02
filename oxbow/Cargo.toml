@@ -26,3 +26,6 @@ indexmap = { workspace = true }
 noodles = { workspace = true }
 thiserror = { workspace = true }
 tokio = "1.52.3"
+
+[dev-dependencies]
+tokio = { version = "1.52.3", features = ["rt", "macros"] }

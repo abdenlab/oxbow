@@ -13,9 +13,10 @@ use crate::{OxbowError, Result};
 /// End coordinates are numerically identical in both systems; only start
 /// positions differ. Use [`CoordSystem::start_offset_from`] to get the
 /// additive offset needed to convert a start value from one system to another.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum CoordSystem {
     /// 1-based start, closed end.
+    #[default]
     OneClosed,
     /// 0-based start, half-open end.
     ZeroHalfOpen,

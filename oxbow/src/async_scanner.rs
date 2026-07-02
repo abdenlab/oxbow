@@ -1,15 +1,15 @@
-use std::{future::Future, pin::Pin};
+use std::pin::Pin;
 
+use crate::Result;
 use arrow_array::RecordBatch;
 use futures::Stream;
-
-pub type AsyncBatchReader = Pin<Box<dyn Stream<Item = RecordBatch>>>;
+use tokio::io::AsyncBufRead;
 
 pub trait AsyncScanner {
-    fn scan(
+    fn scan<R: AsyncBufRead + Unpin + Send + 'static>(
         &self,
-        columns: Option<Vec<String>>,
+        reader: R,
         batch_size: Option<usize>,
         limit: Option<usize>,
-    ) -> Pin<Box<dyn Future<Output = AsyncBatchReader> + Send>>;
+    ) -> Pin<Box<dyn Stream<Item = Result<RecordBatch>>>>;
 }

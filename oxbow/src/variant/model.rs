@@ -432,6 +432,109 @@ impl PartialEq for Model {
 
 impl Eq for Model {}
 
+/// Builder for [`Model`].
+///
+/// Provides a fluent API to configure and build a variant data model from a VCF
+/// header. Required field (`header`) is supplied at construction time; all
+/// other parameters have sensible defaults.
+///
+/// # Examples
+///
+/// ```no_run
+/// use oxbow::variant::model::ModelBuilder;
+/// use oxbow::variant::model::Model;
+///
+/// let header = noodles::vcf::Header::default();
+/// let model: Model = ModelBuilder::new(header)
+///     .info_fields(oxbow::Select::Some(vec!["DP".into()]))
+///     .build()
+///     .unwrap();
+/// ```
+pub struct ModelBuilder {
+    header: noodles::vcf::Header,
+    fixed_fields: Select,
+    info_fields: Select,
+    genotype_fields: Select,
+    genotype_by: GenotypeBy,
+    samples: Select,
+    samples_nested: bool,
+    coord_system: CoordSystem,
+}
+
+impl ModelBuilder {
+    /// Creates a new builder from a VCF header.
+    pub fn new(header: noodles::vcf::Header) -> Self {
+        Self {
+            header,
+            fixed_fields: Select::default(),
+            info_fields: Select::default(),
+            genotype_fields: Select::default(),
+            genotype_by: GenotypeBy::default(),
+            samples: Select::default(),
+            samples_nested: false,
+            coord_system: CoordSystem::default(),
+        }
+    }
+
+    /// Select which fixed fields (CHROM, POS, ID, REF, ALT, QUAL, FILTER) to include.
+    pub fn fixed_fields(mut self, select: Select) -> Self {
+        self.fixed_fields = select;
+        self
+    }
+
+    /// Select which INFO sub-fields to include.
+    pub fn info_fields(mut self, select: Select) -> Self {
+        self.info_fields = select;
+        self
+    }
+
+    /// Select which FORMAT/genotype sub-fields to include.
+    pub fn genotype_fields(mut self, select: Select) -> Self {
+        self.genotype_fields = select;
+        self
+    }
+
+    /// Select which samples to include in genotype columns.
+    pub fn samples(mut self, select: Select) -> Self {
+        self.samples = select;
+        self
+    }
+
+    /// Set how genotype fields and samples are grouped.
+    pub fn genotype_by(mut self, value: GenotypeBy) -> Self {
+        self.genotype_by = value;
+        self
+    }
+
+    /// Whether to nest sample-genotype columns under a single "samples" struct column.
+    pub fn samples_nested(mut self, nested: bool) -> Self {
+        self.samples_nested = nested;
+        self
+    }
+
+    /// Set the output coordinate system.
+    ///
+    /// Defaults to [`CoordSystem::OneClosed`] (1-based, VCF convention).
+    pub fn coord_system(mut self, coord_system: CoordSystem) -> Self {
+        self.coord_system = coord_system;
+        self
+    }
+
+    /// Build the variant [`Model`].
+    pub fn build(self) -> crate::Result<Model> {
+        Model::from_header(
+            &self.header,
+            self.fixed_fields,
+            self.info_fields,
+            self.genotype_fields,
+            Some(self.genotype_by),
+            self.samples,
+            Some(self.samples_nested),
+            self.coord_system,
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
