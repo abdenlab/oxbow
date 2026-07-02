@@ -57,11 +57,11 @@ impl BatchBuilder {
     /// Derives INFO and FORMAT definitions from the header.
     pub fn new(
         header: noodles::vcf::Header,
-        field_names: Select<String>,
-        info_field_names: Select<String>,
-        genotype_field_names: Select<String>,
+        field_names: Select,
+        info_field_names: Select,
+        genotype_field_names: Select,
         genotype_by: GenotypeBy,
-        sample_names: Select<String>,
+        sample_names: Select,
         capacity: usize,
     ) -> crate::Result<Self> {
         let model = Model::from_header(

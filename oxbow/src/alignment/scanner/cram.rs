@@ -55,7 +55,7 @@ impl Scanner {
     /// The FASTA repository is stored and used by scan methods for decoding.
     pub fn new(
         header: noodles::sam::Header,
-        fields: Select<String>,
+        fields: Select,
         tag_defs: Option<Vec<(String, String)>>,
         repo: noodles::fasta::Repository,
         coord_system: CoordSystem,

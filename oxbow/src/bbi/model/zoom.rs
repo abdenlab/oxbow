@@ -66,7 +66,7 @@ impl Model {
     /// Create a new BBI zoom model.
     ///
     /// `fields`: field names. `None` → all 8 default fields.
-    pub fn new(fields: Select<String>, coord_system: CoordSystem) -> crate::Result<Self> {
+    pub fn new(fields: Select, coord_system: CoordSystem) -> crate::Result<Self> {
         let field_names = match fields {
             Select::All => DEFAULT_FIELD_NAMES.iter().map(|&s| s.to_string()).collect(),
             Select::Some(names) => names,

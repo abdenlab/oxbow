@@ -43,7 +43,7 @@ impl Scanner {
     pub fn new(
         ref_names: Vec<String>,
         zoom_level: u32,
-        fields: Select<String>,
+        fields: Select,
         coord_system: CoordSystem,
     ) -> crate::Result<Self> {
         let model = Model::new(fields, coord_system)?;

@@ -74,7 +74,7 @@ impl Model {
     ///   (`pos`, `pnext`). `None` defaults to [`CoordSystem::OneClosed`]
     ///   (1-based, matching the SAM convention).
     pub fn new(
-        fields: Select<String>,
+        fields: Select,
         tag_defs: Option<Vec<(String, String)>>,
         coord_system: CoordSystem,
     ) -> crate::Result<Self> {

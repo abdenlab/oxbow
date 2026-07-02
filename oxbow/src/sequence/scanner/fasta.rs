@@ -39,7 +39,7 @@ impl Scanner {
     ///
     /// - `fields`: `All` → `["name", "description", "sequence"]`.
     /// - `coord_system`: coordinate system for query region interpretation.
-    pub fn new(fields: Select<String>, coord_system: CoordSystem) -> crate::Result<Self> {
+    pub fn new(fields: Select, coord_system: CoordSystem) -> crate::Result<Self> {
         let model = Model::new_fasta(fields, coord_system)?;
         Ok(Self { model })
     }

@@ -52,7 +52,7 @@ impl Model {
     ///
     /// `fields`: `All` → `["name", "description", "sequence"]`. `Omit` → no
     /// fields. `Some(vec)` → specific fields.
-    pub fn new_fasta(fields: Select<String>, coord_system: CoordSystem) -> crate::Result<Self> {
+    pub fn new_fasta(fields: Select, coord_system: CoordSystem) -> crate::Result<Self> {
         let defaults = || {
             FASTA_DEFAULT_FIELD_NAMES
                 .iter()
@@ -71,7 +71,7 @@ impl Model {
     ///
     /// `fields`: `All` → `["name", "description", "sequence", "quality"]`.
     /// `Omit` → no fields. `Some(vec)` → specific fields.
-    pub fn new_fastq(fields: Select<String>) -> crate::Result<Self> {
+    pub fn new_fastq(fields: Select) -> crate::Result<Self> {
         let defaults = || {
             FASTQ_DEFAULT_FIELD_NAMES
                 .iter()

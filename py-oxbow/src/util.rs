@@ -379,13 +379,13 @@ pub fn partition_from_index(
     Ok(partition)
 }
 
-/// Convert a Python `fields` argument to `Select<String>`.
+/// Convert a Python `fields` argument to `Select`.
 ///
 /// Accepts:
 /// - `"*"` → `Select::All`
 /// - `None` → `Select::Omit`
 /// - `list[str]` → `Select::Some(vec)`
-pub fn resolve_fields(fields: Option<Py<PyAny>>, py: Python) -> PyResult<Select<String>> {
+pub fn resolve_fields(fields: Option<Py<PyAny>>, py: Python) -> PyResult<Select> {
     match fields {
         None => Ok(Select::Omit),
         Some(obj) => {

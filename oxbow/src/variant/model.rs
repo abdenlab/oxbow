@@ -60,7 +60,7 @@ impl Model {
     /// - `coord_system`: coordinate system for position column.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        fields: Select<String>,
+        fields: Select,
         info_defs: Option<Vec<InfoDef>>,
         genotype_defs: Option<Vec<GenotypeDef>>,
         genotype_by: Option<GenotypeBy>,
@@ -118,11 +118,11 @@ impl Model {
     #[allow(clippy::too_many_arguments)]
     pub fn from_header(
         header: &noodles::vcf::Header,
-        fields: Select<String>,
-        info_field_names: Select<String>,
-        genotype_field_names: Select<String>,
+        fields: Select,
+        info_field_names: Select,
+        genotype_field_names: Select,
         genotype_by: Option<GenotypeBy>,
-        samples: Select<String>,
+        samples: Select,
         samples_nested: Option<bool>,
         coord_system: CoordSystem,
     ) -> crate::Result<Self> {

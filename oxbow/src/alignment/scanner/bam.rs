@@ -47,7 +47,7 @@ impl Scanner {
     /// - `coord_system`: output coordinate system for position columns.
     pub fn new(
         header: noodles::sam::Header,
-        fields: Select<String>,
+        fields: Select,
         tag_defs: Option<Vec<(String, String)>>,
         coord_system: CoordSystem,
     ) -> crate::Result<Self> {

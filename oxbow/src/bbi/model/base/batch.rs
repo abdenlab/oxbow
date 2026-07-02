@@ -31,7 +31,7 @@ impl BatchBuilder {
     /// Creates a new `BatchBuilder` for BigWig or BigBed records.
     pub fn new(
         bed_schema: BedSchema,
-        fields: Select<String>,
+        fields: Select,
         capacity: usize,
     ) -> crate::Result<Self> {
         let model = Model::new(bed_schema, fields, CoordSystem::ZeroHalfOpen)?;

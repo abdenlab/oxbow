@@ -51,11 +51,11 @@ impl Scanner {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         header: noodles::vcf::Header,
-        fields: Select<String>,
-        info_fields: Select<String>,
-        genotype_fields: Select<String>,
+        fields: Select,
+        info_fields: Select,
+        genotype_fields: Select,
         genotype_by: Option<GenotypeBy>,
-        samples: Select<String>,
+        samples: Select,
         samples_nested: Option<bool>,
         coord_system: CoordSystem,
     ) -> crate::Result<Self> {

@@ -60,6 +60,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod alignment;
+pub mod async_scanner;
 pub mod batch;
 pub mod bbi;
 pub mod bed;
@@ -73,12 +74,13 @@ pub mod variant;
 pub use coords::{CoordSystem, Region};
 pub use error::{OxbowError, Result};
 
-#[derive(Debug, Clone)]
-pub enum Select<T> {
+#[derive(Debug, Clone, Default)]
+pub enum Select {
     /// Select specific items explicitly
-    Some(Vec<T>),
+    Some(Vec<String>),
     /// Omit (explicitly empty)
     Omit,
     /// Select all items (wildcard)
+    #[default]
     All,
 }
