@@ -37,7 +37,7 @@ impl Scanner {
     /// Creates a FASTQ scanner from schema parameters.
     ///
     /// `fields`: `All` → `["name", "description", "sequence", "quality"]`.
-    pub fn new(fields: Select<String>) -> crate::Result<Self> {
+    pub fn new(fields: Select) -> crate::Result<Self> {
         let model = Model::new_fastq(fields)?;
         Ok(Self { model })
     }

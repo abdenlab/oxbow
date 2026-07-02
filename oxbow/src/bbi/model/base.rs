@@ -79,7 +79,7 @@ impl Model {
     /// - `fields`: column names to project. `None` → all fields from the schema.
     pub fn new(
         bed_schema: BedSchema,
-        fields: Select<String>,
+        fields: Select,
         coord_system: CoordSystem,
     ) -> crate::Result<Self> {
         let all_defs = bed_schema_field_defs(&bed_schema);

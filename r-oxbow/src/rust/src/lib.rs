@@ -17,12 +17,12 @@ use oxbow::{CoordSystem, Select};
 
 pub const BUFFER_SIZE_BYTES: usize = const { 1024 * 1024 };
 
-/// Convert an R character vector (or NULL) to a `Select<String>`.
+/// Convert an R character vector (or NULL) to a `Select`.
 ///
 /// - `NULL` (`None`)       → `Select::Omit`  (exclude the column group)
 /// - `"*"` (single star)   → `Select::All`   (explicit wildcard, mirrors Python)
 /// - any other vector      → `Select::Some`  (include only named items)
-fn resolve_r_fields(fields: Option<Vec<String>>) -> Select<String> {
+fn resolve_r_fields(fields: Option<Vec<String>>) -> Select {
     match fields {
         None => Select::Omit,
         Some(v) if v.len() == 1 && v[0] == "*" => Select::All,

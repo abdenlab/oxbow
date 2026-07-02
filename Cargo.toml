@@ -1,18 +1,31 @@
 [workspace]
 resolver = "2"
-members = [
-    "oxbow",
-    "py-oxbow",
-    "r-oxbow/src/rust"
-]
+members = ["oxbow", "py-oxbow", "r-oxbow/src/rust"]
 
 [workspace.dependencies]
 oxbow = { path = "oxbow" }
 arrow = { version = "58" }
 arrow-array = { version = "58" }
 arrow-schema = { version = "58" }
-noodles = { version = "0.107", features = ["bam", "bcf", "bed", "bgzf", "core", "csi", "cram", "fasta", "fastq", "gff", "gtf", "sam", "tabix", "vcf"] }
+noodles = { version = "0.107", features = [
+  "bam",
+  "bcf",
+  "bed",
+  "bgzf",
+  "core",
+  "csi",
+  "cram",
+  "fasta",
+  "fastq",
+  "gff",
+  "gtf",
+  "sam",
+  "tabix",
+  "vcf",
+  "async",
+] }
 bigtools = { version = "0.5.6", features = ["read"] }
 flate2 = "1.1.5"
 indexmap = "2.12.1"
 thiserror = "2"
+

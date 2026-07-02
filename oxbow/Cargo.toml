@@ -21,6 +21,11 @@ arrow = { workspace = true }
 arrow-array = { workspace = true }
 arrow-schema = { workspace = true }
 bigtools = { workspace = true}
+futures = "0.3.32"
 indexmap = { workspace = true }
 noodles = { workspace = true }
 thiserror = { workspace = true }
+tokio = "1.52.3"
+
+[dev-dependencies]
+tokio = { version = "1.52.3", features = ["rt", "macros"] }

@@ -32,11 +32,7 @@ pub struct BatchBuilder {
 }
 
 impl BatchBuilder {
-    pub fn new(
-        bed_schema: BedSchema,
-        fields: Select<String>,
-        capacity: usize,
-    ) -> crate::Result<Self> {
+    pub fn new(bed_schema: BedSchema, fields: Select, capacity: usize) -> crate::Result<Self> {
         let model = Model::new(bed_schema, fields, CoordSystem::ZeroHalfOpen)?;
         Self::from_model(&model, capacity)
     }

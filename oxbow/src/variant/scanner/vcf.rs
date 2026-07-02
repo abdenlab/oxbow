@@ -1,14 +1,19 @@
 use std::io::{BufRead, Seek};
+use std::pin::Pin;
 
 use arrow::array::RecordBatchReader;
 use arrow::datatypes::Schema;
+use futures::{stream, Stream, StreamExt};
 use noodles::bgzf::VirtualPosition;
 use noodles::csi::BinningIndex;
+use tokio::io::AsyncBufRead;
 
+use crate::async_scanner::AsyncScanner;
+use crate::batch::{Push, RecordBatchBuilder};
 use crate::util::query::{BgzfChunkReader, ByteRangeReader};
 use crate::variant::model::{BatchBuilder, GenotypeBy, Model};
 use crate::variant::scanner::batch_iterator::{BatchIterator, QueryBatchIterator};
-use crate::{CoordSystem, OxbowError, Region, Select};
+use crate::{CoordSystem, OxbowError, Region, Result, Select};
 
 /// A VCF scanner.
 ///
@@ -51,11 +56,11 @@ impl Scanner {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         header: noodles::vcf::Header,
-        fields: Select<String>,
-        info_fields: Select<String>,
-        genotype_fields: Select<String>,
+        fields: Select,
+        info_fields: Select,
+        genotype_fields: Select,
         genotype_by: Option<GenotypeBy>,
-        samples: Select<String>,
+        samples: Select,
         samples_nested: Option<bool>,
         coord_system: CoordSystem,
     ) -> crate::Result<Self> {
@@ -285,6 +290,55 @@ impl Scanner {
     }
 }
 
+impl AsyncScanner for Scanner {
+    fn scan<R: AsyncBufRead + Unpin + Send + 'static>(
+        &self,
+        reader: R,
+        batch_size: Option<usize>,
+        limit: Option<usize>,
+    ) -> Pin<Box<dyn Stream<Item = Result<arrow_array::RecordBatch>>>> {
+        let batch_size = batch_size.unwrap_or(1024);
+        let vcf_reader = noodles::vcf::r#async::io::Reader::new(reader);
+        let total: usize = 0;
+        let batch_builder = BatchBuilder::from_model(&self.model, self.header.clone(), batch_size)
+            .expect("BatchBuilder construction should not fail");
+
+        let stream = stream::try_unfold(
+            (vcf_reader, total, batch_builder, batch_size, limit),
+            |state| async move {
+                let (mut vcf_reader, mut total, mut batch_builder, batch_size, limit) = state;
+                let mut count = 0;
+                let mut record = noodles::vcf::Record::default();
+
+                while count < batch_size && total < limit.unwrap_or(usize::MAX) {
+                    match vcf_reader.read_record(&mut record).await {
+                        Ok(0) => break,
+                        Ok(_) => {
+                            batch_builder.push(&record)?;
+                            count += 1;
+                            total += 1;
+                        }
+                        Err(e) => return Err(e.into()),
+                    }
+                }
+
+                if count == 0 {
+                    Ok(None)
+                } else {
+                    let batch = batch_builder.finish()?;
+                    Ok(Some((
+                        batch,
+                        (vcf_reader, total, batch_builder, batch_size, limit),
+                    )))
+                }
+            },
+        )
+        .boxed();
+
+        stream
+    }
+}
+
 fn resolve_chrom_id(
     header: &noodles::vcf::Header,
     index: &impl BinningIndex,
@@ -306,4 +360,48 @@ fn resolve_chrom_id(
             chrom
         ))
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::variant::model::ModelBuilder;
+    use futures::StreamExt;
+    use noodles::vcf::header::record::value::map::{Contig, Info, Map};
+    use noodles::vcf::Header;
+    use tokio::io::BufReader as AsyncBufReader;
+
+    fn create_test_scanner() -> Scanner {
+        let header = Header::builder()
+            .add_contig("sq0", Map::<Contig>::new())
+            .add_info("DP", Map::<Info>::from("DP"))
+            .add_sample_name("sample1")
+            .build();
+        let model = ModelBuilder::new(header.clone())
+            .genotype_fields(Select::Omit)
+            .samples(Select::Omit)
+            .build()
+            .unwrap();
+        Scanner::with_model(header, model)
+    }
+
+    #[tokio::test]
+    async fn test_async_scan_streams_batches() {
+        let record_data = "\
+sq0\t1\t.\tA\tT\t.\tPASS\tDP=30\t0/1
+sq0\t2\t.\tC\tG\t.\tPASS\tDP=50\t1/1
+sq0\t3\t.\tG\tA\t.\tPASS\tDP=10\t0/0
+";
+        let reader = AsyncBufReader::new(record_data.as_bytes());
+        let scanner = create_test_scanner();
+        let mut stream = <Scanner as AsyncScanner>::scan(&scanner, reader, Some(2), None);
+
+        let batch = stream.next().await.expect("expected first batch").unwrap();
+        assert_eq!(batch.num_rows(), 2);
+
+        let batch = stream.next().await.expect("expected second batch").unwrap();
+        assert_eq!(batch.num_rows(), 1);
+
+        assert!(stream.next().await.is_none());
+    }
 }

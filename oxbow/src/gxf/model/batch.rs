@@ -33,7 +33,7 @@ impl BatchBuilder {
     /// - `fields`: standard GXF field selection. `All` → all 8 standard fields.
     /// - `attr_defs`: `None` → no attributes column. `Some(vec![])` → empty struct.
     pub fn new(
-        fields: Select<String>,
+        fields: Select,
         attr_defs: Option<Vec<(String, String)>>,
         capacity: usize,
     ) -> crate::Result<Self> {

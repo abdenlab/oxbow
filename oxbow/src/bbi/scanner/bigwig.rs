@@ -40,7 +40,7 @@ impl Scanner {
     /// - `coord_system`: output coordinate system for position columns.
     pub fn new(
         info: bigtools::BBIFileInfo,
-        fields: Select<String>,
+        fields: Select,
         coord_system: CoordSystem,
     ) -> crate::Result<Self> {
         let bed_schema: BedSchema = "bedGraph".parse().unwrap();

@@ -37,7 +37,7 @@ impl BatchBuilder {
     /// - `tag_defs`: `None` → no tags column. `Some(vec![])` → empty struct.
     pub fn new(
         header: noodles::sam::Header,
-        fields: Select<String>,
+        fields: Select,
         tag_defs: Option<Vec<(String, String)>>,
         capacity: usize,
     ) -> crate::Result<Self> {

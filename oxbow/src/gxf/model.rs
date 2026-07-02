@@ -70,7 +70,7 @@ impl Model {
     ///   no attributes column. `Some(vec![])` → attributes column with empty
     ///   struct.
     pub fn new(
-        fields: Select<String>,
+        fields: Select,
         attr_defs: Option<Vec<(String, String)>>,
         coord_system: CoordSystem,
     ) -> crate::Result<Self> {

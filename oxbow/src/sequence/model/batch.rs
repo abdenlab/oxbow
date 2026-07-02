@@ -20,13 +20,13 @@ pub struct BatchBuilder {
 
 impl BatchBuilder {
     /// Creates a new `BatchBuilder` for FASTQ records.
-    pub fn new_fastq(fields: Select<String>, capacity: usize) -> crate::Result<Self> {
+    pub fn new_fastq(fields: Select, capacity: usize) -> crate::Result<Self> {
         let model = Model::new_fastq(fields)?;
         Self::from_model(&model, capacity)
     }
 
     /// Creates a new `BatchBuilder` for FASTA records.
-    pub fn new_fasta(fields: Select<String>, capacity: usize) -> crate::Result<Self> {
+    pub fn new_fasta(fields: Select, capacity: usize) -> crate::Result<Self> {
         let model = Model::new_fasta(fields, CoordSystem::OneClosed)?;
         Self::from_model(&model, capacity)
     }

@@ -42,7 +42,7 @@ impl Scanner {
     pub fn new(
         bed_schema: BedSchema,
         info: bigtools::BBIFileInfo,
-        fields: Select<String>,
+        fields: Select,
         coord_system: CoordSystem,
     ) -> crate::Result<Self> {
         let model = Model::new(bed_schema, fields, coord_system)?;
