@@ -1,3 +1,4 @@
+import pandas as pd
 import cloudpickle
 import fsspec
 import pyarrow as pa
@@ -233,3 +234,44 @@ class TestGffFile:
             regions=regions,
         )
         file.pl()
+
+
+@pytest.mark.parametrize(
+    "filepath",
+    ["data/sample.sorted.gtf.gz"],
+)
+def test_attributes_with_region_fn(filepath):
+    expected_attributes = {
+        "gene_id": "ENSG00000248323.9",
+        "transcript_id": "ENST00000730025.1",
+        "gene_name": "LUCAT1",
+    }
+
+    def assert_expected_attributes(df: pd.DataFrame):
+        assert len(df) > 0
+        assert "attributes" in df.columns
+
+        attributes = df["attributes"]
+        for name, expected_value in expected_attributes.items():
+            assert attributes.map(lambda item: item[name] == expected_value).any(), (
+                f"Expected {name} to contain {expected_value!r}"
+            )
+
+    # Check that attributes are added without a region filter.
+    no_region_file = ox.GtfFile(
+        filepath,
+        compressed=True,
+        index="data/sample.sorted.gtf.gz.tbi",
+    )
+    no_region_df: pd.DataFrame = no_region_file.with_attributes().pd()
+    assert_expected_attributes(no_region_df)
+
+    # Check that attributes are added with a region filter.
+    with_region_file = ox.GtfFile(
+        filepath,
+        compressed=True,
+        index="data/sample.sorted.gtf.gz.tbi",
+        regions="chr5:90000000-92000000",
+    )
+    with_region_df: pd.DataFrame = with_region_file.with_attributes().pd()
+    assert_expected_attributes(with_region_df)

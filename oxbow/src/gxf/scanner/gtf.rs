@@ -190,7 +190,7 @@ impl Scanner {
         let chunks = chunks.into_iter().map(|c| (c.start(), c.end())).collect();
         let bgzf_reader = fmt_reader.into_inner();
         let query_reader = BgzfChunkReader::new(bgzf_reader, chunks);
-        let fmt_reader = noodles::gff::io::Reader::new(query_reader);
+        let fmt_reader = noodles::gtf::io::Reader::new(query_reader);
         let batch_iter = QueryBatchIterator::new(
             fmt_reader,
             header.clone(),
