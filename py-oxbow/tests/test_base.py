@@ -4,6 +4,7 @@ import pytest
 import itertools
 from unittest.mock import MagicMock
 
+import arro3.core as ac
 import pyarrow as pa
 import oxbow.core as ox
 import polars as pl
@@ -166,7 +167,9 @@ def test_to_polars_lazy():
         _regions = None
 
         def _make_reader(self, columns, batch_size, region=None):
-            return pa.RecordBatchReader.from_batches(arrow_schema, [batch])
+            return ac.RecordBatchReader.from_batches(
+                ac.Schema.from_arrow(arrow_schema), [ac.RecordBatch.from_arrow(batch)]
+            )
 
         @property
         def schema(self):
