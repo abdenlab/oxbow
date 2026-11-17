@@ -282,7 +282,7 @@ class DataSource:
                             batch = reader.read_next_batch()
                         except StopIteration:
                             break
-                        df = pl.from_arrow(batch)
+                        df = pl.DataFrame(batch)
                         if predicate is not None:
                             df = df.filter(predicate)
                         if n_rows is not None:

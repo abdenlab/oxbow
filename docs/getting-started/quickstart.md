@@ -415,7 +415,7 @@ ds.regions("chr1:82744-85000").pl()
 (streams-and-fragments)=
 ## Streams and Fragments
 
-An oxbow data source object streams data via a sequence of Arrow [`RecordBatches`](https://arrow.apache.org/docs/python/generated/pyarrow.RecordBatch.html). This stream is exposed as an iterator and you can use it to materialize each batch manually. 
+An oxbow data source object streams data via a sequence of Arrow [record batches](https://arrow.apache.org/docs/format/Glossary.html#term-record-batch) (as [arro3](https://kylebarron.dev/arro3/latest/) objects). This stream is exposed as an iterator and you can use it to materialize each batch manually. 
 
 ```{code-cell} ipython3
 ds = ox.from_bam("data/sample.bam", batch_size=100)
@@ -424,7 +424,7 @@ batch
 ```
 
 ```{code-cell} ipython3
-pl.from_arrow(batch)
+pl.DataFrame(batch)
 ```
 
 Data sources can be logically grouped into **fragments**. Without random access, a data source contains only a single fragment. 
