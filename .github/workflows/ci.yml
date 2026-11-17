@@ -55,6 +55,7 @@ jobs:
           - '3.11'
           - '3.12'
           - '3.13'
+          - '3.14'
 
     steps:
       - uses: actions/checkout@v7
@@ -76,7 +77,6 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           working-directory: "py-oxbow"
-          python-version: "3.13"
       - run: |
           cd py-oxbow
           uv run --no-default-groups --only-group=dev ruff format --check
